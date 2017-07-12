@@ -1,0 +1,7 @@
+belphegor.admin
+belphegor.otogi
+belphegor.es
+belphegor.misc
+belphegor.help
+belphegor.reaction
+belphegor.music
