@@ -1,7 +1,7 @@
 
-owner_id = 247360205086654464
+owner_id = <owner id here>
 
-test_server_id = 306527473997316097
+test_server_id = <a server for testing and contains tons of emojis neccessary for stuff to show up>
 
 otogi_server_id = 231283203095134208
 
