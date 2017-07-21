@@ -1,0 +1,16 @@
+Weaponoid
+シェーンフリサ
+http://pso2es.swiki.jp/index.php?plugin=attach&refer=%E3%82%B7%E3%82%A7%E3%83%BC%E3%83%B3%E3%83%95%E3%83%AA%E3%82%B5&openfile=%E3%82%B7%E3%82%A7%E3%83%BC%E3%83%B3%E3%83%95%E3%83%AA%E3%82%B5.png
+http://pso2es.swiki.jp/index.php?%E3%82%B7%E3%82%A7%E3%83%BC%E3%83%B3%E3%83%95%E3%83%AA%E3%82%B5
+http://pso2.swiki.jp/index.php?%E3%82%B7%E3%82%A7%E3%83%BC%E3%83%B3%E3%83%95%E3%83%AA%E3%82%B5
+Active (60s)
+fo bo
+11
+272
+17
+ice
+97
+23
+Chase
+Give 110%/120% extra damage and increase ice element value by 80/90.
+N/A

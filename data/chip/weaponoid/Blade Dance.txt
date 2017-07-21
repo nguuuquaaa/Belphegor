@@ -1,0 +1,16 @@
+Weaponoid
+ブレイドダンス
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%83%96%E3%83%AC%E3%82%A4%E3%83%89%E3%83%80%E3%83%B3%E3%82%B9&src=%E3%83%96%E3%83%AC%E3%82%A4%E3%83%89%E3%83%80%E3%83%B3%E3%82%B9R.png
+http://pso2es.swiki.jp/index.php?%E3%83%96%E3%83%AC%E3%82%A4%E3%83%89%E3%83%80%E3%83%B3%E3%82%B9
+http://pso2.swiki.jp/index.php?%E3%83%96%E3%83%AC%E3%82%A4%E3%83%89%E3%83%80%E3%83%B3%E3%82%B9
+Passive (25s)
+fi bo
+11
+298
+18
+wind
+49
+19
+E
+When JA, increase damage based on number of wind chips equipped, 50%/60% base, +15% per wind chip.
+Add lightning to chip effect.

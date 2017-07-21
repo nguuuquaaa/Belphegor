@@ -220,11 +220,19 @@ class MiscBot:
     async def on_message(self, message):
         if message.author.bot:
             return
-        if message.content.startswith("/o/"):
-            await message.channel.send("\\o\\ "*message.content.count("/o/"))
-        elif message.content.startswith("\\o\\"):
-            await message.channel.send("/o/ "*message.content.count("\\o\\"))
-        elif message.content.strip().lower() == "ping":
+        inp = message.content
+        if inp[:3] in ("/o/", "\\o\\"):
+            reply = ""
+            for index, ch in enumerate(inp):
+                current = inp[index:index+3]
+                if current == "\\o\\":
+                    reply = f"{reply} /o/"
+                elif current == "/o/":
+                    reply = f"{reply} \\o\\"
+                else:
+                    pass
+            await message.channel.send(reply)
+        elif inp.strip().lower() == "ping":
             msg = await message.channel.send("pong")
             await msg.edit(content="pong (" + str(msg.created_at - message.created_at)[-8:] + "s)")
         self.bot.process_commands(message)

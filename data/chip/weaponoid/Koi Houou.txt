@@ -1,0 +1,16 @@
+Weaponoid
+恋鳳凰
+http://image.swiki.jp/img0/?host=pso2es&page=%E6%81%8B%E9%B3%B3%E5%87%B0&src=%E6%81%8B%E9%B3%B3%E5%87%B02.png
+http://pso2es.swiki.jp/index.php?%E6%81%8B%E9%B3%B3%E5%87%B0
+http://pso2.swiki.jp/index.php?%E6%81%8B%E9%B3%B3%E5%87%B0
+Passive (25s)
+fo te
+11
+326
+18
+fire
+43
+21
+E
+When JA, increase damage based on number of fire chips equipped, 50%/60% base, +15% per fire chip.
+Reduce cost by 6.

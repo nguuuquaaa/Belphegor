@@ -1,0 +1,16 @@
+Weaponoid
+セラータクレイン
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%82%BB%E3%83%A9%E3%83%BC%E3%82%BF%E3%82%AF%E3%83%AC%E3%82%A4%E3%83%B3&src=%E3%82%BB%E3%83%A9%E3%83%BC%E3%82%BF%E3%82%AF%E3%83%AC%E3%82%A4%E3%83%B32.png
+http://pso2es.swiki.jp/index.php?%E3%82%BB%E3%83%A9%E3%83%BC%E3%82%BF%E3%82%AF%E3%83%AC%E3%82%A4%E3%83%B3
+http://pso2.swiki.jp/index.php?%E3%82%BB%E3%83%A9%E3%83%BC%E3%82%BF%E3%82%AF%E3%83%AC%E3%82%A4%E3%83%B3
+Passive (20s)
+fo bo
+11
+292
+28
+lightning
+82
+23
+A
+When JA, increase technique damage by 85%/90%, and avoid enemies' attack with certain rate.
+N/A

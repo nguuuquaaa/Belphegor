@@ -1,0 +1,16 @@
+Weaponoid
+ジャッジメントハーツ
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%82%B8%E3%83%A3%E3%83%83%E3%82%B8%E3%83%A1%E3%83%B3%E3%83%88%E3%83%8F%E3%83%BC%E3%83%84&src=%E3%82%B8%E3%83%A3%E3%83%83%E3%82%B8%E3%83%A1%E3%83%B3%E3%83%88%E3%83%8F%E3%83%BC%E3%83%842.png
+http://pso2es.swiki.jp/index.php?%E3%82%B8%E3%83%A3%E3%83%83%E3%82%B8%E3%83%A1%E3%83%B3%E3%83%88%E3%83%8F%E3%83%BC%E3%83%84
+http://pso2.swiki.jp/index.php?%E3%82%B8%E3%83%A3%E3%83%83%E3%82%B8%E3%83%A1%E3%83%B3%E3%83%88%E3%83%8F%E3%83%BC%E3%83%84
+Passive (25s)
+fi br
+11
+355
+22
+lightning
+82
+23
+D
+When JA, increase damage by 105%/120% against lightning-weak enemies and reduce CP cost bt 15%/20%.
+Increase activation rate by 20%.

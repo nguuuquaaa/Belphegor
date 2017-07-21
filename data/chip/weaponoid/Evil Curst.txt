@@ -1,0 +1,16 @@
+Weaponoid
+エビルカースト
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%82%A8%E3%83%93%E3%83%AB%E3%82%AB%E3%83%BC%E3%82%B9%E3%83%88&src=%E3%82%A8%E3%83%93%E3%83%AB%E3%82%AB%E3%83%BC%E3%82%B9%E3%83%882.png
+http://pso2es.swiki.jp/index.php?%E3%82%A8%E3%83%93%E3%83%AB%E3%82%AB%E3%83%BC%E3%82%B9%E3%83%88
+http://pso2.swiki.jp/index.php?%E3%82%A8%E3%83%93%E3%83%AB%E3%82%AB%E3%83%BC%E3%82%B9%E3%83%88
+Passive (30s)
+gu te
+11
+270
+35
+dark
+85
+22
+E+A
+When JA, increase damage by 20%, and increase PA and technique damage by 85%/90% while increase CP cost by 20%.
+N/A

@@ -1,0 +1,16 @@
+Weaponoid
+リグガヴエル
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%83%AA%E3%82%B0%E3%82%AC%E3%83%B4%E3%82%A8%E3%83%AB&src=%E3%83%AA%E3%82%B0%E3%82%AC%E3%83%B4%E3%82%A8%E3%83%AB2.png
+http://pso2es.swiki.jp/index.php?%E3%83%AA%E3%82%B0%E3%82%AC%E3%83%B4%E3%82%A8%E3%83%AB
+http://pso2.swiki.jp/index.php?%E3%83%AA%E3%82%B0%E3%82%AC%E3%83%B4%E3%82%A8%E3%83%AB
+Active (60s)
+ra gu
+11
+269
+23
+dark
+108
+23
+Chase
+Speed up normal attack and movement, and give 120%/130% extra damage.
+N/A

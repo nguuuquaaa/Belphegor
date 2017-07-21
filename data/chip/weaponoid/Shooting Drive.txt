@@ -1,0 +1,16 @@
+Weaponoid
+シューティングドライブ
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%82%B7%E3%83%A5%E3%83%BC%E3%83%86%E3%82%A3%E3%83%B3%E3%82%B0%E3%83%89%E3%83%A9%E3%82%A4%E3%83%96&src=%E3%82%B7%E3%83%A5%E3%83%BC%E3%83%86%E3%82%A3%E3%83%B3%E3%82%B0%E3%83%89%E3%83%A9%E3%82%A4%E3%83%962.png
+http://pso2es.swiki.jp/index.php?%E3%82%B7%E3%83%A5%E3%83%BC%E3%83%86%E3%82%A3%E3%83%B3%E3%82%B0%E3%83%89%E3%83%A9%E3%82%A4%E3%83%96
+http://pso2.swiki.jp/index.php?%E3%82%B7%E3%83%A5%E3%83%BC%E3%83%86%E3%82%A3%E3%83%B3%E3%82%B0%E3%83%89%E3%83%A9%E3%82%A4%E3%83%96
+Passive (35s)
+ra fi
+12
+380
+22
+light
+164
+30
+E
+When JA, increase damage by 170%/180%, further 70% more after 5 seconds not getting hit.
+N/A

@@ -1,0 +1,15 @@
+{
+    "name": "Murasamemaru",
+    "alias": "Murasamemaru",
+    "pic_url": "https://vignette4.wikia.nocookie.net/mira-miracle/images/d/d9/Murasamemaru.png/revision/latest?cb=20170712151015&amp;format=original",
+    "atk": "9000/--",
+    "hp": "10100/--",
+    "skill": [
+        {
+            "name": "Frostbite",
+            "value": "Deals 6400/ DMG to the enemy with the most HP."
+        }
+    ],
+    "ability": [],
+    "bond": []
+}

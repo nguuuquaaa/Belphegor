@@ -1,0 +1,16 @@
+Character
+セラフィ
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%82%AD%E3%83%A3%E3%83%A9%E3%82%AF%E3%82%BF%E3%83%BC&src=%E3%82%BB%E3%83%A9%E3%83%95%E3%82%A32.png
+http://pso2es.swiki.jp/index.php?%E3%82%BB%E3%83%A9%E3%83%95%E3%82%A3
+http://pso2.swiki.jp/index.php?%E7%99%BB%E5%A0%B4NPC%2FPSO2es%E7%AE%A1%E7%90%86%E5%AE%98%20%E3%82%BB%E3%83%A9%E3%83%95%E3%82%A3
+Passive (25s)
+ra fo
+11
+195
+18
+wind
+78
+12
+E
+When hit, increase damage based on number of chips dicovered in chip library, +0.15%/0.17% per chip, cap at 150%/170%, and recover 10% HP every 5 seconds.
+Increase activation time by 10 seconds.

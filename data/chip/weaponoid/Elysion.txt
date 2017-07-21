@@ -1,0 +1,16 @@
+Weaponoid
+エリュシオン
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%82%A6%E3%82%A7%E3%83%9D%E3%83%8E%E3%82%A4%E3%83%89&src=%E3%82%A8%E3%83%AA%E3%83%A5%E3%82%B7%E3%82%AA%E3%83%B32.png
+http://pso2es.swiki.jp/index.php?%E3%82%A8%E3%83%AA%E3%83%A5%E3%82%B7%E3%82%AA%E3%83%B3
+http://pso2.swiki.jp/index.php?%E3%82%A8%E3%83%AA%E3%83%A5%E3%82%B7%E3%82%AA%E3%83%B3
+Active (60s)
+fo te
+12
+485
+18
+fire
+163
+30
+E+A
+Increase damage by 140%/150%, increase technique damage by 40%/50%.
+Add PA to chip effect.

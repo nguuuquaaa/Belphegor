@@ -1,0 +1,16 @@
+Weaponoid
+華散王
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%82%A6%E3%82%A7%E3%83%9D%E3%83%8E%E3%82%A4%E3%83%89&src=%E8%8F%AF%E6%95%A3%E7%8E%8B2.png
+http://pso2es.swiki.jp/index.php?%E8%8F%AF%E6%95%A3%E7%8E%8B
+http://pso2.swiki.jp/index.php?%E8%8F%AF%E6%95%A3%E7%8E%8B
+Passive (25s)
+br bo
+11
+315
+26
+ice
+86
+23
+E+chase
+When JA, based on number of ice chips equipped, increase damage, +14%/17% per ice chip, and give extra damage, +8%/10% per ice chip.
+Add wind to chip effect.

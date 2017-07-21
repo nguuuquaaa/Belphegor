@@ -1,0 +1,16 @@
+Weaponoid
+H44ミズーリT
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%82%A6%E3%82%A7%E3%83%9D%E3%83%8E%E3%82%A4%E3%83%89&src=H44%E3%83%9F%E3%82%BA%E3%83%BC%E3%83%AAT2.png
+http://pso2es.swiki.jp/index.php?H44%E3%83%9F%E3%82%BA%E3%83%BC%E3%83%AAT
+http://pso2.swiki.jp/index.php?H44%E3%83%9F%E3%82%BA%E3%83%BC%E3%83%AAT
+Passive (15s)
+ra gu
+12
+480
+25
+fire
+150
+30
+E
+When JA or dodge, increase damage by 180%/200%.
+Reduce cost by 6.

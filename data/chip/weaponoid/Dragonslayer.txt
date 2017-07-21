@@ -1,0 +1,16 @@
+Weaponoid
+ドラゴンスレイヤー
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%83%89%E3%83%A9%E3%82%B4%E3%83%B3%E3%82%B9%E3%83%AC%E3%82%A4%E3%83%A4%E3%83%BC&src=%E3%83%89%E3%83%A9%E3%82%B4%E3%83%B3%E3%82%B9%E3%83%AC%E3%82%A4%E3%83%A4%E3%83%BC2.png
+http://pso2es.swiki.jp/index.php?ドラゴンスレイヤー
+http://pso2.swiki.jp/index.php?%E3%83%89%E3%83%A9%E3%82%B4%E3%83%B3%E3%82%B9%E3%83%AC%E3%82%A4%E3%83%A4%E3%83%BC
+Passive (15s)
+hu br
+11
+195
+23
+dark
+90
+19
+B
+When hit, increase damage to dragonkin by 65%/75% and reduce damage taken from dragonkin by 45%/50%.
+Increase activation time by 10s.

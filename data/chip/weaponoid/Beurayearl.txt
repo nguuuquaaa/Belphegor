@@ -1,0 +1,16 @@
+Weaponoid
+ビューレイアール
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%83%93%E3%83%A5%E3%83%BC%E3%83%AC%E3%82%A4%E3%82%A2%E3%83%BC%E3%83%AB&src=%E3%83%93%E3%83%A5%E3%83%BC%E3%83%AC%E3%82%A4%E3%82%A2%E3%83%BC%E3%83%AB2.png
+http://pso2es.swiki.jp/index.php?%E3%83%93%E3%83%A5%E3%83%BC%E3%83%AC%E3%82%A4%E3%82%A2%E3%83%BC%E3%83%AB
+http://pso2.swiki.jp/index.php?%E3%83%93%E3%83%A5%E3%83%BC%E3%83%AC%E3%82%A4%E3%82%A2%E3%83%BC%E3%83%AB
+Passive (30s)
+te br
+11
+305
+18
+ice
+106
+23
+D
+When JA, increase damage by 105%/125% against ice-weak enemies, and reduce CP cost by 15%/20%.
+N/A

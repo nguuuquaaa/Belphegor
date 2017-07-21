@@ -1,0 +1,15 @@
+Character
+ルベルト
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%82%AD%E3%83%A3%E3%83%A9%E3%82%AF%E3%82%BF%E3%83%BC&src=%E3%83%AB%E3%83%99%E3%83%AB%E3%83%882.png
+http://pso2es.swiki.jp/index.php?%E3%83%AB%E3%83%99%E3%83%AB%E3%83%88
+http://pso2.swiki.jp/index.php?%E7%99%BB%E5%A0%B4NPC%2F%E3%83%AB%E3%83%99%E3%83%AB%E3%83%88
+Passive (Instantaneous)
+ra gu
+11
+165
+20
+lightning
+79
+17
+Raw atk
+When JA, increase atk by 120% base atk against enemies weak to the attacking element.

@@ -1,0 +1,16 @@
+Weaponoid
+ブルージーレクイエム
+http://pso2es.swiki.jp/index.php?plugin=attach&refer=%E3%83%96%E3%83%AB%E3%83%BC%E3%82%B8%E3%83%BC%E3%83%AC%E3%82%AF%E3%82%A4%E3%82%A8%E3%83%A0&openfile=%E3%83%96%E3%83%AB%E3%83%BC%E3%82%B8%E3%83%BC%E3%83%AC%E3%82%AF%E3%82%A4%E3%82%A8%E3%83%A02%E3%82%B5%E3%82%A4%E3%82%BA%E3%82%A2%E3%83%83%E3%83%97.png
+http://pso2es.swiki.jp/index.php?%E3%83%96%E3%83%AB%E3%83%BC%E3%82%B8%E3%83%BC%E3%83%AC%E3%82%AF%E3%82%A4%E3%82%A8%E3%83%A0
+http://pso2.swiki.jp/index.php?%E3%83%96%E3%83%AB%E3%83%BC%E3%82%B8%E3%83%BC%E3%83%AC%E3%82%AF%E3%82%A4%E3%82%A8%E3%83%A0
+Passive (?s)
+hu ra
+11
+325
+20
+dark
+90
+23
+E
+When JA, increase damage by 90%/100% and reduce damage taken by 30%
+Increase activation time by 10s.

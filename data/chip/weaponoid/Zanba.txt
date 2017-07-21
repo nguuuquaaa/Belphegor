@@ -1,0 +1,16 @@
+Weaponoid
+ザンバ
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%82%B6%E3%83%B3%E3%83%90&src=%E3%82%B6%E3%83%B3%E3%83%902.png
+http://pso2es.swiki.jp/index.php?%E3%82%B6%E3%83%B3%E3%83%90
+http://pso2.swiki.jp/index.php?%E3%82%B6%E3%83%B3%E3%83%90
+Passive (30s)
+hu br
+11
+395
+13
+dark
+80
+23
+A+E
+When JA, increase damage by 45%/50% and increase PA and technique damage by 55%/60%.
+N/A

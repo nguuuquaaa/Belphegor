@@ -1,0 +1,16 @@
+Weaponoid
+リンドブルム
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%83%AA%E3%83%B3%E3%83%89%E3%83%96%E3%83%AB%E3%83%A0&src=%E3%83%AA%E3%83%B3%E3%83%89%E3%83%96%E3%83%AB%E3%83%A0.png
+http://pso2es.swiki.jp/index.php?%E3%83%AA%E3%83%B3%E3%83%89%E3%83%96%E3%83%AB%E3%83%A0
+http://pso2.swiki.jp/index.php?%E3%83%AA%E3%83%B3%E3%83%89%E3%83%96%E3%83%AB%E3%83%A0
+Passive (25s)
+ra bo
+12
+474
+20
+ice
+143
+30
+D
+When JA, increase damage by 180%/190% against ice-weak enemies, and increase max ice element value by 30.
+N/A

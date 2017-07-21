@@ -1,0 +1,16 @@
+Weaponoid
+曙
+http://pso2es.swiki.jp/index.php?plugin=attach&refer=%E6%9B%99&openfile=%E6%9B%992.png
+http://pso2es.swiki.jp/index.php?%E6%9B%99
+http://pso2.swiki.jp/index.php?%E6%9B%99
+Passive (30s)
+fi bo
+11
+230
+20
+fire
+70
+17
+E
+When hit, increase damage by 40%/50% and recover 3% HP every 6s.
+Reduce cost by 6.

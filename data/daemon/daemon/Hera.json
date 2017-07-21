@@ -1,0 +1,20 @@
+{
+    "name": "Hera",
+    "alias": "Hera",
+    "pic_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/5/56/Hera.png/revision/latest?cb=20170527035343&amp;format=original",
+    "atk": "8300/10176",
+    "hp": "6000/7356",
+    "skill": [
+        {
+            "name": "Under the Goddess' Eye",
+            "value": "Increase DMG dealt by 3 allies (ranged priority) by 28%/35% for a limited time."
+        }
+    ],
+    "ability": [
+        {
+            "name": "Tying the Knot (Lv. 53)",
+            "value": "Moderately restores HP to skill targets."
+        }
+    ],
+    "bond": []
+}

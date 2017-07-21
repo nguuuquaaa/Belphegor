@@ -1,9 +1,9 @@
 
 owner_id = 247360205086654464
 
-test_server_id = 306527473997316097
+test_guild_id = 306527473997316097
 
-otogi_server_id = 231283203095134208
+otogi_guild_id = 231283203095134208
 
 data_path = "data/"
 

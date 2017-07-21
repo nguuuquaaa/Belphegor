@@ -1,0 +1,16 @@
+Weaponoid
+オーバーテイル
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%82%AA%E3%83%BC%E3%83%90%E3%83%BC%E3%83%86%E3%82%A4%E3%83%AB&src=%E3%82%AA%E3%83%BC%E3%83%90%E3%83%BC%E3%83%86%E3%82%A4%E3%83%AB2.png
+http://pso2es.swiki.jp/index.php?%E3%82%AA%E3%83%BC%E3%83%90%E3%83%BC%E3%83%86%E3%82%A4%E3%83%AB
+http://pso2.swiki.jp/index.php?%E3%82%AA%E3%83%BC%E3%83%90%E3%83%BC%E3%83%86%E3%82%A4%E3%83%AB
+Passive (25s)
+fo te
+11
+256
+32
+dark
+80
+20
+A
+When JA, increase dark technique damage based on ability level, 55%/65% base, +4% per level, cap at 91%/101%, and reduce CP cost by 20%.
+Add wind technique to chip effect.

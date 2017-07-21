@@ -1,0 +1,16 @@
+Weaponoid
+マダムノアマガサ
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%82%A6%E3%82%A7%E3%83%9D%E3%83%8E%E3%82%A4%E3%83%89&src=%E3%83%9E%E3%83%80%E3%83%A0%E3%83%8E%E3%82%A2%E3%83%9E%E3%82%AC%E3%82%B52.png
+http://pso2es.swiki.jp/index.php?%E3%83%9E%E3%83%80%E3%83%A0%E3%83%8E%E3%82%A2%E3%83%9E%E3%82%AC%E3%82%B5
+http://pso2.swiki.jp/index.php?%E3%83%9E%E3%83%80%E3%83%A0%E3%83%8E%E3%82%A2%E3%83%9E%E3%82%AC%E3%82%B5
+Passive (30s)
+fi fo
+11
+295
+11
+dark
+98
+23
+E
+When JA, increase damage based on number of dark chips equipped, +18%/20% per dark chip, and recover CP every 5s.
+Add ice to chip effect.

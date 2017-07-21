@@ -1,0 +1,16 @@
+Weaponoid
+ブラオレット
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%82%A6%E3%82%A7%E3%83%9D%E3%83%8E%E3%82%A4%E3%83%89&src=%E3%83%96%E3%83%A9%E3%82%AA%E3%83%AC%E3%83%83%E3%83%882.png
+http://pso2es.swiki.jp/index.php?%E3%83%96%E3%83%A9%E3%82%AA%E3%83%AC%E3%83%83%E3%83%88
+http://pso2.swiki.jp/index.php?%E3%83%96%E3%83%A9%E3%82%AA%E3%83%AC%E3%83%83%E3%83%88
+Active (60s)
+gu bo
+11
+345
+16
+lightning
+90
+23
+E
+Increase damage by 100%/110% and prevent incapacitation once if the number of lightning chips equipped is 2 or less.
+Reduce cost by 6.

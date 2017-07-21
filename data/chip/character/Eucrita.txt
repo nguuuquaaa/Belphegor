@@ -1,0 +1,15 @@
+Character
+ユクリータ
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%83%A6%E3%82%AF%E3%83%AA%E3%83%BC%E3%82%BF&src=%E3%83%A6%E3%82%AF%E3%83%AA%E3%83%BC%E3%82%BF2.png
+http://pso2es.swiki.jp/index.php?%E3%83%A6%E3%82%AF%E3%83%AA%E3%83%BC%E3%82%BF
+http://pso2.swiki.jp/index.php?%E7%99%BB%E5%A0%B4NPC%2F%E3%83%A6%E3%82%AF%E3%83%AA%E3%83%BC%E3%82%BF
+Passive (30s)
+ra gu
+11
+262
+33
+lightning
+100
+17
+E
+When hit, increase damage based on number of equipped lightning chips, +14% per chip, and reduce damage taken by 30%.

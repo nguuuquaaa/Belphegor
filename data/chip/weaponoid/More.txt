@@ -1,0 +1,16 @@
+Weaponoid
+モア
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%82%A6%E3%82%A7%E3%83%9D%E3%83%8E%E3%82%A4%E3%83%89&src=%E3%83%A2%E3%82%A22.png
+http://pso2es.swiki.jp/index.php?%E3%83%A2%E3%82%A2
+http://pso2.swiki.jp/index.php?%E3%82%AF%E3%83%AC%E3%82%A4%E3%83%A2%E3%82%A2
+Passive
+hu br
+10
+199
+16
+fire
+50
+0
+Raw atk
+When hit, increase atk and regularly recover HP.
+Add light element.

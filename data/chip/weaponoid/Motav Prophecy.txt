@@ -1,0 +1,16 @@
+Weaponoid
+モタブの預言書
+http://pso2es.swiki.jp/index.php?plugin=attach&refer=%E3%83%A2%E3%82%BF%E3%83%96%E3%81%AE%E9%A0%90%E8%A8%80%E6%9B%B8&openfile=%E3%83%A2%E3%82%BF%E3%83%96%E3%81%AE%E9%A0%90%E8%A8%80%E6%9B%B82.png
+http://pso2es.swiki.jp/index.php?%E3%83%A2%E3%82%BF%E3%83%96%E3%81%AE%E9%A0%90%E8%A8%80%E6%9B%B8
+http://pso2.swiki.jp/index.php?%E3%83%A2%E3%82%BF%E3%83%96%E3%81%AE%E9%A0%90%E8%A8%80%E6%9B%B8
+Passive (25s)
+fo te
+12
+430
+15
+wind
+150
+30
+E
+When JA, increase damage by 160%/180% and add 80/90 to the element enemy is weak to.
+Increase activation time by 15s.

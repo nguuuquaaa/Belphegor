@@ -1,0 +1,16 @@
+Weaponoid
+ミリオブライト
+http://pso2es.swiki.jp/index.php?plugin=attach&refer=%E3%83%9F%E3%83%AA%E3%82%AA%E3%83%96%E3%83%A9%E3%82%A4%E3%83%88&openfile=%E3%83%9F%E3%83%AA%E3%82%AA%E3%83%96%E3%83%A9%E3%82%A4%E3%83%882.png
+http://pso2es.swiki.jp/index.php?%E3%83%9F%E3%83%AA%E3%82%AA%E3%83%96%E3%83%A9%E3%82%A4%E3%83%88
+http://pso2.swiki.jp/index.php?%E3%83%9F%E3%83%AA%E3%82%AA%E3%83%96%E3%83%A9%E3%82%A4%E3%83%88
+Passive (30s)
+hu bo
+11
+305
+28
+ice
+82
+17
+E
+When JA, increase damage by 80%/90%, further 50% more if equipped with Dual Blade.
+Add dark element.

@@ -1,0 +1,16 @@
+Weaponoid
+ビスケドロプ
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%83%93%E3%82%B9%E3%82%B1%E3%83%89%E3%83%AD%E3%83%97&src=%E3%83%93%E3%82%B9%E3%82%B1%E3%83%89%E3%83%AD%E3%83%972.png
+http://pso2es.swiki.jp/index.php?%E3%83%93%E3%82%B9%E3%82%B1%E3%83%89%E3%83%AD%E3%83%97
+http://pso2.swiki.jp/index.php?%E3%83%93%E3%82%B9%E3%82%B1%E3%83%89%E3%83%AD%E3%83%97
+Passive (25s)
+ra gu
+11
+329
+10
+light
+85
+23
+E+chase
+When JA, based on number of light chips equipped, increase damage, +14%/17% per light chip, and give extra damage, +8%/10% per light chip.
+Add dark to chip effect.

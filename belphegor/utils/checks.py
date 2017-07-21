@@ -17,5 +17,5 @@ def srank_only():
 def nsfw():
     return commands.check(lambda ctx:ctx.message.channel.name.startswith("nsfw"))
 	
-def otogi_server_only():
-	return commands.check(lambda ctx:ctx.message.guild.id==config.otogi_server_id or ctx.message.author.id==config.owner_id)
+def otogi_guild_only():
+	return commands.check(lambda ctx:ctx.message.guild.id==config.otogi_guild_id or ctx.message.author.id==config.owner_id)

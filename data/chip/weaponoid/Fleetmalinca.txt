@@ -1,0 +1,16 @@
+Weaponoid
+フリートマリンカ
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%82%A6%E3%82%A7%E3%83%9D%E3%83%8E%E3%82%A4%E3%83%89&src=%E3%83%95%E3%83%AA%E3%83%BC%E3%83%88%E3%83%9E%E3%83%AA%E3%83%B3%E3%82%AB2.png
+http://pso2es.swiki.jp/index.php?%E3%83%95%E3%83%AA%E3%83%BC%E3%83%88%E3%83%9E%E3%83%AA%E3%83%B3%E3%82%AB
+http://pso2.swiki.jp/index.php?%E3%83%95%E3%83%AA%E3%83%BC%E3%83%88%E3%83%9E%E3%83%AA%E3%83%B3%E3%82%AB
+Passive (25s)
+ra gu
+11
+346
+17
+fire
+91
+23
+E
+When JA, add burn to normal attack and increase damage by 100%/110%.
+Increase activation time by 10s.

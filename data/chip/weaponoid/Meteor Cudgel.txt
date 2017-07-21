@@ -1,0 +1,16 @@
+Weaponoid
+流星棍
+http://image.swiki.jp/img0/?host=pso2es&page=%E6%B5%81%E6%98%9F%E6%A3%8D&src=%E6%B5%81%E6%98%9F%E6%A3%8D2.PNG
+http://pso2es.swiki.jp/index.php?%E6%B5%81%E6%98%9F%E6%A3%8D
+http://pso2.swiki.jp/index.php?%E6%B5%81%E6%98%9F%E6%A3%8D
+Passive (?s)
+fi bo
+11
+387
+16
+ice
+82
+17
+E
+When JA, increase damage by 120% and prevent incapacitation once.
+N/A

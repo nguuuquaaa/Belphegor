@@ -1,0 +1,16 @@
+Weaponoid
+イデアルシザーズ
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%82%A4%E3%83%87%E3%82%A2%E3%83%AB%E3%82%B7%E3%82%B6%E3%83%BC%E3%82%BA&src=%E3%82%A4%E3%83%87%E3%82%A2%E3%83%AB%E3%82%B7%E3%82%B6%E3%83%BC%E3%82%BA%E8%A7%A3%E6%94%BE%E5%BE%8C.png
+http://pso2es.swiki.jp/index.php?%E3%82%A4%E3%83%87%E3%82%A2%E3%83%AB%E3%82%B7%E3%82%B6%E3%83%BC%E3%82%BA
+http://pso2.swiki.jp/index.php?%E3%82%A4%E3%83%87%E3%82%A2%E3%83%AB%E3%82%B7%E3%82%B6%E3%83%BC%E3%82%BA
+Active (60s)
+hu bo
+12
+450
+35
+ice
+120
+28
+E
+Speed up normal attack and movement, and increase damage based on number of ice chips equipped, 220%/230% base, +10% per ice chip.
+N/A

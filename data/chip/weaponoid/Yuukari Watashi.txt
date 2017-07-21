@@ -1,0 +1,16 @@
+Weaponoid
+夕雁渡
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%82%A6%E3%82%A7%E3%83%9D%E3%83%8E%E3%82%A4%E3%83%89&src=%E5%A4%95%E9%9B%81%E6%B8%A12.png
+http://pso2es.swiki.jp/index.php?%E5%A4%95%E9%9B%81%E6%B8%A1
+http://pso2.swiki.jp/index.php?%E5%A4%95%E9%9B%81%E6%B8%A1
+Passive (30s)
+fo bo
+11
+273
+11
+lightning
+81
+23
+E
+When JA, based on number of lightning chip equipped, increase damage 17%/20% base, +18%/20% per lightning chip, and increase max HP, +7%/8.33% per lightning chip.
+Add fire to chip effect.

@@ -1,0 +1,16 @@
+Weaponoid
+ニレンカムイ
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%83%8B%E3%83%AC%E3%83%B3%E3%82%AB%E3%83%A0%E3%82%A4&src=%E3%83%8B%E3%83%AC%E3%83%B3%E3%82%AB%E3%83%A0%E3%82%A4b2.png
+http://pso2es.swiki.jp/index.php?%E3%83%8B%E3%83%AC%E3%83%B3%E3%82%AB%E3%83%A0%E3%82%A4
+http://pso2.swiki.jp/index.php?%E3%83%8B%E3%83%AC%E3%83%B3%E3%82%AB%E3%83%A0%E3%82%A4
+Passive (25s)
+fi te
+11
+299
+22
+ice
+77
+23
+E
+When JA, increase damage by 100%/120% when CP is 60 or less.
+Reduce cost by 6.

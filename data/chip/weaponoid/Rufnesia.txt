@@ -1,0 +1,16 @@
+Weaponoid
+ルフネシア
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%83%AB%E3%83%95%E3%83%8D%E3%82%B7%E3%82%A2&src=%E3%83%AB%E3%83%95%E3%83%8D%E3%82%B7%E3%82%A22.png
+http://pso2es.swiki.jp/index.php?%E3%83%AB%E3%83%95%E3%83%8D%E3%82%B7%E3%82%A2
+http://pso2.swiki.jp/index.php?%E3%83%AB%E3%83%95%E3%83%8D%E3%82%B7%E3%82%A2
+Passive (25s)
+gu br
+11
+309
+19
+light
+101
+23
+D
+When JA, increase damage by 120%/140% against light-weak enemies, and reduce damage taken by 30%.
+N/A

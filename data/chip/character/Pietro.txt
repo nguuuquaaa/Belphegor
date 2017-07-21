@@ -1,0 +1,15 @@
+Character
+ピエトロ
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%83%94%E3%82%A8%E3%83%88%E3%83%AD&src=%E3%83%94%E3%82%A8%E3%83%88%E3%83%AD2.png
+http://pso2es.swiki.jp/index.php?%E3%83%94%E3%82%A8%E3%83%88%E3%83%AD
+http://pso2.swiki.jp/index.php?%E7%99%BB%E5%A0%B4NPC%2F%E3%83%94%E3%82%A8%E3%83%88%E3%83%AD
+Passive (Instantaneous)
+fo te
+11
+176
+36
+light
+95
+17
+Chase
+When hit, give extra damage based on number of discovered enemy chips in chip library, +0.778% per chip, cap at 130%

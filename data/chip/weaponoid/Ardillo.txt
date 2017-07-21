@@ -1,0 +1,16 @@
+Weaponoid
+アーディロウ
+url_thumbnail
+http://pso2es.swiki.jp/index.php?%E3%82%A2%E3%83%BC%E3%83%87%E3%82%A3%E3%83%AD%E3%82%A6
+http://pso2.swiki.jp/index.php?%E3%82%A2%E3%83%BC%E3%83%87%E3%82%A3%E3%83%AD%E3%82%A6
+Passive (15s)
+hu br
+12
+457
+31
+ice
+126
+28
+E
+When JA, increase damage by 195%, and each time a chip activate, further increase more based on number of ice chip equipped, +1% per ice chip, total cap at 300%, and extend activation time.
+N/A

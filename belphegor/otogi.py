@@ -55,7 +55,7 @@ class Daemon:
     def to_file(self):
         jsonable = self.__dict__
         with codecs.open(config.data_path+"daemon/daemon/"+self.alias+".json", "w+", encoding="utf-8") as file:
-            json.dump(jsonable, file, ensure_ascii=False)
+            json.dump(jsonable, file, indent=4, ensure_ascii=False)
 
     @property
     def true_url(self):
@@ -116,7 +116,7 @@ class Player:
                     "daemons": [d.__dict__ for d in self.daemons],
                     "exchange": self.exchange}
         with codecs.open(config.data_path + "daemon/simulation/player/" + str(self.member_id) + ".json", "w+", encoding="utf-8") as file:
-            json.dump(jsonable, file, ensure_ascii=False)
+            json.dump(jsonable, file, indent=4, ensure_ascii=False)
 
     def sort_daemons(self):
         self.daemons.sort(key = lambda x: (x.name, -x.lb))
@@ -156,10 +156,10 @@ class OtogiBot():
         with codecs.open(config.data_path + "daemon/simulation/summon/jewel.json", encoding="utf-8") as file:
             self.summon = json.load(file)
 
-        test_server = self.bot.get_guild(config.test_server_id)
+        test_guild = self.bot.get_guild(config.test_guild_id)
         self.emoji = {}
         for emoji_name in ("atk", "hp", "skill", "ability", "bond", "star", "mochi"):
-            self.emoji[emoji_name] = discord.utils.find(lambda e:e.name==emoji_name, test_server.emojis)
+            self.emoji[emoji_name] = discord.utils.find(lambda e:e.name==emoji_name, test_guild.emojis)
 
     def _search(self, name):
         result = []
@@ -239,32 +239,6 @@ class OtogiBot():
         embed.add_field(name="Current members of "+group, value="\n".join([str(i+1)+". "+g for i, g in enumerate(self.groups[group])]))
         await ctx.send(embed=embed)
 
-    def _find_player(self, member_id):
-        return Player.from_file(member_id)
-
-    @commands.command(aliases=["ls"])
-    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
-    async def lunchsummon(self, ctx):
-        player = self._find_player(ctx.message.author.id)
-        roll = random.randint(1,100)
-        if 0 < roll <= 4:
-            rarity = "5"
-        elif 4 < roll <= 22:
-            rarity = "4"
-        else:
-            rarity = "3"
-        daemon = random.choice(self.summon[rarity])
-        player.summon(daemon, int(rarity))
-        embed = discord.Embed(title=ctx.message.author.display_name+" summoned " + daemon + "!", colour=discord.Colour.orange())
-        data = self.daemons[daemon].true_url.split("?cb=")
-        try:
-            code = data[1].split("&")
-            scale_url = data[0] + "/scale-to-width-down/250?cb=" + code[0]
-        except:
-            scale_url = self.daemons[daemon].true_url
-        embed.set_image(url=scale_url)
-        await ctx.send(embed=embed)
-
     @commands.group()
     async def update(self, ctx):
         if ctx.invoked_subcommand is None:
@@ -283,7 +257,7 @@ class OtogiBot():
             await ctx.send(embed=embed)
 
     @update.command()
-    @checks.otogi_server_only()
+    @checks.otogi_guild_only()
     async def create(self, ctx, *, data:str):
         data = [d for d in data.splitlines() if d]
         new_daemon = {}
@@ -309,14 +283,14 @@ class OtogiBot():
                     else:
                         new_daemon["skill"].append({"name": d, "value": data[i+1]})
             with codecs.open(config.data_path+"daemon/daemon/"+data[1]+".json", "w+", encoding="utf-8") as file:
-                json.dump(new_daemon, file, ensure_ascii=False)
+                json.dump(new_daemon, file, indent=4, ensure_ascii=False)
             self.daemons[new_daemon["name"]] = Daemon.from_file(data[1])
-            await ctx.send("Added.")
+            await ctx.send(f"An entry for {new_daemon['name']} has been created.")
         except:
             await ctx.send("Wrong format.")
 
     @update.command()
-    @checks.otogi_server_only()
+    @checks.owner_only()
     async def delete(self, ctx, *, name:str):
         result = self._search(name)
         if not result:
@@ -334,11 +308,12 @@ class OtogiBot():
             except:
                 return
         os.remove(config.data_path+"daemon/daemon/"+daemon.alias+".json")
+        name_remember = daemon.name.deepcopy()
         del self.daemons[daemon.name]
-        await ctx.send("Deleted.")
+        await ctx.send(f"The entry for {name_remember} has been deleted.")
 
     @update.command()
-    @checks.otogi_server_only()
+    @checks.otogi_guild_only()
     async def edit(self, ctx, *, data:str):
         data = [d for d in data.splitlines() if d]
         name = data[0]
@@ -357,25 +332,41 @@ class OtogiBot():
                     return
             except:
                 return
-        with codecs.open(config.data_path+"daemon/daemon/"+daemon.alias+".json", encoding="utf-8") as file:
-            d = json.load(file)
         if data[1] in daemon.__dict__:
+            os.remove(config.data_path+"daemon/daemon/"+daemon.alias+".json")
             if data[1] in ("skill", "ability", "bond"):
                 sab = []
                 for ab, cd in enumerate(data):
                     if ab > 1 and ab%2 == 0:
                         sab.append({"name": cd, "value": data[ab+1]})
                 setattr(daemon, data[1], sab)
+            elif data[1] == "name":
+                for filename in os.listdir(f"{config.data_path}daemon/simulation/player"):
+                    with codecs.open(f"{config.data_path}daemon/simulation/player/{filename}", encoding="utf-8") as file:
+                        jsonable = json.load(file)
+                    for i, d in enumerate(jsonable["daemons"]):
+                        if d["name"] == daemon.name:
+                            jsonable["daemons"][i]["name"] = data[2]
+                    with codecs.open(f"{config.data_path}daemon/simulation/player/{filename}", "w+", encoding="utf-8") as file:
+                        json.dump(jsonable, file, indent=4, ensure_ascii=False)
+                with codecs.open(f"{config.data_path}daemon/simulation/summon/jewel.json", encoding="utf-8") as file:
+                    jsonable = json.load(file)
+                for r, ds in jsonable.items():
+                    for i, d in enumerate(ds):
+                        if d == daemon.name:
+                            jsonable[r][i] = data[2]
+                with codecs.open(f"{config.data_path}daemon/simulation/summon/jewel.json", "w+", encoding="utf-8") as file:
+                    json.dump(jsonable, file, indent=4, ensure_ascii=False)
+                setattr(daemon, data[1], data[2])
             else:
                 setattr(daemon, data[1], data[2])
-            os.remove(config.data_path+"daemon/daemon/"+daemon.alias+".json")
             daemon.to_file()
-            await ctx.send("Edited.")
+            await ctx.send(f"The entry for {daemon.name} has been edited.")
         else:
             await ctx.send("Wrong format.")
 
     @update.command(name="summon")
-    @checks.otogi_server_only()
+    @checks.otogi_guild_only()
     async def _summon(self, ctx, rarity:int, *, name:str):
         result = self._search(name)
         if not result:
@@ -397,12 +388,12 @@ class OtogiBot():
         if rarity in (3, 4, 5):
             summon[str(rarity)].append(daemon.name)
         with codecs.open(config.data_path + "daemon/simulation/summon/jewel.json", "w+", encoding="utf-8") as file:
-            json.dump(summon, file, ensure_ascii=False)
+            json.dump(summon, file, indent=4, ensure_ascii=False)
         self.summon = summon
-        await ctx.send("Summon added.")
+        await ctx.send(f"The {rarity}* daemon {daemon.name} has been added to summon pool.")
 
     @update.command()
-    @checks.otogi_server_only()
+    @checks.owner_only()
     async def nosummon(self, ctx, *, name:str):
         result = self._search(name)
         if not result:
@@ -426,11 +417,11 @@ class OtogiBot():
                     self.summon[key].pop(index)
                     break
         with codecs.open(config.data_path + "daemon/simulation/summon/jewel.json", "w+", encoding="utf-8") as file:
-            json.dump(summon, file, ensure_ascii=False)
-        await ctx.send("Summon removed.")
+            json.dump(self.summon, file, indent=4, ensure_ascii=False)
+        await ctx.send(f"The daemon {daemon.name} has been removed from summon pool.")
 
     @update.command(name="group")
-    @checks.otogi_server_only()
+    @checks.otogi_guild_only()
     async def group_update(self, ctx, *, data:str):
         data = [d for d in data.splitlines() if d]
         try:
@@ -463,13 +454,13 @@ class OtogiBot():
             self.groups[group] = [daemon.name,]
             self.tags[group] = group
         with codecs.open(config.data_path + "daemon/group/groups.json", "w+", encoding="utf-8") as file:
-            json.dump(self.groups, file, ensure_ascii=False)
+            json.dump(self.groups, file, indent=4, ensure_ascii=False)
         with codecs.open(config.data_path + "daemon/group/tags.json", "w+", encoding="utf-8") as file:
-            json.dump(self.tags, file, ensure_ascii=False)
-        await ctx.send("Group updated.")
+            json.dump(self.tags, file, indent=4, ensure_ascii=False)
+        await ctx.send(f"The daemon {daemon.name} has been added to group {group}.")
 
     @update.command(name="tag")
-    @checks.otogi_server_only()
+    @checks.otogi_guild_only()
     async def group_tag(self, ctx, *, data:str):
         data = [d for d in data.splitlines() if d]
         try:
@@ -482,12 +473,13 @@ class OtogiBot():
                 self.groups[group] = []
             else:
                 return
-        self.tags[data[0]] = group
+        tag = data[0].strip()
+        self.tags[tag] = group
         with codecs.open(config.data_path + "daemon/group/groups.json", "w+", encoding="utf-8") as file:
-            json.dump(self.groups, file, ensure_ascii=False)
+            json.dump(self.groups, file, indent=4, ensure_ascii=False)
         with codecs.open(config.data_path + "daemon/group/tags.json", "w+", encoding="utf-8") as file:
-            json.dump(self.tags, file, ensure_ascii=False)
-        await ctx.send("Tag updated.")
+            json.dump(self.tags, file, indent=4, ensure_ascii=False)
+        await ctx.send(f"The group {group} has been tagged with {tag.replace(' ', ', ')}")
 
     @update.command()
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
@@ -510,7 +502,7 @@ class OtogiBot():
         new_daemon = await self.bot.loop.run_in_executor(None, self._search_wikia, daemon)
         self.daemons[new_daemon.name] = new_daemon
         new_daemon.to_file()
-        await ctx.send("Updated.")
+        await ctx.send(f"The entry for {daemon.name} has been updated with latest information from wikia.")
 
     def _search_wikia(self, daemon):
         try:
@@ -528,8 +520,8 @@ class OtogiBot():
 
         for script in bs_data(["script", "style"]):
             script.extract()
-        text = bs_data.get_text().replace(u'\xa0', u' ')
-        text = re.sub(r'\n\s*\n', r'\n', text.strip(), flags=re.M)
+        text = bs_data.get_text().replace(u"\xa0", u" ").replace("250px", "")
+        text = re.sub(r"\n\s*\n", r"\n", text.strip(), flags=re.M)
         unprocess_data = text.split("Comments")[1]
         data = unprocess_data[unprocess_data.find(daemon.name):]
         data = data[:data.find("Voice Actor")]
@@ -580,6 +572,32 @@ class OtogiBot():
         self.__init__(self.bot)
         await ctx.send("Daemon database updated.")
 
+    @commands.command(aliases=["ls"])
+    @commands.cooldown(rate=1, per=1, type=commands.BucketType.user)
+    async def lunchsummon(self, ctx):
+        player = self._find_player(ctx.message.author.id)
+        roll = random.randint(1,100)
+        if 0 < roll <= 4:
+            rarity = "5"
+        elif 4 < roll <= 22:
+            rarity = "4"
+        else:
+            rarity = "3"
+        daemon = random.choice(self.summon[rarity])
+        player.summon(daemon, int(rarity))
+        embed = discord.Embed(title=ctx.message.author.display_name+" summoned " + daemon + "!", colour=discord.Colour.orange())
+        data = self.daemons[daemon].true_url.split("?cb=")
+        try:
+            code = data[1].split("&")
+            scale_url = data[0] + "/scale-to-width-down/250?cb=" + code[0]
+        except:
+            scale_url = self.daemons[daemon].true_url
+        embed.set_image(url=scale_url)
+        await ctx.send(embed=embed)
+
+    def _find_player(self, member_id):
+        return Player.from_file(member_id)
+
     @commands.command()
     async def mybox(self, ctx, *, member:discord.Member=None):
         try:
@@ -589,26 +607,71 @@ class OtogiBot():
             target = ctx.message.author
             player = self._find_player(target.id)
         player.sort_daemons()
-        embed = discord.Embed(title="Mochi: {}{}".format(player.mochi, self.emoji["mochi"]), colour=discord.Colour.blue())
-        embed.set_author(name=target.display_name+"'s box", icon_url=target.avatar_url)
+        mybox_daemons = {3: [], 4: [], 5: []}
+        rare = {3: 0, 4: 0, 5: 0}
+        for daemon in player.daemons:
+            r = daemon.rarity
+            page = rare[r] // 20
+            if rare[r] % 20 == 0:
+                mybox_daemons[r].append("")
+            mybox_daemons[r][page] = f"{mybox_daemons[r][page]}{daemon.name} lb{daemon.lb}\n"
+            rare[r] += 1
 
-        def data(i):
-            des = ""
-            for daemon in player.daemons:
-                if daemon.rarity == i:
-                    des += daemon.name + " lb" + str(daemon.lb) + "\n"
-            if des:
-                if len(des)>800:
-                    return des[:800] + "...>>"
+        def data(page:int):
+            embed = discord.Embed(title="Mochi: {}{}".format(player.mochi, self.emoji["mochi"]), colour=discord.Colour.blue())
+            embed.set_author(name=target.display_name+"'s box", icon_url=target.avatar_url)
+            cur3 = min(page+1, max_pages[3])
+            cur4 = min(page+1, max_pages[4])
+            cur5 = min(page+1, max_pages[5])
+            embed.add_field(name="{0}{0}{0}".format(self.emoji["star"]), value=f"{mybox_daemons[3][cur3-1]}\n(Page {cur3}/{max_pages[3]})" if mybox_daemons[3] else "None")
+            embed.add_field(name="{0}{0}{0}{0}".format(self.emoji["star"]), value=f"{mybox_daemons[4][cur4-1]}\n(Page {cur4}/{max_pages[4]})" if mybox_daemons[4] else "None")
+            embed.add_field(name="{0}{0}{0}{0}{0}".format(self.emoji["star"]), value=f"{mybox_daemons[5][cur5-1]}\n(Page {cur5}/{max_pages[5]})" if mybox_daemons[5] else "None", inline=False)
+            embed.set_footer(text="Use reactions below to navigate pages.")
+            return embed
+
+        max_pages = {3: len(mybox_daemons[3]), 4: len(mybox_daemons[4]), 5: len(mybox_daemons[5])}
+        max_page = max(max_pages)
+        current_page = 0
+        message = await ctx.send(embed=data(0))
+        possible_reactions = ("\u23ee", "\u23ed", "\u274c")
+        for r in possible_reactions:
+            await message.add_reaction(r)
+        while True:
+            try:
+                reaction, user = await self.bot.wait_for("reaction_add", check=lambda r, u:u.id==target.id and r.emoji in possible_reactions, timeout=20)
+            except:
+                try:
+                    await message.clear_reactions()
+                except:
+                    pass
+                break
+            if reaction.emoji == "\u23ee":
+                try:
+                    await message.remove_reaction(reaction, user)
+                except:
+                    pass
+                if current_page == 0:
+                    continue
                 else:
-                    return des
+                    current_page -= 1
+                    await message.edit(embed=data(current_page))
+            elif reaction.emoji == "\u23ed":
+                try:
+                    await message.remove_reaction(reaction, user)
+                except:
+                    pass
+                if current_page == max_page - 1:
+                    continue
+                else:
+                    current_page += 1
+                    await message.edit(embed=data(current_page))
             else:
-                return "None"
-        embed.add_field(name="{0}{0}{0}".format(self.emoji["star"]), value=data(3))
-        embed.add_field(name="{0}{0}{0}{0}".format(self.emoji["star"]), value=data(4))
-        embed.add_field(name="{0}{0}{0}{0}{0}".format(self.emoji["star"]), value=data(5), inline=False)
-        embed.set_footer(text="If you see \"...>>\" it means your daemon list is too long. Consider using [>>mochiall].")
-        await ctx.send(embed=embed)
+                try:
+                    await message.clear_reactions()
+                except:
+                    pass
+                break
+
 
     def _mini_search(self, player, name, lb):
         result = self._search(name)
@@ -719,7 +782,6 @@ class OtogiBot():
                 for i, d in enumerate(player.daemons):
                     if d.name==all_them[last].name and d.lb==all_them[last].lb:
                         player.daemons.pop(i)
-                        break
                 all_them.pop(last)
                 last -= 1
             else:
@@ -729,8 +791,8 @@ class OtogiBot():
     async def limitbreak(self, ctx, *, name=None):
         player = self._find_player(ctx.message.author.id)
         if name:
-            good_name = self._process_name(player, name)
-            self.lb_that(player, good_name)
+            daemon = self._process_name(player, name)
+            self.lb_that(player, daemon.name)
         else:
             all_names = []
             for d in player.daemons:

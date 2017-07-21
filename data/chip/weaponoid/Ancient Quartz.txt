@@ -1,0 +1,16 @@
+Weaponoid
+エンシェントクォーツ
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%82%A8%E3%83%B3%E3%82%B7%E3%82%A7%E3%83%B3%E3%83%88%E3%82%AF%E3%82%A9%E3%83%BC%E3%83%84&src=%E3%82%A8%E3%83%B3%E3%82%B7%E3%82%A7%E3%83%B3%E3%83%88%E3%82%AF%E3%82%A9%E3%83%BC%E3%83%842.png
+http://pso2es.swiki.jp/index.php?%E3%82%A8%E3%83%B3%E3%82%B7%E3%82%A7%E3%83%B3%E3%83%88%E3%82%AF%E3%82%A9%E3%83%BC%E3%83%84
+http://pso2.swiki.jp/index.php?%E3%82%A8%E3%83%B3%E3%82%B7%E3%82%A7%E3%83%B3%E3%83%88%E3%82%AF%E3%82%A9%E3%83%BC%E3%83%84
+Active (60s)
+fi bo
+11
+230
+42
+lightning
+86
+23
+A
+Increase PA and technique damage by 145%/150% while increase CP cost by 25%.
+N/A

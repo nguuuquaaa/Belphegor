@@ -1,0 +1,16 @@
+Weaponoid
+セイントフェザー
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%82%BB%E3%82%A4%E3%83%B3%E3%83%88%E3%83%95%E3%82%A7%E3%82%B6%E3%83%BC&src=%E3%82%BB%E3%82%A4%E3%83%B3%E3%83%88%E3%83%95%E3%82%A7%E3%82%B6%E3%83%BC2.png
+http://pso2es.swiki.jp/index.php?%E3%82%BB%E3%82%A4%E3%83%B3%E3%83%88%E3%83%95%E3%82%A7%E3%82%B6%E3%83%BC
+http://pso2.swiki.jp/index.php?%E3%82%BB%E3%82%A4%E3%83%B3%E3%83%88%E3%83%95%E3%82%A7%E3%82%B6%E3%83%BC
+Active (60s)
+fo te
+11
+380
+13
+light
+73
+22
+E
+Increase damage by 110%, and recover HP regularly based on number of light chip equipped.
+N/A

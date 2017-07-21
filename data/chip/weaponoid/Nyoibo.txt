@@ -1,0 +1,16 @@
+Weaponoid
+ニョイボウ
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%82%A6%E3%82%A7%E3%83%9D%E3%83%8E%E3%82%A4%E3%83%89&src=%E3%83%8B%E3%83%A7%E3%82%A4%E3%83%9C%E3%82%A62.png
+http://pso2es.swiki.jp/index.php?%E3%83%8B%E3%83%A7%E3%82%A4%E3%83%9C%E3%82%A6
+http://pso2.swiki.jp/index.php?%E3%83%8B%E3%83%A7%E3%82%A4%E3%83%9C%E3%82%A6
+Active (50s)
+ra fi
+11
+255
+20
+wind
+85
+23
+E
+Increase damage based on ability level, 44%/55% base, +4%/5% per level, max 80%/100%.
+Increase activation time by 10s.

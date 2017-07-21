@@ -1,0 +1,16 @@
+Weaponoid
+ヤシャ
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%83%A4%E3%82%B7%E3%83%A3&src=%E3%83%A4%E3%82%B7%E3%83%A3.png
+http://pso2es.swiki.jp/index.php?%E3%83%A4%E3%82%B7%E3%83%A3
+http://pso2.swiki.jp/index.php?%E3%83%A4%E3%82%B7%E3%83%A3
+Passive (?s)
+te br
+11
+324
+19
+dark
+79
+23
+C
+When JA, add poison to normal attack and increase damage against poisoned enemies.
+N/A

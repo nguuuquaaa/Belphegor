@@ -8,10 +8,11 @@ class HelpBot:
     def __init__(self, bot):
         self.bot = bot
         self.bot.remove_command("help")
-        test_server = self.bot.get_guild(config.test_server_id)
+        test_guild = self.bot.get_guild(config.test_guild_id)
+        self.otogi_guild = self.bot.get_guild(config.otogi_guild_id)
         self.emoji = {}
         for emoji_name in ("mochi", "hu", "ranged"):
-            self.emoji[emoji_name] = discord.utils.find(lambda e:e.name==emoji_name, test_server.emojis)
+            self.emoji[emoji_name] = discord.utils.find(lambda e:e.name==emoji_name, test_guild.emojis)
 
     @commands.group()
     async def help(self, ctx):
@@ -27,19 +28,20 @@ class HelpBot:
                             "`>>help music` - Music commands\n"
                             "`>>help react` - Reactions")
             embed.add_field(name="Misc.", value=
-                            "`>>jankenpon` - Play jankenpon with {}\n"
+                            f"`>>jankenpon` - Play jankenpon with {self.bot.user.name}\n"
                             "`>>dice <maxside> <amount>` - Roll dices\n"
                             "`>>avatar` - Get your or a user avatar\n"
-                            "`>>stats` - Bot info".format(self.bot.user.name))
+                            "`>>fancy` - Fancilize a sentence\n"
+                            "`>>welcome` - Set welcome message on the channel invoked\n"
+                            "`>>stats` - Bot info")
             embed.set_footer(text="Prefix: >>, !! or bot mention")
             await ctx.send(embed=embed)
 
     @help.command()
     async def otogi(self, ctx):
         embed = discord.Embed(title="{} Otogi Spirit Agents".format(self.emoji["mochi"]), colour = discord.Colour.teal())
-        otogi_guild = self.bot.get_guild(config.otogi_guild_id)
         try:
-            embed.set_thumbnail(url=otogi_guild.icon_url)
+            embed.set_thumbnail(url=self.otogi_guild.icon_url)
         except:
             pass
         embed.add_field(name="Database", value=
@@ -82,7 +84,7 @@ class HelpBot:
         embed = discord.Embed(title="Reactions", colour = discord.Colour.teal())
         embed.add_field(name="Anime gif", value=
                         "`>>wut`, `>>huh` - Nani the fuck?\n\n"
-                        "`>>shock`, `>>shocked` - Even {} is shocked!\n\n"
+                        f"`>>shock`, `>>shocked` - Even {self.bot.user.name} is shocked!\n\n"
                         "`>>fliptable`, `>>tableflip` - (╯°□°）╯︵ ┻━┻\n\n"
                         "`>>lmao`, `>>lol` - Bwhahahaha!!\n\n"
                         "`>>gotohell`, `>>damnyou` - I heard you rolled 5 SSRs in one 10x pull?\n\n"
@@ -91,7 +93,7 @@ class HelpBot:
                         "`>>goodnight`, `>>g9` - Oyasunight\n\n"
                         "`>>morepls`, `>>lewdpls` - ( ͡° ͜ʖ ͡°)\n\n"
                         "`>>cry` - I'm just sweating through my eyes\n\n"
-                        "`>>loli` - I swear she's hundreds years old!\n\n".format(self.bot.user.name))
+                        "`>>loli` - I swear she's hundreds years old!\n\n")
         await ctx.send(embed=embed)
 
     @help.command()
@@ -99,12 +101,15 @@ class HelpBot:
         embed = discord.Embed(title=":notes:Music", colour = discord.Colour.teal())
         embed.add_field(name="Subcommands", value=
                         "`queue`, `q` - Search youtube and queue a song\n"
-                        "`join`, `j` - Have {0} join the voice channel you are currently in and play everything in queue\n"
+                        f"`join`, `j` - Have {self.bot.user.display_name} join the voice channel you are currently in and play everything in queue\n"
                         "`skip`, `s` - Skip current song\n"
-                        "`leave`, `l` - Have {0} leave the voice channel".format(self.bot.user.display_name))
+                        f"`leave`, `l` - Have {self.bot.user.display_name} leave the voice channel\n"
+                        "`volume`, `v` - Set volume, must be between 0 and 200\n"
+                        "`repeat`, `r` - Toggle repeat mode")
         embed.add_field(name="Notes", value=
                         "A subcommand is meant to be used with main command.\n"
-                        "For example, `>>m q fukkireta` is a valid command.")
+                        "For example, `>>m q fukkireta` is a valid command.\n\n"
+                        "*Also the music command is quite unstable due to my bad internet connection.*")
         await ctx.send(embed=embed)
 
 #======================================================================================================

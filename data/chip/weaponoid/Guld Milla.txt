@@ -1,0 +1,16 @@
+Weaponoid
+ガルド・ミラ
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%82%AC%E3%83%AB%E3%83%89%E3%83%BB%E3%83%9F%E3%83%A9&src=%E3%82%AC%E3%83%AB%E3%83%89%E3%83%BB%E3%83%9F%E3%83%A92.png
+http://pso2es.swiki.jp/index.php?%E3%82%AC%E3%83%AB%E3%83%89%E3%83%BB%E3%83%9F%E3%83%A9
+http://pso2.swiki.jp/index.php?%E3%82%AC%E3%83%AB%E3%83%89%E3%83%BB%E3%83%9F%E3%83%A9
+Passive (30s)
+gu br
+12
+350
+45
+dark
+145
+30
+E
+When hit, increase damage by 210%/215% and leech 1% damage deal, cap at 3% HP.
+N/A

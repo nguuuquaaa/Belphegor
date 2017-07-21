@@ -1,0 +1,16 @@
+Weaponoid
+リンドクレイ
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%82%A6%E3%82%A7%E3%83%9D%E3%83%8E%E3%82%A4%E3%83%89&src=%E3%83%AA%E3%83%B3%E3%83%89%E3%82%AF%E3%83%AC%E3%82%A42.png
+http://pso2es.swiki.jp/index.php?%E3%83%AA%E3%83%B3%E3%83%89%E3%82%AF%E3%83%AC%E3%82%A4
+http://pso2.swiki.jp/index.php?%E3%83%AA%E3%83%B3%E3%83%89%E3%82%AF%E3%83%AC%E3%82%A4
+Passive (25s)
+hu br
+11
+314
+18
+light
+75
+23
+C
+When JA, add panic to normal attack and increase damage by 90%/100% against panicked enemies.
+Reduce cost by 6.

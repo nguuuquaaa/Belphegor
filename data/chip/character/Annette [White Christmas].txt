@@ -1,0 +1,15 @@
+Illustration
+アネット［ホワイトクリスマス］
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%82%A2%E3%83%8D%E3%83%83%E3%83%88%EF%BC%BB%E3%83%9B%E3%83%AF%E3%82%A4%E3%83%88%E3%82%AF%E3%83%AA%E3%82%B9%E3%83%9E%E3%82%B9%EF%BC%BD&src=%E3%82%A2%E3%83%8D%E3%83%83%E3%83%88%EF%BC%BBS%E3%83%9B%E3%83%AF%E3%82%A4%E3%83%88%E3%82%AF%E3%83%AA%E3%82%B9%E3%83%9E%E3%82%B9%EF%BC%BD.png
+http://pso2es.swiki.jp/index.php?%E3%82%A2%E3%83%8D%E3%83%83%E3%83%88%EF%BC%BB%E3%83%9B%E3%83%AF%E3%82%A4%E3%83%88%E3%82%AF%E3%83%AA%E3%82%B9%E3%83%9E%E3%82%B9%EF%BC%BD
+http://pso2.swiki.jp/index.php?%E7%99%BB%E5%A0%B4NPC%2F%E3%82%A2%E3%83%8D%E3%83%83%E3%83%88
+Passive (30s)
+ra bo
+12
+350
+34
+lightning
+135
+26
+B
+When JA, increase damage by 140%/160% against native, dragonkin, mech and oceanid.

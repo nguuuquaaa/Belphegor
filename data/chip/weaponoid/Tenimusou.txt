@@ -1,0 +1,16 @@
+Weaponoid
+テンイムソウ
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%82%A6%E3%82%A7%E3%83%9D%E3%83%8E%E3%82%A4%E3%83%89&src=%E3%83%86%E3%83%B3%E3%82%A4%E3%83%A0%E3%82%BD%E3%82%A62.png
+http://pso2es.swiki.jp/index.php?%E3%83%86%E3%83%B3%E3%82%A4%E3%83%A0%E3%82%BD%E3%82%A6
+http://pso2.swiki.jp/index.php?%E3%83%86%E3%83%B3%E3%82%A4%E3%83%A0%E3%82%BD%E3%82%A6
+Passive (25s)
+fi bo
+12
+440
+23
+lightning
+159
+30
+E
+When JA, increase damage by 150%/165% and leech 2% damage deal, cap at 5% HP.
+Increase activation time by 15s.

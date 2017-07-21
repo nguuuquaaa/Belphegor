@@ -26,7 +26,7 @@ class FFmpegWithBuffer(discord.FFmpegPCMAudio):
     def __init__(self, *args, **kwargs):
         discord.FFmpegPCMAudio.__init__(self, *args, **kwargs)
 
-        self._buffer = Buffer(3000)
+        self._buffer = Buffer(6000)
         thread = threading.Thread(target=self.read_buffer, args=())
         thread.daemon = True
         thread.start()
@@ -62,7 +62,7 @@ class Song:
             url = audio.url
         except:
             url = video.streams[-1].url
-        self.music = FFmpegWithBuffer(url, before_options="-reconnect 1 -reconnect_at_eof 1 -reconnect_streamed 1 -reconnect_delay_max 2")
+        self.music = discord.PCMVolumeTransformer(FFmpegWithBuffer(url, before_options="-reconnect 1 -reconnect_at_eof 1 -reconnect_streamed 1 -reconnect_delay_max 2"), volume=1)
 
 
 
@@ -74,6 +74,7 @@ class MusicPlayer:
         self.current_song = None
         self.player = None
         self.play_next_song = asyncio.Event()
+        self.repeat = False
 
     def ready_to_play(self, voice_client):
         self.voice_client = voice_client
@@ -95,12 +96,13 @@ class MusicPlayer:
         def next_part(e):
             if e:
                 print(e)
-            self.current_song = None
             self.bot.loop.call_soon_threadsafe(self.play_next_song.set)
 
         while True:
             self.play_next_song.clear()
             if not self.current_song:
+                self.current_song = await self.queue.get()
+            elif not self.repeat:
                 self.current_song = await self.queue.get()
             self.current_song.raw_update()
             await self.current_song.channel.send("Playing **{}** requested by {}.".format(self.current_song.title, self.current_song.requestor.display_name))
@@ -202,6 +204,25 @@ class MusicBot:
     async def skip(self, ctx):
         music_player = self.get_music_player(ctx.message.guild)
         music_player.skip()
+
+    @music.command(aliases=["v",])
+    async def volume(self, ctx, vol:int):
+        music_player = self.get_music_player(ctx.message.guild)
+        if 0 <= vol <= 200:
+            music_player.current_song.music.volume = vol / 100
+            await ctx.send(f"Volume has been set to {vol}%.")
+        else:
+            await ctx.send("Volume must be between 0 and 200.")
+
+    @music.command(aliases=["r",])
+    async def repeat(self, ctx):
+        music_player = self.get_music_player(ctx.message.guild)
+        if music_player.repeat:
+            music_player.repeat = False
+            await ctx.send("Repeat mode has been turned off.")
+        else:
+            music_player.repeat = True
+            await ctx.send("Repeat mode has been turned on.")
 
 
 

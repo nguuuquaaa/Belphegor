@@ -1,0 +1,15 @@
+Character
+ヒツギ
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%83%92%E3%83%84%E3%82%AE&src=%E7%94%A6%E3%82%8A%E3%81%97%E5%B0%8E%E3%81%8D%E3%81%AE%E5%85%89%20%E3%83%92%E3%83%84%E3%82%AE.png
+http://pso2es.swiki.jp/index.php?%E3%83%92%E3%83%84%E3%82%AE
+http://pso2.swiki.jp/index.php?%E7%99%BB%E5%A0%B4NPC%2F%E3%83%92%E3%83%84%E3%82%AE
+Passive (25s)
+hu br
+12
+406
+19
+fire
+120
+26
+E+H
+When hit, increase damage by 140%/150%, and increase damage by 25% if equipped weapon is fire element.

@@ -86,11 +86,11 @@ class EsBot():
                 with codecs.open(config.chip_path+chip_type+"/"+i, encoding='utf-8') as file:
                     new_chip = Chip.from_file(i[:-4], file)
                     self.chip_library.append(new_chip)
-        test_server = self.bot.get_guild(config.test_server_id)
+        test_guild = self.bot.get_guild(config.test_guild_id)
         self.emoji = {}
         for emoji_name in ("fire", "ice", "lightning", "wind", "light", "dark",
                            "hu", "fi", "ra", "gu", "fo", "te", "br", "bo"):
-            self.emoji[emoji_name] = discord.utils.find(lambda e:e.name==emoji_name, test_server.emojis)
+            self.emoji[emoji_name] = discord.utils.find(lambda e:e.name==emoji_name, test_guild.emojis)
 
     def _search(self, name):
         result = []

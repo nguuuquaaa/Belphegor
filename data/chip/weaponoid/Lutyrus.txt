@@ -1,0 +1,16 @@
+Weaponoid
+ルチルス
+url_thumbnail
+http://pso2es.swiki.jp/index.php?%E3%83%AB%E3%83%81%E3%83%AB%E3%82%B9
+http://pso2.swiki.jp/index.php?%E3%83%AB%E3%83%81%E3%83%AB%E3%82%B9
+Passive (15s)
+hu fo
+11
+385
+11
+fire
+79
+22
+E
+When hit, increase damage by 90%/100%, and all normal attack, PA and technique become JA.
+N/A

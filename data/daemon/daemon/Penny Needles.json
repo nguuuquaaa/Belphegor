@@ -1,0 +1,15 @@
+{
+    "name": "Penny Needles",
+    "alias": "Penny Needles",
+    "pic_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/f/fb/Penny_Needles.png/revision/latest?cb=20170712161948&amp;format=original",
+    "atk": "5450/--",
+    "hp": "4300/--",
+    "skill": [
+        {
+            "name": "Sweetest Snare",
+            "value": "Deals 2121/ DMG to the enemy with the highest ATK and decreases targets' speed by 43% for a limited time."
+        }
+    ],
+    "ability": [],
+    "bond": []
+}

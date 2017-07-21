@@ -1,0 +1,15 @@
+Character
+ジェネ［メモリアル］
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%82%B8%E3%82%A7%E3%83%8D%EF%BC%BB%E3%83%A1%E3%83%A2%E3%83%AA%E3%82%A2%E3%83%AB%EF%BC%BD&src=%E3%82%B8%E3%82%A7%E3%83%8D%EF%BC%BBS%E3%83%A1%E3%83%A2%E3%83%AA%E3%82%A2%E3%83%AB%EF%BC%BD.png
+http://pso2es.swiki.jp/index.php?%E3%82%B8%E3%82%A7%E3%83%8D%EF%BC%BB%E3%83%A1%E3%83%A2%E3%83%AA%E3%82%A2%E3%83%AB%EF%BC%BD
+http://pso2.swiki.jp/index.php?%E7%99%BB%E5%A0%B4NPC%2F%E3%82%B8%E3%82%A7%E3%83%8D
+Passive (?s)
+hu br
+11
+250
+20
+light
+75
+12
+E
+When hit, increase HP by 30% and increase damage by 70%/80%.

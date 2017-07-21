@@ -1,0 +1,16 @@
+Weaponoid
+クイーンヴィエラ
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%82%AF%E3%82%A4%E3%83%BC%E3%83%B3%E3%83%B4%E3%82%A3%E3%82%A8%E3%83%A9&src=%E3%82%AF%E3%82%A4%E3%83%BC%E3%83%B3%E3%83%B4%E3%82%A3%E3%82%A8%E3%83%A92.png
+http://pso2es.swiki.jp/index.php?%E3%82%AF%E3%82%A4%E3%83%BC%E3%83%B3%E3%83%B4%E3%82%A3%E3%82%A8%E3%83%A9
+http://pso2.swiki.jp/index.php?%E3%82%AF%E3%82%A4%E3%83%BC%E3%83%B3%E3%83%B4%E3%82%A3%E3%82%A8%E3%83%A9
+Active (60s)
+hu ra
+12
+405
+42
+light
+120
+28
+E+J
+Increase damage by 220%/230%, and increase damage to XH enemies by 10%.
+N/A

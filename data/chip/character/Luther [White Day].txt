@@ -1,0 +1,15 @@
+Illustration
+ルーサー［ホワイトデー］
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%83%AB%E3%83%BC%E3%82%B5%E3%83%BC%EF%BC%BB%E3%83%9B%E3%83%AF%E3%82%A4%E3%83%88%E3%83%87%E3%83%BC%EF%BC%BD&src=%E3%83%AB%E3%83%BC%E3%82%B5%E3%83%BC%EF%BC%BBS%E3%83%9B%E3%83%AF%E3%82%A4%E3%83%88%E3%83%87%E3%83%BC%EF%BC%BD.png
+http://pso2es.swiki.jp/index.php?%E3%83%AB%E3%83%BC%E3%82%B5%E3%83%BC%EF%BC%BB%E3%83%9B%E3%83%AF%E3%82%A4%E3%83%88%E3%83%87%E3%83%BC%EF%BC%BD
+http://pso2.swiki.jp/index.php?%E7%99%BB%E5%A0%B4NPC%2F%E3%83%AB%E3%83%BC%E3%82%B5%E3%83%BC
+Active (60s)
+fo te
+12
+305
+48
+light
+105
+26
+A
+Increase PA and technique damage by 155%/175% and reduce CP consumption by 30%. Effect is also applied to the activation of this chip.

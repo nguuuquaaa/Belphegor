@@ -1,0 +1,16 @@
+Weaponoid
+トールマリンカ
+http://pso2es.swiki.jp/index.php?plugin=attach&refer=%E3%83%88%E3%83%BC%E3%83%AB%E3%83%9E%E3%83%AA%E3%83%B3%E3%82%AB&openfile=%E3%83%88%E3%83%BC%E3%83%AB%E3%83%9E%E3%83%AA%E3%83%B3%E3%82%AB2.jpg
+http://pso2es.swiki.jp/index.php?%E3%83%88%E3%83%BC%E3%83%AB%E3%83%9E%E3%83%AA%E3%83%B3%E3%82%AB
+http://pso2.swiki.jp/index.php?%E3%83%88%E3%83%BC%E3%83%AB%E3%83%9E%E3%83%AA%E3%83%B3%E3%82%AB
+Passive (30s)
+fo gu
+11
+366
+22
+ice
+115
+23
+E
+When JA, increase damage based on number of ice chips equipped, +18%/22% per chip, and recover HP every 4s.
+Increase activation rate by 20%.

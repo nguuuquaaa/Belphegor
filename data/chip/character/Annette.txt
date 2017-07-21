@@ -1,0 +1,16 @@
+Character
+アネット
+http://image.swiki.jp/img0/?host=pso2es&page=%E3%82%A2%E3%83%8D%E3%83%83%E3%83%88&src=%E3%82%A2%E3%83%8D%E3%83%83%E3%83%882.png
+http://pso2es.swiki.jp/index.php?%E3%82%A2%E3%83%8D%E3%83%83%E3%83%88
+http://pso2.swiki.jp/index.php?%E7%99%BB%E5%A0%B4NPC%2F%E3%82%A2%E3%83%8D%E3%83%83%E3%83%88
+Passive (25s)
+fo te
+11
+300
+20
+ice
+84
+12
+E
+When JA, increase damage based on ability level, 58%/69% base, +3%/4% per level, cap at 100%/125%, and recover 5 CP every 5 seconds.
+Change trigger condition from JA to attack hit.

@@ -1,0 +1,20 @@
+{
+    "name": "Roman Candell",
+    "alias": "Roman Candell",
+    "pic_url": null,
+    "atk": "8700/--",
+    "hp": "6200/--",
+    "skill": [
+        {
+            "name": "Flame Pillar",
+            "value": "Deals 2393 DMG to 3 enemies (ranged priority), with a moderate chance of inflicting Burn."
+        }
+    ],
+    "ability": [
+        {
+            "name": "Spirit of Fireworks (Lv. 60)",
+            "value": "Significantly increases DMG dealt at the start of the final wave."
+        }
+    ],
+    "bond": []
+}
