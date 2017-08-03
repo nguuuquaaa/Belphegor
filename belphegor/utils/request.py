@@ -10,4 +10,3 @@ async def download(session, url, path):
         with open(path, "wb+") as file:
             file.write(bytes_)
         return bytes_
-            

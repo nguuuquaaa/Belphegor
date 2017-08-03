@@ -8,8 +8,9 @@ import psutil
 import os
 import aiohttp
 import codecs
+import asyncio
 
-#======================================================================================================
+#==================================================================================================================================================
 
 class MiscBot:
     def __init__(self, bot):
@@ -38,22 +39,6 @@ class MiscBot:
                                  "Eeeeeek! EEEEEEEKKKKKKK!",
                                  "(attemp to logout to reset the game)"]
 
-    @commands.group(aliases=["jkp"])
-    async def jankenpon(self, ctx):
-        if ctx.invoked_subcommand is None:
-            embed = discord.Embed()
-            embed.add_field(name="Jankenpon", value=
-                            "Here's the deal, you spam `rock`, `paper` or `scissor` until either you don't want "
-                            "to play anymore by typing `nothing` or {} gets tired after 1 minute.\n\n"
-                            "There's `>>jkp` alias for short.".format(self.bot.user.display_name))
-            embed.add_field(name="Subcommands", value=
-                            "`play`, `p` - Self-explanatory\n"
-                            "`record`, `r` - Show your or a player's win-lose record.")
-            embed.add_field(name="Notes", value=
-                        "A subcommand is meant to be used with main command.\n\n"
-                        "For example, `>>jkp r` is a valid command.")
-            await ctx.send(embed=embed)
-
     def quote(self, streak):
         if streak.endswith("ddd"):
             return random.choice(self.dstreak_quote + self.d_quote)
@@ -80,110 +65,55 @@ class MiscBot:
         else:
                 return random.choice(self.d_quote)
 
-    @jankenpon.command(aliases=["p", "play"])
-    @commands.cooldown(rate=1, per=60, type=commands.BucketType.user)
-    async def jankenpon_play(self, ctx):
-        await ctx.send('What will you use? Rock, paper or scissor?')
-        end = time.time() + 60
+    @commands.command(aliases=["jkp",])
+    async def jankenpon(self, ctx):
+        message = await ctx.send(embed=discord.Embed(title="What will you use? Rock, paper or scissor?"))
+        e_value = {"\u270a": 1, "\u270b": 2, "\u270c": 3, "\u274c": 0}
+        e_emoji = ("\u274c", "\u270a", "\u270b", "\u270c")
+        for e in e_value:
+            await message.add_reaction(e)
         try:
-            file = codecs.open("data/misc/jankenpon/{}.txt".format(ctx.message.author.id), encoding="utf-8")
-            win = [int(i) for i in file.read().split()]
-            file.close()
+            with codecs.open(f"{config.data_path}misc/jankenpon/{ctx.message.author.id}.txt", encoding="utf-8") as file:
+                win = [int(i) for i in file.read().split()]
         except:
             win = [0, 0, 0]
         streak = ""
         while True:
             try:
-                msg = await self.bot.wait_for("message", check=lambda m:m.author==ctx.message.author, timeout=5)
-            except:
-                continue
-            roll = random.randint(1,3)
-            if msg is not None:
-                if msg.content.strip().lower() == 'rock':
-                    if roll == 1:
-                        win[1] += 1
-                        streak += "d"
-                        await ctx.send("I use rock.\n*\"{}\"*".format(self.quote(streak)))
-                    elif roll == 2:
-                        win[2] += 1
-                        if "w" in streak:
-                            streak += "w"
-                        else:
-                            streak = "w"
-                        await ctx.send("I use paper.\n*\"{}\"*".format(self.quote(streak)))
-                    else:
-                        win[0] += 1
-                        if "l" in streak:
-                            streak += "l"
-                        else:
-                            streak = "l"
-                        await ctx.send("I use scissor.\n*\"{}\"*".format(self.quote(streak)))
-                elif msg.content.strip().lower() == 'paper':
-                    if roll == 1:
-                        win[0] += 1
-                        if "l" in streak:
-                            streak += "l"
-                        else:
-                            streak = "l"
-                        await ctx.send("I use rock.\n*\"{}\"*".format(self.quote(streak)))
-                    elif roll == 2:
-                        win[1] += 1
-                        streak += "d"
-                        await ctx.send("I use paper.\n*\"{}\"*".format(self.quote(streak)))
-                    else:
-                        win[2] += 1
-                        if "w" in streak:
-                            streak += "w"
-                        else:
-                            streak = "w"
-                        await ctx.send("I use scissor.\n*\"{}\"*".format(self.quote(streak)))
-                elif msg.content.strip().lower() == 'scissor':
-                    if roll == 1:
-                        win[2] += 1
-                        if "w" in streak:
-                            streak += "w"
-                        else:
-                            streak = "w"
-                        await ctx.send("I use rock.\n*\"{}\"*".format(self.quote(streak)))
-                    elif roll == 2:
-                        win[0] += 1
-                        if "l" in streak:
-                            streak += "l"
-                        else:
-                            streak = "l"
-                        await ctx.send("I use paper.\n*\"{}\"*".format(self.quote(streak)))
-                    else:
-                        win[1] += 1
-                        streak += "d"
-                        await ctx.send("I use scissor.\n*\"{}\"*".format(self.quote(streak)))
-                elif msg.content.strip().lower() == 'nothing' or msg is None:
-                    await ctx.send("*\"No more jankenpon! Yawn~~\"*")
-                    break
-            if end < time.time():
-                await ctx.send("*\"I'm tired. Sleep time~\"*")
+                reaction, user = await self.bot.wait_for("reaction_add", check=lambda r,u:u.id==ctx.message.author.id and r.emoji in e_value, timeout=10)
+            except asyncio.TimeoutError:
+                await message.clear_reactions()
+                await message.edit(embed=discord.Embed(title="\"I'm tir..e...d.....zzzz...........\""))
                 break
-        with codecs.open(config.data_path+"/misc/jankenpon/{}.txt".format(ctx.message.author.id), "w+", encoding="utf-8") as file:
-            file.write("{} {} {}".format(win[0], win[1], win[2]))
-
-
-    @jankenpon.command(aliases=["r",])
-    async def record(self, ctx, *, member:discord.Member=None):
-        if not member:
-            player = ctx.message.author
-        else:
-            player = member
-        try:
-            file = codecs.open(config.data_path+"/misc/jankenpon/{}.txt".format(player.id), encoding="utf-8")
-            win = file.read().split()
-            await ctx.send("{}'s record:\n```\n"
-                               "Win:   {}\n"
-                               "Draw:  {}\n"
-                               "Lose:  {}\n```".format(player.display_name, win[0], win[1], win[2]))
-        except:
-            await ctx.send("{}'s record:\n```\n"
-                               "Win:   0\n"
-                               "Draw:  0\n"
-                               "Lose:  0\n```".format(player.display_name))
+            roll = random.randint(1,3)
+            value = e_value[reaction.emoji]
+            if value == 0:
+                await message.clear_reactions()
+                await message.edit(embed=discord.Embed(title="\"No more jankenpon? Yay!!!\""))
+                break
+            else:
+                await message.remove_reaction(reaction, user)
+                if (value - roll) % 3 == 0:
+                    win[1] += 1
+                    streak += "d"
+                elif (value - roll) % 3 == 2:
+                    win[2] += 1
+                    if "w" in streak:
+                        streak += "w"
+                    else:
+                        streak = "w"
+                else:
+                    win[0] += 1
+                    if "l" in streak:
+                        streak += "l"
+                    else:
+                        streak = "l"
+                embed = discord.Embed()
+                embed.add_field(name=f"I use {e_emoji[roll]}", value=f"*\"{self.quote(streak)}\"*")
+                embed.set_footer(text=f"{win[0]}W - {win[1]}D - {win[2]}L")
+                await message.edit(embed=embed)
+        with codecs.open(f"{config.data_path}misc/jankenpon/{ctx.message.author.id}.txt", "w+", encoding="utf-8") as file:
+            file.write(f"{win[0]} {win[1]} {win[2]}")
 
     @commands.command()
     async def creampie(self, ctx):
@@ -232,17 +162,21 @@ class MiscBot:
                 else:
                     pass
             await message.channel.send(reply)
-        elif inp.strip().lower() == "ping":
+        elif inp == "ping":
             msg = await message.channel.send("pong")
-            await msg.edit(content="pong (" + str(msg.created_at - message.created_at)[-8:] + "s)")
-        self.bot.process_commands(message)
+            timedelta = msg.created_at - message.created_at
+            await msg.edit(content=f"pong ({int(timedelta.total_seconds()*1000)}ms)")
 
     @commands.command()
     async def avatar(self, ctx, member:discord.Member=None):
         try:
-            await ctx.send(member.avatar_url)
+            embed = discord.Embed(title=f"{member.display_name}'s avatar", url=member.avatar_url)
+            embed.set_image(url=member.avatar_url)
+            await ctx.send(embed=embed)
         except:
-            await ctx.send(ctx.message.author.avatar_url)
+            embed = discord.Embed(title=f"{ctx.message.author.display_name}'s avatar", url=ctx.message.author.avatar_url)
+            embed.set_image(url=ctx.message.author.avatar_url)
+            await ctx.send(embed=embed)
 
     @commands.command()
     async def dice(self, ctx, max_side:int, number_of_dices:int = 2):
@@ -338,7 +272,7 @@ class MiscBot:
             with codecs.open(config.data_path+"misc/welcome/"+str(member.guild.id)+".txt", encoding="utf-8") as file:
                 channel_id = int(file.read().rstrip())
             channel = member.guild.get_channel(channel_id)
-            await channel.send("Eeeehhhhhh, go away {}, I don't want any more work...".format(member.display_name))
+            await channel.send("Eeeeehhhhhh, go away {}, I don't want any more work...".format(member.display_name))
         except:
             pass
 
@@ -353,9 +287,13 @@ class MiscBot:
                 charout = charin
             textout += charout + " "
         await ctx.send(textout)
-            
 
-#======================================================================================================
+    @commands.command(aliases=["hello",])
+    async def hi(self, ctx):
+        await ctx.send("*\"Go away...\"*")
+
+
+#==================================================================================================================================================
 
 def setup(bot):
     bot.add_cog(MiscBot(bot))

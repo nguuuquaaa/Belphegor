@@ -3,7 +3,7 @@ from discord.ext import commands
 from .utils import checks
 import inspect
 
-#======================================================================================================
+#==================================================================================================================================================
 
 class AdminBot:
     def __init__(self, bot):
@@ -47,6 +47,17 @@ class AdminBot:
 
     @commands.command()
     @checks.owner_only()
+    async def unload(self, ctx, extension:str):
+        if extension in self.bot.extensions:
+            self.bot.unload_extension(extension)
+            print(f"Unloaded {extension}")
+            await ctx.message.add_reaction("\u2705")
+        else:
+            print(f"Extension {extension} doesn't exist.")
+            await ctx.message.add_reaction("\u274c")
+
+    @commands.command()
+    @checks.owner_only()
     async def status(self, ctx, *, stuff):
         await self.bot.change_presence(game=discord.Game(name=stuff))
 
@@ -71,7 +82,7 @@ class AdminBot:
             result = e
         await ctx.send(f"```{result}```")
 
-#======================================================================================================
+#==================================================================================================================================================
 
 def setup(bot):
     bot.add_cog(AdminBot(bot))

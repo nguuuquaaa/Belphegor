@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from .utils import config
 
-#======================================================================================================
+#==================================================================================================================================================
 
 class HelpBot:
     def __init__(self, bot):
@@ -17,7 +17,7 @@ class HelpBot:
     @commands.group()
     async def help(self, ctx):
         if ctx.invoked_subcommand is None:
-            embed = discord.Embed(title="Invite link", url="https://discordapp.com/oauth2/authorize?client_id=306706699102715907&scope=bot&permissions=0x00040000", colour = discord.Colour.teal())
+            embed = discord.Embed(title="Invite link", url="https://discordapp.com/oauth2/authorize?client_id=306706699102715907&scope=bot&permissions=0x0235CC50", colour = discord.Colour.teal())
             embed.set_author(name="{}#{}".format(self.bot.user.name, self.bot.user.discriminator), icon_url="http://i.imgur.com/WZ5nDdA.png")
             embed.set_thumbnail(url=self.bot.user.avatar_url)
             embed.add_field(name="Categories", value=
@@ -50,13 +50,13 @@ class HelpBot:
                         "Note: a group contains daemons who boost/get boosted by each other, like elves and 5 swords\n\n")
         embed.add_field(name="Simulation", value=
                         "`>>ls` - ~~salt~~ Lunchtime summon simulation\n"
-                        "Note: has 2 seconds cooldown to prevent spam\n\n"
+                        "Note: has 1 seconds cooldown to prevent spam\n\n"
                         "`>>mybox` - Show your or a player's box\n"
                         "`>>limitbreak` - Limit break your daemons\n\n"
                         "`>>mochi <name>` - Sell a certain daemon\n"
                         "`>>mochibulk <name>` - Sell all daemons with given name\n"
                         "`>>mochiall <rarity>` - Sell all daemons with given rarity\n\n"
-                        "`>>gift <name>` - Gift someone a daemon\n"
+                        "`>>gift <player> <name>` - Gift someone a daemon\n"
                         "`>>gimme <player> <price> <name>` - Ask someone to trade you a daemon")
         await ctx.send(embed=embed)
 
@@ -109,10 +109,11 @@ class HelpBot:
         embed.add_field(name="Notes", value=
                         "A subcommand is meant to be used with main command.\n"
                         "For example, `>>m q fukkireta` is a valid command.\n\n"
+                        f"{self.bot.user.name} will leave voice channel after 1 minute if queue is empty.\n\n"
                         "*Also the music command is quite unstable due to my bad internet connection.*")
         await ctx.send(embed=embed)
 
-#======================================================================================================
+#==================================================================================================================================================
 
 def setup(bot):
     bot.add_cog(HelpBot(bot))

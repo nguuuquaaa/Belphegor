@@ -5,3 +5,4 @@ belphegor.misc
 belphegor.help
 belphegor.reaction
 belphegor.music
+belphegor.mod

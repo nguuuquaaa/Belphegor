@@ -10,7 +10,7 @@ import json
 import re
 from bs4 import BeautifulSoup as BS
 
-#======================================================================================================
+#==================================================================================================================================================
 
 class Daemon:
     def __init__(self, **kwargs):
@@ -20,7 +20,7 @@ class Daemon:
     @classmethod
     def from_file(cls, filename):
         try:
-            with codecs.open(config.data_path+"daemon/daemon/"+filename+".json", encoding="utf-8") as file:
+            with codecs.open(f"{config.data_path}daemon/daemon/{filename}.json", encoding="utf-8") as file:
                 data = json.load(file)
                 try:
                     alias = data["alias"]
@@ -33,18 +33,18 @@ class Daemon:
 
     def embed_form(self, cog):
         data_embed = discord.Embed(colour=discord.Colour.orange())
-        data_embed.add_field(name=self.name, value="{}{}\n{}{}\n----------------------------------------------------------------------------------".format(cog.emoji["atk"], self.atk, cog.emoji["hp"], self.hp), inline=False)
+        data_embed.add_field(name=self.name, value=f"{cog.emoji['atk']}{self.atk}\n{cog.emoji['hp']}{self.hp}\n----------------------------------------------------------------------------------", inline=False)
         check = len(self.skill) + len(self.ability) + len(self.bond) - 1
         for field in ("skill", "ability", "bond"):
             try:
                 data = getattr(self, field)
                 for stuff in data[:-1]:
-                    data_embed.add_field(name="{}{}".format(cog.emoji[field], stuff["name"]), value=stuff["value"], inline=False)
+                    data_embed.add_field(name=f"{cog.emoji[field]}{stuff['name']}", value=stuff['value'], inline=False)
                     check -= 1
                 if check > 0:
-                    data_embed.add_field(name="{}{}".format(cog.emoji[field], data[-1]["name"]), value=data[-1]["value"]+"\n----------------------------------------------------------------------------------", inline=False)
+                    data_embed.add_field(name=f"{cog.emoji[field]}{data[-1]['name']}", value=f"{data[-1]['value']}\n----------------------------------------------------------------------------------", inline=False)
                 else:
-                    data_embed.add_field(name="{}{}".format(cog.emoji[field], data[-1]["name"]), value=data[-1]["value"], inline=False)
+                    data_embed.add_field(name=f"{cog.emoji[field]}{data[-1]['name']}", value=data[-1]['value'], inline=False)
                 check -= 1
             except:
                 pass
@@ -54,7 +54,7 @@ class Daemon:
 
     def to_file(self):
         jsonable = self.__dict__
-        with codecs.open(config.data_path+"daemon/daemon/"+self.alias+".json", "w+", encoding="utf-8") as file:
+        with codecs.open(f"{config.data_path}daemon/daemon/{self.alias}.json", "w+", encoding="utf-8") as file:
             json.dump(jsonable, file, indent=4, ensure_ascii=False)
 
     @property
@@ -64,7 +64,7 @@ class Daemon:
         else:
             return config.no_img
 
-#======================================================================================================
+#==================================================================================================================================================
 
 class MiniDaemon:
     def __init__(self, name, rarity, lb=0):
@@ -83,7 +83,7 @@ class MiniDaemon:
         elif self.rarity == 5:
             return 25 * (self.lb + 1)
 
-#======================================================================================================
+#==================================================================================================================================================
 
 class Player:
     def __init__(self, member_id, mochi=0, daemons=[], exchange=[]):
@@ -95,7 +95,7 @@ class Player:
     @classmethod
     def from_file(cls, member_id):
         try:
-            with codecs.open(config.data_path + "daemon/simulation/player/" + str(member_id) + ".json", encoding="utf-8") as file:
+            with codecs.open(f"{config.data_path}daemon/simulation/player/{member_id}.json", encoding="utf-8") as file:
                 data = json.load(file)
                 daemons = []
                 for d in data["daemons"]:
@@ -115,7 +115,7 @@ class Player:
                     "mochi": self.mochi,
                     "daemons": [d.__dict__ for d in self.daemons],
                     "exchange": self.exchange}
-        with codecs.open(config.data_path + "daemon/simulation/player/" + str(self.member_id) + ".json", "w+", encoding="utf-8") as file:
+        with codecs.open(f"{config.data_path}daemon/simulation/player/{self.member_id}.json", "w+", encoding="utf-8") as file:
             json.dump(jsonable, file, indent=4, ensure_ascii=False)
 
     def sort_daemons(self):
@@ -136,24 +136,24 @@ class Player:
         self.daemons.remove(daemon)
         self.to_file()
 
-#======================================================================================================
+#==================================================================================================================================================
 
 class OtogiBot():
     def __init__(self, bot):
         self.bot = bot
 
         self.daemons = {}
-        for filename in os.listdir(config.data_path+"daemon/daemon"):
+        for filename in os.listdir(f"{config.data_path}daemon/daemon"):
             if filename.endswith('.json'):
                 data = Daemon.from_file(filename[:-5])
                 self.daemons[data.name] = data
 
-        with codecs.open(config.data_path + "daemon/group/tags.json", encoding="utf-8") as file:
+        with codecs.open(f"{config.data_path}daemon/group/tags.json", encoding="utf-8") as file:
             self.tags = json.load(file)
-        with codecs.open(config.data_path + "daemon/group/groups.json", encoding="utf-8") as file:
+        with codecs.open(f"{config.data_path}daemon/group/groups.json", encoding="utf-8") as file:
             self.groups = json.load(file)
 
-        with codecs.open(config.data_path + "daemon/simulation/summon/jewel.json", encoding="utf-8") as file:
+        with codecs.open(f"{config.data_path}daemon/simulation/summon/jewel.json", encoding="utf-8") as file:
             self.summon = json.load(file)
 
         test_guild = self.bot.get_guild(config.test_guild_id)
@@ -181,28 +181,60 @@ class OtogiBot():
                     result.append(daemon)
         return result
 
+    async def filter(self, ctx, name, result, *, prompt_all=False):
+        if not result:
+            await ctx.send(f"Can't find {name} in database.")
+            return None
+        elif not prompt_all:
+            if len(result) == 1:
+                return result[0]
+        await ctx.send("Do you mean:\n```\n{}\n<>: cancel\n```".format('\n'.join([f"{index+1}: {d.name}" for index, d in enumerate(result)])))
+        msg = await self.bot.wait_for("message", check=lambda m:m.author==ctx.message.author)
+        try:
+            index = int(msg.content)-1
+        except:
+            return None
+        if index in range(len(result)):
+            return result[index]
+        else:
+            return None
+
     @commands.command(aliases=["daemon",])
     async def d(self, ctx, *, name:str):
         result = self._search(name)
-        if not result:
-            await ctx.send("Can't find {} in database.".format(name))
+        daemon = await self.filter(ctx, name, result)
+        if not daemon:
             return
-        elif len(result) > 1:
-            await ctx.send("Do you mean:\n```\n{}\n<>: cancel\n```".format('\n'.join([str(index+1)+": "+d.name for index, d in enumerate(result)])))
-            msg = await self.bot.wait_for("message", check=lambda m:m.author==ctx.message.author)
-            try:
-                index = int(msg.content)-1
-                if index in range(len(result)):
-                    daemon = result[index]
-                else:
-                    return
-            except:
-                return
-        else:
-            daemon = result[0]
         pic_embed, data_embed = daemon.embed_form(self)
         await ctx.send(embed=pic_embed)
         await ctx.send(embed=data_embed)
+
+    @commands.command(aliases=["pic",])
+    async def p(self, ctx, *, name:str):
+        result = self._search(name)
+        if not result:
+            await ctx.send(f"Can't find {name} in database.")
+            return
+        elif len(result) == 1:
+            daemon = result[0]
+        else:
+            check = False
+            for r in result:
+                if name.lower() == r.name.lower():
+                    daemon = r
+                    check = True
+                    break
+            if not check:
+                await ctx.send("Do you mean:\n```\n{}\n<>: cancel\n```".format('\n'.join([f"{index+1}: {d.name}" for index, d in enumerate(result)])))
+                msg = await self.bot.wait_for("message", check=lambda m:m.author==ctx.message.author)
+                try:
+                    index = int(msg.content)-1
+                except:
+                    return
+                if index in range(len(result)):
+                    daemon = result[index]
+        pic_embed, data_embed = daemon.embed_form(self)
+        await ctx.send(embed=pic_embed)
 
     def _search_group(self, name):
         result = []
@@ -219,22 +251,9 @@ class OtogiBot():
     @commands.command(aliases=["group"])
     async def g(self, ctx, *, name:str):
         result = self._search_group(name)
-        if not result:
-            await ctx.send("Can't find {} in database.".format(name))
+        group = await self.filter(ctx, name, result)
+        if not group:
             return
-        elif len(result) > 1:
-            await ctx.send("Do you mean:\n```\n{}\n<>: cancel\n```".format('\n'.join([str(index+1)+": "+d for index, d in enumerate(result)])))
-            msg = await self.bot.wait_for("message", check=lambda m:m.author==ctx.message.author)
-            try:
-                index = int(msg.content)-1
-                if index in range(len(result)):
-                    group = result[index]
-                else:
-                    return
-            except:
-                return
-        else:
-            group = result[0]
         embed = discord.Embed(colour=discord.Colour.orange())
         embed.add_field(name="Current members of "+group, value="\n".join([str(i+1)+". "+g for i, g in enumerate(self.groups[group])]))
         await ctx.send(embed=embed)
@@ -282,7 +301,7 @@ class OtogiBot():
                         new_daemon["ability"].append({"name": d, "value": data[i+1]})
                     else:
                         new_daemon["skill"].append({"name": d, "value": data[i+1]})
-            with codecs.open(config.data_path+"daemon/daemon/"+data[1]+".json", "w+", encoding="utf-8") as file:
+            with codecs.open(f"{config.data_path}daemon/daemon/{data[1]}.json", "w+", encoding="utf-8") as file:
                 json.dump(new_daemon, file, indent=4, ensure_ascii=False)
             self.daemons[new_daemon["name"]] = Daemon.from_file(data[1])
             await ctx.send(f"An entry for {new_daemon['name']} has been created.")
@@ -293,21 +312,10 @@ class OtogiBot():
     @checks.owner_only()
     async def delete(self, ctx, *, name:str):
         result = self._search(name)
-        if not result:
-            await ctx.send("Can't find {} in database.".format(name))
+        daemon = await self.filter(ctx, name, result, prompt_all=True)
+        if not daemon:
             return
-        else:
-            await ctx.send("Do you mean:\n```\n{}\n<>: cancel\n```".format('\n'.join([str(index+1)+": "+d.name for index, d in enumerate(result)])))
-            msg = await self.bot.wait_for("message", check=lambda m:m.author==ctx.message.author)
-            try:
-                index = int(msg.content)-1
-                if index in range(len(result)):
-                    daemon = result[index]
-                else:
-                    return
-            except:
-                return
-        os.remove(config.data_path+"daemon/daemon/"+daemon.alias+".json")
+        os.remove(f"{config.data_path}daemon/daemon/{daemon.alias}.json")
         name_remember = daemon.name.deepcopy()
         del self.daemons[daemon.name]
         await ctx.send(f"The entry for {name_remember} has been deleted.")
@@ -316,48 +324,18 @@ class OtogiBot():
     @checks.otogi_guild_only()
     async def edit(self, ctx, *, data:str):
         data = [d for d in data.splitlines() if d]
-        name = data[0]
-        result = self._search(name)
-        if not result:
-            await ctx.send("Can't find {} in database.".format(name))
+        result = self._search(data[0])
+        daemon = await self.filter(ctx, data[0], result, prompt_all=True)
+        if not daemon:
             return
-        else:
-            await ctx.send("Do you mean:\n```\n{}\n<>: cancel\n```".format('\n'.join([str(index+1)+": "+d.name for index, d in enumerate(result)])))
-            msg = await self.bot.wait_for("message", check=lambda m:m.author==ctx.message.author)
-            try:
-                index = int(msg.content)-1
-                if index in range(len(result)):
-                    daemon = result[index]
-                else:
-                    return
-            except:
-                return
         if data[1] in daemon.__dict__:
-            os.remove(config.data_path+"daemon/daemon/"+daemon.alias+".json")
+            os.remove(f"{config.data_path}daemon/daemon/{daemon.alias}.json")
             if data[1] in ("skill", "ability", "bond"):
                 sab = []
                 for ab, cd in enumerate(data):
                     if ab > 1 and ab%2 == 0:
                         sab.append({"name": cd, "value": data[ab+1]})
                 setattr(daemon, data[1], sab)
-            elif data[1] == "name":
-                for filename in os.listdir(f"{config.data_path}daemon/simulation/player"):
-                    with codecs.open(f"{config.data_path}daemon/simulation/player/{filename}", encoding="utf-8") as file:
-                        jsonable = json.load(file)
-                    for i, d in enumerate(jsonable["daemons"]):
-                        if d["name"] == daemon.name:
-                            jsonable["daemons"][i]["name"] = data[2]
-                    with codecs.open(f"{config.data_path}daemon/simulation/player/{filename}", "w+", encoding="utf-8") as file:
-                        json.dump(jsonable, file, indent=4, ensure_ascii=False)
-                with codecs.open(f"{config.data_path}daemon/simulation/summon/jewel.json", encoding="utf-8") as file:
-                    jsonable = json.load(file)
-                for r, ds in jsonable.items():
-                    for i, d in enumerate(ds):
-                        if d == daemon.name:
-                            jsonable[r][i] = data[2]
-                with codecs.open(f"{config.data_path}daemon/simulation/summon/jewel.json", "w+", encoding="utf-8") as file:
-                    json.dump(jsonable, file, indent=4, ensure_ascii=False)
-                setattr(daemon, data[1], data[2])
             else:
                 setattr(daemon, data[1], data[2])
             daemon.to_file()
@@ -369,25 +347,14 @@ class OtogiBot():
     @checks.otogi_guild_only()
     async def _summon(self, ctx, rarity:int, *, name:str):
         result = self._search(name)
-        if not result:
-            await ctx.send("Can't find {} in database.".format(name))
+        daemon = await self.filter(ctx, name, result, prompt_all=True)
+        if not daemon:
             return
-        else:
-            await ctx.send("Do you mean:\n```\n{}\n<>: cancel\n```".format('\n'.join([str(index+1)+": "+d.name for index, d in enumerate(result)])))
-            msg = await self.bot.wait_for("message", check=lambda m:m.author==ctx.message.author)
-            try:
-                index = int(msg.content)-1
-                if index in range(len(result)):
-                    daemon = result[index]
-                else:
-                    return
-            except:
-                return
-        with codecs.open(config.data_path + "daemon/simulation/summon/jewel.json", encoding="utf-8") as file:
+        with codecs.open(f"{config.data_path}daemon/simulation/summon/jewel.json", encoding="utf-8") as file:
             summon = json.load(file)
         if rarity in (3, 4, 5):
             summon[str(rarity)].append(daemon.name)
-        with codecs.open(config.data_path + "daemon/simulation/summon/jewel.json", "w+", encoding="utf-8") as file:
+        with codecs.open(f"{config.data_path}daemon/simulation/summon/jewel.json", "w+", encoding="utf-8") as file:
             json.dump(summon, file, indent=4, ensure_ascii=False)
         self.summon = summon
         await ctx.send(f"The {rarity}* daemon {daemon.name} has been added to summon pool.")
@@ -396,27 +363,16 @@ class OtogiBot():
     @checks.owner_only()
     async def nosummon(self, ctx, *, name:str):
         result = self._search(name)
-        if not result:
-            await ctx.send("Can't find {} in database.".format(name))
+        daemon = await self.filter(ctx, name, result, prompt_all=True)
+        if not daemon:
             return
-        else:
-            await ctx.send("Do you mean:\n```\n{}\n<>: cancel\n```".format('\n'.join([str(index+1)+": "+d.name for index, d in enumerate(result)])))
-            msg = await self.bot.wait_for("message", check=lambda m:m.author==ctx.message.author)
-            try:
-                index = int(msg.content)-1
-                if index in range(len(result)):
-                    daemon = result[index]
-                else:
-                    return
-            except:
-                return
         summon = dict(self.summon)
         for key, value in summon.items():
             for index, name in enumerate(value):
                 if name == daemon.name:
                     self.summon[key].pop(index)
                     break
-        with codecs.open(config.data_path + "daemon/simulation/summon/jewel.json", "w+", encoding="utf-8") as file:
+        with codecs.open(f"{config.data_path}daemon/simulation/summon/jewel.json", "w+", encoding="utf-8") as file:
             json.dump(self.summon, file, indent=4, ensure_ascii=False)
         await ctx.send(f"The daemon {daemon.name} has been removed from summon pool.")
 
@@ -427,35 +383,24 @@ class OtogiBot():
         try:
             group = self._search_group(data[1])[-1]
         except IndexError:
-            await ctx.send("No group found. Create a new group {}? Y/N".format(data[1]))
+            await ctx.send("No group found. Create a new group {data[1]}? Y/N")
             msg = await self.bot.wait_for("message", check=lambda m:m.author==ctx.message.author)
             if msg.content.lower() == "y":
                 group = data[1]
             else:
                 return
         result = self._search(data[0])
-        if not result:
-            await ctx.send("Can't find {} in database.".format(name))
+        daemon = await self.filter(ctx, data[0], result, prompt_all=True)
+        if not daemon:
             return
-        else:
-            await ctx.send("Do you mean:\n```\n{}\n<>: cancel\n```".format('\n'.join([str(i+1)+": "+d.name for i, d in enumerate(result)])))
-            msg = await self.bot.wait_for("message", check=lambda m:m.author==ctx.message.author)
-            try:
-                index = int(msg.content)-1
-                if index in range(len(result)):
-                    daemon = result[index]
-                else:
-                    return
-            except:
-                return
         try:
             self.groups[group].append(daemon.name)
         except:
             self.groups[group] = [daemon.name,]
             self.tags[group] = group
-        with codecs.open(config.data_path + "daemon/group/groups.json", "w+", encoding="utf-8") as file:
+        with codecs.open(f"{config.data_path}daemon/group/groups.json", "w+", encoding="utf-8") as file:
             json.dump(self.groups, file, indent=4, ensure_ascii=False)
-        with codecs.open(config.data_path + "daemon/group/tags.json", "w+", encoding="utf-8") as file:
+        with codecs.open(f"{config.data_path}daemon/group/tags.json", "w+", encoding="utf-8") as file:
             json.dump(self.tags, file, indent=4, ensure_ascii=False)
         await ctx.send(f"The daemon {daemon.name} has been added to group {group}.")
 
@@ -466,7 +411,7 @@ class OtogiBot():
         try:
             group = self._search_group(data[1])[-1]
         except IndexError:
-            await ctx.send("No group found. Create a new group {}? Y/N".format(data[1]))
+            await ctx.send("No group found. Create a new group {data[1]}? Y/N")
             msg = await self.bot.wait_for("message", check=lambda m:m.author==ctx.message.author)
             if msg.content.lower() == "y":
                 group = data[1]
@@ -475,9 +420,9 @@ class OtogiBot():
                 return
         tag = data[0].strip()
         self.tags[tag] = group
-        with codecs.open(config.data_path + "daemon/group/groups.json", "w+", encoding="utf-8") as file:
+        with codecs.open(f"{config.data_path}daemon/group/groups.json", "w+", encoding="utf-8") as file:
             json.dump(self.groups, file, indent=4, ensure_ascii=False)
-        with codecs.open(config.data_path + "daemon/group/tags.json", "w+", encoding="utf-8") as file:
+        with codecs.open(f"{config.data_path}daemon/group/tags.json", "w+", encoding="utf-8") as file:
             json.dump(self.tags, file, indent=4, ensure_ascii=False)
         await ctx.send(f"The group {group} has been tagged with {tag.replace(' ', ', ')}")
 
@@ -485,24 +430,14 @@ class OtogiBot():
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     async def wikia(self, ctx, *, name:str):
         result = self._search(name)
-        if not result:
-            await ctx.send("Can't find {} in database.".format(name))
+        daemon = await self.filter(ctx, name, result, prompt_all=True)
+        if not daemon:
             return
-        else:
-            await ctx.send("Do you mean:\n```\n{}\n<>: cancel\n```".format('\n'.join([str(index+1)+": "+d.name for index, d in enumerate(result)])))
-            msg = await self.bot.wait_for("message", check=lambda m:m.author==ctx.message.author)
-            try:
-                index = int(msg.content)-1
-                if index in range(len(result)):
-                    daemon = result[index]
-                else:
-                    return
-            except:
-                return
-        new_daemon = await self.bot.loop.run_in_executor(None, self._search_wikia, daemon)
-        self.daemons[new_daemon.name] = new_daemon
-        new_daemon.to_file()
-        await ctx.send(f"The entry for {daemon.name} has been updated with latest information from wikia.")
+        with ctx.message.channel.typing():
+            new_daemon = await self.bot.loop.run_in_executor(None, self._search_wikia, daemon)
+            self.daemons[new_daemon.name] = new_daemon
+            new_daemon.to_file()
+            await ctx.send(f"The entry for {daemon.name} has been updated with latest information from wikia.")
 
     def _search_wikia(self, daemon):
         try:
@@ -547,12 +482,15 @@ class OtogiBot():
             new_daemon.hp = hp
         for i, d in enumerate(data):
             if i > 7 and i%2 == 0:
-                if ">" in d:
-                    new_daemon.bond.append({"name": d, "value": data[i+1]})
-                elif "(Lv" in d:
-                    new_daemon.ability.append({"name": d, "value": data[i+1]})
-                else:
-                    new_daemon.skill.append({"name": d, "value": data[i+1]})
+                try:
+                    if ">" in d:
+                        new_daemon.bond.append({"name": d, "value": data[i+1]})
+                    elif "(Lv" in d:
+                        new_daemon.ability.append({"name": d, "value": data[i+1]})
+                    else:
+                        new_daemon.skill.append({"name": d, "value": data[i+1]})
+                except:
+                    pass
         delimiters = (' [', ']', ' ')
         regexPattern = '|'.join(map(re.escape, delimiters))
         name_pattern = "_".join(' '.join(re.split(regexPattern, daemon.name)).strip().split())
@@ -585,11 +523,11 @@ class OtogiBot():
             rarity = "3"
         daemon = random.choice(self.summon[rarity])
         player.summon(daemon, int(rarity))
-        embed = discord.Embed(title=ctx.message.author.display_name+" summoned " + daemon + "!", colour=discord.Colour.orange())
+        embed = discord.Embed(title=f"{ctx.message.author.display_name} summoned {daemon}!", colour=discord.Colour.orange())
         data = self.daemons[daemon].true_url.split("?cb=")
         try:
             code = data[1].split("&")
-            scale_url = data[0] + "/scale-to-width-down/250?cb=" + code[0]
+            scale_url = f"{data[0]}/scale-to-width-down/250?cb={code[0]}"
         except:
             scale_url = self.daemons[daemon].true_url
         embed.set_image(url=scale_url)
@@ -618,8 +556,8 @@ class OtogiBot():
             rare[r] += 1
 
         def data(page:int):
-            embed = discord.Embed(title="Mochi: {}{}".format(player.mochi, self.emoji["mochi"]), colour=discord.Colour.blue())
-            embed.set_author(name=target.display_name+"'s box", icon_url=target.avatar_url)
+            embed = discord.Embed(title=f"Mochi: {player.mochi}{self.emoji['mochi']}", colour=discord.Colour.blue())
+            embed.set_author(name=f"{target.display_name}'s box", icon_url=target.avatar_url)
             cur3 = min(page+1, max_pages[3])
             cur4 = min(page+1, max_pages[4])
             cur5 = min(page+1, max_pages[5])
@@ -710,7 +648,7 @@ class OtogiBot():
                 total_mochi += daemon.cost
             except AttributeError:
                 pass
-        await ctx.send("{} sold {} daemon(s) for {}{}.\n{} failed.".format(ctx.message.author.display_name, number_of_daemons, total_mochi, self.emoji["mochi"], len(data)-number_of_daemons))
+        await ctx.send(f"{ctx.message.author.display_name} sold {number_of_daemons} daemon(s) for {total_mochi}{self.emoji['mochi']}.\n{len(data)-number_of_daemons} failed.")
 
     @commands.command()
     async def mochibulk(self, ctx, *, names):
@@ -729,7 +667,7 @@ class OtogiBot():
                         total_mochi += daemon.cost
             except AttributeError:
                 failed += 1
-        await ctx.send("{} sold {} daemon(s) for {}{}.\n{} failed.".format(ctx.message.author.display_name, number_of_daemons, total_mochi, self.emoji["mochi"], failed))
+        await ctx.send(f"{ctx.message.author.display_name} sold {number_of_daemons} daemon(s) for {total_mochi}{self.emoji['mochi']}.\n{failed} failed.")
 
     @commands.command()
     async def mochiall(self, ctx, rarity:int):
@@ -739,7 +677,7 @@ class OtogiBot():
             if daemon.rarity==rarity:
                 total += daemon.cost
                 player.cmd_mochi(daemon)
-        await ctx.send("{} sold all {}* daemons for {}{}.".format(ctx.message.author.display_name, rarity, total, self.emoji["mochi"]))
+        await ctx.send(f"{ctx.message.author.display_name} sold all {rarity}* daemons for {total}{self.emoji['mochi']}.")
 
     @commands.command()
     async def gift(self, ctx, member:discord.Member, *, name):
@@ -748,7 +686,7 @@ class OtogiBot():
         daemon = self._process_name(myself, name)
         if daemon:
             player.gimme(myself, daemon)
-            await ctx.send("{} gave {} {} lb{}.".format(ctx.message.author.display_name, member.display_name, daemon.name, daemon.lb))
+            await ctx.send(f"{ctx.message.author.display_name} gave {member.display_name} {daemon.name} lb{daemon.lb}.")
 
     @commands.command()
     async def gimme(self, ctx, member:discord.Member, price:int, *, name):
@@ -757,7 +695,7 @@ class OtogiBot():
         daemon = self._process_name(player, name)
         if daemon:
             if myself.mochi >= price:
-                await ctx.send("Would {} trade {} lb{} for {}{}? Y/N".format(member.mention, daemon.name, daemon.lb, price, self.emoji["mochi"]))
+                await ctx.send(f"Would {member.mention} trade {daemon.name} lb{daemon.lb} for {price}{self.emoji['mochi']}? Y/N")
                 msg = await self.bot.wait_for("message", check=lambda m:m.author==member)
                 if msg.content.lower() == "y":
                     myself.gimme(player, daemon)
@@ -767,9 +705,9 @@ class OtogiBot():
                 else:
                     await ctx.send("Trade failed.")
             else:
-                await ctx.send("{}, you don't have that many {}.".format(ctx.message.author.display_name, self.emoji["mochi"]))
+                await ctx.send(f"{ctx.message.author.display_name}, you don't have that many {self.emoji['mochi']}.")
         else:
-            await ctx.send("{} doesn't have {}.".format(member.display_name, name))
+            await ctx.send(f"{member.display_name} doesn't have {name}.")
 
     def lb_that(self, player, name):
         all_them = [d for d in player.daemons if d.name==name]
@@ -812,7 +750,7 @@ class OtogiBot():
     async def exchange_get(self, ctx, *, name):
         pass
 
-#======================================================================================================
+#==================================================================================================================================================
 
 def setup(bot):
     bot.add_cog(OtogiBot(bot))
