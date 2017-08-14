@@ -29,6 +29,7 @@ class HelpBot:
                             "`>>help react` - Reactions")
             embed.add_field(name="Misc.", value=
                             f"`>>jankenpon` - Play jankenpon with {self.bot.user.name}\n"
+                            "`>>random` - Random image\n"
                             "`>>dice <maxside> <amount>` - Roll dices\n"
                             "`>>avatar` - Get your or a user avatar\n"
                             "`>>fancy` - Fancilize a sentence\n"
@@ -47,10 +48,13 @@ class HelpBot:
         embed.add_field(name="Database", value=
                         "`>>d`, `>>daemon` - Check a daemon info\n"
                         "`>>g`, `>>group` - Display a group members\n"
-                        "Note: a group contains daemons who boost/get boosted by each other, like elves and 5 swords\n\n")
+                        "Note: a group contains daemons who boost/get boosted by each other, like elves and 5 swords\n\n"
+                        "`>>update` - Add and edit database")
         embed.add_field(name="Simulation", value=
                         "`>>ls` - ~~salt~~ Lunchtime summon simulation\n"
-                        "Note: has 1 seconds cooldown to prevent spam\n\n"
+                        "Note: has 1 seconds cooldown to prevent spam\n"
+                        "`>>ls till <name>` - Estimate how many summons till you get a certain daemon\n"
+                        "Note: does not count to mybox feature\n\n"
                         "`>>mybox` - Show your or a player's box\n"
                         "`>>limitbreak` - Limit break your daemons\n\n"
                         "`>>mochi <name>` - Sell a certain daemon\n"
@@ -73,8 +77,8 @@ class HelpBot:
 
     @help.command()
     async def game(self, ctx):
-        embed = discord.Embed(title="Board game [Currently not available]", colour = discord.Colour.teal())
-        embed.add_field(name="Games", value=
+        embed = discord.Embed(colour = discord.Colour.teal())
+        embed.add_field(name="Board game [Currently not available]", value=
                         "`>>monopoly` - Play monopoly\n"
                         "`>>cangua` - Play co ca ngua")
         await ctx.send(embed=embed)
@@ -98,14 +102,21 @@ class HelpBot:
 
     @help.command()
     async def music(self, ctx):
-        embed = discord.Embed(title=":notes:Music", colour = discord.Colour.teal())
+        embed = discord.Embed(title=":notes: Music", colour = discord.Colour.teal())
+        embed.set_thumbnail(url="http://i.imgur.com/HKIOv84.png")
+        embed.add_field(name="Command", value="`>>music`, `>>m` - We will, we will rock you~")
         embed.add_field(name="Subcommands", value=
-                        "`queue`, `q` - Search youtube and queue a song\n"
                         f"`join`, `j` - Have {self.bot.user.display_name} join the voice channel you are currently in and play everything in queue\n"
+                        f"`leave`, `l` - Have {self.bot.user.display_name} leave the voice channel\n\n"
+                        "`queue`, `q` - Search Youtube and queue a song\n"
+                        "`playlist`, `p` - Search Youtube and queue a playlist\n\n"
                         "`skip`, `s` - Skip current song\n"
-                        f"`leave`, `l` - Have {self.bot.user.display_name} leave the voice channel\n"
                         "`volume`, `v` - Set volume, must be between 0 and 200\n"
-                        "`repeat`, `r` - Toggle repeat mode")
+                        "`repeat`, `r` - Toggle repeat mode\n"
+                        "`delete`, `d` - Delete a song from queue with given position\n"
+                        "`purge` - Purge all songs from queue\n\n"
+                        "`export`, `e` - Export current queue to JSON file\n"
+                        "`import`, `i` - Import JSON playlist")
         embed.add_field(name="Notes", value=
                         "A subcommand is meant to be used with main command.\n"
                         "For example, `>>m q fukkireta` is a valid command.\n\n"

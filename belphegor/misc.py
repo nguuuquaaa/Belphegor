@@ -6,9 +6,8 @@ from .board_game import dices
 from .utils import config, checks, request
 import psutil
 import os
-import aiohttp
 import codecs
-import asyncio
+import json
 
 #==================================================================================================================================================
 
@@ -67,7 +66,7 @@ class MiscBot:
 
     @commands.command(aliases=["jkp",])
     async def jankenpon(self, ctx):
-        message = await ctx.send(embed=discord.Embed(title="What will you use? Rock, paper or scissor?"))
+        message = await ctx.send(embed=discord.Embed(description="What will you use? Rock, paper or scissor?"))
         e_value = {"\u270a": 1, "\u270b": 2, "\u270c": 3, "\u274c": 0}
         e_emoji = ("\u274c", "\u270a", "\u270b", "\u270c")
         for e in e_value:
@@ -80,16 +79,16 @@ class MiscBot:
         streak = ""
         while True:
             try:
-                reaction, user = await self.bot.wait_for("reaction_add", check=lambda r,u:u.id==ctx.message.author.id and r.emoji in e_value, timeout=10)
-            except asyncio.TimeoutError:
+                reaction, user = await self.bot.wait_for("reaction_add", check=lambda r,u:u.id==ctx.message.author.id and r.emoji in e_value and r.message.id==message.id, timeout=10)
+            except:
                 await message.clear_reactions()
-                await message.edit(embed=discord.Embed(title="\"I'm tir..e...d.....zzzz...........\""))
+                await message.edit(embed=discord.Embed(description="\"I'm tir..e...d.....zzzz...........\""))
                 break
             roll = random.randint(1,3)
             value = e_value[reaction.emoji]
             if value == 0:
                 await message.clear_reactions()
-                await message.edit(embed=discord.Embed(title="\"No more jankenpon? Yay!!!\""))
+                await message.edit(embed=discord.Embed(description="\"No more jankenpon? Yay!!!\""))
                 break
             else:
                 await message.remove_reaction(reaction, user)
@@ -114,38 +113,6 @@ class MiscBot:
                 await message.edit(embed=embed)
         with codecs.open(f"{config.data_path}misc/jankenpon/{ctx.message.author.id}.txt", "w+", encoding="utf-8") as file:
             file.write(f"{win[0]} {win[1]} {win[2]}")
-
-    @commands.command()
-    async def creampie(self, ctx):
-        '''
-            Add role 18+ for accessing creampie channel, which is NSFW.
-            Creampie server only.
-        '''
-        member = ctx.message.author
-        role = discord.utils.get(member.server.roles, name="18+")
-        try:
-            if role is not None:
-                await self.bot.add_roles(member, role)
-                await ctx.send('Role 18+ added.')
-                await ctx.send('*\"{0} no ecchi! Hentai!\"*'.format(member.mention))
-        except:
-            pass
-
-    @commands.command()
-    async def censored(self, ctx):
-        '''
-            Remove role 18+.
-            Creampie server only.
-        '''
-        member = ctx.message.author
-        role = discord.utils.get(member.roles, name="18+")
-        try:
-            if role is not None:
-                await self.bot.remove_roles(member, role)
-                await ctx.send('Role 18+ removed.')
-                await ctx.send("*\"Doesn't matter, {0} is still a pervert...\"*".format(member.mention))
-        except:
-            pass
 
     async def on_message(self, message):
         if message.author.bot:
@@ -198,7 +165,7 @@ class MiscBot:
         process = psutil.Process(os.getpid())
         embed.add_field(name="Servers", value="{} servers".format(len(self.bot.guilds)))
         embed.add_field(name="Memory usage", value="{:.2f} MBs".format(process.memory_info().rss/1024/1024))
-        with open(config.data_path+"misc/start_time.txt") as file:
+        with open(f"{config.data_path}misc/start_time.txt") as file:
             start_time = float(file.read())
         uptime = int(time.time() - start_time)
         d = uptime // 86400
@@ -209,67 +176,16 @@ class MiscBot:
         embed.set_footer(text=time.strftime("%a, %Y-%m-%d at %I:%M:%S %p, GMT%z", time.localtime()))
         await ctx.send(embed=embed)
 
-    @commands.group(aliases=["random",])
-    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
-    async def r(self, ctx):
-        if ctx.invoked_subcommand is None:
-            pass
-
-    async def get_image_danbooru(self, rating, tag):
-        async with aiohttp.ClientSession() as session:
-            async with session.get("https://danbooru.donmai.us/posts/random?tags=rating%3A" + rating + "+" + tag) as response:
-                bytes_ = await response.read()
-                sauce = response.url
-        page = bytes_.decode("utf-8")
-        data = page.split("data-file-url=\"")
-        ref = data[1].split("\"")
-        url = "https://danbooru.donmai.us" + ref[0]
-        embed = discord.Embed(title="Danbooru", url=str(sauce), colour=discord.Colour.red())
-        embed.set_image(url=url)
-        return embed
-
-    async def get_image_konachan(self):
-        async with aiohttp.ClientSession() as session:
-            async with session.get("http://konachan.net/post/random") as response:
-                bytes_ = await response.read()
-                sauce = response.url
-            page = bytes_.decode("utf-8")
-            data = page.split("\" property=\"og:image\"")
-            ref = data[0].split("\"")
-            url = "https:" + ref[-1]
-            pic_bytes = await request.fetch(session, url)
-        embed = discord.Embed(title="Konachan", url=str(sauce), colour=discord.Colour.red())
-        return embed, pic_bytes
-
-    @r.command(aliases=["h",])
-    @checks.nsfw()
-    async def hentai(self, ctx, tag:str=""):
-        with ctx.message.channel.typing():
-            embed = await self.get_image_danbooru("explicit", tag)
-            await ctx.send(embed=embed)
-
-    @r.command(aliases=["p",])
-    async def pic(self, ctx, tag:str=""):
-        with ctx.message.channel.typing():
-            embed = await self.get_image_danbooru("safe", tag)
-            await ctx.send(embed=embed)
-
-    @r.command(aliases=["k",])
-    async def konachan(self, ctx, tag:str=""):
-        with ctx.message.channel.typing():
-            embed, pic_bytes = await self.get_image_konachan()
-            await ctx.send(embed=embed)
-            await ctx.send(file=discord.File(pic_bytes, "kona.jpg"))
-
     @commands.command()
+    @checks.manager_only()
     async def welcome(self, ctx):
-        with codecs.open(config.data_path+"misc/welcome/"+str(ctx.message.guild.id)+".txt", "w+", encoding="utf-8") as file:
+        with codecs.open(f"{config.data_path}misc/welcome/{ctx.message.guild.id}.txt", "w+", encoding="utf-8") as file:
             file.write(str(ctx.message.channel.id))
         await ctx.send("Got it.")
 
     async def on_member_join(self, member):
         try:
-            with codecs.open(config.data_path+"misc/welcome/"+str(member.guild.id)+".txt", encoding="utf-8") as file:
+            with codecs.open(f"{config.data_path}misc/welcome/{member.guild.id}.txt", encoding="utf-8") as file:
                 channel_id = int(file.read().rstrip())
             channel = member.guild.get_channel(channel_id)
             await channel.send("Eeeeehhhhhh, go away {}, I don't want any more work...".format(member.display_name))

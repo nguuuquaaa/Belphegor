@@ -1,4 +1,4 @@
 
-token = "MzA2NzA2Njk5MTAyNzE1OTA3.DEfvIg.dqYPplbbMPySDBn4Bf1jbeKX0lo"
+token = None
 
-youtube_key = "AIzaSyCLzYehuIYE2G2caW5lgkXPPjvBQgVlxSw"
+youtube_key = None

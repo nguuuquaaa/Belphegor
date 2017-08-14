@@ -510,28 +510,62 @@ class OtogiBot():
         self.__init__(self.bot)
         await ctx.send("Daemon database updated.")
 
-    @commands.command(aliases=["ls"])
+    @commands.group(aliases=["ls"])
     @commands.cooldown(rate=1, per=1, type=commands.BucketType.user)
     async def lunchsummon(self, ctx):
-        player = self._find_player(ctx.message.author.id)
-        roll = random.randint(1,100)
-        if 0 < roll <= 4:
-            rarity = "5"
-        elif 4 < roll <= 22:
-            rarity = "4"
+        if ctx.invoked_subcommand is None:
+            player = self._find_player(ctx.message.author.id)
+            roll = random.randint(1,100)
+            if 0 < roll <= 4:
+                rarity = "5"
+            elif 4 < roll <= 22:
+                rarity = "4"
+            else:
+                rarity = "3"
+            daemon = random.choice(self.summon[rarity])
+            player.summon(daemon, int(rarity))
+            embed = discord.Embed(title=f"{ctx.message.author.display_name} summoned {daemon}!", colour=discord.Colour.orange())
+            data = self.daemons[daemon].true_url.split("?cb=")
+            try:
+                code = data[1].split("&")
+                scale_url = f"{data[0]}/scale-to-width-down/250?cb={code[0]}"
+            except:
+                scale_url = self.daemons[daemon].true_url
+            embed.set_image(url=scale_url)
+            await ctx.send(embed=embed)
+
+    @lunchsummon.command()
+    async def till(self, ctx, *, name):
+        result = self._search(name)
+        daemon = await self.filter(ctx, name, result)
+
+        def whale_mode():
+            result = 0
+            while True:
+                result += 1
+                roll = random.randint(1,100)
+                if 0 < roll <= 4:
+                    rarity = "5"
+                elif 4 < roll <= 22:
+                    rarity = "4"
+                else:
+                    rarity = "3"
+                d = random.choice(self.summon[rarity])
+                if d == daemon.name:
+                    break
+            return result
+
+        check = False
+        for r, pool in self.summon.items():
+            for daemon_name in pool:
+                if daemon.name == daemon_name:
+                    check = True
+                    break
+        if check:
+            number_of_rolls = await self.bot.loop.run_in_executor(None, whale_mode)
+            await ctx.send(f"It took {number_of_rolls} summons to get {daemon.name}.")
         else:
-            rarity = "3"
-        daemon = random.choice(self.summon[rarity])
-        player.summon(daemon, int(rarity))
-        embed = discord.Embed(title=f"{ctx.message.author.display_name} summoned {daemon}!", colour=discord.Colour.orange())
-        data = self.daemons[daemon].true_url.split("?cb=")
-        try:
-            code = data[1].split("&")
-            scale_url = f"{data[0]}/scale-to-width-down/250?cb={code[0]}"
-        except:
-            scale_url = self.daemons[daemon].true_url
-        embed.set_image(url=scale_url)
-        await ctx.send(embed=embed)
+            await ctx.send(f"{daemon.name} is not in summon pool.")
 
     def _find_player(self, member_id):
         return Player.from_file(member_id)
@@ -576,38 +610,26 @@ class OtogiBot():
             await message.add_reaction(r)
         while True:
             try:
-                reaction, user = await self.bot.wait_for("reaction_add", check=lambda r, u:u.id==target.id and r.emoji in possible_reactions, timeout=20)
+                reaction, user = await self.bot.wait_for("reaction_add", check=lambda r, u:u.id==ctx.message.author.id and r.emoji in possible_reactions and r.message.id==message.id, timeout=20)
             except:
-                try:
-                    await message.clear_reactions()
-                except:
-                    pass
+                await message.clear_reactions()
                 break
             if reaction.emoji == "\u23ee":
-                try:
-                    await message.remove_reaction(reaction, user)
-                except:
-                    pass
+                await message.remove_reaction(reaction, user)
                 if current_page == 0:
                     continue
                 else:
                     current_page -= 1
                     await message.edit(embed=data(current_page))
             elif reaction.emoji == "\u23ed":
-                try:
-                    await message.remove_reaction(reaction, user)
-                except:
-                    pass
+                await message.remove_reaction(reaction, user)
                 if current_page == max_page - 1:
                     continue
                 else:
                     current_page += 1
                     await message.edit(embed=data(current_page))
             else:
-                try:
-                    await message.clear_reactions()
-                except:
-                    pass
+                await message.clear_reactions()
                 break
 
 
