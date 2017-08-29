@@ -5,6 +5,10 @@ from .utils import config
 #==================================================================================================================================================
 
 class HelpBot:
+    '''
+    Display help.
+    '''
+
     def __init__(self, bot):
         self.bot = bot
         self.bot.remove_command("help")
@@ -17,7 +21,7 @@ class HelpBot:
     @commands.group()
     async def help(self, ctx):
         if ctx.invoked_subcommand is None:
-            embed = discord.Embed(title="Invite link", url="https://discordapp.com/oauth2/authorize?client_id=306706699102715907&scope=bot&permissions=0x0235CC50", colour = discord.Colour.teal())
+            embed = discord.Embed(title="Invite link", url="https://discordapp.com/oauth2/authorize?client_id=306706699102715907&scope=bot&permissions=0x1235CC50", colour = discord.Colour.teal())
             embed.set_author(name="{}#{}".format(self.bot.user.name, self.bot.user.discriminator), icon_url="http://i.imgur.com/WZ5nDdA.png")
             embed.set_thumbnail(url=self.bot.user.avatar_url)
             embed.add_field(name="Categories", value=
@@ -28,12 +32,16 @@ class HelpBot:
                             "`>>help music` - Music commands\n"
                             "`>>help react` - Reactions")
             embed.add_field(name="Misc.", value=
-                            f"`>>jankenpon` - Play jankenpon with {self.bot.user.name}\n"
-                            "`>>random` - Random image\n"
+                            f"`>>jkp`, `>>jankenpon` - Play jankenpon with {self.bot.user.name}\n"
+                            "`>>r`, `>>random` - Random image\n"
+                            "`>>g>`, `>>google` - Google search\n"
+                            "`>>poll <question and choices>` - Make a poll\n"
+                            "Question and choices are separated by line break\n"
                             "`>>dice <maxside> <amount>` - Roll dices\n"
                             "`>>avatar` - Get your or a user avatar\n"
                             "`>>fancy` - Fancilize a sentence\n"
                             "`>>welcome` - Set welcome message on the channel invoked\n"
+                            "Notes: Manage server permission only\n"
                             "`>>stats` - Bot info")
             embed.set_footer(text="Prefix: >>, !! or bot mention")
             await ctx.send(embed=embed)
@@ -47,14 +55,18 @@ class HelpBot:
             pass
         embed.add_field(name="Database", value=
                         "`>>d`, `>>daemon` - Check a daemon info\n"
-                        "`>>g`, `>>group` - Display a group members\n"
-                        "Note: a group contains daemons who boost/get boosted by each other, like elves and 5 swords\n\n"
-                        "`>>update` - Add and edit database")
+                        "`>>t`, `>>trivia` - Daemon trivia stuff\n"
+                        "`>>p`, `>>pic` - Illustrations\n"
+                        "`>>ds`, `>>search` - Search for relevant daemons\n"
+                        "Command takes <attribute> <value> as arguments\n"
+                        "Attributes include... ugh I'm too lazy to list all of them...\n\n"
+                        "`>>update` - Update database")
         embed.add_field(name="Simulation", value=
                         "`>>ls` - ~~salt~~ Lunchtime summon simulation\n"
                         "Note: has 1 seconds cooldown to prevent spam\n"
                         "`>>ls till <name>` - Estimate how many summons till you get a certain daemon\n"
-                        "Note: does not count to mybox feature\n\n"
+                        "Note: does not count to mybox feature\n"
+                        "`>>ls pool` - Display current summon pool\n\n"
                         "`>>mybox` - Show your or a player's box\n"
                         "`>>limitbreak` - Limit break your daemons\n\n"
                         "`>>mochi <name>` - Sell a certain daemon\n"
@@ -102,7 +114,7 @@ class HelpBot:
 
     @help.command()
     async def music(self, ctx):
-        embed = discord.Embed(title=":notes: Music", colour = discord.Colour.teal())
+        embed = discord.Embed(title="\U0001f3b5 Music", colour = discord.Colour.teal())
         embed.set_thumbnail(url="http://i.imgur.com/HKIOv84.png")
         embed.add_field(name="Command", value="`>>music`, `>>m` - We will, we will rock you~")
         embed.add_field(name="Subcommands", value=
@@ -110,18 +122,19 @@ class HelpBot:
                         f"`leave`, `l` - Have {self.bot.user.display_name} leave the voice channel\n\n"
                         "`queue`, `q` - Search Youtube and queue a song\n"
                         "`playlist`, `p` - Search Youtube and queue a playlist\n\n"
+                        "`toggle`, `t` - Toggle play/pause\n"
+                        "`info`, `i` - Display Youtube video info\n"
                         "`skip`, `s` - Skip current song\n"
                         "`volume`, `v` - Set volume, must be between 0 and 200\n"
                         "`repeat`, `r` - Toggle repeat mode\n"
                         "`delete`, `d` - Delete a song from queue with given position\n"
                         "`purge` - Purge all songs from queue\n\n"
-                        "`export`, `e` - Export current queue to JSON file\n"
-                        "`import`, `i` - Import JSON playlist")
+                        "`export` - Export current queue to JSON file\n"
+                        "`import` - Import JSON playlist")
         embed.add_field(name="Notes", value=
                         "A subcommand is meant to be used with main command.\n"
                         "For example, `>>m q fukkireta` is a valid command.\n\n"
-                        f"{self.bot.user.name} will leave voice channel after 1 minute if queue is empty.\n\n"
-                        "*Also the music command is quite unstable due to my bad internet connection.*")
+                        f"{self.bot.user.name} will leave voice channel after 2 minutes if queue is empty.")
         await ctx.send(embed=embed)
 
 #==================================================================================================================================================

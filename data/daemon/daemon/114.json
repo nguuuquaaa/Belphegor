@@ -1,0 +1,53 @@
+{
+    "id": 114,
+    "name": "Catoblepas",
+    "alias": "Catoblepas",
+    "pic_url": "https://vignette4.wikia.nocookie.net/mira-miracle/images/3/3b/Catoblepas.png/revision/latest?cb=20160902055213",
+    "artwork_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/5/56/Catoblepas_Artwork.png/revision/latest?cb=20160902055205",
+    "max_atk": 4900,
+    "max_hp": 3800,
+    "mlb_atk": 6235,
+    "mlb_hp": 4835,
+    "rarity": 3,
+    "daemon_type": "phantasma",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "Evil Eye of Despair",
+            "Deals 2269/2889 DMG to enemy target."
+        ]
+    ],
+    "ability": [
+        [
+            "Cursed Sight (Lv. 67)",
+            "Skill attacks have a slight chance of inflicting Stun."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "--",
+        "illustrator": "Kanamura Ren (金村連)",
+        "description": "The one-eyed spirit of a creature thought to exist in Ethiopia. His \"evil eye\" curses anyone who looks directly into it. The curse itself is pretty strong, but it's easy to remove. However, things can get complicated since he is a extremely defiable fellow. His helmet can simply amplifies or restrains his power, according to his words, it's just like a faucet.",
+        "how_to_acquire": "◦ Jewel Summon",
+        "notes_and_trivia": "◦ Summon rate increased until 07/09/16",
+        "quote": {
+            "main": [
+                "\"I wouldn't recommend standing directly in front of me.\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/8/8a/Catoblepas_Main.ogg/revision/latest?cb=20161227173425"
+            ],
+            "skill": [
+                "\"Well, here I go...Look out!\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/c/c3/Catoblepas_Skill.ogg/revision/latest?cb=20161227173421"
+            ],
+            "summon": [
+                "\"You seem interesting... Allow me to join you!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/8/85/Catoblepas_Summon.ogg/revision/latest?cb=20161227173416"
+            ],
+            "limit_break": [
+                "\"Well, well, looks like I'm getting even stronger...\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/b/be/Catoblepas_Limit_Break.ogg/revision/latest?cb=20161227173413"
+            ]
+        }
+    },
+    "faction": null
+}

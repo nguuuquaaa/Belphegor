@@ -1,0 +1,57 @@
+{
+    "id": 104,
+    "name": "Balmung",
+    "alias": "Balmung",
+    "pic_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/c/c0/Balmung.png/revision/latest?cb=20160826013125",
+    "artwork_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/8/89/Balmung_Artwork.png/revision/latest?cb=20161203141139",
+    "max_atk": 8000,
+    "max_hp": 9100,
+    "mlb_atk": 9546,
+    "mlb_hp": 10859,
+    "rarity": 5,
+    "daemon_type": "anima",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Swing of Glory",
+            "Deals 5081/6061 damage to current target."
+        ]
+    ],
+    "ability": [
+        [
+            "Blade of Tragedy (Lv. 50)",
+            "Slightly increases DMG taken; sharply increases DMG dealt."
+        ],
+        [
+            "Blade of Glory (Lv. 77)",
+            "Sharply increases crit DMG."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "Minaho Matsudaira (松平美波穂‏)",
+        "illustrator": "ATARU",
+        "description": "The spirit of the favorite sword of a hero from German epic poetry. Aware of the great suffering she's caused, she urges her owner to act properly so that such tragedies don't happen again. She always tries to solve things without violence if she can, but when her opponent is unreasonable she loses all qualms and will readily knock them out.",
+        "how_to_acquire": "◦ Limited Jewel Summon 17/8/16 - 7/9/16\n◦ Trade at Exchange for 300 Mochi 4/9/16 - 7/9/16",
+        "notes_and_trivia": "◦ Deals 3x damage when Balmung is Team Leader during the \"Is this Destiny? -Orochi on the Counterattack-\" event.\n◦ Summon rate increased 17/8/16 - 7/9/16",
+        "quote": {
+            "main": [
+                "\"I'm here to prevent another tragedy!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/f/fe/Balmung_Main.ogg/revision/latest?cb=20170106151825"
+            ],
+            "skill": [
+                "\"Towards a more just and righteous path!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/2/29/Balmung_Skill.ogg/revision/latest?cb=20170106151833"
+            ],
+            "summon": [
+                "\"If it's power you want, look no further.\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/f/fa/Balmung_Summon.ogg/revision/latest?cb=20170106151913"
+            ],
+            "limit_break": [
+                "\"I expect you to use my powers in a just and proper fashion, are we clear?\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/2/23/Balmung_Limit_Break.ogg/revision/latest?cb=20170106151842"
+            ]
+        }
+    },
+    "faction": null
+}

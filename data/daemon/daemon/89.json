@@ -1,0 +1,53 @@
+{
+    "id": 89,
+    "name": "Kuji Kanesada",
+    "alias": "Kuji Kanesada",
+    "pic_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/a/a6/Kuji_Kanesada.png/revision/latest?cb=20160919152721",
+    "artwork_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/b/b6/Kuji_Kanesada_Artwork.png/revision/latest?cb=20160713012530",
+    "max_atk": 8800,
+    "max_hp": 9000,
+    "mlb_atk": 10501,
+    "mlb_hp": 10739,
+    "rarity": 5,
+    "daemon_type": "anima",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Refined Blade of Virtue",
+            "Deals 4863/5803 DMG to current target."
+        ]
+    ],
+    "ability": [
+        [
+            "Japanese Magic Knight (Lv. 49)",
+            "Skill attacks have a slight chance of inflicting Stun."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "Ryota Nakamura (中村良太)",
+        "illustrator": "*zoff",
+        "description": "The spirit of a Tao sword with the number 9 carved into it. It's not only super sharp but also has incredible anti-monster powers due to the 9 carved into it. He has complete confidence in his own abilities and can't stand people who are all talk and no walk. He sharpens his senses everyday with intense training and drills. And if you greet him in a half-hearted tone, you'll start throwing up blood. The word on the street is that he is much softer when dealing with ambitious people who want to get ahead in life.",
+        "how_to_acquire": "◦ Jewel Summon",
+        "notes_and_trivia": "◦ Significantly increases damage dealt during the \"Outbreak! A Day of Battle in Shinjuku!\" event.\n◦ Summon rate increased until 03/08/16",
+        "quote": {
+            "main": [
+                "\"Your life is worthless if you don't constantly try to improve yourself!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/c/cc/Kuji_Kanesada_Main.ogg/revision/latest?cb=20160718080651"
+            ],
+            "skill": [
+                "\"You could never hope to reach my level!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/2/23/Kuji_Kanesada_Skill.ogg/revision/latest?cb=20170106150921"
+            ],
+            "summon": [
+                "\"I have a feeling I'll get to rub shoulders with some bigshots if I stick with you!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/5/55/Kuji_Kanesada_Summon.ogg/revision/latest?cb=20170106150931"
+            ],
+            "limit_break": [
+                "\"Remember, your skills can always use more polish.\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/e/e5/Kuji_Kanesada_Limit_Break.ogg/revision/latest?cb=20170106150942"
+            ]
+        }
+    },
+    "faction": null
+}

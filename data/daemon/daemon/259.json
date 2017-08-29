@@ -1,0 +1,53 @@
+{
+    "id": 259,
+    "name": "Ame-no-Uzume",
+    "alias": "Ame-no-Uzume",
+    "pic_url": "https://vignette4.wikia.nocookie.net/mira-miracle/images/a/a4/Ame-no-Uzume.png/revision/latest?cb=20170426134659",
+    "artwork_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/5/5b/Ame-no-Uzume_Artwork.png/revision/latest?cb=20170426134641",
+    "max_atk": 7500,
+    "max_hp": 5000,
+    "mlb_atk": 9195,
+    "mlb_hp": 6131,
+    "rarity": 4,
+    "daemon_type": "divina",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "Ancient Dance",
+            "Increases DMG dealt by all allies by 30%/37% for a limited time."
+        ]
+    ],
+    "ability": [
+        [
+            "The Most Venerable Dancer (Lv. 75)",
+            "Moderately increases all allies' Crit DMG."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "--",
+        "illustrator": "Kiya Machi (木屋町)",
+        "description": "The spirit of a dancing girl from ancient Japan. Everyone who sees her perform is completely captivated. Now she wants to become famous as a pop singer and dancer. However, because she's so good at dancing, it's even more obvious how bad her singing is. Her vocal training course alone caused major property damage, including shattered windows and countless broken bulbs.",
+        "how_to_acquire": "◦ \"Spirit Idol Competition\" Event: Clear Chapter 3.\n◦ \"Spirit Idol Competition\" Event: Exchange for 1000 Voting Slip\n◦ \"Spirit Idol Competition\" Event: Get a Second Half Ranking of 2501-6000.\n◦ \"Spirit Idol Competition\" Event: Get a Total Ranking of 5001-7500.",
+        "notes_and_trivia": "◦ Slightly increases the drop rate of Voting Slip during the \"Spirit Idol Competition\" event.",
+        "quote": {
+            "main": [
+                "\"Just dance, I tell you! You'll never lose to anyone if you just dance!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/f/f8/Ame-no-Uzume_Main.ogg/revision/latest?cb=20170623164911"
+            ],
+            "skill": [
+                "\"I can mesmerize anyone with my moves.\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/e/ef/Ame-no-Uzume_Skill.ogg/revision/latest?cb=20170623164904"
+            ],
+            "summon": [
+                "\"Would you mind joining me for practice sometime?\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/a/af/Ame-no-Uzume_Summon.ogg/revision/latest?cb=20170623164858"
+            ],
+            "limit_break": [
+                "\"I've been working on my vocals lately—want to hear?\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/f/f9/Ame-no-Uzume_Limit_Break.ogg/revision/latest?cb=20170623164851"
+            ]
+        }
+    },
+    "faction": null
+}

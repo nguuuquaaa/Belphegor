@@ -1,0 +1,53 @@
+{
+    "id": 193,
+    "name": "Snake Spear",
+    "alias": "Snake Spear",
+    "pic_url": "https://vignette4.wikia.nocookie.net/mira-miracle/images/4/46/Snake_Spear.png/revision/latest?cb=20170106031552",
+    "artwork_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/4/4a/Snake_Spear_Artwork.png/revision/latest?cb=20170722042736",
+    "max_atk": 5000,
+    "max_hp": 6200,
+    "mlb_atk": 6131,
+    "mlb_hp": 7602,
+    "rarity": 4,
+    "daemon_type": "anima",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Undulating Blade",
+            "Deals 1691/2071 DMG to the row of enemies directly in front."
+        ]
+    ],
+    "ability": [
+        [
+            "Great General's Spear (Lv. 64)",
+            "When HP is 1/2 or less, sharply increases DMG dealt."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "--",
+        "illustrator": "*zoff",
+        "description": "The spirit of a spear wielded bravely by the military general Zhang Fei during the Three Kingdoms Period. Stubbornly obsessed with \"flexibility,\" he insists that that is what makes both of them so strong. he boasts that anyone could become a great general if they simply imitate his flexible style. But nobody believes him once they see the way he wriggles and twists around in combat. Still, he continues to believe that flexibility brings strength, and makes sure to stretch every morning.",
+        "how_to_acquire": "◦ Jewel Summon",
+        "notes_and_trivia": "◦ Summon rate increased until 11/01/17",
+        "quote": {
+            "main": [
+                "\"The key to my strength is flexibility.\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/5/55/Snake_Spear_Main.ogg/revision/latest?cb=20170422061303"
+            ],
+            "skill": [
+                "\"Well, who wants to get killed first?\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/9/91/Snake_Spear_Skill.ogg/revision/latest?cb=20170422061310"
+            ],
+            "summon": [
+                "\"I see you accomplishing big things someday.\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/0/00/Snake_Spear_Summon.ogg/revision/latest?cb=20170422061313"
+            ],
+            "limit_break": [
+                "\"Behold the true power of flexibility!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/a/a1/Snake_Spear_Limit_Break.ogg/revision/latest?cb=20170422061251"
+            ]
+        }
+    },
+    "faction": null
+}

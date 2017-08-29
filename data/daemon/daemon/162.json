@@ -1,0 +1,53 @@
+{
+    "id": 162,
+    "name": "Muramasa [Thanksgiving]",
+    "alias": "Muramasa [Thanksgiving]",
+    "pic_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/8/81/Muramasa_Thanksgiving.png/revision/latest?cb=20161125002125",
+    "artwork_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/f/f0/Muramasa_Thanksgiving_Artwork.png/revision/latest?cb=20170722041154",
+    "max_atk": 6950,
+    "max_hp": 5100,
+    "mlb_atk": 8521,
+    "mlb_hp": 6253,
+    "rarity": 4,
+    "daemon_type": "anima",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "Supernatural Release",
+            "Deals (2136/2616) DMG to 2 enemies (ranged priority), with a very high chance of inflicting Sleep."
+        ]
+    ],
+    "ability": [
+        [
+            "Caring for Friends (Lv. 70)",
+            "Restores HP to the ally with the lowest percentage of HP at the start of each wave."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "Yuna Taniguchi (谷口夢奈)",
+        "illustrator": "Kiya Machi (木屋町)",
+        "description": "The legendary spirit of a supposed \"daemon blade.\" Ceaseless training has given her considerable control over her supernatural powers, though it's by no means perfect. Still, she's confident in the strength she's honed over the years in order to protect her friends. Always having been seen as an honest and direct individual, her powers are recognized and appreciated both by herself and others. One can assume she'll continue to wield her powers freely in the future as well.",
+        "how_to_acquire": "◦ \"Thanksgiving Day Beatdown\" Event: Clear Chapter 4\n◦ \"Thanksgiving Day Beatdown\" Event: Exchange for 1000 Seed of Thanks",
+        "notes_and_trivia": "◦ Moderately increases the drop rate of Seed of Thanks during the \"Thanksgiving Day Beatdown\" event.",
+        "quote": {
+            "main": [
+                "\"Purrrrfect!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/8/82/Muramasa_Thanksgiving_Main.ogg/revision/latest?cb=20170422055846"
+            ],
+            "skill": [
+                "\"Time fur you to take a cat nap!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/7/72/Muramasa_Thanksgiving_Skill.ogg/revision/latest?cb=20170422055850"
+            ],
+            "summon": [
+                "\"I'll give it one meowre try!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/b/ba/Muramasa_Thanksgiving_Summon.ogg/revision/latest?cb=20170422055854"
+            ],
+            "limit_break": [
+                "\"I'm becoming supurrbly reliable!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/0/08/Muramasa_Thanksgiving_Limit_Break.ogg/revision/latest?cb=20170422055844"
+            ]
+        }
+    },
+    "faction": null
+}

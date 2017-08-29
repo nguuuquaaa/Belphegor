@@ -1,0 +1,53 @@
+{
+    "id": 56,
+    "name": "Goblerna",
+    "alias": "Goblerna",
+    "pic_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/3/33/Goblerna.png/revision/latest?cb=20161015185813",
+    "artwork_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/f/f7/Goblerna_Artwork.png/revision/latest?cb=20170205044224",
+    "max_atk": 2300,
+    "max_hp": 2700,
+    "mlb_atk": 3359,
+    "mlb_hp": 3941,
+    "rarity": 1,
+    "daemon_type": "phantasma",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Mauler's Maelstrom",
+            "Deals (200/886) DMG to current target."
+        ]
+    ],
+    "ability": [],
+    "bond": [
+        [
+            "Goblerna > Gobrute",
+            "Increases Gobrute's normal DMG by 1%"
+        ]
+    ],
+    "additional_data": {
+        "voice_actor": "Yuubi Midorikawa (緑川優美)",
+        "illustrator": "nico",
+        "description": "\"Small-fry\" spirit no. 2, as made famous by classic RPG tradition the world over. In keeping with her small-fry status, her job is to be a thorn in the side of any hero at the outset of their journey. She's also a passionate practitioner of martial arts.",
+        "how_to_acquire": "◦ Free Summon\n◦ Raid: Random Drop",
+        "notes_and_trivia": "--",
+        "quote": {
+            "main": [
+                "\"Bow down to my almighty fists!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/4/41/Goblerna_Main.ogg/revision/latest?cb=20160715125429"
+            ],
+            "skill": [
+                "\"How'dya like to chow on this?!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/2/27/Goblerna_Skill.ogg/revision/latest?cb=20160715125923"
+            ],
+            "summon": [
+                "\"Oi, you! Mind if I try out this new technique on you?\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/2/24/Goblerna_Summon.ogg/revision/latest?cb=20160716163611"
+            ],
+            "limit_break": [
+                "\"Yeees! There's no holding me back now!\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/e/e1/Goblerna_Limit_Break.ogg/revision/latest?cb=20160715125950"
+            ]
+        }
+    },
+    "faction": null
+}

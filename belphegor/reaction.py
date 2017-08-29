@@ -6,6 +6,10 @@ from .utils import config
 #==================================================================================================================================================
 
 class Reaction:
+    '''
+    Gif reaction. Ugh need to update this....
+    '''
+
     def __init__(self, bot):
         self.bot = bot
         self.links = {"wut":        ("http://i.imgur.com/DISTSLM.gif",),
@@ -113,7 +117,7 @@ class Reaction:
         out = ""
         for name in args:
             emoji = discord.utils.find(lambda a:a.name==name, self.bot.get_guild(config.test_server_id).emojis)
-            out += str(emoji)
+            out = f"{out}{emoji}"
         if out:
             await ctx.send(out)
 

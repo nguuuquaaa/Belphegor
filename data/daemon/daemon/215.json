@@ -1,0 +1,58 @@
+{
+    "id": 215,
+    "name": "Chidori",
+    "alias": "Chidori",
+    "pic_url": "https://vignette4.wikia.nocookie.net/mira-miracle/images/7/7e/Chidori.png/revision/latest?cb=20170209172836",
+    "artwork_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/8/8c/Chidori_Artwork.png/revision/latest?cb=20170209173113",
+    "max_atk": 3900,
+    "max_hp": 4300,
+    "mlb_atk": 4961,
+    "mlb_hp": 5471,
+    "rarity": 3,
+    "daemon_type": "anima",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Thunder God Killer",
+            "Deals 2348/2988 DMG to current target."
+        ]
+    ],
+    "ability": [
+        [
+            "Thunder Cutter (Lv. 70)",
+            "Skill attacks have a moderate chance of inflicting Paralysis; moderately increase DMG taken by paralyzed targets for a short time."
+        ]
+    ],
+    "bond": [
+        [
+            "Mjölnir > Chidori",
+            "Increases Chidori's DMG dealt by 50%"
+        ]
+    ],
+    "additional_data": {
+        "voice_actor": "Runa Fukuyama (福山瑠奈)",
+        "illustrator": "Totomo (トトモ)",
+        "description": "The spirit of the sword that was used to defeat the thunder god. Afterwards she got a lot of praise and became famous under a different name. However, as a spirit she prefers her original name. This is because her master was gravely injured when attacking the thunder god, and she felt bad about it ever since. She plans to keep using her name \"Chidori\" until the thunder god is defeated without injury.",
+        "how_to_acquire": "◦ Jewel Summon",
+        "notes_and_trivia": "◦ Summon rate increased until 15/02/2017",
+        "quote": {
+            "main": [
+                "\"I can cut anything. I don't care what it is, I'll cut it!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/2/26/Chidori_Main.ogg/revision/latest?cb=20170421162018"
+            ],
+            "skill": [
+                "\"This will be over in an instant.\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/c/c7/Chidori_Skill.ogg/revision/latest?cb=20170421162028"
+            ],
+            "summon": [
+                "\"Could you help me with my training?\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/b/be/Chidori_Summon.ogg/revision/latest?cb=20170421162039"
+            ],
+            "limit_break": [
+                "\"I think...I think I'm finally ready...\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/6/65/Chidori_Limit_Break.ogg/revision/latest?cb=20170421162048"
+            ]
+        }
+    },
+    "faction": null
+}

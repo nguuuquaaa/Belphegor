@@ -1,0 +1,57 @@
+{
+    "id": 135,
+    "name": "Philosopher's Stone",
+    "alias": "Philosopher's Stone",
+    "pic_url": "https://vignette4.wikia.nocookie.net/mira-miracle/images/b/b9/Philosopher%27s_Stone.png/revision/latest?cb=20161007094038",
+    "artwork_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/5/52/Philosopher%27s_Stone_Artwork.png/revision/latest?cb=20170722041057",
+    "max_atk": 11800,
+    "max_hp": 7200,
+    "mlb_atk": 14081,
+    "mlb_hp": 8591,
+    "rarity": 5,
+    "daemon_type": "anima",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "Miracle Cure",
+            "Restores 1347/1607 HP to all allies and cures them of all negative status effects."
+        ]
+    ],
+    "ability": [
+        [
+            "Like a Blade of Magic (Lv. 30)",
+            "Normal attacks sharply decrease the current target's ATK speed."
+        ],
+        [
+            "Alchemist's Achievement (Lv. 85)",
+            "Sharply increases all allies' crit DMG."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "",
+        "illustrator": "Kiya Machi (木屋町)",
+        "description": "The spirit of a stone created by an alchemist long ago. Though at first considered a mistake, the stone was kept afterwards in the alchemist's lab. There she witnessed all sorts of experiments, ever wishing for her master's success. The wishes were finally answered about a hundred years later when people started to call her \"The Philosopher's Stone\" and she gained the power to grant wishes. However, the alchemist is no longer anywhere to be found...",
+        "how_to_acquire": "◦ Jewel Summon",
+        "notes_and_trivia": "◦ Summon rate increased until 12/10/16",
+        "quote": {
+            "main": [
+                "\"Impossible? No such thing! Not for me!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/c/ca/Philosopher%27s_Stone_Main.ogg/revision/latest?cb=20170106154021"
+            ],
+            "skill": [
+                "\"Easy-peasy...when you have powers like mine.\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/c/c3/Philosopher%27s_Stone_Skill.ogg/revision/latest?cb=20170106154036"
+            ],
+            "summon": [
+                "\"I'm searching for a certain someone... Think you can help me?\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/f/f4/Philosopher%27s_Stone_Summon.ogg/revision/latest?cb=20170106154047"
+            ],
+            "limit_break": [
+                "\"Until we meet again...\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/6/6a/Philosopher%27s_Stone_Limit_Break.ogg/revision/latest?cb=20170106154059"
+            ]
+        }
+    },
+    "faction": null
+}

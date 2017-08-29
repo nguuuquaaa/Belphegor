@@ -1,0 +1,53 @@
+{
+    "id": 232,
+    "name": "Xiezhi",
+    "alias": "Xiezhi",
+    "pic_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/b/b3/Xiezhi.png/revision/latest?cb=20170317120459",
+    "artwork_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/d/d5/Xiezhi_Artwork.png/revision/latest?cb=20170313132732",
+    "max_atk": 5000,
+    "max_hp": 6300,
+    "mlb_atk": null,
+    "mlb_hp": null,
+    "rarity": 4,
+    "daemon_type": "divina",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Horn of Justice",
+            "Deals 3896/ DMG to current target."
+        ]
+    ],
+    "ability": [
+        [
+            "Unicorn (Lv. 63)",
+            "Immune to Poison."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "",
+        "illustrator": "ATARU",
+        "description": "The spirit of a unicorn that values reason and justice above all else. Whenever she witnesses quarrel or strife she steps in to mediate using her unique \"headbutt\" approach. This involves ramming into someone with all her might if they make an illogical argument. It's not the person, but rather what they say that matters -- she'll even headbutt Bureau Chief Mikado if she has to! Sometimes she goes too far with the whole self-righteous act, and even she acknowledges that her rigid way of thinking is a slightly simplistic expression of \"justice\".",
+        "how_to_acquire": "◦ Jewel Summon",
+        "notes_and_trivia": "◦ Summon rate increased until 15/03/17",
+        "quote": {
+            "main": [
+                "\"Is that all you wanted to say?\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/7/7f/Xiezhi_Main.ogg/revision/latest?cb=20170622213109"
+            ],
+            "skill": [
+                "\"I sentence you...to a very strong headbutt!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/5/57/Xiezhi_Skill.ogg/revision/latest?cb=20170622213057"
+            ],
+            "summon": [
+                "\"The verdict is in. You are hereby declared unjust.\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/4/46/Xiezhi_Summon.ogg/revision/latest?cb=20170622213050"
+            ],
+            "limit_break": [
+                "\"\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/b/b9/Xiezhi_Limit_Break.ogg/revision/latest?cb=20170622213041"
+            ]
+        }
+    },
+    "faction": null
+}

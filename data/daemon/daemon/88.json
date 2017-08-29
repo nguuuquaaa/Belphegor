@@ -1,0 +1,57 @@
+{
+    "id": 88,
+    "name": "Himiko",
+    "alias": "Himiko",
+    "pic_url": "https://vignette4.wikia.nocookie.net/mira-miracle/images/e/ec/Himiko.png/revision/latest?cb=20161014135052",
+    "artwork_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/6/66/Himiko_Artwork.png/revision/latest?cb=20170722034925",
+    "max_atk": 11000,
+    "max_hp": 7660,
+    "mlb_atk": 13126,
+    "mlb_hp": 9141,
+    "rarity": 5,
+    "daemon_type": "divina",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "Unmistakable Oracle",
+            "Deals 1773/2113 DMG to the 3 enemies with the highest ATK. A very high/100% chance of inflicting Silence."
+        ]
+    ],
+    "ability": [
+        [
+            "Shrine Maiden (Lv. 30)",
+            "Moderately increases damage dealt."
+        ],
+        [
+            "Queen of Yamato (Lv. 90)",
+            "Moderately increases damage dealt by Divina team members when this daemon is Team Leader."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "Iori Nomizu (野水伊織)",
+        "illustrator": "Hihara You (緋原ヨウ)",
+        "description": "The spirit of a shaman queen who ruled Yamataikoku long ago. Her shamanic powers were strong and she used them to save her domain many times. That's how she went from being one of may shrine maidens to being the queen. She actually enjoyed being a shrine maiden, but her serious side wouldn't permit her to turn down the offer to rule the land, so she's trying to start acting more like a queen. She unexpectedly finds it very fulfilling and is completely satisfied with her own role.",
+        "how_to_acquire": "◦ Jewel Summon",
+        "notes_and_trivia": "",
+        "quote": {
+            "main": [
+                "\"Calm yourself! Who do you think you're talking to? (Yeah, that sounded queenly! Go me!)\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/0/0c/Himiko_Main.ogg/revision/latest?cb=20160715065334"
+            ],
+            "skill": [
+                "\"I foresaw that this would happen!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/f/f8/Himiko_Skill.ogg/revision/latest?cb=20160715065633"
+            ],
+            "summon": [
+                "\"Worry not, I'll prevent anything bad from happening. (Ooh, did that really sound regal enough?)\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/5/53/Himiko_Summon.ogg/revision/latest?cb=20170121175125"
+            ],
+            "limit_break": [
+                "\"Another oracle reading? Alright...\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/e/e4/Himiko_Limit_Break.ogg/revision/latest?cb=20160715065734"
+            ]
+        }
+    },
+    "faction": null
+}

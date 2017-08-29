@@ -1,0 +1,53 @@
+{
+    "id": 247,
+    "name": "Cherry Blossom Front",
+    "alias": "CBF",
+    "pic_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/6/6d/Cherry_Blossom_Front.png/revision/latest?cb=20170405121236",
+    "artwork_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/3/30/Cherry_Blossom_Front_Artwork.png/revision/latest?cb=20170405121200",
+    "max_atk": 9000,
+    "max_hp": 7600,
+    "mlb_atk": 10739,
+    "mlb_hp": 8991,
+    "rarity": 5,
+    "daemon_type": "phantasma",
+    "daemon_class": "healer",
+    "skill": [
+        [
+            "Warm and Carefree",
+            "Increases DMG dealt by all allies by 43%/52% for a limited time."
+        ]
+    ],
+    "ability": [
+        [
+            "Song of Spring (Lv. 77)",
+            "Sharply increases Crit DMG by Phantasma team members."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "--",
+        "illustrator": "Kiya Machi (木屋町)",
+        "description": "A spirit that let's people know when the cherry blossom trees are blooming. The daughter of a respectable family, she comes in with the warm spring breeze to make cherry trees blossom. It's actually a lot of work to make sure every tree in Japan blooms, so she keeps pretty busy. Apparently the key to the most beautiful blooms is shouted words of encouragement. But her habit of doing this makes people mistake her for a character from a fairy tale. However, lately she's been using this to her advantage to become a pop sensation.",
+        "how_to_acquire": "◦ Limited Jewel Summon 05/04/17 to 12/04/17",
+        "notes_and_trivia": "◦ Summon rate increased until 12/04/17",
+        "quote": {
+            "main": [
+                "\"Make those blossoms bloom!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/b/bc/Cherry_Blossom_Front_Main.ogg/revision/latest?cb=20170623162128"
+            ],
+            "skill": [
+                "\"Here, this should warm you up.\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/4/45/Cherry_Blossom_Front_Skill.ogg/revision/latest?cb=20170623162136"
+            ],
+            "summon": [
+                "\"Ohh, beautiful cherry blossoms, come to my side!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/7/7d/Cherry_Blossom_Front_Summon.ogg/revision/latest?cb=20170623162143"
+            ],
+            "limit_break": [
+                "\"--\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/d/d5/Cherry_Blossom_Front_Limit_Break.ogg/revision/latest?cb=20170623162150"
+            ]
+        }
+    },
+    "faction": null
+}

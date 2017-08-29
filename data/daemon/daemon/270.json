@@ -1,0 +1,53 @@
+{
+    "id": 270,
+    "name": "Hymenaios",
+    "alias": "Hymenaios",
+    "pic_url": "https://vignette4.wikia.nocookie.net/mira-miracle/images/b/ba/Hymenaios.png/revision/latest?cb=20170518143645",
+    "artwork_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/8/8c/Hymenaios_Artwork.png/revision/latest?cb=20170518131449",
+    "max_atk": 6500,
+    "max_hp": 6400,
+    "mlb_atk": 7969,
+    "mlb_hp": 7847,
+    "rarity": 4,
+    "daemon_type": "divina",
+    "daemon_class": "healer",
+    "skill": [
+        [
+            "Blessed Hymn",
+            "Restores 1335/1635 HP to all allies and cures them of Poison."
+        ]
+    ],
+    "ability": [
+        [
+            "God of Weddings (Lv. 64)",
+            "Moderately increases battle reward drop rate."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "--",
+        "illustrator": "*zoff",
+        "description": "A spirit of the Greek god of marriage ceremonies. Among his various ceremonial duties is singing a hymn as a blessing, and it's widely known among spirits that a ceremony lacking his dulcet tones will lead to a cursed marriage. No wonder he's never short of bookings.",
+        "how_to_acquire": "◦ Limited Jewel Summon 17/05/17- 07/06/17\n◦ Trade at Exchange for 50 Mochi 04/06/17 - 07/06/17",
+        "notes_and_trivia": "◦ Increases battle time limit by 33% during the \"Romance of the Demon and Sword\" event.\n◦ The effect increases with the number of limit breaks. (33% → 49.75% → 66.5% → 83.25% → 100%)\n◦ Summon rate increased until 17/05/17- 07/06/17",
+        "quote": {
+            "main": [
+                "\"Many blessings to you all.\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/0/07/Hymenaios_Main.ogg/revision/latest?cb=20170622211520"
+            ],
+            "skill": [
+                "\"All together now!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/a/a5/Hymenaios_Skill.ogg/revision/latest?cb=20170622211527"
+            ],
+            "summon": [
+                "\"Let us sing together.\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/0/04/Hymenaios_Summon.ogg/revision/latest?cb=20170622211536"
+            ],
+            "limit_break": [
+                "\"--\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/a/ab/Hymenaios_Limit_Break.ogg/revision/latest?cb=20170622211545"
+            ]
+        }
+    },
+    "faction": null
+}

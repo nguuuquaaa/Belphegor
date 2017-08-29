@@ -1,0 +1,58 @@
+{
+    "id": 21,
+    "name": "Kintaro",
+    "alias": "Kintaro",
+    "pic_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/5/5b/Kintaro.png/revision/latest?cb=20161014135810",
+    "artwork_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/2/20/Kintaro_Artwork.png/revision/latest?cb=20160708033022",
+    "max_atk": 5200,
+    "max_hp": 6180,
+    "mlb_atk": 6376,
+    "mlb_hp": 7577,
+    "rarity": 4,
+    "daemon_type": "divina",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Great Blade of Magic",
+            "Deals 1671/2051 DMG to surrounding enemies, with a moderate chance of inflicting Stun to targets."
+        ]
+    ],
+    "ability": [
+        [
+            "Four Heavenly Kings of Raiko (Lv. 43)",
+            "Moderately increases DMG dealt when one of the Four Heavenly Kings of Raiko is on the team."
+        ]
+    ],
+    "bond": [
+        [
+            "Kintaro's Axe > Kintaro",
+            "Increases Kintaro's normal DMG by 3%"
+        ]
+    ],
+    "additional_data": {
+        "voice_actor": "Yoji Ikuta (生田鷹司)",
+        "illustrator": "Hihara You (緋原ヨウ)",
+        "description": "A great hero known as one of the Four Heavenly Kings of Raiko who saved the capital from evil. The spirit's trademark is his height. His reputation comes from his superhuman strength. He can wield a hundred class war axe with one hand. He was an orphan and grew up in the woods with animals. But his former home is now all gone, and his friends have migrated to other places.",
+        "how_to_acquire": "◦ Obtained after clearing Chapter 6.\n◦ Available in Jewel Summon after clearing Chapter 6.",
+        "notes_and_trivia": "--",
+        "quote": {
+            "main": [
+                "\"You mean there is someone stronger than me?\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/7/7c/Kintaro_Main.ogg/revision/latest?cb=20170422053144"
+            ],
+            "skill": [
+                "\"We have a patent on destruction.\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/d/d4/Kintaro_Skill.ogg/revision/latest?cb=20170422053201"
+            ],
+            "summon": [
+                "\"Leave it to me! I won't hurtcha!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/b/b2/Kintaro_Summon.ogg/revision/latest?cb=20170422053203"
+            ],
+            "limit_break": [
+                "\"W-what...? You still...?\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/e/e5/Kintaro_Limit_Break.ogg/revision/latest?cb=20170422053147"
+            ]
+        }
+    },
+    "faction": "Four Heavenly Kings of Raiko"
+}

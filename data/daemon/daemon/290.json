@@ -1,0 +1,48 @@
+{
+    "id": 290,
+    "name": "Decoratia Starling",
+    "alias": "Decoratia Starling",
+    "pic_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/4/42/Decoratia_Starling.png/revision/latest?cb=20170622172207",
+    "artwork_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/2/23/Decoratia_Starling_Artwork.png/revision/latest?cb=20170622172219",
+    "max_atk": 5500,
+    "max_hp": 4250,
+    "mlb_atk": 6998,
+    "mlb_hp": 5407,
+    "rarity": 3,
+    "daemon_type": "anima",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "The Power of Colored Paper",
+            "A moderate/high chance of inflicting Stun to all enemies."
+        ]
+    ],
+    "ability": [],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "",
+        "illustrator": "Miyoshino (みよしの)",
+        "description": "The spirit of decorations that line the streets during the Tanabata Festival. She has multi-colored strips of paper with the strange power to make wishes come true-so long as they're written on the correctly colored paper. One time everyone from the Bureau of the Occult came to her writing that they wished for \"endless mochi\". One can only assume that Mikado had something to do with this.",
+        "how_to_acquire": "◦ \"Coastal Calamity - Tanabata Beach Contest\" Event: Clear Chapter 2.\n◦ \"Coastal Calamity - Tanabata Beach Contest\" Event: Exchange for 200 Wish Tablet.\n◦ \"Coastal Calamity - Tanabata Beach Contest\" Event: Get a First Half Ranking of 6001-10000.\n◦ \"Coastal Calamity - Tanabata Beach Contest\" Event: Get a Total Ranking of 7501-10000.",
+        "notes_and_trivia": "◦ Slightly increases the drop rate of Wish Tablet during the \"Coastal Calamity - Tanabata Beach Contest\" event.",
+        "quote": {
+            "main": [
+                "\"I guess everyone just REALLY likes rice cakes...\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/f/f1/Decoratia_Starling_Main.ogg/revision/latest?cb=20170623152051"
+            ],
+            "skill": [
+                "\"May your wishes be fulfilled...\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/2/2f/Decoratia_Starling_Skill.ogg/revision/latest?cb=20170623152050"
+            ],
+            "summon": [
+                "\"...The Bureau of the Occult? Don't tell me you want more mochi!\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/6/64/Decoratia_Starling_Summon.ogg/revision/latest?cb=20170623152059"
+            ],
+            "limit_break": [
+                "\"Alright, I guess I'll give you another go.\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/4/40/Decoratia_Starling_Limit_Break.ogg/revision/latest?cb=20170623152104"
+            ]
+        }
+    },
+    "faction": null
+}

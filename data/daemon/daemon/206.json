@@ -1,0 +1,62 @@
+{
+    "id": 206,
+    "name": "Old Clock Chronos",
+    "alias": "Old Clock Chronos",
+    "pic_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/9/92/Old_Clock_Chronos.png/revision/latest?cb=20170201105731",
+    "artwork_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/5/59/Old_Clock_Chronos_Artwork.png/revision/latest?cb=20170201105748",
+    "max_atk": 10500,
+    "max_hp": 7200,
+    "mlb_atk": 12529,
+    "mlb_hp": 8591,
+    "rarity": 5,
+    "daemon_type": "anima",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "Space-Time Continuum",
+            "Deals 614/734 DMG to 2 enemies (melee priority), and removes all buffs from the targets."
+        ]
+    ],
+    "ability": [
+        [
+            "Space-Time Continuum Manipulation (Lv. 45)",
+            "Moderately increases the ATK speed of all allies at the start of the final wave."
+        ],
+        [
+            "God of Time (Lv. 75)",
+            "Moderately increases battle time limit."
+        ]
+    ],
+    "bond": [
+        [
+            "Old Clock Chronos > Belphegor",
+            "Increases Belphegor's speed by 5%"
+        ]
+    ],
+    "additional_data": {
+        "voice_actor": "--",
+        "illustrator": "Hihara You (緋原ヨウ)",
+        "description": "The spirit of the god of time. Because his power is too great, he uses an old clock as a physical representation of his presence, to hold his power in check. If he were to show his true self, as the god of time, he would be able to use unspeakable power. He's not willing to do that, however, saying that his present power is just enough. Since the incident in Chinatown, his relationship with Belphegor has been restored, and now he is more attentive and caring towards her (or, more like, they have more time to spend together so he has no choice but to pay attention to her?).",
+        "how_to_acquire": "◦ \"A New Year's Tale of Laziness\" Get a First Half Ranking of 2500 and above.\n◦ \"A New Year's Tale of Laziness\" Get a Second Half Ranking of 2500 and above.\n◦ \"A New Year's Tale of Laziness\" Get a Total Ranking of 5000 and above.",
+        "notes_and_trivia": "◦ Slightly increases the total Event Points during the \"A New Year's Tale of Laziness\" event.",
+        "quote": {
+            "main": [
+                "\"What am I going to do with her?\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/0/0c/Old_Clock_Chronos_Main.ogg/revision/latest?cb=20170623153150"
+            ],
+            "skill": [
+                "\"I can make this quick.\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/7/77/Old_Clock_Chronos_Skill.ogg/revision/latest?cb=20170623153154"
+            ],
+            "summon": [
+                "\"I'd like to repay you with all you did for my subordinate.\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/f/fb/Old_Clock_Chronos_Summon.ogg/revision/latest?cb=20170623153159"
+            ],
+            "limit_break": [
+                "\"I see you have good daemons around you.\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/7/7d/Old_Clock_Chronos_Limit_Break.ogg/revision/latest?cb=20170623153204"
+            ]
+        }
+    },
+    "faction": null
+}

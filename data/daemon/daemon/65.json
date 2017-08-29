@@ -1,0 +1,48 @@
+{
+    "id": 65,
+    "name": "Kukri",
+    "alias": "Kukri",
+    "pic_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/6/62/Kukri.png/revision/latest?cb=20161015201741",
+    "artwork_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/d/d4/Kukri_Artwork.png/revision/latest?cb=20170205043928",
+    "max_atk": 2700,
+    "max_hp": 3900,
+    "mlb_atk": 3623,
+    "mlb_hp": 5233,
+    "rarity": 2,
+    "daemon_type": "anima",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Kukri Kombo",
+            "Deals 1396/1876 DMG to current target."
+        ]
+    ],
+    "ability": [],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "Yuubi Midorikawa (緑川優美)",
+        "illustrator": "Iwamoto Kenichi (岩本健一)",
+        "description": "The Anima of a short sword once used to perform festive rites. The stunning pattern on her finely curved blade is every sword enthusiast's dream. Some say she once even trounced an army of 400 ruffians single-handedly...",
+        "how_to_acquire": "◦ Free Summon\n◦ Raid: Random Drop",
+        "notes_and_trivia": "--",
+        "quote": {
+            "main": [
+                "\"Underestimate me at your own peril!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/9/94/Kukri_Main.ogg/revision/latest?cb=20160715135912"
+            ],
+            "skill": [
+                "\"Allow me to teach you the basics of battle!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/6/68/Kukri_Skill.ogg/revision/latest?cb=20160715135931"
+            ],
+            "summon": [
+                "\"What's that? You'd like to request my services?\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/c/c7/Kukri_Summon.ogg/revision/latest?cb=20161227163402"
+            ],
+            "limit_break": [
+                "\"I won't rest till I've earned people's confidence.\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/b/bb/Kukri_Limit_Break.ogg/revision/latest?cb=20160715140002"
+            ]
+        }
+    },
+    "faction": null
+}

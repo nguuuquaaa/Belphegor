@@ -1,0 +1,62 @@
+{
+    "id": 185,
+    "name": "Titania [New Year]",
+    "alias": "TNY",
+    "pic_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/8/82/Titania_New_Year.png/revision/latest?cb=20161225122330",
+    "artwork_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/6/61/Titania_New_Year_Artwork.png/revision/latest?cb=20170722035333",
+    "max_atk": 11800,
+    "max_hp": 7700,
+    "mlb_atk": 14081,
+    "mlb_hp": 9188,
+    "rarity": 5,
+    "daemon_type": "phantasma",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "Queen's Amusements",
+            "Deals 5160/6160 DMG to the enemy with the most HP."
+        ]
+    ],
+    "ability": [
+        [
+            "New Year's Fashion (Lv. 70)",
+            "Slightly increases crit rate."
+        ],
+        [
+            "Queen's Caprice (Lv. 74)",
+            "Sharply increases crit DMG by Phantasma team members when this daemon is Team Leader."
+        ]
+    ],
+    "bond": [
+        [
+            "New Year Game > Titania [New Year]",
+            "Increases Titania [New Year]'s crit rate by 5%."
+        ]
+    ],
+    "additional_data": {
+        "voice_actor": "Erika Ishitobi (石飛恵里花)",
+        "illustrator": "Kiya Machi (木屋町)",
+        "description": "The beautiful queen of fairies. She celebrates New Years with her Japanese friends and tries out some of the traditional New Year's games played there. When she played fukuwarai, she arranged the features on the blank face so beautifully, you'd swear she wasn't wearing a blindfold—probably because she's so attached to beauty. When she played the badminton-like game hanetsuki, she got the penalty of ink painted on her face before she even understood the rules, and that made her storm off sulkily. But she returned within an hour, not wanting to spoil her New Year's experience.",
+        "how_to_acquire": "◦ Limited Jewel Summon 24/12/16 - 06/01/17\n◦ Trade at Exchange for 125 Mochi 06/01/17 - 11/01/17",
+        "notes_and_trivia": "◦ Summon rate increased until 06/01/17\n◦ Can only be exchanged once",
+        "quote": {
+            "main": [
+                "\"Where are you going to take me next?\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/a/a3/Titania_New_Year_Main.ogg/revision/latest?cb=20170107165839"
+            ],
+            "skill": [
+                "\"Never interrupt a queen when she's having fun!\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/7/7d/Titania_New_Year_Skill.ogg/revision/latest?cb=20170107165849"
+            ],
+            "summon": [
+                "\"Thank you for accompanying me.\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/9/96/Titania_New_Year_Summon.ogg/revision/latest?cb=20170107165858"
+            ],
+            "limit_break": [
+                "\"What kind of game are you going to teach me next?\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/e/e3/Titania_New_Year_Limit_Break.ogg/revision/latest?cb=20170107165908"
+            ]
+        }
+    },
+    "faction": null
+}

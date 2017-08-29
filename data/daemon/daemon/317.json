@@ -1,0 +1,57 @@
+{
+    "id": 317,
+    "name": "Mephistopheles [Fireworks]",
+    "alias": "Mephistopheles [Fireworks]",
+    "pic_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/8/8c/Mephistopheles_Fireworks.png/revision/latest?cb=20170802123814",
+    "artwork_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/c/ca/Mephistopheles_Fireworks_Artwork.png/revision/latest?cb=20170802123833",
+    "max_atk": 12500,
+    "max_hp": 9500,
+    "mlb_atk": 14916,
+    "mlb_hp": 11336,
+    "rarity": 5,
+    "daemon_type": "phantasma",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "Devil's Rocket",
+            "Deals 4130/4930 DMG to the enemy with the most HP, with a moderate/ of inflicting Burn."
+        ]
+    ],
+    "ability": [
+        [
+            "Demon of Ruin (Lv. 40)",
+            "Sharply increases skill DMG."
+        ],
+        [
+            "Wicked Smile (Lv. 75)",
+            "Skill attacks have a significant chance of inflicting Petrification."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "Kengo Takanashi (高梨謙吾)",
+        "illustrator": "*zoff",
+        "description": "A spirit who will grant anyone's wish in exchange for their eternal soul. Finding himself in the mood for fireworks, Mephistopheles came to the festival, though even surrounded by its frivolities he maintained an inscrutable persona...mostly. In fact, Mephistopheles watched the fireworks display with a smile on his lips, a rare sight indeed. Those who witnessed the scene said that he looked as innocent as a child, though few things could be farther from the truth...",
+        "how_to_acquire": "◦ Limited Jewel Summon from 02/08/17 to 09/08/17\n◦ Trade at Exchange for 200 Mochi 02/08/17 to 09/08/17",
+        "notes_and_trivia": "◦ Summon rate increased until 09/08/17\n◦ Can only be exchanged once",
+        "quote": {
+            "main": [
+                "\"Ah, a sentimental sight indeed.\"",
+                "/wiki/Special:Upload?wpDestFile=Mephistopheles_Fireworks_Main.ogg"
+            ],
+            "skill": [
+                "\"What say you to this?\"",
+                "/wiki/Special:Upload?wpDestFile=Mephistopheles_Fireworks_Skill.ogg"
+            ],
+            "summon": [
+                "\"My, now this is unexpected!\"",
+                "/wiki/Special:Upload?wpDestFile=Mephistopheles_Fireworks_Summon.ogg"
+            ],
+            "limit_break": [
+                "\"Hehehe, this is quite something.\"",
+                "/wiki/Special:Upload?wpDestFile=Mephistopheles_Fireworks_Limit_Break.ogg"
+            ]
+        }
+    },
+    "faction": null
+}

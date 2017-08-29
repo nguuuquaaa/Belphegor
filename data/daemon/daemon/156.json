@@ -1,0 +1,58 @@
+{
+    "id": 156,
+    "name": "Tezcatlipoca",
+    "alias": "Tezcatlipoca",
+    "pic_url": "https://vignette4.wikia.nocookie.net/mira-miracle/images/4/4f/Tezcatlipoca.png/revision/latest?cb=20161118195743",
+    "artwork_url": "https://vignette4.wikia.nocookie.net/mira-miracle/images/3/3c/Tezcatlipoca_Artwork.png/revision/latest?cb=20161118201123",
+    "max_atk": 5300,
+    "max_hp": 6700,
+    "mlb_atk": 6498,
+    "mlb_hp": 8215,
+    "rarity": 4,
+    "daemon_type": "phantasma",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Power of the Black Stone",
+            "Deals 3896/4776 DMG to the current target."
+        ]
+    ],
+    "ability": [
+        [
+            "Obsidian Strength (Lv. 64)",
+            "Sharply increases Skill DMG."
+        ]
+    ],
+    "bond": [
+        [
+            "Tezcatlipoca > Quetzalcoatl",
+            "Increases Quetzalcoatl's normal DMG by 4%."
+        ]
+    ],
+    "additional_data": {
+        "voice_actor": "",
+        "illustrator": "*zoff",
+        "description": "A spirit who once ruled the sun. She doesn't get along well with Quetzalcoatl, who struck her down from the sun and has been nothing but trouble ever since. Recently she decided it's not worth trying to maintain a relationship and has been avoiding Quetzalcoatl altogether. But Quetzalcoatl still sneaks up on her every now and then before Tezcatlipoca has time to get away. The next this this happens, she's vowed to settle things once and for all, but who knows if she'll succeed...",
+        "how_to_acquire": "◦ Limited Jewel Summon 16/11/16 - 07/12/16\n◦ Trade at Exchange for 50 Mochi 04/12/16 - 07/12/16",
+        "notes_and_trivia": "◦ Increases the Skill DMG of all allies by 25% during the \"Thanksgiving Day Beatdown\" event.\n◦ Summon rate increased until 16/11/16 - 07/12/16",
+        "quote": {
+            "main": [
+                "\"Can you believe a god did that?\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/8/84/Tezcatlipoca_Main.ogg/revision/latest?cb=20170623144512"
+            ],
+            "skill": [
+                "\"Behold the source of my powers!\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/a/a2/Tezcatlipoca_Skill.ogg/revision/latest?cb=20170623144518"
+            ],
+            "summon": [
+                "\"Sure, I'll help you out.\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/d/d8/Tezcatlipoca_Summon.ogg/revision/latest?cb=20170623144525"
+            ],
+            "limit_break": [
+                "\"This'll prove it, once and for all...heh...hehehe...\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/d/d8/Tezcatlipoca_Limit_Break.ogg/revision/latest?cb=20170623144533"
+            ]
+        }
+    },
+    "faction": null
+}

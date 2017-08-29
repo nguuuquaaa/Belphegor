@@ -1,0 +1,53 @@
+{
+    "id": 323,
+    "name": "Daedalus",
+    "alias": "Daedalus",
+    "pic_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/3/39/Daedalus.png/revision/latest?cb=20170812171613",
+    "artwork_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/8/85/Daedalus_Artwork.png/revision/latest?cb=20170812171645",
+    "max_atk": 5500,
+    "max_hp": 6350,
+    "mlb_atk": 6744,
+    "mlb_hp": 7786,
+    "rarity": 4,
+    "daemon_type": "divina",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Pop-up Labyrinth",
+            "Decreases attack speed of all enemies by 50%/62% for a limited time."
+        ]
+    ],
+    "ability": [
+        [
+            "Mythological Maker (Lv. 63)",
+            "Slightly increases ATK speed of all allies."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "",
+        "illustrator": "*zoff",
+        "description": "The spirit of a famous inventor from Greek mythology. In addition to building the labyrinth where the minotaur was kept, he also cobbled together a contraption for flying. He can make whatever you need, but his creations usually have some sort of flaw. For example, when pursuing a personal project to make spirit agents fly, he actually managed to do so with his manufactured wings. The only problem was that they'd fall apart if they went too high, which lead to the strange spectacle of spirit agents raining down from the skies. He's improved the wings a lot since then, but for some reason no one's volunteered to test them...",
+        "how_to_acquire": "◦ Jewel Summon",
+        "notes_and_trivia": "◦ Summon rate increased until 16/08/2017",
+        "quote": {
+            "main": [
+                "\"Whatever ya need, I've gotcha covered!\"",
+                "/wiki/Special:Upload?wpDestFile=Daedalus_Main.ogg"
+            ],
+            "skill": [
+                "\"Finally, my next work is complete!\"",
+                "/wiki/Special:Upload?wpDestFile=Daedalus_Skill.ogg"
+            ],
+            "summon": [
+                "\"I can make anything!\"",
+                "/wiki/Special:Upload?wpDestFile=Daedalus_Summon.ogg"
+            ],
+            "limit_break": [
+                "\"There'll be no flaws in my next contraption!\"",
+                "/wiki/Special:Upload?wpDestFile=Daedalus_Limit_Break.ogg"
+            ]
+        }
+    },
+    "faction": null
+}

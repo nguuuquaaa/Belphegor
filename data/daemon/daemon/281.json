@@ -1,0 +1,53 @@
+{
+    "id": 281,
+    "name": "Mansemat",
+    "alias": "Mansemat",
+    "pic_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/4/42/Mansemat.png/revision/latest?cb=20170604152238",
+    "artwork_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/8/8a/Mansemat_Artwork.png/revision/latest?cb=20170603020543",
+    "max_atk": 10000,
+    "max_hp": 5900,
+    "mlb_atk": 12261,
+    "mlb_hp": 7234,
+    "rarity": 4,
+    "daemon_type": "divina",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "Angelic Bully",
+            "Deals 2650/3250 DMG to the enemy with the highest ATK, with a low chance of inflicting Paralysis."
+        ]
+    ],
+    "ability": [
+        [
+            "Antagonistic Angel (Lv. 70)",
+            "Skill attacks have a significant chance of inflicting Burn."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "",
+        "illustrator": "Miyoshino",
+        "description": "The spirit of an angel that tests your faith. She throws evil in people's path in order to test the extent of their faith and virtue. Perhaps it comes with the job, but she's quite cruel despite her angelic nature. Since she works with fallen angels a lot, people often mistake her for one, but she is in fact a fully fledged servant of heaven. So step out of line and you'd best watch your tongue.",
+        "how_to_acquire": "◦ Limited Jewel Summon 31/06/17 to 07/06/17\n◦ Trade at Exchange for 50 Mochi 31/06/17 - 07/06/17",
+        "notes_and_trivia": "◦ Summon rate increased until 07/06/17\n◦ Can only be exchanged once",
+        "quote": {
+            "main": [
+                "\"I think you could use a little test!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/e/e0/Mansemat_Main.ogg/revision/latest?cb=20170622210902"
+            ],
+            "skill": [
+                "\"How about this? Can you handle it?\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/7/7f/Mansemat_Skill.ogg/revision/latest?cb=20170622210907"
+            ],
+            "summon": [
+                "\"Time to show your true colors.\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/9/92/Mansemat_Summon.ogg/revision/latest?cb=20170622210853"
+            ],
+            "limit_break": [
+                "\"\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/1/12/Mansemat_Limit_Break.ogg/revision/latest?cb=20170622210857"
+            ]
+        }
+    },
+    "faction": null
+}

@@ -1,0 +1,57 @@
+{
+    "id": 149,
+    "name": "Guillotine",
+    "alias": "Guillotine",
+    "pic_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/6/61/Guillotine.png/revision/latest?cb=20161107003053",
+    "artwork_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/8/89/Guillotine_Artwork.png/revision/latest?cb=20161102231109",
+    "max_atk": 11800,
+    "max_hp": 7700,
+    "mlb_atk": 14081,
+    "mlb_hp": 9188,
+    "rarity": 5,
+    "daemon_type": "anima",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "Heaven to Hell",
+            "Deals 5081/6061 DMG to the enemy with the most HP. Decreases target's speed by 30%/36% for a limited time."
+        ]
+    ],
+    "ability": [
+        [
+            "Pillar of Justice (Lv. 45)",
+            "Moderately increases skill DMG."
+        ],
+        [
+            "Gentle Heart (Lv. 83)",
+            "Sharply reduces DMG of the enemy with the most HP at the start of each wave."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "--",
+        "illustrator": "Hihara You (緋原ヨウ)",
+        "description": "The spirit of a machine that comes in handy when people need to be beheaded. Before becoming a spirit she made sure lots of criminals had a painless journey to the other side. Now people misunderstand her and think she's just a tool of cruelty. But she still feels the intent of her inventor to \"find a way to kill without inflicting any pain.\" She even has some qualms about defeating enemies in battle.",
+        "how_to_acquire": "◦ Jewel Summon",
+        "notes_and_trivia": "◦ Summon rate increased until 09/11/16",
+        "quote": {
+            "main": [
+                "\"If only there was some way to make it hurt less...\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/0/0c/Guillotine_Main.ogg/revision/latest?cb=20170106154729"
+            ],
+            "skill": [
+                "\"SWOOSH! Chop!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/3/31/Guillotine_Skill.ogg/revision/latest?cb=20170106154728"
+            ],
+            "summon": [
+                "\"Are you my new master?\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/b/b8/Guillotine_Summon.ogg/revision/latest?cb=20170106154724"
+            ],
+            "limit_break": [
+                "\"Now I can end lives without any pain at all!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/7/78/Guillotine_Limit_Break.ogg/revision/latest?cb=20170106154726"
+            ]
+        }
+    },
+    "faction": null
+}

@@ -1,0 +1,53 @@
+{
+    "id": 113,
+    "name": "Kraken",
+    "alias": "Kraken",
+    "pic_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/d/d3/Kraken.png/revision/latest?cb=20161021141508",
+    "artwork_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/f/fe/Kraken_Artwork.png/revision/latest?cb=20160902054614",
+    "max_atk": 6900,
+    "max_hp": 5100,
+    "mlb_atk": 8459,
+    "mlb_hp": 6253,
+    "rarity": 4,
+    "daemon_type": "phantasma",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "One Way Ticket to the Deep Sea",
+            "Deals 1315/1615 DMG to all enemies. Decreases targets' speed by 24%/29% for a limited time."
+        ]
+    ],
+    "ability": [
+        [
+            "Beast of the Ocean (Lv. 75)",
+            "Slightly increases the number of Soulstones recieved from battle and battle reward drop rate"
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "Minaho Matsudaira (松平美波穂‏)",
+        "illustrator": "Totomo (トトモ)",
+        "description": "A spirit of the sea that loves jewels, gold, and silver. She hunts pirates and attacks merchant ships--at least, she used to, but lately there haven't been many pirate ships around so she's on hiatus. She came to the Bureau of the Occult after hearing rumors of another spirit who loves jewels. They say her expression scared the living daylights out of the first spirit agent she ran into.",
+        "how_to_acquire": "◦ Jewel Summon",
+        "notes_and_trivia": "◦ Summon rate increased until 07/09/16",
+        "quote": {
+            "main": [
+                "\"...Where have all the pirates and their beautiful treasure gone?\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/f/fe/Kraken_Main.ogg/revision/latest?cb=20161224110053"
+            ],
+            "skill": [
+                "\"Finders, keepers!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/8/82/Kraken_Skill.ogg/revision/latest?cb=20161224110119"
+            ],
+            "summon": [
+                "\"Hehe, I smell treasure...\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/9/94/Kraken_Summon.ogg/revision/latest?cb=20170623143047"
+            ],
+            "limit_break": [
+                "\"This will help with my treasure collecting...\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/7/7f/Kraken_Limit_Break.ogg/revision/latest?cb=20161224110137"
+            ]
+        }
+    },
+    "faction": null
+}

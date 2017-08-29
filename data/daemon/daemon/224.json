@@ -1,0 +1,66 @@
+{
+    "id": 224,
+    "name": "Ohina",
+    "alias": "Ohina",
+    "pic_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/f/fb/Ohina.png/revision/latest?cb=20170301070902",
+    "artwork_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/c/ca/Ohina_Artwork.png/revision/latest?cb=20170301104204",
+    "max_atk": 10400,
+    "max_hp": 7500,
+    "mlb_atk": 12410,
+    "mlb_hp": 8949,
+    "rarity": 5,
+    "daemon_type": "anima",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "Doll Festival Dance",
+            "Deals 1466/1746 DMG to all enemies; decreases targets' speed by 15%/18% for a limited time."
+        ]
+    ],
+    "ability": [
+        [
+            "Festival Doll (Lv. 50)",
+            "Moderately increases Crit DMG of Festival Doll team members."
+        ],
+        [
+            "Ohina (Lv. 80)",
+            "Sharply increases DMG dealt by Festival Doll team members when this daemon is Team Leader."
+        ]
+    ],
+    "bond": [
+        [
+            "Ohina > Odairi",
+            "Increases Odairi's max HP by 10%"
+        ],
+        [
+            "Odairi > Ohina",
+            "Increases Ohina's skill DMG by 10%"
+        ]
+    ],
+    "additional_data": {
+        "voice_actor": "--",
+        "illustrator": "*zoff",
+        "description": "The spirit of one of the dolls put on display during the Doll Festival. The Empress, one of the two dolls on the top tier of the Doll Festival stand. Since the incident, her ties with Odairi have deepened, and they learned how to truly care for one another. But, lately, some of their doll friends have been complaining to Odairi that Ohina just can't stop talking about how happy they were together.",
+        "how_to_acquire": "◦ \"The Spirits' Doll Festival\" Event: Get a First Half or Second Half Ranking of 2500 and above.\n◦ \"The Spirits' Doll Festival\" Event: Get a Total Ranking of 5000 and above.",
+        "notes_and_trivia": "◦ Moderately increases the drop rate of Hishi Mochi during \"The Spirits' Doll Festival\" event.",
+        "quote": {
+            "main": [
+                "\"With you, Odairi, I'd go anywhere.\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/f/f7/Ohina_Main.ogg/revision/latest?cb=20170623153530"
+            ],
+            "skill": [
+                "\"I've been saving this one!\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/c/cb/Ohina_Skill.ogg/revision/latest?cb=20170623153526"
+            ],
+            "summon": [
+                "\"Can I come along, too?\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/8/82/Ohina_Summon.ogg/revision/latest?cb=20170623153536"
+            ],
+            "limit_break": [
+                "\"I just want to become even closer to Odairi!\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/1/14/Ohina_Limit_Break.ogg/revision/latest?cb=20170623153541"
+            ]
+        }
+    },
+    "faction": "Festival Dolls"
+}

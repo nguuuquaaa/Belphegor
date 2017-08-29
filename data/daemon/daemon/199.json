@@ -1,0 +1,53 @@
+{
+    "id": 199,
+    "name": "Camael",
+    "alias": "Camael",
+    "pic_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/7/72/Camael.png/revision/latest?cb=20170119012657",
+    "artwork_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/c/c9/Camael_Artwork.png/revision/latest?cb=20170119012820",
+    "max_atk": 5200,
+    "max_hp": 7200,
+    "mlb_atk": 6376,
+    "mlb_hp": 8827,
+    "rarity": 4,
+    "daemon_type": "divina",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Angel of Destruction",
+            "Deals 5043/6179 DMG to the enemy with the lowest HP."
+        ]
+    ],
+    "ability": [
+        [
+            "Commander (Lv. 70)",
+            "Sharply increases DMG dealt when another angel is on the team."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "",
+        "illustrator": "x-6suke",
+        "description": "The spirit of an archangel who commands hundreds of thousands of other angels. She is the commander of the heavenly executioners who eliminate the adversaries of the gods. Most of the angels she leads are warlike and rowdy, giving her trouble daily. Other angels are nice to her, maybe because they feel sorry for her rather than fear her. The truth is, however, she doesn't feel sorry for herself, saying that seeing some action refreshes her, being so bellicose herself.",
+        "how_to_acquire": "◦ Limited Jewel Summon 12/01/17- 08/02/17\n◦ Trade at Exchange for 50 Mochi 05/02/17 - 08/02/17",
+        "notes_and_trivia": "◦ Increases the Skill DMG of all allies by 33% during the \"A New Year's Tale of Laziness\" event.\n◦ The effect increases with the number of limit breaks. (33% → 49.75% → 66.5% → 83.25% → 100%)\n◦ Summon rate increased until 12/01/17- 08/02/17",
+        "quote": {
+            "main": [
+                "\"Beat the heck out of whoever defies us. It's as simple as that.\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/4/44/Camael_Main.ogg/revision/latest?cb=20170623132347"
+            ],
+            "skill": [
+                "\"No mercy for the enemies!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/b/bb/Camael_Skill.ogg/revision/latest?cb=20170623132355"
+            ],
+            "summon": [
+                "\"You want my help? Does that mean I get to go wild?\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/7/7d/Camael_Summon.ogg/revision/latest?cb=20170623132406"
+            ],
+            "limit_break": [
+                "\"Nice place. So not boring!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/0/0e/Camael_Limit_Break.ogg/revision/latest?cb=20170623132415"
+            ]
+        }
+    },
+    "faction": "Angels"
+}

@@ -1,0 +1,57 @@
+{
+    "id": 296,
+    "name": "Princess Oto [Ocean Flower]",
+    "alias": "Otohime [Ocean Flower]",
+    "pic_url": "https://vignette4.wikia.nocookie.net/mira-miracle/images/5/56/Princess_Oto_Ocean_Flower.png/revision/latest?cb=20170628154226",
+    "artwork_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/1/13/Princess_Oto_Ocean_Flower_Artwork.png/revision/latest?cb=20170628154303",
+    "max_atk": 8100,
+    "max_hp": 9800,
+    "mlb_atk": 9665,
+    "mlb_hp": 11694,
+    "rarity": 5,
+    "daemon_type": "phantasma",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Deep Sea Dance",
+            "Deals 1880/2240 DMG to all enemies."
+        ]
+    ],
+    "ability": [
+        [
+            "To Wear a Swimsuit (Lv. 62)",
+            "Sharply reduces DMG taken."
+        ],
+        [
+            "Memories of Summer (Lv. 75)",
+            "Sharply increases Skill DMG when Urashima Taro is on the team."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "--",
+        "illustrator": "Hihara You (緋原ヨウ)",
+        "description": "The spirit of the princess living in the Dragon Palace in the oceans off Japan's coast. She joined the beach contest in order to fulfill a secret wish held deep in her heart. Her followers and retainers even joined her in order to help her wish come true. While they were defeated, it all worked out for the best. She and Urashima Taro have grown closer now, and everyone is wondering when she'll finally tell him how she feels.",
+        "how_to_acquire": "◦ Limited Jewel Summon 28/06/17 to 05/07/17\n◦ Trade at Exchange for 200 Mochi 28/06/17 - 05/07/17",
+        "notes_and_trivia": "◦ Summon rate increased until 05/07/17\n◦ Can only be exchanged once",
+        "quote": {
+            "main": [
+                "\"I just want to be at Urashima Taro's Side...\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/2/2e/Princess_Oto_Ocean_Flower_Main.ogg/revision/latest?cb=20170707180400"
+            ],
+            "skill": [
+                "\"Now, for my special dance.\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/5/55/Princess_Oto_Ocean_Flower_Skill.ogg/revision/latest?cb=20170707180405"
+            ],
+            "summon": [
+                "\"I place myself in your hands once more.\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/4/4e/Princess_Oto_Ocean_Flower_Summon.ogg/revision/latest?cb=20170707180410"
+            ],
+            "limit_break": [
+                "\"--\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/8/86/Princess_Oto_Ocean_Flower_Limit_Break.ogg/revision/latest?cb=20170707180414"
+            ]
+        }
+    },
+    "faction": null
+}

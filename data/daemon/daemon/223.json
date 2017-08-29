@@ -1,0 +1,66 @@
+{
+    "id": 223,
+    "name": "Witch Ravenna",
+    "alias": "Witch Ravenna",
+    "pic_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/e/e6/Witch_Ravenna.png/revision/latest?cb=20170222135841",
+    "artwork_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/8/80/Witch_Ravenna_Artwork.png/revision/latest?cb=20170222135858",
+    "max_atk": 7500,
+    "max_hp": 9000,
+    "mlb_atk": 8949,
+    "mlb_hp": 10739,
+    "rarity": 5,
+    "daemon_type": "phantasma",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Poison Apple Temptation",
+            "Deals 4962/5922 DMG to the enemy with the highest ATK. Target deals 45%/53% less DMG for a limited time."
+        ]
+    ],
+    "ability": [
+        [
+            "Beautiful Princess (Lv. 50)",
+            "Moderately reduces DMG taken and restores 2.5% HP every 5 seconds."
+        ],
+        [
+            "Beautiful Witch (Lv. 78)",
+            "Normal attacks have a moderate chance of inflicting Silence."
+        ]
+    ],
+    "bond": [
+        [
+            "Snow White > Witch Ravenna",
+            "Increases Witch Ravenna's DMG dealt by 8%."
+        ],
+        [
+            "Witch Ravenna > Snow White",
+            "Increases Snow White's DMG dealt by 10%."
+        ]
+    ],
+    "additional_data": {
+        "voice_actor": "--",
+        "illustrator": "Hihara You (緋原ヨウ)",
+        "description": "The spirit of a witch who was fixated on beauty. Betrayed by her husband, she started to hate love, and went on a mission to wipe all love from the face of the earth. But after witnessing unbreakable, true love, she finally admitted her error—though not without plenty of fuss. Nowadays she fights to protect love even more fiercely than she destroyed it in the past, so that she can become a mother her daughter can be proud of.",
+        "how_to_acquire": "◦ \"The Spirits' Doll Festival\" Event: Clear Chapter 5\n◦ \"The Spirits' Doll Festival\" Event: Exchange for 5000 Hishi Mochi",
+        "notes_and_trivia": "◦ Moderately increases the drop rate of Hishi Mochi during the \"The Spirits' Doll Festival\" event.\n◦ She is the stepmother of Snow White.",
+        "quote": {
+            "main": [
+                "\"It feels strange, protecting love for once...\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/0/0d/Witch_Ravenna_Main.ogg/revision/latest?cb=20170623163007"
+            ],
+            "skill": [
+                "\"This one is just for you.\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/0/08/Witch_Ravenna_Skill.ogg/revision/latest?cb=20170623162947"
+            ],
+            "summon": [
+                "\"I'll do my best to defend love!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/c/c4/Witch_Ravenna_Summon.ogg/revision/latest?cb=20170623162954"
+            ],
+            "limit_break": [
+                "\"Is this also love?\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/4/4c/Witch_Ravenna_Limit_Break.ogg/revision/latest?cb=20170623162959"
+            ]
+        }
+    },
+    "faction": null
+}

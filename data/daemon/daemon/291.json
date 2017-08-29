@@ -1,0 +1,53 @@
+{
+    "id": 291,
+    "name": "Tamatebako [Palace of the Dragon King]",
+    "alias": "Tamate box [Palace of the Dragon King]",
+    "pic_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/1/18/Tamatebako_Palace_of_the_Dragon_King.png/revision/latest?cb=20170621135908",
+    "artwork_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/4/4c/Tamatebako_Palace_of_the_Dragon_King_Artwork.png/revision/latest?cb=20170621130939",
+    "max_atk": 7200,
+    "max_hp": 5380,
+    "mlb_atk": 8822,
+    "mlb_hp": 6592,
+    "rarity": 4,
+    "daemon_type": "anima",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "Smoke of Accelerated Aging",
+            "Deals 722/883 DMG to all enemies; decreases targets' speed by 25%/30% for a limited time."
+        ]
+    ],
+    "ability": [
+        [
+            "Arbitrator of Time (Lv. 65)",
+            "Moderately decrease the ATK speed of all foes at the start of the final wave."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "Yuuki Amezawa (雨澤祐貴)",
+        "illustrator": "Totomo (トトモ)",
+        "description": "The spirit of a box never meant to be opened. An undersea official who pledges allegiance to Princess Oto, his deep love and respect for her leads him to join the beach contest to make her wish come true. He would gladly work even on his off days if she were to ask. This proactive attitude is his response to the many people who don't follow through with their promises. They inspire him to carry out his duties properly, even if he's the only one doing it.",
+        "how_to_acquire": "◦ \"Coastal Calamity - Tanabata Beach Contest\" Event: Clear Chapter 3.\n◦ \"Coastal Calamity - Tanabata Beach Contest\" Event: Exchange for 1000 Wish Tablet\n◦ \"Coastal Calamity - Tanabata Beach Contest\" Event: Get a Second Half Ranking of 2501-6000.\n◦ \"Coastal Calamity - Tanabata Beach Contest\" Event: Get a Total Ranking of 5001-7500.",
+        "notes_and_trivia": "◦ Slightly increases the drop rate of Wish Tablet during the \"Coastal Calamity - Tanabata Beach Contest\" event.",
+        "quote": {
+            "main": [
+                "\"The smoke was a nice touch, eh?\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/7/77/Tamatebako_Palace_of_the_Dragon_King_Main.ogg/revision/latest?cb=20170622210352"
+            ],
+            "skill": [
+                "\"Your joints really start to ache, don't they?\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/f/f6/Tamatebako_Palace_of_the_Dragon_King_Skill.ogg/revision/latest?cb=20170622210406"
+            ],
+            "summon": [
+                "\"Stay calm, I won't let my smoke anywhere near you.\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/7/78/Tamatebako_Palace_of_the_Dragon_King_Summon.ogg/revision/latest?cb=20170622210414"
+            ],
+            "limit_break": [
+                "\"Oops, there went a bit of my smoke again!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/8/80/Tamatebako_Palace_of_the_Dragon_King_Limit_Break.ogg/revision/latest?cb=20170622210425"
+            ]
+        }
+    },
+    "faction": null
+}

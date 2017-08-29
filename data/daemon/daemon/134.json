@@ -1,0 +1,53 @@
+{
+    "id": 134,
+    "name": "Bismuth Crystal",
+    "alias": "Bismuth Crystal",
+    "pic_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/d/d6/Bismuth_Crystal.png/revision/latest?cb=20161006234011",
+    "artwork_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/c/cd/Bismuth_Crystal_Artwork.png/revision/latest?cb=20161006234018",
+    "max_atk": 5000,
+    "max_hp": 6200,
+    "mlb_atk": 6131,
+    "mlb_hp": 7602,
+    "rarity": 4,
+    "daemon_type": "anima",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Rainbow Crash",
+            "Deals 1424/1744 DMG to farther enemies."
+        ]
+    ],
+    "ability": [
+        [
+            "Rainbow Sparkle (Lv. 60)",
+            "Sharply increases skill DMG."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "--",
+        "illustrator": "--",
+        "description": "The spirit of a man-made crystal created through mineral reactions. She can be domineering, but there's no denying her strength. She can wield a hammer that weighs ten times more than her, flying like a butterfly and stinging like a bee, so to speak. She's perfectly proper and polite but also a little sheltered, so she doesn't really know how to act around men.",
+        "how_to_acquire": "◦ Jewel Summon",
+        "notes_and_trivia": "◦ Summon rate increased until 12/10/16",
+        "quote": {
+            "main": [
+                "\"Don't test me! I can bust concrete with the poke of a finger, okay?\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/6/61/Bismuth_Crystal_Main.ogg/revision/latest?cb=20170421163812"
+            ],
+            "skill": [
+                "\"It many not look it, but this hammer's actually pretty heavy!\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/4/48/Bismuth_Crystal_Skill.ogg/revision/latest?cb=20170421163821"
+            ],
+            "summon": [
+                "\"Let me know if you ever need any help.\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/c/c7/Bismuth_Crystal_Summon.ogg/revision/latest?cb=20170421163829"
+            ],
+            "limit_break": [
+                "\"This is what happens when you practice every day.\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/c/ca/Bismuth_Crystal_Limit_Break.ogg/revision/latest?cb=20170421163838"
+            ]
+        }
+    },
+    "faction": null
+}

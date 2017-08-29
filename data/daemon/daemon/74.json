@@ -1,0 +1,48 @@
+{
+    "id": 74,
+    "name": "Tokarev Pistol",
+    "alias": "Tokarev Pistol",
+    "pic_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/b/b2/Tokarev_Pistol.png/revision/latest?cb=20161008114725",
+    "artwork_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/d/d4/Tokarev_Pistol_Artwork.png/revision/latest?cb=20160708033205",
+    "max_atk": 5400,
+    "max_hp": 3840,
+    "mlb_atk": 6869,
+    "mlb_hp": 4885,
+    "rarity": 3,
+    "daemon_type": "anima",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "Perfect Headshot",
+            "Deals 3009/3829 DMG to an enemy (healers priority)."
+        ]
+    ],
+    "ability": [],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "Yuri Yamaoka (山岡ゆり)",
+        "illustrator": "Totomo (トトモ)",
+        "description": "This Anima of a perfectly preserved pistol is no stranger to frontline action. She might look sweet, but with a weapon in her hand this girl puts the \"miss\" in \"missile.\" Although lacking official training, she's a master in military affairs, and can go head to head with multiple trained soldiers and emerge with nary a scratch. Her only weak point is her slight lack in the stature department.",
+        "how_to_acquire": "◦ Obtained after clearing Chapter 2.\n◦ Available in Jewel Summon after clearing chapter 2.",
+        "notes_and_trivia": "--",
+        "quote": {
+            "main": [
+                "\"Me? A split personality? Get outta town!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/7/7f/Tokarev_Pistol_Main.ogg/revision/latest?cb=20160715133646"
+            ],
+            "skill": [
+                "\"You lot ain't even worth wasting bullets on!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/c/c0/Tokarev_Pistol_Skill.ogg/revision/latest?cb=20160715133744"
+            ],
+            "summon": [
+                "\"I-I'll give it my every last ounce of strength!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/4/4d/Tokarev_Pistol_Summon.ogg/revision/latest?cb=20161227221919"
+            ],
+            "limit_break": [
+                "\"Power wells inside me! Could this finally be my growth spurt?!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/e/ed/Tokarev_Pistol_Limit_Break.ogg/revision/latest?cb=20160715133811"
+            ]
+        }
+    },
+    "faction": null
+}

@@ -19,3 +19,12 @@ def nsfw():
 	
 def otogi_guild_only():
 	return commands.check(lambda ctx:ctx.message.guild.id==config.otogi_guild_id or ctx.message.author.id==config.owner_id)
+
+def manager_only():
+    return commands.check(lambda ctx:ctx.message.channel.permissions_for(ctx.message.author).manage_guild)
+	
+def role_manager_only():
+    return commands.check(lambda ctx:ctx.message.channel.permissions_for(ctx.message.author).manage_roles)
+	
+def creampie_guild_only():
+    return commands.check(lambda ctx:ctx.message.guild.id==config.creampie_guild_id)

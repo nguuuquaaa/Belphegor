@@ -1,0 +1,48 @@
+{
+    "id": 160,
+    "name": "Robin Hood",
+    "alias": "Robin Hood",
+    "pic_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/6/6a/Robin_Hood.png/revision/latest?cb=20161124004201",
+    "artwork_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/b/bc/Robin_Hood_Artwork.png/revision/latest?cb=20170722041142",
+    "max_atk": 5300,
+    "max_hp": 3900,
+    "mlb_atk": 6743,
+    "mlb_hp": 4961,
+    "rarity": 3,
+    "daemon_type": "divina",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "Deep Green Shadow",
+            "Deals 651/831 DMG to 3 enemies (ranged priority), with a high chance of inflicting Stun."
+        ]
+    ],
+    "ability": [],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "",
+        "illustrator": "*zoff",
+        "description": "The spirit of a chivalrous thief residing in Sherwood Forest. He once fought against the Bureau of the Occult, but that is all a thing of the past now. He claims that at the time he thought Mikado was tyrant, and so the poor, oppressed spirit agents needed his help. But working together to cleanse a massive evil energy outbreak cleared up all the misunderstandings, and in the end he joined the Bureau himself.",
+        "how_to_acquire": "◦ \"Thanksgiving Day Beatdown\" Event: Clear Chapter 2\n◦ \"Thanksgiving Day Beatdown\" Event: Exchange for 200 Seed of Thanks",
+        "notes_and_trivia": "◦ Slightly increases the drop rate of Seed of Thanks during the \"Thanksgiving Day Beatdown\" event.",
+        "quote": {
+            "main": [
+                "\"I always hit my target!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/5/5d/Robin_Hood_Main.ogg/revision/latest?cb=20161207075908"
+            ],
+            "skill": [
+                "\"You think you can catch me?\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/7/71/Robin_Hood_Skill.ogg/revision/latest?cb=20161227222816"
+            ],
+            "summon": [
+                "\"Looking forward to working with you!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/9/90/Robin_Hood_Summon.ogg/revision/latest?cb=20161227222838"
+            ],
+            "limit_break": [
+                "\"I had more power in me than I thought!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/1/14/Robin_Hood_Limit_Break.ogg/revision/latest?cb=20161227222832"
+            ]
+        }
+    },
+    "faction": null
+}

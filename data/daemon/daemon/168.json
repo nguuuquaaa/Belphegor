@@ -1,0 +1,57 @@
+{
+    "id": 168,
+    "name": "Gabriel",
+    "alias": "Gabriel",
+    "pic_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/d/da/Gabriel.png/revision/latest?cb=20161130223741",
+    "artwork_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/b/b4/Gabriel_Artwork.png/revision/latest?cb=20170722035318",
+    "max_atk": 10000,
+    "max_hp": 7000,
+    "mlb_atk": 11933,
+    "mlb_hp": 8354,
+    "rarity": 5,
+    "daemon_type": "divina",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "Message to the Disobedient",
+            "Deals 4140/4940 DMG to the enemy with the highest ATK, with a 100% chance of inflicting Silence."
+        ]
+    ],
+    "ability": [
+        [
+            "Mouthpiece of God (Lv. 50)",
+            "Moderate chance to inflict Petrifaction on the enemy with the highest ATK at the start of each wave."
+        ],
+        [
+            "Seraphim (Lv. 81)",
+            "Normal attacks by Divina team members have a moderate chance of inflicting burn."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "--",
+        "illustrator": "Kiya Machi (木屋町)",
+        "description": "The spirit of an archangel responsible for the spreading the word of God. She also serves as liaison to the other archangels. Lately she's been working with an inventor spirit to see if she can find a way to make cellphones function on spirit essence. She's been having a tough time trying to find two free-wheeling angels: one is fixated on young girls, the other is a party angel who tends to wander off and get lost. Behind closed doors she's often found wondering aloud why can't she get more help on the job.",
+        "how_to_acquire": "◦ Trade at Exchange for 75 Mochi 30/11/16 - 31/01/17\n◦ The cost increases by 25 Mochi after each exchange\n(75, 100, 125, 150, 175)",
+        "notes_and_trivia": "",
+        "quote": {
+            "main": [
+                "\"Where could he have gone...?\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/7/70/Gabriel_Main.ogg/revision/latest?cb=20161207142255"
+            ],
+            "skill": [
+                "\"This teaching is meant specifically for you.\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/4/4b/Gabriel_Skill.ogg/revision/latest?cb=20161207142328"
+            ],
+            "summon": [
+                "\"Hey, I'd like to have a quick word with you...\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/7/70/Gabriel_Summon.ogg/revision/latest?cb=20161228144506"
+            ],
+            "limit_break": [
+                "\"I... I think I'll be just fine on my own...\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/d/dc/Gabriel_Limit_Break.ogg/revision/latest?cb=20161207142345"
+            ]
+        }
+    },
+    "faction": "Angels"
+}

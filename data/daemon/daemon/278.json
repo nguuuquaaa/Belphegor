@@ -1,0 +1,62 @@
+{
+    "id": 278,
+    "name": "Nekomata",
+    "alias": "Nekomata",
+    "pic_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/7/77/Nekomata.png/revision/latest?cb=20170531132333",
+    "artwork_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/3/3a/Nekomata_Artwork.png/revision/latest?cb=20170531132252",
+    "max_atk": 6000,
+    "max_hp": 10000,
+    "mlb_atk": 7159,
+    "mlb_hp": 11933,
+    "rarity": 5,
+    "daemon_type": "phantasma",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "The Cat Returns",
+            "Restores 723/863 HP to all allies. Targets deal 36%/43% more DMG for a limited time."
+        ]
+    ],
+    "ability": [
+        [
+            "Feline Monster (Lv. 50)",
+            "Slightly increases ATK speed of all allies."
+        ],
+        [
+            "Anthropomorphic Cat (Lv. 80)",
+            "Moderately increases the ATK speed of all allies when Socrates is on the team."
+        ]
+    ],
+    "bond": [
+        [
+            "Nekomata > Socrates",
+            "Increases Socrates's normal ATK by 10%."
+        ]
+    ],
+    "additional_data": {
+        "voice_actor": "--",
+        "illustrator": "Hihara You (緋原ヨウ)",
+        "description": "The spirit of a cat that was once looked after by a certain master. She eventually became a spirit after living for a very long time as a cat. She's fond of humans on account of a loving master. And, maybe also thanks to her old master, she has a slightly philosophical bent. She's good friends with Socrates, and they often discuss things at great length. Many philosophical concepts appear quite different from the perspective of a cat, so talking with her definitely makes you think about things in a new way.",
+        "how_to_acquire": "◦ Limited Jewel Summon 31/06/17 to 07/06/17\n◦ Trade at Exchange for 200 Mochi 31/06/17 - 07/06/17",
+        "notes_and_trivia": "◦ Summon rate increased until 07/06/17\n◦ Can only be exchanged once",
+        "quote": {
+            "main": [
+                "\"You wanna talk to little old me?\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/1/1d/Nekomata_Main.ogg/revision/latest?cb=20170623161109"
+            ],
+            "skill": [
+                "\"This is how I feel!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/1/12/Nekomata_Skill.ogg/revision/latest?cb=20170623161139"
+            ],
+            "summon": [
+                "\"I am the one called Nekomata.\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/e/e2/Nekomata_Summon.ogg/revision/latest?cb=20170623161147"
+            ],
+            "limit_break": [
+                "\"--\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/d/d0/Nekomata_Limit_Break.ogg/revision/latest?cb=20170623161152"
+            ]
+        }
+    },
+    "faction": null
+}

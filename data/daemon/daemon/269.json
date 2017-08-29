@@ -1,0 +1,48 @@
+{
+    "id": 269,
+    "name": "Enenra",
+    "alias": "Enenra",
+    "pic_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/8/8b/Enenra.png/revision/latest?cb=20170512123911",
+    "artwork_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/4/41/Enenra_Artwork.png/revision/latest?cb=20170512123900",
+    "max_atk": 5400,
+    "max_hp": 4220,
+    "mlb_atk": 6869,
+    "mlb_hp": 5369,
+    "rarity": 3,
+    "daemon_type": "divina",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "Wrapped in Smoke",
+            "Decreases the buff duration of the skill by 49%/62% to a random enemy (melee priority) for a limited time."
+        ]
+    ],
+    "ability": [],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "Haruka Kitagaito (北垣内春香)",
+        "illustrator": "x-6suke",
+        "description": "A spirit of wafting smoke. Her body is made of smoke, and she can change shape at will. Since she can squeeze through the tiniest of cracks, she likes to dress up as a ghost and scare people. She ended up at the Bureau of the Occult after sneaking into a house belonging to none other than Mikado herself. No one knows exactly what took place that night, but Enenra started working for her the very next day. Whenever someone asks about it she goes pale and disappears with a poof, so people have learned not to bring it up.",
+        "how_to_acquire": "◦ Jewel Summon",
+        "notes_and_trivia": "◦ Summon rate increased until 17/05/17",
+        "quote": {
+            "main": [
+                "\"I, uh, I do this for the people...yeah. That's all I'm gonna say.\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/2/20/Enenra_Main.ogg/revision/latest?cb=20170623151816"
+            ],
+            "skill": [
+                "\"Boo! ...Got you, didn't I!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/f/f1/Enenra_Skill.ogg/revision/latest?cb=20170623151823"
+            ],
+            "summon": [
+                "\"Call me Enny. Nice to meet you!\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/e/e9/Enenra_Summon.ogg/revision/latest?cb=20170623151829"
+            ],
+            "limit_break": [
+                "\"I feel like I could just float away!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/2/27/Enenra_Limit_Break.ogg/revision/latest?cb=20170623151835"
+            ]
+        }
+    },
+    "faction": null
+}

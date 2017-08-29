@@ -1,0 +1,53 @@
+{
+    "id": 228,
+    "name": "Scarlett Shott [Serious]",
+    "alias": "Scarlett Shott [Serious]",
+    "pic_url": "https://vignette4.wikia.nocookie.net/mira-miracle/images/5/59/Scarlett_Shott_Serious.png/revision/latest?cb=20170312044150",
+    "artwork_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/0/0c/Scarlett_Shott_Serious_Artwork.png/revision/latest?cb=20170310232555",
+    "max_atk": 8800,
+    "max_hp": 5250,
+    "mlb_atk": 10790,
+    "mlb_hp": 6436,
+    "rarity": 4,
+    "daemon_type": "anima",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "The Ninth Arrow",
+            "Deals 2126/2606 DMG to 2 enemies (ranged priority), with a moderate chance of inflicting Burn."
+        ]
+    ],
+    "ability": [
+        [
+            "Sundown (Lv. 65)",
+            "Sharply increases DMG dealt."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "Mizuki Yamaguchi (山口瑞樹)",
+        "illustrator": "Totomo (トトモ)",
+        "description": "The spirit of a legendary Chinese hero's beloved bow, who has undergone intense training to improve her mental capabilities. She has the same issues as ever, but now it takes a little more to set her off. Her secret to success was working as the assistant to a certain popstar group of elves. From the very get go she was getting into trouble every other minute, but this helped her develop nerves and will of steel. Now she's known for cheering the group on with her charisma.",
+        "how_to_acquire": "◦ Jewel Summon",
+        "notes_and_trivia": "◦ Summon rate increased until 08/3/17",
+        "quote": {
+            "main": [
+                "\"I'm not the old me anymore!\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/2/25/Scarlett_Shott_Serious_Main.ogg/revision/latest?cb=20170422061230"
+            ],
+            "skill": [
+                "\"This is nothing compared to my grueling training...\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/7/73/Scarlett_Shott_Serious_Skill.ogg/revision/latest?cb=20170422061231"
+            ],
+            "summon": [
+                "\"Look how strong I've become!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/4/41/Scarlett_Shott_Serious_Summon.ogg/revision/latest?cb=20170422061225"
+            ],
+            "limit_break": [
+                "\"Someday I'll be like Master Houyi...\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/9/94/Scarlett_Shott_Serious_Limit_Break.ogg/revision/latest?cb=20170422061228"
+            ]
+        }
+    },
+    "faction": null
+}

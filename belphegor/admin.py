@@ -1,11 +1,17 @@
 import discord
 from discord.ext import commands
 from .utils import checks
-import inspect
+from io import StringIO
+import traceback
+from contextlib import redirect_stdout
 
 #==================================================================================================================================================
 
 class AdminBot:
+    '''
+    I should just call it OwnerOnlyBot but errr....
+    '''
+
     def __init__(self, bot):
         self.bot = bot
 
@@ -69,18 +75,34 @@ class AdminBot:
     @commands.command(name="eval")
     @checks.owner_only()
     async def _eval(self, ctx, *, data:str):
+        if data.startswith("```") and data.endswith("```"):
+            data = data.splitlines()[1:]
+        else:
+            data = data.splitlines()
+        data = "\n ".join(data).strip("` \n")
+        code = f"async def func():\n {data}"
         env = {'self': self,
                'ctx': ctx,
                'discord': discord}
-        env.update(globals())
+        env.update(locals())
         try:
-            code_obj = compile(data, "test_code", "eval")
-            result = eval(code_obj, env)
-            if inspect.isawaitable(result):
-                result = await result
+            exec(code, env)
         except Exception as e:
-            result = e
-        await ctx.send(f"```{result}```")
+            return await ctx.send(f"```py\n{e}\n```")
+        stdout = StringIO()
+        func = env["func"]
+        try:
+            with redirect_stdout(stdout):
+                result = await func()
+        except:
+            value = stdout.getvalue()
+            return await ctx.send(f'```\n{value}\n{traceback.format_exc()}\n```')
+        value = stdout.getvalue()
+        if result is None:
+            if value:
+                await ctx.send(f'```\n{value}\n```')
+        else:
+            await ctx.send(f'```\n{value}\n{result}\n```')
 
 #==================================================================================================================================================
 

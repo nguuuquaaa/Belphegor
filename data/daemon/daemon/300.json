@@ -1,0 +1,57 @@
+{
+    "id": 300,
+    "name": "Fenrir",
+    "alias": "Fenrir",
+    "pic_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/6/6a/Fenrir.png/revision/latest?cb=20170705103511",
+    "artwork_url": "https://vignette4.wikia.nocookie.net/mira-miracle/images/5/50/Fenrir_Artwork.png/revision/latest?cb=20170705103456",
+    "max_atk": 8000,
+    "max_hp": 9700,
+    "mlb_atk": 9546,
+    "mlb_hp": 11575,
+    "rarity": 5,
+    "daemon_type": "phantasma",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Wolf's Fang",
+            "Deals 4972/5933 DMG to current target."
+        ]
+    ],
+    "ability": [
+        [
+            "Lone Wolf (Lv. 30)",
+            "Moderately increases Skill DMG."
+        ],
+        [
+            "God Hunter (Lv. 80)",
+            "Moderately reduces DMG dealt by Divina foes at the start of each wave."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "",
+        "illustrator": "Totomo (トトモ)",
+        "description": "The spirit of a monster from Northern European mythology. Not possessing his father Loki's love of tricks, Fenrir has a grave personality, and is often known to lecture those around him. So serious is Fenrir, that he has been dubbed the only kind-hearted individual among his relatives, who, starting with Loki, are known as a group of misfits. The truth is Fenrir uses logic to control his otherwise overwhelming lust for battle. Having inherited his father's quick thinking and impressive intellect, Fenrir is foretold to fell even Odin, the most powerful god of Northern European mythology.",
+        "how_to_acquire": "◦ Jewel Summon",
+        "notes_and_trivia": "◦ Summon rate increased until 12/07/2017",
+        "quote": {
+            "main": [
+                "\"Show me your skill with the blade...\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/b/b2/Fenrir_Main.ogg/revision/latest?cb=20170707180741"
+            ],
+            "skill": [
+                "\"Be consumed.\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/c/c6/Fenrir_Skill.ogg/revision/latest?cb=20170707180748"
+            ],
+            "summon": [
+                "\"Hmm... Humor me with a match?\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/8/8a/Fenrir_Summon.ogg/revision/latest?cb=20170707180753"
+            ],
+            "limit_break": [
+                "\"\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/5/53/Fenrir_Limit_Break.ogg/revision/latest?cb=20170707180757"
+            ]
+        }
+    },
+    "faction": null
+}

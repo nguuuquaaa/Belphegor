@@ -1,0 +1,48 @@
+{
+    "id": 229,
+    "name": "Giant Panda",
+    "alias": "Giant Panda",
+    "pic_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/c/cc/Giant_Panda.png/revision/latest?cb=20170301110148",
+    "artwork_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/c/c8/Giant_Panda_Artwork.png/revision/latest?cb=20170301110047",
+    "max_atk": 3000,
+    "max_hp": 5200,
+    "mlb_atk": 3816,
+    "mlb_hp": 5763,
+    "rarity": 3,
+    "daemon_type": "divina",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Bamboo Blade",
+            "Deals 2713/ DMG to current target."
+        ]
+    ],
+    "ability": [],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "--",
+        "illustrator": "Kiya Machi (木屋町)",
+        "description": "The spirit of a self-proclaimed \"beautiful girl\" whose true form is unknown but who takes the form of a giant panda. So, basically like a big panda spirit. None of the other spirits can deny how endearing she is in this form, so she's pretty popular. She's also known to have really high standards when it comes to bamboo. In fact, she was appointed as Bamboo Grass Ambassador and walks around distributing high quality samples. On a side note, she gets angry at the very sight of bamboo grass that doesn't meet her standards.",
+        "how_to_acquire": "◦ Jewel Summon",
+        "notes_and_trivia": "◦ Summon rate increased until 08/3/17",
+        "quote": {
+            "main": [
+                "\"No one can beat me in a bamboo grass tasting contest!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/1/1a/Giant_Panda_Main.ogg/revision/latest?cb=20170421155948"
+            ],
+            "skill": [
+                "\"This is what high quality bamboo tastes like!\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/2/22/Giant_Panda_Skill.ogg/revision/latest?cb=20170421160006"
+            ],
+            "summon": [
+                "\"Prepare yourself for my ultimate technique: Bamboo Grass Cutter!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/c/c0/Giant_Panda_Summon.ogg/revision/latest?cb=20170421160017"
+            ],
+            "limit_break": [
+                "\"You got any good grass?\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/d/d0/Giant_Panda_Limit_Break.ogg/revision/latest?cb=20170421160028"
+            ]
+        }
+    },
+    "faction": null
+}

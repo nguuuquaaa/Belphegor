@@ -1,0 +1,53 @@
+{
+    "id": 41,
+    "name": "Kogitsunemaru",
+    "alias": "Kogitsunemaru",
+    "pic_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/4/46/Kogitsunemaru.png/revision/latest?cb=20160820153311",
+    "artwork_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/a/ad/Kogitsunemaru_Artwork.png/revision/latest?cb=20160708033244",
+    "max_atk": 8000,
+    "max_hp": 8500,
+    "mlb_atk": 9546,
+    "mlb_hp": 10143,
+    "rarity": 5,
+    "daemon_type": "anima",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Vexing Vixen",
+            "Deals (2387/2847) DMG to the row of enemies directly in front."
+        ]
+    ],
+    "ability": [
+        [
+            "Fox's Blessing (Lv. 75)",
+            "Sharply reduces DMG taken."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "Nao Shiraki (白城なお)",
+        "illustrator": "Hihara You (緋原ヨウ)",
+        "description": "An Anima with a voracious appetite for deep-fried tofu. This sword-tempering master's work includes some of the finest blades known to man or spirit. She's also famed for her sharp tongue, and is a hit among fellow spirits for her witty comebacks. In fact, her only weakness is her utter inability to resist deep-fried tofu, which she guzzles down with a gusto bordering on manic.",
+        "how_to_acquire": "◦ Trade at Exchange for 75 Mochi 15/6/16 - 30/9/16",
+        "notes_and_trivia": "◦ At the beginnning of the game, she was named \"Foxblade\"\n◦ At the beginnning of the game, her abilty was named \"Foxy Protector\"",
+        "quote": {
+            "main": [
+                "\"One forged sword, comin' right up!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/2/27/Kogitsunemaru_Main.ogg/revision/latest?cb=20160715075706"
+            ],
+            "skill": [
+                "\"Open nice and wide!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/7/7e/Kogitsunemaru_Skill.ogg/revision/latest?cb=20160715075726"
+            ],
+            "summon": [
+                "\"Any chance for some deep-fried tofu?\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/8/8f/Kogitsunemaru_Summon.ogg/revision/latest?cb=20170106150245"
+            ],
+            "limit_break": [
+                "\"That pesky black kite doesn't stand a chance!\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/b/ba/Kogitsunemaru_Limit_Break.ogg/revision/latest?cb=20160715075755"
+            ]
+        }
+    },
+    "faction": null
+}

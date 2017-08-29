@@ -1,0 +1,48 @@
+{
+    "id": 233,
+    "name": "Zashiki Bokko [Awakened]",
+    "alias": "Zashiki Bokko [Awakened]",
+    "pic_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/1/1c/Zashiki_Bokko_Awakened.png/revision/latest?cb=20170311023444",
+    "artwork_url": "https://vignette4.wikia.nocookie.net/mira-miracle/images/8/8a/Zashiki_Bokko_Awakened_Artwork.png/revision/latest?cb=20170310231618",
+    "max_atk": 5260,
+    "max_hp": 4100,
+    "mlb_atk": 6693,
+    "mlb_hp": 5216,
+    "rarity": 3,
+    "daemon_type": "divina",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "Good Luck Charm",
+            "Deals 1401/1781 DMG to 3 enemies (ranged priority)."
+        ]
+    ],
+    "ability": [],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "Nao Shiraki (白城なお)",
+        "illustrator": "Unknown",
+        "description": "A spirit who lives quietly in Japanese homes. She's usually all smiles, and on top of that she brings happiness to the homes where she dwells. However, she got really angry for the first time in her life when a couple of hooligans played a really bad prank on the house where she was staying. This awakened a new power inside her. Embodying an aura of anger, she takes on the form of a dragon to fry her foes. Now she not only brings happiness, but also provides protection.",
+        "how_to_acquire": "◦ Jewel Summon",
+        "notes_and_trivia": "◦ Summon rate increased until 15/03/17\n◦ Her summon preview states her original form's name.",
+        "quote": {
+            "main": [
+                "\"I will obtain the strength necessary to protect those I care about!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/2/22/Zashiki_Bokko_Awakened_Main.ogg/revision/latest?cb=20170421163301"
+            ],
+            "skill": [
+                "\"I'm willing to become a monster if that keeps my home safe!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/e/ec/Zashiki_Bokko_Awakened_Skill.ogg/revision/latest?cb=20170421163310"
+            ],
+            "summon": [
+                "\"That's it! I won't allow this to go any further!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/7/71/Zashiki_Bokko_Awakened_Summon.ogg/revision/latest?cb=20170421163320"
+            ],
+            "limit_break": [
+                "\"Leave this one to me, okay?\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/0/06/Zashiki_Bokko_Awakened_Limit_Break.ogg/revision/latest?cb=20170421163329"
+            ]
+        }
+    },
+    "faction": null
+}

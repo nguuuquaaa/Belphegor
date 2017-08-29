@@ -1,0 +1,62 @@
+{
+    "id": 244,
+    "name": "Forge Washington",
+    "alias": "Forge Washington",
+    "pic_url": "https://vignette4.wikia.nocookie.net/mira-miracle/images/2/2e/Forge_Washington.png/revision/latest?cb=20170402145349",
+    "artwork_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/d/d4/Forge_Washington_Artwork.png/revision/latest?cb=20170330132811",
+    "max_atk": 7500,
+    "max_hp": 8600,
+    "mlb_atk": 8949,
+    "mlb_hp": 10262,
+    "rarity": 5,
+    "daemon_type": "phantasma",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Strength, Resolve and Kindness",
+            "Deals 4962/5922 DMG to current target."
+        ]
+    ],
+    "ability": [
+        [
+            "Pure Heart (Lv. 70)",
+            "Immune to Poison and moderately reduces DMG taken."
+        ],
+        [
+            "True Fiction (Lv. 80)",
+            "Absorbs a portion of DMG dealt as HP."
+        ]
+    ],
+    "bond": [
+        [
+            "George Washington > Forge Washington",
+            "Increases Forge Washington's skill DMG by 10%"
+        ]
+    ],
+    "additional_data": {
+        "voice_actor": "--",
+        "illustrator": "Hihara You (緋原ヨウ)",
+        "description": "A spirit created by the legend of George Washington and the cherry tree. He serves a prime example of the way that widespread belief in something can make it real, regardless of whether the original story is true. This pure young man is always striving to work on behalf of the people. Though his outlook may seem limited, he will one day become the leader of the nation. In preparation for this he's been learning about all sorts of things from George Washington.",
+        "how_to_acquire": "◦ \"Chopping Trees? Stop, Please!\" Event: Defeat LVL 80, 100, 150, 175, 200 Forge Washington.\n◦ \"Chopping Trees? Stop, Please!\" Event: Random drops after LVL 80.",
+        "notes_and_trivia": "◦ Slightly increases the total Event Points during the \"Chopping Trees? Stop, Please!\" event.",
+        "quote": {
+            "main": [
+                "\"I just wanna help people!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/4/41/Forge_Washington_Main.ogg/revision/latest?cb=20170623162327"
+            ],
+            "skill": [
+                "\"I won't allow people to be hurt!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/5/53/Forge_Washington_Skill.ogg/revision/latest?cb=20170623162335"
+            ],
+            "summon": [
+                "\"Ah, I appreciate the help.\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/a/ae/Forge_Washington_Summon.ogg/revision/latest?cb=20170623162343"
+            ],
+            "limit_break": [
+                "\"I'll study harder, and grow stronger!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/3/35/Forge_Washington_Limit_Break.ogg/revision/latest?cb=20170623162349"
+            ]
+        }
+    },
+    "faction": null
+}

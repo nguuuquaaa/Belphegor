@@ -1,0 +1,48 @@
+{
+    "id": 35,
+    "name": "Fire Mouse",
+    "alias": "Fire Mouse",
+    "pic_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/a/a9/Fire_Mouse.png/revision/latest?cb=20161015195357",
+    "artwork_url": "https://vignette4.wikia.nocookie.net/mira-miracle/images/d/dc/Fire_Mouse_Artwork.png/revision/latest?cb=20170205043404",
+    "max_atk": 3300,
+    "max_hp": 3450,
+    "mlb_atk": 4428,
+    "mlb_hp": 4629,
+    "rarity": 2,
+    "daemon_type": "phantasma",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Burst of Flames",
+            "Deals 1411/1891 DMG to current target."
+        ]
+    ],
+    "ability": [],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "Tatsuya Senoue (瀬上達也)",
+        "illustrator": "Kanamura Ren (金村連)",
+        "description": "The spirit of a monster said to roam about the land. He has a strong affinity for fire, and the long hair flowing from his body is like licks of flame. He likes beauty and he LOVES hot baths. But you have to be careful if you take a bath after him, because he prefers for the water to be almost literally boiling, around 176 degress Fahrenheit.",
+        "how_to_acquire": "◦ Free Summon\n◦ Raid: Random Drop",
+        "notes_and_trivia": "--",
+        "quote": {
+            "main": [
+                "\"A nice hot bath is the best...\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/3/36/Fire_Mouse_Main.ogg/revision/latest?cb=20160715102333"
+            ],
+            "skill": [
+                "\"Mind if I reduce you to ashes?\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/7/76/Fire_Mouse_Skill.ogg/revision/latest?cb=20160715102454"
+            ],
+            "summon": [
+                "\"I could really use a bath... Do you happen to have one?\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/0/0a/Fire_Mouse_Summon.ogg/revision/latest?cb=20161227165638"
+            ],
+            "limit_break": [
+                "\"You are the king of the tub! Things are really heating up!\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/d/dd/Fire_Mouse_Limit_Break.ogg/revision/latest?cb=20160715102511"
+            ]
+        }
+    },
+    "faction": null
+}

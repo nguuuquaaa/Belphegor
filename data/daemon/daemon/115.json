@@ -1,0 +1,53 @@
+{
+    "id": 115,
+    "name": "Titanium Elf",
+    "alias": "Titanium Elf",
+    "pic_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/8/85/Titanium_Elf.png/revision/latest?cb=20161008105817",
+    "artwork_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/2/28/Titanium_Elf_Artwork.png/revision/latest?cb=20160901055035",
+    "max_atk": 9800,
+    "max_hp": 8000,
+    "mlb_atk": 11694,
+    "mlb_hp": 9546,
+    "rarity": 5,
+    "daemon_type": "divina",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "Warning Dance",
+            "Deals 2387/2847 DMG to enemy target. Target receives 48/57% more DMG for a limited time."
+        ]
+    ],
+    "ability": [
+        [
+            "Top Idol (Lv. 85)",
+            "Sharply increases crit rate and significantly increases crit DMG when one of the other elves is on the team."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "--",
+        "illustrator": "Kiya Machi (木屋町)",
+        "description": "The spirit of an elf based on an elementary particle, she's the central member of the elven dance group \"ELF 118\". However, there are some very...er...interesting theories about how she was able to come out ahead of the other members. For example, a flower pot just happened to fall on another popular member's head while she was walking down the street...but let's not jump to any conclusions about who might have done it!",
+        "how_to_acquire": "◦ Trade at Exchange for 75 Mochi 01/09/16 - 30/10/16\n◦ The cost increases by 25 Mochi after each exchange\n(75, 100, 125, 150, 175)",
+        "notes_and_trivia": "° She was formerly referred to as \"Zitterbewegung\" in \"Spirit Idol Competition\" event. \n° She was formerly nicknamed \"Zitter\" in \"Spirit Idol Competition\" event, but it has changed to \"Titter\".",
+        "quote": {
+            "main": [
+                "\"Being a celeb isn't so bad after all!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/b/ba/Titanium_Elf_Main.ogg/revision/latest?cb=20161207075656"
+            ],
+            "skill": [
+                "\"I'll show you how much hard work goes into these moves!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/6/65/Titanium_Elf_Skill.ogg/revision/latest?cb=20170121180113"
+            ],
+            "summon": [
+                "\"Leave center stage to me!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/c/c7/Titanium_Elf_Summon.ogg/revision/latest?cb=20170121180121"
+            ],
+            "limit_break": [
+                "\"I just love being famous!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/0/05/Titanium_Elf_Limit_Break.ogg/revision/latest?cb=20170121180129"
+            ]
+        }
+    },
+    "faction": "ELF 118"
+}

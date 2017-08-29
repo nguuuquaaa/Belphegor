@@ -1,0 +1,53 @@
+{
+    "id": 86,
+    "name": "Diamond",
+    "alias": "Diamond",
+    "pic_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/e/ea/Diamond.png/revision/latest?cb=20161014135121",
+    "artwork_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/f/f2/Diamond_Artwork.png/revision/latest?cb=20170205042530",
+    "max_atk": 5000,
+    "max_hp": 6000,
+    "mlb_atk": 6132,
+    "mlb_hp": 7356,
+    "rarity": 4,
+    "daemon_type": "anima",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Prism Slicer",
+            "Deals 1681/2061 damage to the row of enemies directly in front."
+        ]
+    ],
+    "ability": [
+        [
+            "Unbendable Will (Lv. 64)",
+            "When HP is 1/3 or less, sharply reduces damage taken."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "Emi Hirayama (平山笑美)",
+        "illustrator": "ATARU",
+        "description": "The hardest of all natural materials known to man. Possessed of a gritty will deserving of her namesake, this young swordfighter's legendary blade fire rainbow beams to cleave through her foes. Despite her tough facade, her noble soul to said to fragile like glass. Take care you don't break her...or let her break you.",
+        "how_to_acquire": "◦ Jewel Summon",
+        "notes_and_trivia": "◦ At the beginning of the game, she was named \"Diana Monde\"",
+        "quote": {
+            "main": [
+                "\"Even if the heavens forgive you , I shall not!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/3/3c/Diamond_Main.ogg/revision/latest?cb=20160715062430"
+            ],
+            "skill": [
+                "\"My treasured blade cuts down all before me!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/6/63/Diamond_Skill.ogg/revision/latest?cb=20160715062458"
+            ],
+            "summon": [
+                "\"I shall keep you safe, I swear by my blade!\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/0/0b/Diamond_Summon.ogg/revision/latest?cb=20170421163524"
+            ],
+            "limit_break": [
+                "\"I must become harder! More powerful!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/6/62/Diamond_Limit_Break.ogg/revision/latest?cb=20160715062744"
+            ]
+        }
+    },
+    "faction": null
+}

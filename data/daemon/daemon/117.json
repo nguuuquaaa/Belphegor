@@ -1,0 +1,53 @@
+{
+    "id": 117,
+    "name": "Fragarach",
+    "alias": "Fragarach",
+    "pic_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/c/c5/Fragarach.png/revision/latest?cb=20160919050628",
+    "artwork_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/a/ad/Fragarach_Artwork.png/revision/latest?cb=20160919050655",
+    "max_atk": 5000,
+    "max_hp": 6100,
+    "mlb_atk": 6131,
+    "mlb_hp": 7480,
+    "rarity": 4,
+    "daemon_type": "anima",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Full Throttle Sword",
+            "Deals 1780/2180 DMG to 2 enemies (ranged priority). Targets deal 30%/37% less DMG for a limited time."
+        ]
+    ],
+    "ability": [
+        [
+            "Blade Whirlwind (Lv. 42)",
+            "Moderately increases crit rate."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "--",
+        "illustrator": "Iwamoto Kenichi (岩本健一)",
+        "description": "The spirit of a sword from Celtic Mythology.  She can send her blade whizzing straight into the enemy and then back to her hand with a whim.  It's actually a type of psychokinesis that works on other things, too, but it can be kind of hard to control. One time she wanted the remote control, but she accidentally sent the TV flying through the air and totally wrecked the Bureau's break room.",
+        "how_to_acquire": "◦ Jewel Summon",
+        "notes_and_trivia": "◦ Summon rate increased until 14/09/16",
+        "quote": {
+            "main": [
+                "\"Don't think you can escape me!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/a/ab/Fragarach_Main.ogg/revision/latest?cb=20170422054153"
+            ],
+            "skill": [
+                "\"I'm going all-out!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/f/f6/Fragarach_Skill.ogg/revision/latest?cb=20170422054206"
+            ],
+            "summon": [
+                "\"Your enemies will never escape with me on your side!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/3/3f/Fragarach_Summon.ogg/revision/latest?cb=20170422054209"
+            ],
+            "limit_break": [
+                "\"Maybe now I can control other things, too...\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/a/aa/Fragarach_Limit_Break.ogg/revision/latest?cb=20170422054150"
+            ]
+        }
+    },
+    "faction": null
+}

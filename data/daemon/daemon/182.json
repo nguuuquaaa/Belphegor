@@ -1,0 +1,48 @@
+{
+    "id": 182,
+    "name": "Krampus",
+    "alias": "Krampus",
+    "pic_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/8/8f/Krampus.png/revision/latest?cb=20161224154808",
+    "artwork_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/6/6a/Krampus_Artwork.png/revision/latest?cb=20170722041850",
+    "max_atk": 3800,
+    "max_hp": 4550,
+    "mlb_atk": 4835,
+    "mlb_hp": 5789,
+    "rarity": 3,
+    "daemon_type": "anima",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Punishment Time",
+            "Deals 2634/3354 DMG to current target."
+        ]
+    ],
+    "ability": [],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "",
+        "illustrator": "Iwamoto Kenichi (岩本健一)",
+        "description": "A spirit who admonishes and punishes misbehaving children through the Christmas season. He is currently looking after the spirit children at the Bureau of the Occult, constantly telling them to \"follow the rules\" and \"moderation in all things\" and the like, trying to instruct them in proper spirit values as if he were their teacher. Thanks to his efforts, the bureau has saved a lot of money on repair and maintenance fees.",
+        "how_to_acquire": "◦ Limited Jewel Summon 24/12/16 - 06/01/17\n◦ Trade at Exchange for 5 Mochi 06/01/17 - 11/01/17",
+        "notes_and_trivia": "◦ Summon rate increased until 06/01/17\n◦ Can only be exchanged once",
+        "quote": {
+            "main": [
+                "\"Hey, kid! You being naughty or nice?!\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/a/ae/Krampus_Main.ogg/revision/latest?cb=20161227175028"
+            ],
+            "skill": [
+                "\"Spare the rod...right?!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/e/e3/Krampus_Skill.ogg/revision/latest?cb=20161227175023"
+            ],
+            "summon": [
+                "\"Aren't there any good kids here?\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/2/28/Krampus_Summon.ogg/revision/latest?cb=20170106025800"
+            ],
+            "limit_break": [
+                "\"I'll MAKE you behave!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/2/29/Krampus_Limit_Break.ogg/revision/latest?cb=20161227175041"
+            ]
+        }
+    },
+    "faction": null
+}

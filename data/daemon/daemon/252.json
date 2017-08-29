@@ -1,0 +1,48 @@
+{
+    "id": 252,
+    "name": "Ao Guang",
+    "alias": "Ao Guang",
+    "pic_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/c/ca/Ao_Guang.png/revision/latest?cb=20170413133405",
+    "artwork_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/7/71/Ao_Guang_Artwork.png/revision/latest?cb=20170413133344",
+    "max_atk": 5800,
+    "max_hp": 6800,
+    "mlb_atk": 7112,
+    "mlb_hp": 8337,
+    "rarity": 4,
+    "daemon_type": "divina",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Magic Dragon Fist",
+            "Deals 1513/1853 DMG to all enemies."
+        ]
+    ],
+    "ability": [],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "",
+        "illustrator": "Totomo",
+        "description": "The spirit of the Dragon King of the East Sea. Without going into to many details, let's just say he had a pretty pitiful past. This made him want to help the less fortunate, but he never offers aid to those who are already strong. He helps people who've been chased into corners by clearing the way for their escape.",
+        "how_to_acquire": "◦ Jewel Summon",
+        "notes_and_trivia": "◦ Summon rate increased until 19/04/17",
+        "quote": {
+            "main": [
+                "\"I can't just abandon those poor and unfortunate souls...\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/9/90/Ao_Guang_Main.ogg/revision/latest?cb=20170622212024"
+            ],
+            "skill": [
+                "\"Die, you heartless, evil fiends...\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/5/56/Ao_Guang_Skill.ogg/revision/latest?cb=20170622212031"
+            ],
+            "summon": [
+                "\"I presume you to be a person of great strength and will.\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/8/8f/Ao_Guang_Summon.ogg/revision/latest?cb=20170622212040"
+            ],
+            "limit_break": [
+                "\"\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/b/b6/Ao_Guang_Limit_Break.ogg/revision/latest?cb=20170622212049"
+            ]
+        }
+    },
+    "faction": null
+}

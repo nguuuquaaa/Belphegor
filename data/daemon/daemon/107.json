@@ -1,0 +1,48 @@
+{
+    "id": 107,
+    "name": "Lady Kushinada",
+    "alias": "Lady Kushinada",
+    "pic_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/c/c5/Lady_Kushinada.png/revision/latest?cb=20160825005353",
+    "artwork_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/f/f0/Lady_Kushinada_Artwork.png/revision/latest?cb=20160825005702",
+    "max_atk": 4600,
+    "max_hp": 4000,
+    "mlb_atk": 5853,
+    "mlb_hp": 5090,
+    "rarity": 3,
+    "daemon_type": "divina",
+    "daemon_class": "healer",
+    "skill": [
+        [
+            "Dance of Life",
+            "Recovers 1243/1583 HP for 3 team members with the lowest HP."
+        ]
+    ],
+    "ability": [],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "Marin Mizutani (水谷麻鈴)",
+        "illustrator": "Totomo (トトモ)",
+        "description": "The spirit of a goddess from Japanese mythology. She lived peacefully as the wife of Susanoo-no-Mikoto, until one day her husband turned into a little girl. She believes he will return to his old self someday and is secrectly determined to protect him.",
+        "how_to_acquire": "◦ \"Is this Destiny? -Orochi on the Counterattack-\" Event: Defeat LVL 20, 25, 30 Yamata-no-Orochi.\n◦ \"Is this Destiny? -Orochi on the Counterattack-\" Event: Random drops after LVL 20.",
+        "notes_and_trivia": "◦  Increase damage dealt by 20% while battling Yamata-no-Orochi during the \"Is this Destiny? -Orochi on the Counterattack-\" event.",
+        "quote": {
+            "main": [
+                "\"Oh, how I adore my little Susanoo!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/e/e6/Lady_Kushinada_Main.ogg/revision/latest?cb=20161227224217"
+            ],
+            "skill": [
+                "\"This is...for all of us\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/e/e3/Lady_Kushinada_Skill.ogg/revision/latest?cb=20161227224227"
+            ],
+            "summon": [
+                "\"I do this for my beloved Susanoo!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/5/54/Lady_Kushinada_Summon.ogg/revision/latest?cb=20161227224257"
+            ],
+            "limit_break": [
+                "\"I'll work extra hard for my little Susanoo!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/b/b1/Lady_Kushinada_Limit_Break.ogg/revision/latest?cb=20161227224247"
+            ]
+        }
+    },
+    "faction": null
+}

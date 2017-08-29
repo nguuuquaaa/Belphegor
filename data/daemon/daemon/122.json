@@ -1,0 +1,57 @@
+{
+    "id": 122,
+    "name": "Antikythera",
+    "alias": "Antikythera",
+    "pic_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/f/f6/Antikythera.png/revision/latest?cb=20160919044152",
+    "artwork_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/9/99/Antikythera_Artwork.png/revision/latest?cb=20160922000106",
+    "max_atk": 10000,
+    "max_hp": 7800,
+    "mlb_atk": 11933,
+    "mlb_hp": 9307,
+    "rarity": 5,
+    "daemon_type": "anima",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "Studied Strike",
+            "Deals 2575/3075 DMG to 3 enemies (ranged priority)."
+        ]
+    ],
+    "ability": [
+        [
+            "Orrery (Lv. 63)",
+            "Sharply increases all Anima team members' crit DMG."
+        ],
+        [
+            "Observer (Lv. 90)",
+            "Sharply increases crit rate."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "--",
+        "illustrator": "Iwamoto Kenichi (岩本健一)",
+        "description": "The spirit of a device created long ago for astronomical observation. It's famous as an OOPArt (out-of-place artifact) using technology seemingly too advanced for its time. Her powers of observation far surpass anyone else's and she can quickly see through any pretense or ruse, but she's not the best with words so she has trouble conveying her insights.",
+        "how_to_acquire": "◦ Jewel Summon",
+        "notes_and_trivia": "◦ Summon rate increased until 21/09/16",
+        "quote": {
+            "main": [
+                "\"Observing the movements of heavenly bodies... That's what I was originally made for. Now what?\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/b/bf/Antikythera_Main.ogg/revision/latest?cb=20161224105618"
+            ],
+            "skill": [
+                "\"I see it. I'll just put it over here.\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/e/e8/Antikythera_Skill.ogg/revision/latest?cb=20161224105705"
+            ],
+            "summon": [
+                "\"You seem... odd.\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/9/99/Antikythera_Summon.ogg/revision/latest?cb=20170106152802"
+            ],
+            "limit_break": [
+                "\"Looks like I'll be spending much more time observing.\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/a/a3/Antikythera_Limit_Break.ogg/revision/latest?cb=20161224105726"
+            ]
+        }
+    },
+    "faction": null
+}

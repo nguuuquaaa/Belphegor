@@ -1,0 +1,53 @@
+{
+    "id": 298,
+    "name": "Daji [Seductive Swimsuit]",
+    "alias": "Daji [Seductive Swimsuit]",
+    "pic_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/6/64/Daji_Seductive_Swimsuit.png/revision/latest?cb=20170628094140",
+    "artwork_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/e/ed/Daji_Seductive_Swimsuit_Artwork.png/revision/latest?cb=20170628094107",
+    "max_atk": 8500,
+    "max_hp": 6200,
+    "mlb_atk": 10143,
+    "mlb_hp": 7399,
+    "rarity": 4,
+    "daemon_type": "phantasma",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "Alluring Gaze",
+            "Deals 1671/1996 DMG to the enemy with the lowest HP. Targets receive 35%/42% more DMG for a limited time."
+        ]
+    ],
+    "ability": [
+        [
+            "Nation-Destroying Beauty (Lv. 52)",
+            "Skill attacks have a significant chance of inflicting stun."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "Nao Shiraki (白城なお)",
+        "illustrator": "Miyoshino (みよしの)",
+        "description": "The spirit of possibly the most evil woman in all of human history. Currently taking human form, she enjoys spending her days as a high school student. She apparently came to the beach just to hang out with friends, completely unrelated to the beach contest. Since she can grant her own wishes any time she feels like it, she couldn't care less about the prize. She'd rather just enjoy herself in the sun, watching from the sidelines as contestants frantically compete—and men try to flirt with her.",
+        "how_to_acquire": "◦ Limited Jewel Summon 28/06/17 to 05/07/17\n◦ Trade at Exchange for 50 Mochi 28/06/17 - 05/07/17",
+        "notes_and_trivia": "◦ Summon rate increased until 05/07/17\n◦ Can only be exchanged once",
+        "quote": {
+            "main": [
+                "\"Me? I'm just here to watch...\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/0/05/Daji_Seductive_Swimsuit_Main.ogg/revision/latest?cb=20170707180208"
+            ],
+            "skill": [
+                "\"Consider yourself a failure.\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/9/9f/Daji_Seductive_Swimsuit_Skill.ogg/revision/latest?cb=20170707180217"
+            ],
+            "summon": [
+                "\"Ooh, I just love being at the beach!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/f/f7/Daji_Seductive_Swimsuit_Summon.ogg/revision/latest?cb=20170707180222"
+            ],
+            "limit_break": [
+                "\"--\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/c/c9/Daji_Seductive_Swimsuit_Limit_Break.ogg/revision/latest?cb=20170707180227"
+            ]
+        }
+    },
+    "faction": null
+}

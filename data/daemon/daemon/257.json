@@ -1,0 +1,48 @@
+{
+    "id": 257,
+    "name": "Orias",
+    "alias": "Orias",
+    "pic_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/c/cb/Orias.png/revision/latest?cb=20170426185315",
+    "artwork_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/b/b4/Orias_Artwork.png/revision/latest?cb=20170429022925",
+    "max_atk": 3900,
+    "max_hp": 4650,
+    "mlb_atk": 4961,
+    "mlb_hp": 5915,
+    "rarity": 3,
+    "daemon_type": "phantasma",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Business Card From Hell",
+            "Increases DMG dealt by a random ally by 57%/73% for a limited time."
+        ]
+    ],
+    "ability": [],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "Hokuto Uzawa (鵜澤北斗)",
+        "illustrator": "Totomo (トトモ)",
+        "description": "The spirit of a demon that can change a person's form. He works as a scout for elf pop stars. He has quite the refined aesthetic sensibilities, and most of the current stars rose to fame thanks to his efforts behind the scenes. He works relentlessly day and night to solidify the elves' popularity. In his off-hours he helps out at the Bureau of the Occult, which he claims comes in handy when searching for the next big star.",
+        "how_to_acquire": "◦ \"Spirit Idol Competition\" Event: Clear Chapter 1.\n◦ \"Spirit Idol Competition\" Event: Exchange for 200 Voting Slip.\n◦ \"Spirit Idol Competition\" Event: Get a Second Half Ranking of 6001-10000.\n◦ \"Spirit Idol Competition\" Event: Get a Total Ranking of 7501-10000.",
+        "notes_and_trivia": "◦ Slightly increases the drop rate of Voting Slip during the \"Spirit Idol Competition\" event.",
+        "quote": {
+            "main": [
+                "\"I want my elves to be at the top of the industry!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/1/14/Orias_Main.ogg/revision/latest?cb=20170623164535"
+            ],
+            "skill": [
+                "\"Here, let me give you my card!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/e/eb/Orias_Skill.ogg/revision/latest?cb=20170623164544"
+            ],
+            "summon": [
+                "\"Such a pleasure to meet you.\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/5/5b/Orias_Summon.ogg/revision/latest?cb=20170623164607"
+            ],
+            "limit_break": [
+                "\"Looks like I've got my work cut out for me today!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/d/dc/Orias_Limit_Break.ogg/revision/latest?cb=20170623164618"
+            ]
+        }
+    },
+    "faction": null
+}

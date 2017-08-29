@@ -1,0 +1,53 @@
+{
+    "id": 274,
+    "name": "Ohara Yasutsuna",
+    "alias": "Ohara Yasutsuna",
+    "pic_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/8/86/Ohara_Yasutsuna.png/revision/latest?cb=20170525000354",
+    "artwork_url": "https://vignette4.wikia.nocookie.net/mira-miracle/images/b/b2/Ohara_Yasutsuna_Artwork.png/revision/latest?cb=20170524133229",
+    "max_atk": 5800,
+    "max_hp": 6800,
+    "mlb_atk": 7112,
+    "mlb_hp": 8337,
+    "rarity": 4,
+    "daemon_type": "divina",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "A Father's Hammer",
+            "Deals 3085/3785 DMG to the enemy with the highest ATK, with a moderate chance of inflicting Stun."
+        ]
+    ],
+    "ability": [
+        [
+            "Master Craftsman (Lv. 35)",
+            "Sharply increases skill DMG."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "--",
+        "illustrator": "Hihara You",
+        "description": "The spirit of a swordsmith who produced many of the world's most famous swords. Dojigiri Yasutsuna is perhaps one of his most famous works. He dotes on his creations like his own children, causing them no end of trouble in the process. That's because his version of \"doting\" is more like butting and meddling in their affairs. Still, they respect him like a father... to a certain degree, at least.",
+        "how_to_acquire": "◦ \"Romance of the Demon and Sword\" Event: Defeat Lv. 40, 50, 120, 160 Noddy.\n◦ \"Romance of the Demon and Sword\" Event: Random drops after LVL 40.\n◦ \"Romance of the Demon and Sword\" Get a First Half Ranking of 1000 and above.\n◦ \"Romance of the Demon and Sword\" Get a First Half Ranking of 2501~6000.\n◦ \"Romance of the Demon and Sword\" Get a Total Ranking of 7500 and above.",
+        "notes_and_trivia": "◦ Slightly increases total Event Points gained during the \"Romance of the Demon and Sword\" event.",
+        "quote": {
+            "main": [
+                "\"Oh, mine are the absolute best!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/2/24/Ohara_Yasutsuna_Main.ogg/revision/latest?cb=20170622211325"
+            ],
+            "skill": [
+                "\"How 'bout I pound you into shape?\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/5/57/Ohara_Yasutsuna_Skill.ogg/revision/latest?cb=20170622211332"
+            ],
+            "summon": [
+                "\"Alright, which of you needs to be sharpened?\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/1/15/Ohara_Yasutsuna_Summon.ogg/revision/latest?cb=20170622211338"
+            ],
+            "limit_break": [
+                "\"I must help my children become stronger and more beautiful!\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/3/35/Ohara_Yasutsuna_Limit_Break.ogg/revision/latest?cb=20170622211346"
+            ]
+        }
+    },
+    "faction": null
+}

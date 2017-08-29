@@ -1,0 +1,48 @@
+{
+    "id": 53,
+    "name": "Diamond Cutter",
+    "alias": "Diamond Cutter",
+    "pic_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/5/50/Diamond_Cutter.png/revision/latest?cb=20161015200701",
+    "artwork_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/1/10/Diamond_Cutter_Artwork.png/revision/latest?cb=20170205043500",
+    "max_atk": 4000,
+    "max_hp": 3000,
+    "mlb_atk": 5369,
+    "mlb_hp": 4026,
+    "rarity": 2,
+    "daemon_type": "anima",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "Diamond Storm",
+            "Deals 944/1264 DMG to 2 random enemies."
+        ]
+    ],
+    "ability": [],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "Yui Yamaoka (山岡ゆい)",
+        "illustrator": "x-6suke",
+        "description": "A straight-laced, no-nonsense spirit with a deep hatred of anything that isn't 180 degrees. She cuts straight to the chase in all she does, and to heck with any rough edges that get shaved off along the way.",
+        "how_to_acquire": "◦ Free Summon\n◦ Raid: Random Drop",
+        "notes_and_trivia": "--",
+        "quote": {
+            "main": [
+                "\"Nothing survives my all-powerful cleave!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/0/09/Diamond_Cutter_Main.ogg/revision/latest?cb=20160716121800"
+            ],
+            "skill": [
+                "\"Prepare to be sliced in two!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/0/04/Diamond_Cutter_Skill.ogg/revision/latest?cb=20160716121830"
+            ],
+            "summon": [
+                "\"Your gaze is unwavering, straight... I approve!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/f/fd/Diamond_Cutter_Summon.ogg/revision/latest?cb=20160716121915"
+            ],
+            "limit_break": [
+                "\"Sharper! Only the sharpest of sharp shall suffice.\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/8/84/Diamond_Cutter_Limit_Break.ogg/revision/latest?cb=20160716121849"
+            ]
+        }
+    },
+    "faction": null
+}

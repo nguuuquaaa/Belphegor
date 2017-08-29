@@ -5,6 +5,8 @@ test_guild_id = 306527473997316097
 
 otogi_guild_id = 231283203095134208
 
+creampie_guild_id = 301713435635482624
+
 data_path = "data/"
 
 chip_path = f"{data_path}chip/"
@@ -25,3 +27,5 @@ emojis = {"A": "\U0001F1E6", "B": "\U0001F1E7", "C": "\U0001F1E8", "D": "\U0001F
           "5": "\u0035\u20E3", "6": "\u0036\u20E3", "7": "\u0037\u20E3", "8": "\u0038\u20E3", "9": "\u0039\u20E3"}
 
 no_img = "http://i.imgur.com/62di8EB.jpg"
+
+BUFFER_SIZE = 3000 #equivalent to 1 minute

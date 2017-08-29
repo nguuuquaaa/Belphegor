@@ -1,0 +1,53 @@
+{
+    "id": 284,
+    "name": "Jiangshi",
+    "alias": "Jiangshi",
+    "pic_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/5/59/Jiangshi.png/revision/latest?cb=20170607131525",
+    "artwork_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/4/45/Jiangshi_Artwork.png/revision/latest?cb=20170607131512",
+    "max_atk": 5700,
+    "max_hp": 6700,
+    "mlb_atk": 6988,
+    "mlb_hp": 8215,
+    "rarity": 4,
+    "daemon_type": "phantasma",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Full Arteries",
+            "Deals 1681/2061 DMG to nearby enemies."
+        ]
+    ],
+    "ability": [
+        [
+            "Kenpo Master (Lv. 67)",
+            "Sharply increases DMG dealt and ATK speed."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "--",
+        "illustrator": "Totomo",
+        "description": "The spirit of a dead body that can move around without rotting. Even before becoming a spirit she possessed incredible acrobatic powers, and now she can still leap around, ignoring the effects of rigor mortis. Apparently at one point there was a Jiangshi craze in Japan, which established her current appearance in people's minds. She was originally a vampire, but now she's a big fan of ketchup—although sometimes she drinks tomato juice instead. She gets happy at the sight of any red liquid, really.",
+        "how_to_acquire": "◦ Jewel Summon",
+        "notes_and_trivia": "◦ Summon rate increased until 14/06/17",
+        "quote": {
+            "main": [
+                "\"Not up for it? Can you at least give me some red juice?\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/3/35/Jiangshi_Main.ogg/revision/latest?cb=20170623140509"
+            ],
+            "skill": [
+                "\"Ahh-hahaha! Let's do it, buckos!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/f/fc/Jiangshi_Skill.ogg/revision/latest?cb=20170623140516"
+            ],
+            "summon": [
+                "\"All I need is a teensy sip of blood and I can do anything!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/e/ed/Jiangshi_Summon.ogg/revision/latest?cb=20170623140520"
+            ],
+            "limit_break": [
+                "\"Oh! I feel like I just had a goblet of the most delicious blood!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/2/2d/Jiangshi_Limit_Break.ogg/revision/latest?cb=20170623140526"
+            ]
+        }
+    },
+    "faction": null
+}

@@ -1,0 +1,48 @@
+{
+    "id": 92,
+    "name": "Scarlett Shott",
+    "alias": "Scarlett Shott",
+    "pic_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/a/aa/Scarlett_Shott.png/revision/latest?cb=20160721110000",
+    "artwork_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/0/05/Scarlett_Shott_Artwork.png/revision/latest?cb=20170714103858",
+    "max_atk": 4900,
+    "max_hp": 4000,
+    "mlb_atk": 6235,
+    "mlb_hp": 5090,
+    "rarity": 3,
+    "daemon_type": "anima",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "Sure Shot",
+            "Deals 1628/2068 DMG to 2 enemies (ranged priority)."
+        ]
+    ],
+    "ability": [],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "Mizuki Yamaguchi (山口瑞樹)",
+        "illustrator": "Totomo (トトモ)",
+        "description": "The spirit of a hero's beloved bow from Chinese mythology. The bow was involved in the legendary shooting down of nine suns. She is a nice, mild-mannered girl in addition to being an expert with the bow, but she's a bit weak-spirited and often finds herself in trouble. All this trouble has made her a bit of a wise woman in worldly matters, though. She's scared of crows and runs to hide whenever she sees one and waits for it to go away. When asked why, she said seeing crows gives her flashbacks to when she had to shoot down the nine sunbirds.",
+        "how_to_acquire": "◦ \"Outbreak! A Day of Battle in Shinjuku!\" Event: Defeat LVL 20 Mikhael.\n◦ \"Outbreak! A Day of Battle in Shinjuku!\" Event: Random drops start from LVL 1 and Event Summon.",
+        "notes_and_trivia": "◦ Increase damage dealt by 15% while battling Mikhael during the \"Outbreak! A Day of Battle in Shinjuku!\" event.",
+        "quote": {
+            "main": [
+                "\"I'm not good for much besides archery...\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/3/32/Scarlett_Shott_Main.ogg/revision/latest?cb=20161227212848"
+            ],
+            "skill": [
+                "\"Hush now...I'm aiming for the heavens!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/8/81/Scarlett_Shott_Skill.ogg/revision/latest?cb=20161227212848"
+            ],
+            "summon": [
+                "\"P-please, l-let me help you!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/6/6e/Scarlett_Shott_Summon.ogg/revision/latest?cb=20161227212912"
+            ],
+            "limit_break": [
+                "\"You never know when crows will show up... Constant vigilance...\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/7/78/Scarlett_Shott_Limit_Break.ogg/revision/latest?cb=20161227212920"
+            ]
+        }
+    },
+    "faction": null
+}

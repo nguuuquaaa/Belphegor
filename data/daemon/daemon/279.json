@@ -1,0 +1,57 @@
+{
+    "id": 279,
+    "name": "Asmodeus",
+    "alias": "Asmodeus",
+    "pic_url": "https://vignette4.wikia.nocookie.net/mira-miracle/images/3/34/Asmodeus.png/revision/latest?cb=20170531132234",
+    "artwork_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/d/d7/Asmodeus_Artwork.png/revision/latest?cb=20170531132206",
+    "max_atk": 8300,
+    "max_hp": 9800,
+    "mlb_atk": 9904,
+    "mlb_hp": 11694,
+    "rarity": 5,
+    "daemon_type": "phantasma",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Demonic Temptation",
+            "Deals 1846/2206 DMG to all enemies."
+        ]
+    ],
+    "ability": [
+        [
+            "Lord of Lust (Lv. 69)",
+            "Absorbs 22% of DMG dealt as HP."
+        ],
+        [
+            "The Seven Sins (Lv. 80)",
+            "Sharply increases Skill DMG."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "",
+        "illustrator": "*zoff",
+        "description": "The spirit of the demon of lust, one of the seven deadly sins. He's also very well-known in the demon world as a male magazine model. His popularity even rivals that of Lucifer. However, he recently got tired of dealing with fans and secretly went to work at the Bureau of the Occult. He's apparently searching for people who will treat him not as a famous model but instead as just an average spirit. Still, when he does run into the inevitable fan he treats with utmost respect, showing what a true professional he really is.",
+        "how_to_acquire": "◦ Limited Jewel Summon 31/06/17 to 07/06/17\n◦ Trade at Exchange for 200 Mochi 31/06/17 - 07/06/17",
+        "notes_and_trivia": "◦ Summon rate increased until 07/06/17\n◦ Can only be exchanged once",
+        "quote": {
+            "main": [
+                "\"I'm off the clock, so let's have some fun!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/b/ba/Asmodeus_Main.ogg/revision/latest?cb=20170623160926"
+            ],
+            "skill": [
+                "\"Give me everything you've got!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/0/09/Asmodeus_Skill.ogg/revision/latest?cb=20170623160928"
+            ],
+            "summon": [
+                "\"You mean you don't know who I am?\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/5/5d/Asmodeus_Summon.ogg/revision/latest?cb=20170623160940"
+            ],
+            "limit_break": [
+                "\"\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/6/62/Asmodeus_Limit_Break.ogg/revision/latest?cb=20170623160946"
+            ]
+        }
+    },
+    "faction": null
+}

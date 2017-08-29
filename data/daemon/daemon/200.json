@@ -1,0 +1,58 @@
+{
+    "id": 200,
+    "name": "Amanojaku",
+    "alias": "Amanojaku",
+    "pic_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/b/b3/Amanojaku.png/revision/latest?cb=20170120052846",
+    "artwork_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/e/e1/Amanojaku_Artwork.png/revision/latest?cb=20170120052851",
+    "max_atk": 9000,
+    "max_hp": 5600,
+    "mlb_atk": 11034,
+    "mlb_hp": 6866,
+    "rarity": 4,
+    "daemon_type": "phantasma",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "Mind-Reading Strike",
+            "Deals 3174/3894 DMG to the enemy with the most HP. Target takes 60%/74% more DMG for a limited time."
+        ]
+    ],
+    "ability": [
+        [
+            "Perversity (Lv. 70)",
+            "Skill attacks have a significant chance of inflicting Virulent Poison."
+        ]
+    ],
+    "bond": [
+        [
+            "Amanojaku > Hariti",
+            "Increases Hariti's speed by 4%"
+        ]
+    ],
+    "additional_data": {
+        "voice_actor": "--",
+        "illustrator": "Miyoshino (みよしの)",
+        "description": "A spirit who used to play tricks on people using her ability to read minds. She once played the trick of hiding a child and ended up being frantically chased by the demon mother searching for her child. Since then, she has rarely played any tricks, maybe because she learned she shouldn't do things others don't want her to do. Now, she works for the Bureau of the Occult to prevent malicious mischief, making use of her observational skills.",
+        "how_to_acquire": "◦ Limited Jewel Summon 12/01/17- 08/02/17\n◦ Trade at Exchange for 50 Mochi 05/02/17 - 08/02/17",
+        "notes_and_trivia": "◦ Increases the total Event Points by 33% during the \"A New Year's Tale of Laziness\" event.\n◦ The effect increases with the number of limit breaks. (33% → 49.75% → 66.5% → 83.25% → 100%)\n◦ Summon rate increased until 12/01/17- 08/02/17",
+        "quote": {
+            "main": [
+                "\"You WANT me to play a trick on you? You're odd.\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/5/5e/Amanojaku_Main.ogg/revision/latest?cb=20170623150424"
+            ],
+            "skill": [
+                "\"I'll do whatever you want me to do least.\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/7/7f/Amanojaku_Skill.ogg/revision/latest?cb=20170623150435"
+            ],
+            "summon": [
+                "\"You expect me to do what yo want me to do?\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/d/d5/Amanojaku_Summon.ogg/revision/latest?cb=20170623150441"
+            ],
+            "limit_break": [
+                "\"D-don't think I'm happy.\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/8/8e/Amanojaku_Limit_Break.ogg/revision/latest?cb=20170623150500"
+            ]
+        }
+    },
+    "faction": null
+}

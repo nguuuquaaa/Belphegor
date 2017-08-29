@@ -1,7 +1,6 @@
 import discord
 from discord.ext import commands
 import os
-import codecs
 from PIL import Image
 from io import BytesIO
 from .utils import config, request
@@ -78,12 +77,16 @@ class Chip:
 #==================================================================================================================================================
 
 class EsBot():
+    '''
+    PSO2es chip info.
+    '''
+
     def __init__(self, bot):
         self.bot = bot
         self.chip_library = []
         for chip_type in ("weaponoid", "character", "pa_tech", "collab"):
             for i in os.listdir(config.chip_path+chip_type):
-                with codecs.open(config.chip_path+chip_type+"/"+i, encoding='utf-8') as file:
+                with open(config.chip_path+chip_type+"/"+i, encoding='utf-8') as file:
                     new_chip = Chip.from_file(i[:-4], file)
                     self.chip_library.append(new_chip)
         test_guild = self.bot.get_guild(config.test_guild_id)
@@ -126,7 +129,7 @@ class EsBot():
             return
         if len(result) > 1:
             await ctx.send("Do you mean:\n```\n{}\nc: cancel\n```".format('\n'.join([str(index+1)+": "+c.nameEN for index, c in enumerate(result)])))
-            msg = await self.bot.wait_for("message", check=lambda m:m.author==ctx.message.author)
+            msg = await self.bot.wait_for("message", check=lambda m:m.author==ctx.author)
             try:
                 if int(msg.content)-1 in range(len(result)):
                     chip = result[int(msg.content)-1]
@@ -140,31 +143,26 @@ class EsBot():
     async def team(self, ctx, *, load:str):
         with ctx.channel.typing():
             chips = []
-            for c in load.split("-"):
+            for c in load.split(">"):
                 try:
                     chips.append(self._search(c)[-1])
                 except:
                     pass
+            pics = []
+            for index, chip in enumerate(chips):
+                bytes_ = await request.fetch(self.bot.session, chip.url_thumbnail)
+                pics.append(Image.open(BytesIO(bytes_)))
 
-            team_pic = Image.new('RGBA', (520,120))
+            def construct():
+                team_pic = Image.new('RGBA', (520,120))
+                pics[0].thumbnail((120, 120))
+                team_pic.paste(pics[0], (0, 0))
+                for index, pic in enumerate(pics[1:]):
+                    pic.thumbnail((100, 100))
+                    team_pic.paste(pic, (120+index*100,20))
+                return team_pic
 
-            async def load_this(session, chip, size, position):
-                pic_path = config.chip_path + "pic/" + chip.nameEN + ".png"
-                try:
-                    pic = Image.open(pic_path)
-                except:
-                    await request.download(session, chip.url_thumbnail, pic_path)
-                    pic = Image.open(pic_path)
-                def construct():
-                    pic.thumbnail(size)
-                    team_pic.paste(pic, position)
-                await self.bot.loop.run_in_executor(None, construct)
-
-            async with aiohttp.ClientSession() as session:
-                await load_this(session, chips[0], (120, 120), (0, 0))
-                for index, chip in enumerate(chips[1:]):
-                    await load_this(session, chip, (100, 100), (120+index*100,20))
-
+            team_pic = await self.bot.loop.run_in_executor(None, construct)
             current_load = BytesIO()
             team_pic.save(current_load, format = "png")
             current_load.name = "current_load.png"

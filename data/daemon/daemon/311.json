@@ -1,0 +1,48 @@
+{
+    "id": 311,
+    "name": "Rocket Firework",
+    "alias": "Rocket Firework",
+    "pic_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/1/1f/Rocket_Firework.png/revision/latest?cb=20170726120406",
+    "artwork_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/c/c0/Rocket_Firework_Artwork.png/revision/latest?cb=20170726120339",
+    "max_atk": 4000,
+    "max_hp": 4750,
+    "mlb_atk": 5090,
+    "mlb_hp": 6044,
+    "rarity": 3,
+    "daemon_type": "anima",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Rocket Barrage",
+            "Deals 2940/3740 DMG to an enemy (ranged priority)."
+        ]
+    ],
+    "ability": [],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "",
+        "illustrator": "--",
+        "description": "Blasting off wildly, Rocket Firework is the playful spirit of rockets used in the firework festival of a small town in Greece. More powerful than most Japanese fireworks, Bottie is famed among firework spirits as a high flyer with considerable range. In battle, she uses her impressive mobility to toy with enemies. The only problem is that her phenomenal momentum makes it tough to regroup when enemies step out of the way.",
+        "how_to_acquire": "◦ \"The Great Fireworks Showdown\" Event: Defeat LVL 10, 20, 30 Avatar Shiranui.\n◦ \"The Great Fireworks Showdown\" Event: Random drops after LVL 10.\n◦ \"The Great Fireworks Showdown\" Get a First and Second Half Ranking of 6001~10000.\n◦ \"The Great Fireworks Showdown\" Get a Total Ranking of 7501~10000.",
+        "notes_and_trivia": "◦ Slightly increases total Event Points gained during the \"The Great Fireworks Showdown\" event.\n◦ She introduces herself as \"Botte L. Rocket\".",
+        "quote": {
+            "main": [
+                "\"Kaboom! The sky's the limit!\"",
+                "/wiki/Special:Upload?wpDestFile=Rocket_Firework_Main.ogg"
+            ],
+            "skill": [
+                "\"Three...two...one...Blast off!\"",
+                "/wiki/Special:Upload?wpDestFile=Rocket_Firework_Skill.ogg"
+            ],
+            "summon": [
+                "\"Quick, quick, quick! Let's head to the next firework show!\"",
+                "/wiki/Special:Upload?wpDestFile=Rocket_Firework_Summon.ogg"
+            ],
+            "limit_break": [
+                "\"Ohh yeah, I'm about to go off!\"",
+                "/wiki/Special:Upload?wpDestFile=Rocket_Firework_Limit_Break.ogg"
+            ]
+        }
+    },
+    "faction": null
+}

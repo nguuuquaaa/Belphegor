@@ -1,0 +1,53 @@
+{
+    "id": 263,
+    "name": "Gyobu Tanuki",
+    "alias": "Gyobu Tanuki",
+    "pic_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/1/13/Gyobu_Tanuki.png/revision/latest?cb=20170430163453",
+    "artwork_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/d/d6/Gyobu_Tanuki_Artwork.png/revision/latest?cb=20170430163951",
+    "max_atk": 8000,
+    "max_hp": 8500,
+    "mlb_atk": 9546,
+    "mlb_hp": 10143,
+    "rarity": 5,
+    "daemon_type": "phantasma",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Innumerable Attacks",
+            "Deals 4774/5694 DMG to current target."
+        ]
+    ],
+    "ability": [
+        [
+            "Great Supernatural Power (Lv. 75)",
+            "Moderately increases battle time limit."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "--",
+        "illustrator": "Hihara You (緋原ヨウ)",
+        "description": "The spirit of one of Japan's three legendary tanukis. He's the boss of the bake-tanukis. Everyone in their community is a master of various supernatural powers, especially those involving stealth and covert activities. They boast that stealing state secrets is like taking candy from a baby. However, they never use their powers for selfish gain, dedicating them instead to serving the greater good. This is thanks to the leadership of none other than Gyobu himself.",
+        "how_to_acquire": "◦ Trade at Exchange for 75 Mochi 01/05/2017 - 30/06/2017\n◦ The cost increases by 25 Mochi after each exchange\n(75, 100, 125, 150, 175)",
+        "notes_and_trivia": "",
+        "quote": {
+            "main": [
+                "\"So, how 'bout a glass or two?\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/f/fb/Gyobu_Tanuki_Main.ogg/revision/latest?cb=20170623161615"
+            ],
+            "skill": [
+                "\"Thanks for taking a lush like me along.\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/8/8d/Gyobu_Tanuki_Skill.ogg/revision/latest?cb=20170623161622"
+            ],
+            "summon": [
+                "\"Oh, I'm full of energy!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/7/78/Gyobu_Tanuki_Summon.ogg/revision/latest?cb=20170623161628"
+            ],
+            "limit_break": [
+                "\"I don't care if it's brand name or not, as long as it tastes good.\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/1/14/Gyobu_Tanuki_Limit_Break.ogg/revision/latest?cb=20170623161633"
+            ]
+        }
+    },
+    "faction": null
+}

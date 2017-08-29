@@ -1,0 +1,48 @@
+{
+    "id": 123,
+    "name": "Sodehiki Kozo",
+    "alias": "Sodehiki Kozo",
+    "pic_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/e/ee/Sodehiki_Kozo.png/revision/latest?cb=20161014000657",
+    "artwork_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/3/3e/Sodehiki_Kozo_Artwork.png/revision/latest?cb=20160921061606",
+    "max_atk": 5000,
+    "max_hp": 4000,
+    "mlb_atk": 6131,
+    "mlb_hp": 5090,
+    "rarity": 3,
+    "daemon_type": "phantasma",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "Lost Child's Guidance",
+            "Increases the damage taken by 2 enemies (melee priority) by 30%/38% for a limited time."
+        ]
+    ],
+    "ability": [],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "",
+        "illustrator": "nico",
+        "description": "A spirit who plays pranks on passerby and has become a legend in certain areas. He's not aware that he's hurting anyone──he's just lost and seeking help. But since normal people can't see him they misunderstand his actions as pranks. He's been lost for so long that he forgot all about his original goal of trying to get home.",
+        "how_to_acquire": "◦ Jewel Summon",
+        "notes_and_trivia": "◦ Summon rate increased until 21/09/16",
+        "quote": {
+            "main": [
+                "\"You'll find the way, right, Master?\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/d/d5/Sodehiki_Kozo_Main.ogg/revision/latest?cb=20161227173033"
+            ],
+            "skill": [
+                "\"Uh oh... I think I'm lost again...\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/8/8c/Sodehiki_Kozo_Skill.ogg/revision/latest?cb=20161227173029"
+            ],
+            "summon": [
+                "\"Uh, um, so...do you mind if I tag along?\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/e/e5/Sodehiki_Kozo_Summon.ogg/revision/latest?cb=20161227173046"
+            ],
+            "limit_break": [
+                "\"Wh-wh-whoa, this feels strange...\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/7/7e/Sodehiki_Kozo_Limit_Break.ogg/revision/latest?cb=20161227173107"
+            ]
+        }
+    },
+    "faction": null
+}

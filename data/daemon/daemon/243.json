@@ -1,0 +1,53 @@
+{
+    "id": 243,
+    "name": "Yamataka Jindai Sakura",
+    "alias": "Yamataka Jindai Sakura",
+    "pic_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/8/82/Yamataka_Jindai_Sakura.png/revision/latest?cb=20170402145347",
+    "artwork_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/2/2d/Yamataka_Jindai_Sakura_Artwork.png/revision/latest?cb=20170330191830",
+    "max_atk": 5700,
+    "max_hp": 5700,
+    "mlb_atk": 6988,
+    "mlb_hp": 6988,
+    "rarity": 4,
+    "daemon_type": "phantasma",
+    "daemon_class": "healer",
+    "skill": [
+        [
+            "Blossom Blade",
+            "Deals 1424/1918 DMG to all enemies."
+        ]
+    ],
+    "ability": [
+        [
+            "Mother of Cherry Blossoms (Lv. 69)",
+            "Restores HP to all allies at the start of each wave."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "",
+        "illustrator": "Miyoshino (みよしの)",
+        "description": "The spirit of the Edohigan, one of Japan's five great cherry blossom trees. She is called the mother of all cherry blossom trees in Japan. She also has a reputation for her pruning skills. Being able to telepathically communicate with trees enables her use just the right techniques for each one. She can make a withered old tree go into full bloom in the blink of an eye! But if she prunes too much they'll bloom out of season the next year, so she can't work on the same tree too often. She came to town upon hearing the cries of all the cherry blossom trees there.",
+        "how_to_acquire": "◦ \"Chopping Trees? Stop, Please!\" Event: Defeat LVL 60, 70, 140, 180 Forge Washington.\n◦ \"Chopping Trees? Stop, Please!\" Event: Random drops after LVL 60.\n◦ \"Chopping Trees? Stop, Please!\" Get a Second Half Ranking of 1000 and above.\n◦ \"Chopping Trees? Stop, Please!\" Get a Second Half Ranking of 2501~6000.\n◦ \"Chopping Trees? Stop, Please!\" Get a Total Ranking of 7500 and above.",
+        "notes_and_trivia": "◦ Slightly increases the total Event Points during the \"Chopping Trees? Stop, Please!\" event.",
+        "quote": {
+            "main": [
+                "\"I'll work hard for my beautiful daughters!\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/d/d6/Yamataka_Jindai_Sakura_Main.ogg/revision/latest?cb=20170623141244"
+            ],
+            "skill": [
+                "\"Perhaps it's time to run wild...\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/8/8f/Yamataka_Jindai_Sakura_Skill.ogg/revision/latest?cb=20170623141250"
+            ],
+            "summon": [
+                "\"I could trust someone like you with my daughters.\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/3/31/Yamataka_Jindai_Sakura_Summon.ogg/revision/latest?cb=20170623141257"
+            ],
+            "limit_break": [
+                "\"Thank you for looking after me, too.\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/b/b1/Yamataka_Jindai_Sakura_Limit_Break.ogg/revision/latest?cb=20170623141305"
+            ]
+        }
+    },
+    "faction": null
+}

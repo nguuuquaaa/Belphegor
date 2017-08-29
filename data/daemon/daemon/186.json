@@ -1,0 +1,58 @@
+{
+    "id": 186,
+    "name": "New Year Game",
+    "alias": "NYG",
+    "pic_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/e/e7/New_Year_Game.png/revision/latest?cb=20161225082008",
+    "artwork_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/6/6a/New_Year_Game_Artwork.png/revision/latest?cb=20170722041902",
+    "max_atk": 8600,
+    "max_hp": 8600,
+    "mlb_atk": 10262,
+    "mlb_hp": 10262,
+    "rarity": 5,
+    "daemon_type": "phantasma",
+    "daemon_class": "healer",
+    "skill": [
+        [
+            "Infinite Playfulness",
+            "Restores 1872/2232 HP to all allies. Targets receive 30/36% less DMG for a limited time."
+        ]
+    ],
+    "ability": [
+        [
+            "Seasonal Fun (Lv. 70)",
+            "Moderately increases the skill DMG of the 2 allies with the highest ATK at the start of the final wave."
+        ]
+    ],
+    "bond": [
+        [
+            "New Year Game > Titania [New Year]",
+            "Increases Titania [New Year]'s crit rate by 5%."
+        ]
+    ],
+    "additional_data": {
+        "voice_actor": "",
+        "illustrator": "*zoff",
+        "description": "The spirit of traditional Japanese New Year's games. Every New Year, he and the spirits that preside over each of the six traditional New Year's games travel the country encouraging children to play these time-honored amusements. They do this by quietly placing the game equipment in front of the children who come to the park to play, and that seems to do the trick. If you ever see a New Year's game equipment in the park, it might just be a gift from New Year Game himself.",
+        "how_to_acquire": "◦ Limited Jewel Summon 24/12/16 - 06/01/17\n◦ Trade at Exchange for 125 Mochi 06/01/17 - 11/01/17",
+        "notes_and_trivia": "◦ Summon rate increased until 06/01/17\n◦ Can only be exchanged once",
+        "quote": {
+            "main": [
+                "\"Come on, everybody! Let's play!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/b/b1/New_Year_Game_Main.ogg/revision/latest?cb=20170107170236"
+            ],
+            "skill": [
+                "\"Let's keep playing together forever and ever!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/4/45/New_Year_Game_Skill.ogg/revision/latest?cb=20170107170241"
+            ],
+            "summon": [
+                "\"Come on! Come play with us!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/0/03/New_Year_Game_Summon.ogg/revision/latest?cb=20170107170249"
+            ],
+            "limit_break": [
+                "\"I never wanna stop playing!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/f/f4/New_Year_Game_Limit_Break.ogg/revision/latest?cb=20170107170300"
+            ]
+        }
+    },
+    "faction": null
+}

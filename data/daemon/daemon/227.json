@@ -1,0 +1,57 @@
+{
+    "id": 227,
+    "name": "Ghoula",
+    "alias": "Ghoula",
+    "pic_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/6/60/Ghoula.png/revision/latest?cb=20170301110036",
+    "artwork_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/2/25/Ghoula_Artwork.png/revision/latest?cb=20170301105958",
+    "max_atk": 7000,
+    "max_hp": 9200,
+    "mlb_atk": 8354,
+    "mlb_hp": 10978,
+    "rarity": 5,
+    "daemon_type": "phantasma",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Ghoul Power",
+            "Deals 4259/5079 DMG to the enemy target. Target receives 30%/36% more DMG for a limited time."
+        ]
+    ],
+    "ability": [
+        [
+            "Ghoulish Body (Lv. 55)",
+            "Moderately increases Max HP."
+        ],
+        [
+            "Ghoul Queen (Lv. 75)",
+            "Restores 5% HP every 5 seconds."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "Runa Fukuyama (福山瑠奈)",
+        "illustrator": "Hihara You (緋原ヨウ)",
+        "description": "The spirit of a ghoul who's like a queen among flesh-eating monsters. Her favorite food is fermented meat. She used to eat it three times a day, but with her huge appetite she eventually ran out. That's when she started to consider the unthinkable: eating dead and decaying flesh. However, she knew that it was strictly forbidden, and promised herself she'd never go there. But she can barely fight when she's hungry, so lately she's been in search of a new food that can satisfy her appetite.",
+        "how_to_acquire": "◦ Jewel Summon",
+        "notes_and_trivia": "◦ Summon rate increased until 08/3/17",
+        "quote": {
+            "main": [
+                "\"Omigosh, this is the best food EVER!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/2/2f/Ghoula_Main.ogg/revision/latest?cb=20170623162712"
+            ],
+            "skill": [
+                "\"This is, like, my max power, okay?\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/3/3f/Ghoula_Skill.ogg/revision/latest?cb=20170623162727"
+            ],
+            "summon": [
+                "\"So, like, you wanna get eaten?\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/f/f7/Ghoula_Summon.ogg/revision/latest?cb=20170623162734"
+            ],
+            "limit_break": [
+                "\"Ugh! I am SO hungry!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/7/78/Ghoula_Limit_Break.ogg/revision/latest?cb=20170623162743"
+            ]
+        }
+    },
+    "faction": null
+}

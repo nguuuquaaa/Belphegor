@@ -1,0 +1,57 @@
+{
+    "id": 203,
+    "name": "Ibaraki Doji [Lunar New Year]",
+    "alias": "Ibaraki Doji [Lunar NY]",
+    "pic_url": "https://vignette4.wikia.nocookie.net/mira-miracle/images/6/66/Ibaraki_Doji_Lunar_New_Year.png/revision/latest?cb=20170125195705",
+    "artwork_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/b/bb/Ibaraki_Doji_Lunar_New_Year_Artwork.png/revision/latest?cb=20170126013745",
+    "max_atk": 5000,
+    "max_hp": 5800,
+    "mlb_atk": 6131,
+    "mlb_hp": 7112,
+    "rarity": 4,
+    "daemon_type": "phantasma",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Demonic Dance",
+            "Deals 613/753 DMG to all enemies, with a very high chance of inflicting Silence."
+        ]
+    ],
+    "ability": [
+        [
+            "Demonic Prince (Lv. 42)",
+            "Significantly increases crit DMG."
+        ],
+        [
+            "Shuten Doji's Right Hand (Lv. 80)",
+            "Sharply increases DMG dealt when Shuten Doji is on the team."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "Kengo Takanashi (高梨謙吾)",
+        "illustrator": "*zoff",
+        "description": "Shuten Doji's right-hand man. A pretty famous spirit in the demon world. Coming to town on an assignment by direct order of Shuten Doji, he let his hair down and changed his clothes there, perhaps influenced by the evil energy of laziness. It's a secret that he was making merry and neglecting his duties for a while.",
+        "how_to_acquire": "◦ \"A New Year's Tale of Laziness\" Event: Defeat Lv. 40, 50, 120, 160 Belphegor\n◦ \"A New Year's Tale of Laziness\" Event: Random drops after LVL 40.\n◦ \"A New Year's Tale of Laziness\" Get a First Half Ranking of 1000 and above.\n◦ \"A New Year's Tale of Laziness\" Get a First Half Ranking of 2501~6000.\n◦ \"A New Year's Tale of Laziness\" Get a Total Ranking of 7500 and above.",
+        "notes_and_trivia": "◦ Slightly increases the total Event Points during the \"A New Year's Tale of Laziness\" event.\n◦ In the event announcement, he was originally introduced as Ibaraki Doji [Chinese New Year].",
+        "quote": {
+            "main": [
+                "\"How do you like this getup? Not bad, huh?\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/c/c6/Ibaraki_Doji_Lunar_New_Year_Main.ogg/revision/latest?cb=20170623150638"
+            ],
+            "skill": [
+                "\"You want to see me dance?\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/c/c1/Ibaraki_Doji_Lunar_New_Year_Skill.ogg/revision/latest?cb=20170623150643"
+            ],
+            "summon": [
+                "\"Here come the reinforcements.\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/d/d4/Ibaraki_Doji_Lunar_New_Year_Summon.ogg/revision/latest?cb=20170623150852"
+            ],
+            "limit_break": [
+                "\"I can be even stronger!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/3/36/Ibaraki_Doji_Lunar_New_Year_Limit_Break.ogg/revision/latest?cb=20170623150705"
+            ]
+        }
+    },
+    "faction": null
+}

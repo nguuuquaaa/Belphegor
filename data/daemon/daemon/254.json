@@ -1,0 +1,53 @@
+{
+    "id": 254,
+    "name": "Star Mine",
+    "alias": "Star Mine",
+    "pic_url": "https://vignette4.wikia.nocookie.net/mira-miracle/images/7/73/Star_Mine.png/revision/latest?cb=20170420135013",
+    "artwork_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/f/f6/Star_Mine_Artwork.png/revision/latest?cb=20170420134645",
+    "max_atk": 8500,
+    "max_hp": 6100,
+    "mlb_atk": 10422,
+    "mlb_hp": 7480,
+    "rarity": 4,
+    "daemon_type": "anima",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "Firestarter",
+            "Deals 1503/1843 DMG to all enemies."
+        ]
+    ],
+    "ability": [
+        [
+            "Firework Shower (Lv. 65)",
+            "Sharply increases ATK speed and Skill DMG."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "Mayu Sonozaki (園崎まゆ‏) Source",
+        "illustrator": "Totomo (トトモ)",
+        "description": "The spirit of a volley of fireworks. She used to secretly adjust the fuses of fireworks when people were setting them off in the summer. But once everything started going digital, fuse management was taken over by computers—and she was out of a job. Suddenly she had more time on her hands than she knew what to do with...but the fireworks she's been making in her newfound free time have gotten rave reviews, and were even selected for use during a live show.",
+        "how_to_acquire": "◦ Limited Jewel Summon 19/04/17- 10/05/17\n◦ Trade at Exchange for 50 Mochi 07/05/17 - 10/05/17",
+        "notes_and_trivia": "◦ Increases the Skill DMG of all allies by 33% during the \"Spirit Idol Competition\" event.\n◦ The effect increases with the number of limit breaks. (33% → 49.75% → 66.5% → 83.25% → 100%)\n◦ Summon rate increased until 19/04/17- 10/05/17",
+        "quote": {
+            "main": [
+                "\"How's this one? I just made it!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/5/56/Star_Mine_Main.ogg/revision/latest?cb=20170422061346"
+            ],
+            "skill": [
+                "\"Fire in the hole!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/6/68/Star_Mine_Skill.ogg/revision/latest?cb=20170422061349"
+            ],
+            "summon": [
+                "\"Gonna help me make some fireworks?\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/e/e6/Star_Mine_Summon.ogg/revision/latest?cb=20170422061353"
+            ],
+            "limit_break": [
+                "\"Get ready for the best blast you've ever laid eyes on!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/0/01/Star_Mine_Limit_Break.ogg/revision/latest?cb=20170422061356"
+            ]
+        }
+    },
+    "faction": null
+}

@@ -1,0 +1,48 @@
+{
+    "id": 43,
+    "name": "Lü Lingqi",
+    "alias": "Lu Lingqi",
+    "pic_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/7/77/L%C3%BC_Lingqi.png/revision/latest?cb=20161008113108",
+    "artwork_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/7/78/L%C3%BC_Lingqi_Artwork.png/revision/latest?cb=20160708033524",
+    "max_atk": 3750,
+    "max_hp": 4500,
+    "mlb_atk": 4770,
+    "mlb_hp": 5724,
+    "rarity": 3,
+    "daemon_type": "divina",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Legendary Lineage",
+            "Recovers 2861/3641 HP."
+        ]
+    ],
+    "ability": [],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "Shiho Seki (せきしほ)",
+        "illustrator": "Miyoshino (みよしの)",
+        "description": "Daughter of Lü Bu, the most formidable and feared commander of China's Three Kingdoms period. Used to being treated with reverence on account of her loftly lineage, se longs for the warmth of a close human connection. Of late, she's taken to feigning sickness to lower herself in other's eyes, but she lacks the acting chops to pull it off.",
+        "how_to_acquire": "◦ Free Summon\n◦ Raid: Random Drop",
+        "notes_and_trivia": "",
+        "quote": {
+            "main": [
+                "\"At-choo! Oh, poor me... ANOTHER cold?\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/2/20/L%C3%BC_Lingqi_Main.ogg/revision/latest?cb=20160717063055"
+            ],
+            "skill": [
+                "\"All right, you! Enough's enough!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/2/2f/L%C3%BC_Lingqi_Skill.ogg/revision/latest?cb=20160717063123"
+            ],
+            "summon": [
+                "\"\ncough* Me? B-But I'm so weak and fragile...\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/5/50/L%C3%BC_Lingqi_Summon.ogg/revision/latest?cb=20160717063254"
+            ],
+            "limit_break": [
+                "\"Wait... I can get even STRONGER?!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/5/5c/L%C3%BC_Lingqi_Limit_Break.ogg/revision/latest?cb=20160717063328"
+            ]
+        }
+    },
+    "faction": null
+}

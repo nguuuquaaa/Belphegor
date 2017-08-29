@@ -1,0 +1,57 @@
+{
+    "id": 212,
+    "name": "Amano-Iwato",
+    "alias": "Amano-Iwato",
+    "pic_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/b/b6/Amano-Iwato.png/revision/latest?cb=20170212094349",
+    "artwork_url": "https://vignette4.wikia.nocookie.net/mira-miracle/images/1/1e/Amano-Iwato_Artwork.png/revision/latest?cb=20170211155637",
+    "max_atk": 10700,
+    "max_hp": 7300,
+    "mlb_atk": 12769,
+    "mlb_hp": 8712,
+    "rarity": 5,
+    "daemon_type": "anima",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "World Without Light",
+            "Deals 1644/1964 DMG to all enemies, with a moderate chance of inflicting Silence."
+        ]
+    ],
+    "ability": [
+        [
+            "Sensory Deprivation (Lv. 60)",
+            "Slightly reduces DMG dealt by all foes at the start of each wave."
+        ],
+        [
+            "Sealer of Gods (Lv. 75)",
+            "Moderate chance of inflicting Petrifaction on all foes at the start of each wave."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "--",
+        "illustrator": "*zoff",
+        "description": "The spirit of the mythological cave into which the sun goddess once fled. To lure her out all the other gods caused a big ruckus partying outside the cave, which must have been pretty annoying to Ama-no-Iwato since he likes things to be quiet. After becoming a spirit, he gave up on caves, and now spends all his time anywhere he can find that's nice and quiet.",
+        "how_to_acquire": "◦ Jewel Summon",
+        "notes_and_trivia": "◦ Summon rate increased until 15/02/2017.",
+        "quote": {
+            "main": [
+                "\"I'm at home in the peace and quiet.\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/7/7e/Amano-Iwato_Main.ogg/revision/latest?cb=20170623153333"
+            ],
+            "skill": [
+                "\"Behold a world of darkness.\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/8/83/Amano-Iwato_Skill.ogg/revision/latest?cb=20170623153339"
+            ],
+            "summon": [
+                "\"It's easier to relax when things are quiet, am I right?\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/0/06/Amano-Iwato_Summon.ogg/revision/latest?cb=20170623153345"
+            ],
+            "limit_break": [
+                "\"Hey, this isn't so bad...\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/4/43/Amano-Iwato_Limit_Break.ogg/revision/latest?cb=20170623153355"
+            ]
+        }
+    },
+    "faction": null
+}

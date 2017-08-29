@@ -1,0 +1,58 @@
+{
+    "id": 90,
+    "name": "Hariti",
+    "alias": "Hariti",
+    "pic_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/3/36/Hariti.png/revision/latest?cb=20161007130857",
+    "artwork_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/2/24/Hariti_Artwork.png/revision/latest?cb=20170714103827",
+    "max_atk": 7000,
+    "max_hp": 5700,
+    "mlb_atk": 8583,
+    "mlb_hp": 6988,
+    "rarity": 4,
+    "daemon_type": "phantasma",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "Second Coming of the Yaksha",
+            "Deals 2225/2725 DMG to 2 enemies (melee priority)."
+        ]
+    ],
+    "ability": [
+        [
+            "Mother of All (Lv. 14)",
+            "Restore HP to the ally with the lower percentage of HP at the start of each wave."
+        ]
+    ],
+    "bond": [
+        [
+            "Amanojaku > Hariti",
+            "Increases Hariti's speed by 4%"
+        ]
+    ],
+    "additional_data": {
+        "voice_actor": "Yuki Sakura (佐倉ゆき)",
+        "illustrator": "Miyoshino (みよしの)",
+        "description": "The spirit of a guardian goddess of Buddhism. As the goddess of safe childbirth and childbearing, she is something of a mother figure. But when she gets angry she turns into a yaksha and chases people around, so no one wants to make her mad. She doesn't want children to see her in yaksha form, either. People who do anger her can at least savor the feeling of pure fear.",
+        "how_to_acquire": "◦ Jewel Summon",
+        "notes_and_trivia": "◦ Sharply increases damage dealt during the \"Outbreak! A Day of Battle in Shinjuku!\" event.\n◦ Summon rate increased until 03/08/16",
+        "quote": {
+            "main": [
+                "\"I am a Buddhist guardian deity, after all.\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/f/f3/Hariti_Main.ogg/revision/latest?cb=20160715061833"
+            ],
+            "skill": [
+                "\"You wanna be bitten to death?!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/6/69/Hariti_Skill.ogg/revision/latest?cb=20160715073101"
+            ],
+            "summon": [
+                "\"Let mommy take care of you〜.\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/0/0c/Hariti_Summon.ogg/revision/latest?cb=20170201024218"
+            ],
+            "limit_break": [
+                "\"Oh dear, I hope no children see me in my super strong form〜.\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/7/7a/Hariti_Limit_Break.ogg/revision/latest?cb=20160715073133"
+            ]
+        }
+    },
+    "faction": null
+}

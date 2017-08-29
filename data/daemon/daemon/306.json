@@ -1,0 +1,53 @@
+{
+    "id": 306,
+    "name": "Kyuso",
+    "alias": "Kyuso",
+    "pic_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/b/bd/Kyuso.png/revision/latest?cb=20170715080431",
+    "artwork_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/9/92/Kyuso_Artwork.png/revision/latest?cb=20170715080519",
+    "max_atk": 5950,
+    "max_hp": 6660,
+    "mlb_atk": 7294,
+    "mlb_hp": 8165,
+    "rarity": 4,
+    "daemon_type": "phantasma",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "The Rat's Soul",
+            "Restores 2403/2946 HP. Targets deal 30%/46% more DMG for a limited time."
+        ]
+    ],
+    "ability": [
+        [
+            "The Spirit of Defiance (Lv. 60)",
+            "Deals sharply more DMG."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "",
+        "illustrator": "--",
+        "description": "The spirit of an ancient rat. Over his many years of life, Kyuso has developed a strong bond of friendship with cats, normally the natural enemy of rats. Kyuso can often be seeing playing with the cat spirits he's befriended, laughing as he swishes a reed back and forth for their amusement. The sight would bring a smile to the face of even the hardest of men. There are rumors that Kyuso has been sent on a secret mission by a community of rats to bring about the destruction of cats. This is most likely a lie however, as it doesn't fit with his personality.",
+        "how_to_acquire": "◦ Jewel Summon",
+        "notes_and_trivia": "◦ Summon rate increased until 19/07/2017",
+        "quote": {
+            "main": [
+                "\"Feel free to bring the kitty along, too.\"",
+                "/wiki/Special:Upload?wpDestFile=Kyuso_Main.ogg"
+            ],
+            "skill": [
+                "\"Look down on me and you'll soon regret it.\"",
+                "/wiki/Special:Upload?wpDestFile=Kyuso_Skill.ogg"
+            ],
+            "summon": [
+                "\"Do you like cats?\"",
+                "/wiki/Special:Upload?wpDestFile=Kyuso_Summon.ogg"
+            ],
+            "limit_break": [
+                "\"\"",
+                "/wiki/Special:Upload?wpDestFile=Kyuso_Limit_Break.ogg"
+            ]
+        }
+    },
+    "faction": null
+}

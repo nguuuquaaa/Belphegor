@@ -1,0 +1,57 @@
+{
+    "id": 331,
+    "name": "Yata Mirror",
+    "alias": "Definitely Not Mira",
+    "pic_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/1/10/Yata_Mirror.png/revision/latest?cb=20170823184828",
+    "artwork_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/7/7d/Yata_Mirror_Artwork.png/revision/latest?cb=20170823185136",
+    "max_atk": 8700,
+    "max_hp": 8700,
+    "mlb_atk": 10381,
+    "mlb_hp": 10381,
+    "rarity": 5,
+    "daemon_type": "anima",
+    "daemon_class": "healer",
+    "skill": [
+        [
+            "Mirrored Prison: Eternal Afterimage",
+            "Deals 931/1111 DMG to all enemies, with a high chance of inflicting Stun. "
+        ]
+    ],
+    "ability": [
+        [
+            "Three Sacred Treasures (Lv. 70)",
+            "Moderately increases skill DMG of all anima allies."
+        ],
+        [
+            "Ancient Mirror (Lv. 85)",
+            "Reflects 10% of DMG taken back to attacker."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "",
+        "illustrator": "Hihara You (緋原ヨウ)",
+        "description": "One of the Three Sacred Treasures of Japan and an intellectual who led the world to a more righteous order long, long ago. She’s also the reason spirit agents can summon many different spirits. She believes that the relationship between humans and spirits could alter the balance of the world, and she’s currently searching for a practical application of this theory. When she heard about a certain spirit and spirt agent with a powerful connection at the Bureau of the Occult, she headed over on the double...",
+        "how_to_acquire": "◦ \"Ghost in the Mirror\" Event: Clear Chapter 5\n◦ \"Ghost in the Mirror\" Event: Exchange for 5000 Mirror Shard",
+        "notes_and_trivia": "◦ Moderately increases the drop rate of Mirror Shard during the \"Ghost in the Mirror\" event.\n◦ She is also referred to as Kagami and Mira.",
+        "quote": {
+            "main": [
+                "\"Huh, so that’s they way you do it...\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/6/6f/Yata_Mirror_Main.ogg/revision/latest?cb=20170823124654"
+            ],
+            "skill": [
+                "\"Think you can find your way out of this one?\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/b/be/Yata_Mirror_Skill.ogg/revision/latest?cb=20170823124713"
+            ],
+            "summon": [
+                "\"I'll be following your progress very closely.\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/3/32/Yata_Mirror_Summon.ogg/revision/latest?cb=20170823124718"
+            ],
+            "limit_break": [
+                "\"I haven't felt this uplifted in centuries, hehe.\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/7/73/Yata_Mirror_Limit_Break.ogg/revision/latest?cb=20170823124724"
+            ]
+        }
+    },
+    "faction": null
+}

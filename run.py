@@ -1,35 +1,52 @@
 import discord
 from discord.ext import commands
 from belphegor.utils import token, config
-import time
 import asyncio
+import aiohttp
+import psutil
+import os
+import time
 
-belphegor = commands.Bot(command_prefix=commands.when_mentioned_or("!!", ">>", "b>"), owner_id=config.owner_id)
+class Belphegor(commands.Bot):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.session = aiohttp.ClientSession(loop=self.loop)
+        self.process = psutil.Process(os.getpid())
+        self.cpu_count = psutil.cpu_count()
+        self.process.cpu_percent(None)
+        self.start_time = time.time()
+        self.loop.create_task(self.load())
 
-@belphegor.event
-async def on_ready():
-    print('Logged in as')
-    print(belphegor.user.name)
-    print(belphegor.user.id)
-    print('------')
-    await asyncio.sleep(10)
-    await belphegor.change_presence(game=discord.Game(name='with Chronos-senpai'))
+    async def on_message(self, message):
+        if message.author.bot:
+            return
+        await self.process_commands(message)
 
-async def load():
-    await belphegor.wait_until_ready()
-    with open("extensions.txt") as file:
-        extensions = [e for e in file.read().splitlines() if e]
-    for extension in extensions:
-        try:
-            belphegor.load_extension(extension)
-            print(f"Loaded {extension}")
-        except Exception as e:
-            print(f"Failed loading {extension}: {e}")
-            return await belphegor.logout()
-    with open(config.data_path+"\\misc\\start_time.txt", "w+") as file:
-        file.write(str(time.time()))
-    print("Done")
+    async def on_ready(self):
+        print('Logged in as')
+        print(self.user.name)
+        print(self.user.id)
+        print('------')
+        await asyncio.sleep(5)
+        await self.change_presence(game=discord.Game(name='with Chronos-senpai'))
+
+    async def close(self):
+        await super().close()
+        await self.session.close()
+
+    async def load(self):
+        await self.wait_until_ready()
+        with open("extensions.txt") as file:
+            extensions = [e for e in file.read().strip().splitlines()]
+        for extension in extensions:
+            try:
+                self.load_extension(extension)
+                print(f"Loaded {extension}")
+            except Exception as e:
+                print(f"Failed loading {extension}: {e}")
+                return await self.logout()
+        print("Done")
 
 if __name__ == "__main__":
-    belphegor.loop.create_task(load())
+    belphegor = Belphegor(command_prefix=commands.when_mentioned_or("!!", ">>", "b>"), owner_id=config.owner_id)
     belphegor.run(token.token)

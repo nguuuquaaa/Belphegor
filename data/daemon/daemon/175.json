@@ -1,0 +1,53 @@
+{
+    "id": 175,
+    "name": "Rudy Red-Nose",
+    "alias": "Rudy Red-Nose",
+    "pic_url": "https://vignette4.wikia.nocookie.net/mira-miracle/images/e/e2/Rudy_Red-Nose.png/revision/latest?cb=20161217140412",
+    "artwork_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/2/27/Rudy_Red-Nose_Artwork.png/revision/latest?cb=20170722042722",
+    "max_atk": 8350,
+    "max_hp": 5560,
+    "mlb_atk": 10238,
+    "mlb_hp": 6818,
+    "rarity": 4,
+    "daemon_type": "phantasma",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "Christmas Comedy Show",
+            "Deals 2838/3478 DMG to enemy target. Target receives 36%/44% more DMG for a limited time."
+        ]
+    ],
+    "ability": [
+        [
+            "Huge Hit (Lv. 65)",
+            "Slightly increases skill DMG by Phantasma team members."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "--",
+        "illustrator": "ATARU",
+        "description": "The mysterious spirit of a high school girl who wears a cute reindeer puppet. The puppets she used to wear made her rather unapproachable, but, this winter, she finally managed to gain popularity with children. After relentless practice, she got really good at the puppet theater, and became a huge hit with her impromptu shows. She does all of this to bring the gift of a smile to as many children as possible.",
+        "how_to_acquire": "◦ Limited Jewel Summon 14/12/16 - 04/01/2017\n◦ Trade at Exchange for 50 Mochi 01/01/2017 - 04/01/2017",
+        "notes_and_trivia": "◦ Increases the Skill DMG of all allies by 25% during the \"Shadow over Christmas\" event.\n◦ Summon rate increased until 14/12/16 - 04/01/2017",
+        "quote": {
+            "main": [
+                "\"Ooh, the kids are gonna love this! Hee hee!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/3/33/Rudy_Red-Nose_Main.ogg/revision/latest?cb=20170623145436"
+            ],
+            "skill": [
+                "\"THIS is the key to keeping it interesting!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/c/cb/Rudy_Red-Nose_Skill.ogg/revision/latest?cb=20170623145442"
+            ],
+            "summon": [
+                "\"Children never run out of smiles!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/6/61/Rudy_Red-Nose_Summon.ogg/revision/latest?cb=20170623145449"
+            ],
+            "limit_break": [
+                "\"Ooh! I just got a GREAT idea for a show!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/e/e9/Rudy_Red-Nose_Limit_Break.ogg/revision/latest?cb=20170623145457"
+            ]
+        }
+    },
+    "faction": null
+}

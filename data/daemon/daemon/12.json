@@ -1,0 +1,48 @@
+{
+    "id": 12,
+    "name": "Lightning",
+    "alias": "Lightning",
+    "pic_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/8/86/Lightning.png/revision/latest?cb=20161206152057",
+    "artwork_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/6/69/Lightning_Artwork.png/revision/latest?cb=20160708033216",
+    "max_atk": 7500,
+    "max_hp": 5650,
+    "mlb_atk": 9195,
+    "mlb_hp": 6928,
+    "rarity": 4,
+    "daemon_type": "anima",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "Crotch Shot",
+            "Deals 3728/4568 DMG to the enemy with the lowest HP."
+        ]
+    ],
+    "ability": [],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "Ataushi Taniguchi (谷口淳志)",
+        "illustrator": "ATARU",
+        "description": "The Spirit of a double-action revolver. His birth story is complicated, but let's just say he wasn't very blessed. He stepped out of the public eye, living with outlaws and making shady behind-the-scenes deals. He is very serious at his core.",
+        "how_to_acquire": "◦ Jewel Summon",
+        "notes_and_trivia": "--",
+        "quote": {
+            "main": [
+                "\"Can you see how fast this is?\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/2/2c/Lightning_Main.ogg/revision/latest?cb=20170422054345"
+            ],
+            "skill": [
+                "\"C'mon, beg, grovel, apologize to me!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/e/e7/Lightning_Skill.ogg/revision/latest?cb=20170422054400"
+            ],
+            "summon": [
+                "\"A friend? Hah! Please.\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/9/91/Lightning_Summon.ogg/revision/latest?cb=20170422054401"
+            ],
+            "limit_break": [
+                "\"Ha ha! Watch me now!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/c/c8/Lightning_Limit_Break.ogg/revision/latest?cb=20170422054340"
+            ]
+        }
+    },
+    "faction": null
+}

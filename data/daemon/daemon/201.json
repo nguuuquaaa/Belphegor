@@ -1,0 +1,53 @@
+{
+    "id": 201,
+    "name": "Sasaki Kojiro",
+    "alias": "Sasaki Kojiro",
+    "pic_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/e/e7/Sasaki_Kojiro.png/revision/latest?cb=20170120053053",
+    "artwork_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/7/7a/Sasaki_Kojiro_Artwork.png/revision/latest?cb=20170120053115",
+    "max_atk": 6100,
+    "max_hp": 6900,
+    "mlb_atk": 7480,
+    "mlb_hp": 8459,
+    "rarity": 4,
+    "daemon_type": "divina",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Swallow Reversal Technique",
+            "Deals 5043/6500 DMG to an enemy (ranged priority)."
+        ]
+    ],
+    "ability": [
+        [
+            "Esoterica Sword (Lv. 64)",
+            "Sharply increases Skill DMG."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "--",
+        "illustrator": "*zoff",
+        "description": "The spirit of a great swordsman who is famous for a duel on Ganryu Island. Once every serveral years, he fights another duel with Miyamoto Musashi, whom he fought to the death during their lifetime. They don't remember how many duels they've had, but each has had an even number of wins and losses. To avoid his disciples, he disguises himself by wearing modern clothes, which he has come to love for their form and function.",
+        "how_to_acquire": "◦ Limited Jewel Summon 12/01/17- 08/02/17\n◦ Trade at Exchange for 50 Mochi 05/02/17 - 08/02/17",
+        "notes_and_trivia": "◦ Increases battle time limit by 33% during the \"A New Year's Tale of Laziness\" event.\n◦ The effect increases with the number of limit breaks. (33% → 49.75% → 66.5% → 83.25% → 100%)\n◦ Summon rate increased until 12/01/17- 08/02/17",
+        "quote": {
+            "main": [
+                "\"I'm training hard...so I can slash that rogue down!\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/a/a4/Sasaki_Kojiro_Main.ogg/revision/latest?cb=20170623132127"
+            ],
+            "skill": [
+                "\"Can you keep up with my technique?\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/3/35/Sasaki_Kojiro_Skill.ogg/revision/latest?cb=20170623132137"
+            ],
+            "summon": [
+                "\"I can tell by the way you look. You're extraordinary.\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/d/da/Sasaki_Kojiro_Summon.ogg/revision/latest?cb=20170623132145"
+            ],
+            "limit_break": [
+                "\"Now I see what I lacked before.\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/5/51/Sasaki_Kojiro_Limit_Break.ogg/revision/latest?cb=20170623132154"
+            ]
+        }
+    },
+    "faction": null
+}

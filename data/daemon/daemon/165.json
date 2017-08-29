@@ -1,0 +1,53 @@
+{
+    "id": 165,
+    "name": "Straw Doll [Thanksgiving]",
+    "alias": "Straw Doll [Thanksgiving]",
+    "pic_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/b/b0/Straw_Doll_Thanksgiving.png/revision/latest?cb=20161206000258",
+    "artwork_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/7/7e/Straw_Doll_Thanksgiving_Artwork.png/revision/latest?cb=20170722041417",
+    "max_atk": 5100,
+    "max_hp": 3650,
+    "mlb_atk": 6488,
+    "mlb_hp": 4644,
+    "rarity": 3,
+    "daemon_type": "anima",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "World on One's Shoulders",
+            "Restores 2417/3077 HP and receives 39%/50% less DMG for a limited time. (MAX)"
+        ]
+    ],
+    "ability": [
+        [
+            "Doll of Forgiveness (Lv. 38)",
+            "Immune to poison."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "Hiyori Nitta (新田ひより)",
+        "illustrator": "ATARU",
+        "description": "The spirit of a doll made from straw in the shape of a person. Despite common belief, she's not a tool for applying curses. She actually takes on people's sins and delivers them to heaven. She has a strong sense of self-sacrifice, fully prepared to give her own life in the service of others. Some people make fun of the way she goes diving headfirst into all sorts of trouble, but she doesn't mean any harm by it. On the contrary, she does it all out of compassion. However, many at the Bureau have been warned not to ask too much of her—she might just do it.",
+        "how_to_acquire": "◦ Jewel Summon",
+        "notes_and_trivia": "◦ Summon rate increased until 07/12/16",
+        "quote": {
+            "main": [
+                "\"Don't worry, I'm right here.\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/d/d9/Straw_Doll_Thanksgiving_Main.ogg/revision/latest?cb=20161227210238"
+            ],
+            "skill": [
+                "\"I shall bear the burden... of the entire world.\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/7/76/Straw_Doll_Thanksgiving_Skill.ogg/revision/latest?cb=20161227210434"
+            ],
+            "summon": [
+                "\"So you need my powers?\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/c/cf/Straw_Doll_Thanksgiving_Summon.ogg/revision/latest?cb=20161227210446"
+            ],
+            "limit_break": [
+                "\"How long has it been since I was this happy?\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/f/fe/Straw_Doll_Thanksgiving_Limit_Break.ogg/revision/latest?cb=20161227210457"
+            ]
+        }
+    },
+    "faction": null
+}

@@ -1,0 +1,48 @@
+{
+    "id": 98,
+    "name": "Kamui Vipera",
+    "alias": "Kamui Vipera",
+    "pic_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/1/19/Kamui_Vipera.png/revision/latest?cb=20161119145753",
+    "artwork_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/9/91/Kamui_Vipera_Artwork.png/revision/latest?cb=20170205043059",
+    "max_atk": 3700,
+    "max_hp": 4560,
+    "mlb_atk": 4708,
+    "mlb_hp": 5801,
+    "rarity": 3,
+    "daemon_type": "phantasma",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Wind of Vicious Poison",
+            "Deals (1184/1504) DMG to surrounding enemies, with a high chance of inflicting Weak Poison."
+        ]
+    ],
+    "ability": [],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "Minaho Matsudaira (松平美波穂‏)",
+        "illustrator": "Nyanmiso (にゃん味噌)",
+        "description": "The spirit of a goddess supposed to exist somewhere in Japan. Both a guardian and a bringer of calamity, she's quite a mysterious local deity. She's also really needy and clingy, so when no one wants to hang out with her she spreads a noxious miasma to get attention. Great care should be taken when dealing with her.",
+        "how_to_acquire": "◦ Jewel Summon\n◦ EXP Dungeons (10/08/16 - 17/08/16)",
+        "notes_and_trivia": "◦ Summon rate increased until 13/07/16",
+        "quote": {
+            "main": [
+                "\"You need me here with you, right? Right?\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/2/2e/Kamui_Vipera_Main.ogg/revision/latest?cb=20160715160555"
+            ],
+            "skill": [
+                "\"This will put eeeveryone to sleep, forever!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/5/5e/Kamui_Vipera_Skill.ogg/revision/latest?cb=20160715160617"
+            ],
+            "summon": [
+                "\"You mean it? You're really going to hang out with me?\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/2/24/Kamui_Vipera_Summon.ogg/revision/latest?cb=20161227173915"
+            ],
+            "limit_break": [
+                "\"He cares for me!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/2/29/Kamui_Vipera_Limit_Break.ogg/revision/latest?cb=20160715161021"
+            ]
+        }
+    },
+    "faction": null
+}

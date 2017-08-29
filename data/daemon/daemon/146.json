@@ -1,0 +1,53 @@
+{
+    "id": 146,
+    "name": "Commodore Perry [Demonic]",
+    "alias": "Commodore Perry [Demonic]",
+    "pic_url": "https://vignette4.wikia.nocookie.net/mira-miracle/images/8/8f/Commodore_Perry_Demonic.png/revision/latest?cb=20161102234957",
+    "artwork_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/a/a0/Commodore_Perry_Demonic_Artwork.png/revision/latest?cb=20161027191556",
+    "max_atk": 7200,
+    "max_hp": 9000,
+    "mlb_atk": 8591,
+    "mlb_hp": 10739,
+    "rarity": 5,
+    "daemon_type": "divina",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Demon Invasion",
+            "Deals 1773/2113 DMG to all enemies."
+        ]
+    ],
+    "ability": [
+        [
+            "Demon's Strength (Lv. 80)",
+            "Moderately increases DMG dealt; sharply increases ATK speed."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "Ryo Nezuka (根塚良)",
+        "illustrator": "*zoff",
+        "description": "Evil energy of extreme intensity has made Commodore Perry stronger than ever before. He absolutely loves his new demonic appearance and can't wait to be the center of attention at the next cosplay event... Some worry that he'll scare other attendees, but that doesn't turn him off one bit, and he's already getting started on sewing together the costume.",
+        "how_to_acquire": "◦\"Meiji Monster on a Rampage\" Event: Defeat LVL 80, 100, 125, 150, 200\n◦\"Meiji Monster on a Rampage\" Event: Random drops after LVL 80.",
+        "notes_and_trivia": "◦ Increases the total Event Points by Small during the \"Meiji Monster on a Rampage\" event.",
+        "quote": {
+            "main": [
+                "\"I know I might look like a final boss or something, but I swear I'm not up to anything bad!\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/0/0b/Commodore_Perry_Demonic_Main.ogg/revision/latest?cb=20170127022623"
+            ],
+            "skill": [
+                "\"I'll crush everything to dust!\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/4/42/Commodore_Perry_Demonic_Skill.ogg/revision/latest?cb=20170127022631"
+            ],
+            "summon": [
+                "\"It's one of those events where a powerful foe becomes an ally.\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/a/a5/Commodore_Perry_Demonic_Summon.ogg/revision/latest?cb=20170127022641"
+            ],
+            "limit_break": [
+                "\"I'm breaking it open...a gateway to even greater strength!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/b/b5/Commodore_Perry_Demonic_Limit_Break.ogg/revision/latest?cb=20170127022650"
+            ]
+        }
+    },
+    "faction": null
+}

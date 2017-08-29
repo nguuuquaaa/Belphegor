@@ -1,0 +1,53 @@
+{
+    "id": 100,
+    "name": "Kaguya",
+    "alias": "Kaguya",
+    "pic_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/0/0e/Kaguya.png/revision/latest?cb=20160826013131",
+    "artwork_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/4/48/Kaguya_Artwork.png/revision/latest?cb=20160901055153",
+    "max_atk": 9000,
+    "max_hp": 9000,
+    "mlb_atk": 10739,
+    "mlb_hp": 10739,
+    "rarity": 5,
+    "daemon_type": "divina",
+    "daemon_class": "healer",
+    "skill": [
+        [
+            "Beautiful Moonbeam",
+            "Deals 2585/3085 DMG to the 3 enemies with the highest ATK."
+        ]
+    ],
+    "ability": [
+        [
+            "Lunar Criminal (Lv. 38)",
+            "Skill attacks have a significant chance of significantly decreasing the target's ATK speed."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "Iori Nomizu (野水伊織)",
+        "illustrator": "Miyoshino (みよしの)",
+        "description": "The spirit of a woman from the moon. She may look like a child, but her knowledge is nearly unfathomable. If you talk to her you'll see that she is smarter than you imagined. She always carries a stuffed rabbit, because it makes her feel better when she's lonely. Actually, her cute little rabbit might have a really big secret hidden inside...",
+        "how_to_acquire": "◦ Jewel Summon",
+        "notes_and_trivia": "◦ Summon rate increased until 17/08/16\n◦ Summon rate increased from 07/09/16 - 21/09/16 for the Mid-Autumn Day event",
+        "quote": {
+            "main": [
+                "\"It'll be a cinch with my lunar technology.\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/5/54/Kaguya_Main.ogg/revision/latest?cb=20170121175722"
+            ],
+            "skill": [
+                "\"Behold the power of lunar technology!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/1/10/Kaguya_Skill.ogg/revision/latest?cb=20170121175720"
+            ],
+            "summon": [
+                "\"I'll join you--just this once!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/9/96/Kaguya_Summon.ogg/revision/latest?cb=20170121175734"
+            ],
+            "limit_break": [
+                "\"I'll grow stronger still!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/4/49/Kaguya_Limit_Break.ogg/revision/latest?cb=20170121175742"
+            ]
+        }
+    },
+    "faction": null
+}

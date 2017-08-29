@@ -1,0 +1,53 @@
+{
+    "id": 240,
+    "name": "Kukunochi",
+    "alias": "Kukunochi",
+    "pic_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/6/64/Kukunochi.png/revision/latest?cb=20170405072819",
+    "artwork_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/2/25/Kukunochi_Artwork.png/revision/latest?cb=20170324141454",
+    "max_atk": 5400,
+    "max_hp": 6500,
+    "mlb_atk": 6620,
+    "mlb_hp": 7969,
+    "rarity": 4,
+    "daemon_type": "divina",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Out of Season",
+            "Deals 2393/2933 DMG to nearby enemies."
+        ]
+    ],
+    "ability": [
+        [
+            "God of Trees (Lv. 71)",
+            "Restores 2.5% HP to all melee allies every 5 seconds."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "Erina Seto (瀬戸英里奈)",
+        "illustrator": "*zoff",
+        "description": "The god of trees from Japanese mytholgoy...in spirit form. She's quite the god, sitting atop the tallest trees of Japan, but her powers have been greatly weakened by people's lack of faith and widespread deforestation and air pollution. She came to the city in order to regain her powers, but she's been having trouble getting used to all the smog...",
+        "how_to_acquire": "◦ Limited Jewel Summon 22/03/17- 12/04/17\n◦ Trade at Exchange for 50 Mochi 09/04/17 - 12/04/17",
+        "notes_and_trivia": "◦ Increases battle time limit by 33% during the \"Chopping Trees? Stop, Please!\" event.\n◦ The effect increases with the number of limit breaks. (33% → 49.75% → 66.5% → 83.25% → 100%)\n◦ Summon rate increased until 22/03/17- 12/04/17",
+        "quote": {
+            "main": [
+                "\"Could someone open a window or something?\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/4/48/Kukunochi_Main.ogg/revision/latest?cb=20170622212611"
+            ],
+            "skill": [
+                "\"Let me show you who you're dealing with.\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/a/ac/Kukunochi_Skill.ogg/revision/latest?cb=20170622212637"
+            ],
+            "summon": [
+                "\"Work with you? Now THAT sounds like a breath of fresh air!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/b/bd/Kukunochi_Summon.ogg/revision/latest?cb=20170622212619"
+            ],
+            "limit_break": [
+                "\"--\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/1/13/Kukunochi_Limit_Break.ogg/revision/latest?cb=20170622212630"
+            ]
+        }
+    },
+    "faction": null
+}

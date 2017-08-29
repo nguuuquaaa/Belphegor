@@ -1,0 +1,53 @@
+{
+    "id": 33,
+    "name": "Goblonara",
+    "alias": "Goblonara",
+    "pic_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/a/ac/Goblonara.png/revision/latest?cb=20161015185248",
+    "artwork_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/8/86/Goblonara_Artwork.png/revision/latest?cb=20170205044137",
+    "max_atk": 2300,
+    "max_hp": 2700,
+    "mlb_atk": 3359,
+    "mlb_hp": 3941,
+    "rarity": 1,
+    "daemon_type": "phantasma",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Plunder",
+            "Deals 303/443 DMG to current target, with a low chance of inflicting Stun."
+        ]
+    ],
+    "ability": [],
+    "bond": [
+        [
+            "Goblonara > Gobrute",
+            "Increases Gobrute's normal DMG by 1%"
+        ]
+    ],
+    "additional_data": {
+        "voice_actor": "Sae Aiuchi (相内沙英)",
+        "illustrator": "nico",
+        "description": "The spirits of the so-called Queen among small fries, the goblin. Her job is basically to cause trouble. When other spirits pass by (it's the best if they are in a horse and buggy), they come out waving their clubs and attack, steal all the gold and valuables, and then retreat. There is nothing scarier for a merchant, but for a competent soldier they are a good way to earn some money.",
+        "how_to_acquire": "◦ Free Summon\n◦ Raid: Random Drop",
+        "notes_and_trivia": "",
+        "quote": {
+            "main": [
+                "\"Hah, I see ya over there! Lookin' stupid!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/e/e3/Goblonara_Main.ogg/revision/latest?cb=20160715101318"
+            ],
+            "skill": [
+                "\"Mine, all mine!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/d/de/Goblonara_Skill.ogg/revision/latest?cb=20160715101344"
+            ],
+            "summon": [
+                "\"Hee hee, another stupid jerk!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/c/cc/Goblonara_Summon.ogg/revision/latest?cb=20160716110311"
+            ],
+            "limit_break": [
+                "\"Holy moly! So much power!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/a/a4/Goblonara_Limit_Break.ogg/revision/latest?cb=20160715101401"
+            ]
+        }
+    },
+    "faction": null
+}

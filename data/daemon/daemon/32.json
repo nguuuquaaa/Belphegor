@@ -1,0 +1,48 @@
+{
+    "id": 32,
+    "name": "Yatagarasu",
+    "alias": "Yatagarasu",
+    "pic_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/7/7d/Yatagarasu.png/revision/latest?cb=20161213140147",
+    "artwork_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/9/95/Yatagarasu_Artwork.png/revision/latest?cb=20160708033233",
+    "max_atk": 5490,
+    "max_hp": 6420,
+    "mlb_atk": 6731,
+    "mlb_hp": 7871,
+    "rarity": 4,
+    "daemon_type": "phantasma",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Giant Crow Call",
+            "Deals 2314/2834 damage to surrounding enemies."
+        ]
+    ],
+    "ability": [],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "Toa Yukinari (行成とあ)",
+        "illustrator": "Totomo (トトモ)",
+        "description": "A spirit who makes a living showing the gods around. It used to be considered a sacred and sublime line of work, but, as in the human world, many things have changed over time in the spirit world, too, and giving tours isn't so easy any more. She puts a lot of effort into memorizing the best sightseeing spots and famous local products.",
+        "how_to_acquire": "◦ Jewel Summon",
+        "notes_and_trivia": "--",
+        "quote": {
+            "main": [
+                "\"Who are you calling a tour guide?! Show some respect!\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/8/87/Yatagarasu_Main.ogg/revision/latest?cb=20160715070220"
+            ],
+            "skill": [
+                "\"This hammer holds the anger of the gods!\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/3/37/Yatagarasu_Skill.ogg/revision/latest?cb=20160715070236"
+            ],
+            "summon": [
+                "\"I will show you The Way!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/c/c0/Yatagarasu_Summon.ogg/revision/latest?cb=20170127134243"
+            ],
+            "limit_break": [
+                "\"This feeling of contentment reminds me when we went out east...\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/1/16/Yatagarasu_Limit_Break.ogg/revision/latest?cb=20160715070259"
+            ]
+        }
+    },
+    "faction": null
+}

@@ -1,0 +1,62 @@
+{
+    "id": 218,
+    "name": "Snow White",
+    "alias": "Snow White",
+    "pic_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/e/e6/Snow_White.png/revision/latest?cb=20170215144630",
+    "artwork_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/f/fa/Snow_White_Artwork.png/revision/latest?cb=20170215144655",
+    "max_atk": 6000,
+    "max_hp": 6800,
+    "mlb_atk": 7356,
+    "mlb_hp": 8337,
+    "rarity": 4,
+    "daemon_type": "divina",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "White Snow Sword Dance",
+            "Deals 4677/5734 DMG to current target."
+        ]
+    ],
+    "ability": [
+        [
+            "Beautiful Princess (Lv. 70)",
+            "Moderately reduces DMG taken and restores 7.5% HP every 5 seconds."
+        ]
+    ],
+    "bond": [
+        [
+            "Snow White > Witch Ravenna",
+            "Increases Witch Ravenna's DMG dealt by 8%"
+        ],
+        [
+            "Witch Ravenna > Snow White",
+            "Increases Snow White's DMG dealt by 10%"
+        ]
+    ],
+    "additional_data": {
+        "voice_actor": "--",
+        "illustrator": "Hihara You (緋原ヨウ)",
+        "description": "The spirit of a beautiful princess who has overcome a witch's assassination attempts many times. She wanders around from place to place, looking for the witch who tried to kill her. Following the witch's trail, she has come to stay at the Bureau of the Occult for a time. She has something she desperately wants to tell the witch, and has been looking for her for a long time.",
+        "how_to_acquire": "◦ Limited Jewel Summon 15/02/17- 08/03/17\n◦ Trade at Exchange for 50 Mochi 05/03/17 - 08/03/17",
+        "notes_and_trivia": "◦ Increases Hishi Mochi drop rate by 33% during the \"The Spirits' Doll Festival\" event.\n◦ The effect increases with the number of limit breaks. (33% → 49.75% → 66.5% → 83.25% → 100%)\n◦ Summon rate increased until 15/02/17- 08/03/17\n◦ In news introducing the special ability daemons, she was said to increase battle time limit.\n◦ Witch Ravenna is her stepmother.",
+        "quote": {
+            "main": [
+                "\"I will let her know how I feel one day.\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/2/2b/Snow_White_Main.ogg/revision/latest?cb=20170622213251"
+            ],
+            "skill": [
+                "\"I have mastered swordplay!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/4/45/Snow_White_Skill.ogg/revision/latest?cb=20170622213246"
+            ],
+            "summon": [
+                "\"Let me help you, too!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/1/1b/Snow_White_Summon.ogg/revision/latest?cb=20170622213301"
+            ],
+            "limit_break": [
+                "\"I have nothing but gratitude toward you.\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/a/a5/Snow_White_Limit_Break.ogg/revision/latest?cb=20170622213311"
+            ]
+        }
+    },
+    "faction": null
+}

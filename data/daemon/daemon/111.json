@@ -1,0 +1,53 @@
+{
+    "id": 111,
+    "name": "Yamata-no-Orochi",
+    "alias": "Yamata-no-Orochi",
+    "pic_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/c/c9/Yamata-no-Orochi.png/revision/latest?cb=20161119010357",
+    "artwork_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/7/77/Yamata-no-Orochi_Artwork.png/revision/latest?cb=20160826003428",
+    "max_atk": 9900,
+    "max_hp": 7800,
+    "mlb_atk": 11813,
+    "mlb_hp": 9307,
+    "rarity": 5,
+    "daemon_type": "phantasma",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "Eight Sword Dance",
+            "Deals 4229/5049 DMG to the enemy target. Decreases target's speed by 86/100% for a limited time."
+        ]
+    ],
+    "ability": [
+        [
+            "Legendary Beast (Lv. 80)",
+            "Sharply increases crit rate."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "Ryo Nezuka (根塚良)",
+        "illustrator": "*zoff",
+        "description": "The spirit of a legendary creature from Japanese mythology. Although he's gotten a bad rap, he's always polite when dealing with women and makes sure to get their full consent before taking them captive, and even returns them safely afterwards. His captives are taken somewhere up in the sky, but Susanoo misunderstood him and made him stop. It was all just a part of his plan to build a youthful feminine paradise, which Susanoo effectively nipped in the bud.",
+        "how_to_acquire": "◦\"Is this Destiny? -Orochi on the Counterattack-\" Event: Defeat LVL 100, 125, 150, 175, 200\n◦\"Is this Destiny? -Orochi on the Counterattack-\" Event: Random drops after LVL 100.",
+        "notes_and_trivia": "◦  Increase damage dealt by 20% while battling Yamata-no-Orochi during the \"Is this Destiny? -Orochi on the Counterattack-\" event.",
+        "quote": {
+            "main": [
+                "\"Treat women with respect! Who knows what might happen if you don't...\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/8/80/Yamata-no-Orochi_Main.ogg/revision/latest?cb=20170106161556"
+            ],
+            "skill": [
+                "\"You shall dance in a blood-stained dress!\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/5/59/Yamata-no-Orochi_Skill.ogg/revision/latest?cb=20170106161606"
+            ],
+            "summon": [
+                "\"I'll lend you my power...It's all part of my plan.\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/f/f2/Yamata-no-Orochi_Summon.ogg/revision/latest?cb=20170106161617"
+            ],
+            "limit_break": [
+                "\"One step closer to having my own paradise!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/8/89/Yamata-no-Orochi_Limit_Break.ogg/revision/latest?cb=20170106161631"
+            ]
+        }
+    },
+    "faction": null
+}

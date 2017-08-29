@@ -1,0 +1,53 @@
+{
+    "id": 260,
+    "name": "Genjo",
+    "alias": "Genjo",
+    "pic_url": "https://vignette3.wikia.nocookie.net/mira-miracle/images/1/19/Genjo.png/revision/latest?cb=20170426134725",
+    "artwork_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/8/8f/Genjo_Artwork.png/revision/latest?cb=20170426134705",
+    "max_atk": 7100,
+    "max_hp": 5400,
+    "mlb_atk": 8705,
+    "mlb_hp": 6620,
+    "rarity": 4,
+    "daemon_type": "anima",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "Free-spirited Performance",
+            "Restores 890/1090 HP to 3 allies (melee priority); increases targets' speed by 42%/51% for a limited time."
+        ]
+    ],
+    "ability": [
+        [
+            "Imperial Treasure (Lv. 65)",
+            "Moderately increases the EXP gained from battle."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "--",
+        "illustrator": "Kiya Machi (木屋町)",
+        "description": "The spirit of a very free-spirited harp. She's the type that thinks before she acts, casually deciding to go on a big trip completely out of of the blue. And whenever she goes on one of her trips to somewhere new, the first thing she does is check out the local music. She has a home of her own, but she doesn't like staying in one place for too long. As a result, she has friends all across the land. She's pretty famous among music-related spirits.",
+        "how_to_acquire": "◦ \"Spirit Idol Competition\" Event: Clear Chapter 4\n◦ \"Spirit Idol Competition\" Event: Exchange for 1000 Voting Slip \n◦ \"Spirit Idol Competition\" Event: Get a First Half Ranking of 2501-6000. \n◦ \"Spirit Idol Competition\" Event: Get a Total Ranking of 5001-7500.",
+        "notes_and_trivia": "◦ Slightly increases the drop rate of Voting Slip during \"Spirit Idol Competition\" event.",
+        "quote": {
+            "main": [
+                "\"If we're gonna do this, let's do it right!\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/8/80/Genjo_Main.ogg/revision/latest?cb=20170623165523"
+            ],
+            "skill": [
+                "\"The crowd's gonna go wild!\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/f/f7/Genjo_Skill.ogg/revision/latest?cb=20170623165612"
+            ],
+            "summon": [
+                "\"I'll be rootin' for ya from the sidelines!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/d/d6/Genjo_Summon.ogg/revision/latest?cb=20170623165700"
+            ],
+            "limit_break": [
+                "\"What a blast! Lookin' forward to spendin' more time with ya!\"",
+                "https://vignette2.wikia.nocookie.net/mira-miracle/images/6/66/Genjo_Limit_Break.ogg/revision/latest?cb=20170623165629"
+            ]
+        }
+    },
+    "faction": null
+}

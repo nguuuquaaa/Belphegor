@@ -1,0 +1,53 @@
+{
+    "id": 94,
+    "name": "Amitabha Tathagata",
+    "alias": "Amitabha Tathagata",
+    "pic_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/f/fc/Amitabha_Tathagata.png/revision/latest?cb=20160722003846",
+    "artwork_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/d/d6/Amitabha_Tathagata_Artwork.png/revision/latest?cb=20170714103934",
+    "max_atk": 7000,
+    "max_hp": 5520,
+    "mlb_atk": 8583,
+    "mlb_hp": 6767,
+    "rarity": 4,
+    "daemon_type": "anima",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "All-seeing Eye of Buddha",
+            "All allies recover 959/1179 HP and are cured of Poison."
+        ]
+    ],
+    "ability": [
+        [
+            "Amitabha Power (Lv. 25)",
+            "Immune to Poison."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "Sarah Emi Bridcutt (ブリドカットセーラ恵美)",
+        "illustrator": "Totomo (トトモ)",
+        "description": "The spirit of a bronze plate from the Heian Period with an image of the Buddha carved into it. Far for being an enlightened bodhisattva, she loves being the center of attention. And it's gotten even worse ever since she was declared a national treasure. She does have deep faith and undeniable strengh, so lots of people really trust in her.",
+        "how_to_acquire": "◦ \"Outbreak! A Day of Battle in Shinjuku!\" Event: Defeat LVL 60 Mikhael.\n◦ \"Outbreak! A Day of Battle in Shinjuku!\" Event: Random drops start from LVL 1 and Event Summon.",
+        "notes_and_trivia": "◦ Increase damage dealt by 20% while battling Mikhael during the \"Outbreak! A Day of Battle in Shinjuku!\" event.",
+        "quote": {
+            "main": [
+                "\"Trust in me, and I'll lend you my power.\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/7/7a/Amitabha_Tathagata_Main.ogg/revision/latest?cb=20170422052134"
+            ],
+            "skill": [
+                "\"I see all danger and calamity before it strikes.\"",
+                "https://vignette4.wikia.nocookie.net/mira-miracle/images/3/3d/Amitabha_Tathagata_Skill.ogg/revision/latest?cb=20170422052146"
+            ],
+            "summon": [
+                "\"Observe me carefully if you wish to see true strength.\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/d/d5/Amitabha_Tathagata_Summon.ogg/revision/latest?cb=20170422052151"
+            ],
+            "limit_break": [
+                "\"Now, I shall shine even brighter than I do now.\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/e/e4/Amitabha_Tathagata_Limit_Break.ogg/revision/latest?cb=20170422052130"
+            ]
+        }
+    },
+    "faction": null
+}

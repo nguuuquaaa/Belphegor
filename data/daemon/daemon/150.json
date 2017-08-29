@@ -1,0 +1,53 @@
+{
+    "id": 150,
+    "name": "Restless Ghost [Serious]",
+    "alias": "Restless Ghost [Serious]",
+    "pic_url": "https://vignette1.wikia.nocookie.net/mira-miracle/images/1/1f/Restless_Ghost_Serious.png/revision/latest?cb=20161208012450",
+    "artwork_url": "https://vignette4.wikia.nocookie.net/mira-miracle/images/9/90/Restless_Ghost_Serious_Artwork.png/revision/latest?cb=20161118202514",
+    "max_atk": 5000,
+    "max_hp": 6450,
+    "mlb_atk": 6131,
+    "mlb_hp": 7908,
+    "rarity": 4,
+    "daemon_type": "phantasma",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Legendary Punch",
+            "Deals 3283/4023 DMG to current target."
+        ]
+    ],
+    "ability": [
+        [
+            "Maiden's Rage (Lv. 57)",
+            "When HP is 1/2 or less, sharply increases crit rate and crit DMG."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "Erina Seto (瀬戸英里奈)",
+        "illustrator": "ATARU",
+        "description": "The spirit of a girl found dead in the streets with her dreams only half-fulfilled. The story of her death became an inspirational tale across Japan, and now every outcast aspires to be like her. She was turned into a spirit by people's hopes and wishes, so she's pretty powerful. She ascended to Heaven, but they say that now she's involved in the turf wars up there.",
+        "how_to_acquire": "◦ Jewel Summon",
+        "notes_and_trivia": "◦ Summon rate increased until 09/11/16",
+        "quote": {
+            "main": [
+                "\"Who started that crazy rumor? WHO WAS IT?\"",
+                "https://vignette3.wikia.nocookie.net/mira-miracle/images/1/13/Restless_Ghost_Serious_Main.ogg/revision/latest?cb=20170623144231"
+            ],
+            "skill": [
+                "\"This'll take care of anyone who gets in the way!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/a/a3/Restless_Ghost_Serious_Skill.ogg/revision/latest?cb=20170121200808"
+            ],
+            "summon": [
+                "\"Look...all I did was try to save a kitten...\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/5/50/Restless_Ghost_Serious_Summon.ogg/revision/latest?cb=20170623144236"
+            ],
+            "limit_break": [
+                "\"I'll be free from that stupid rumor someday!\"",
+                "https://vignette1.wikia.nocookie.net/mira-miracle/images/c/cf/Restless_Ghost_Serious_Limit_Break.ogg/revision/latest?cb=20170623144242"
+            ]
+        }
+    },
+    "faction": null
+}
