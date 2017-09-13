@@ -1,0 +1,53 @@
+{
+    "id": 334,
+    "name": "Charles in Boots",
+    "alias": "Charles in Boots",
+    "pic_url": "https://vignette.wikia.nocookie.net/mira-miracle/images/d/de/Charles_in_Boots.png/revision/latest?cb=20170909024305",
+    "artwork_url": "https://vignette.wikia.nocookie.net/mira-miracle/images/e/e7/Charles_in_Boots_Artwork.png/revision/latest?cb=20170903163457",
+    "max_atk": 5600,
+    "max_hp": 6000,
+    "mlb_atk": 6866,
+    "mlb_hp": 7356,
+    "rarity": 4,
+    "daemon_type": "divina",
+    "daemon_class": "melee",
+    "skill": [
+        [
+            "Memory of the Hunt",
+            "Deals 4420/5420 DMG to an enemy (ranged priority). "
+        ]
+    ],
+    "ability": [
+        [
+            "Master Manager (Lv. 69)",
+            "Moderately increases the EXP gained from battle."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "",
+        "illustrator": "Hihara You (緋原ヨウ)",
+        "description": "The spirit of a cat who wore leather boots. His master was a penniless, uneducated nobody, but this cat used wits and a little trickery to help him become king of the land. When others hoping to pull off the same feat come asking him for help, they usually leave after only a few minutes in apparent satisfaction. You see, he's learned how to talk a good talk and avoid rejecting them outright, which would hurt his brand. It's all part of his cohesive branding strategy.",
+        "how_to_acquire": "◦ Limited Jewel Summon from 06/09/2017\n◦ Trade at Exchange for 50 Mochi 30/08/2017 - 06/09/2017",
+        "notes_and_trivia": "◦ Summon rate increased until 06/09/2017\n◦ Can only be exchanged once",
+        "quote": {
+            "main": [
+                "\"Becoming king's not as easy as it used to be...\"",
+                "/wiki/Special:Upload?wpDestFile=Charles_in_Boots_Main.ogg"
+            ],
+            "skill": [
+                "\"I hunt in my spare time, and lemme tell you, I've gotten pretty good!\"",
+                "/wiki/Special:Upload?wpDestFile=Charles_in_Boots_Skill.ogg"
+            ],
+            "summon": [
+                "\"Sure, I'm a cat, but since when was that a bad thing?\"",
+                "/wiki/Special:Upload?wpDestFile=Charles_in_Boots_Summon.ogg"
+            ],
+            "limit_break": [
+                "\"This'll make mouse-chasing a lot more exciting!\"",
+                "/wiki/Special:Upload?wpDestFile=Charles_in_Boots_Limit_Break.ogg"
+            ]
+        }
+    },
+    "faction": null
+}

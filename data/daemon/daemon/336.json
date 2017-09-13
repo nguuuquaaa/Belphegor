@@ -1,0 +1,57 @@
+{
+    "id": 336,
+    "name": "Belphegor [Party]",
+    "alias": "Belphy [Party]",
+    "pic_url": "https://vignette4.wikia.nocookie.net/mira-miracle/images/a/a1/Belphegor_Party.png/revision/latest?cb=20170831035344",
+    "artwork_url": "https://vignette2.wikia.nocookie.net/mira-miracle/images/f/f5/Belphegor_Party_Artwork.png/revision/latest?cb=20170831035332",
+    "max_atk": 11700,
+    "max_hp": 9100,
+    "mlb_atk": 13961,
+    "mlb_hp": 10859,
+    "rarity": 5,
+    "daemon_type": "phantasma",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "Roar of Sloth",
+            "Deals 1872/ DMG to 3 enemies (melee priority), and decreases targets' speed by 9%/ for a limited time. "
+        ]
+    ],
+    "ability": [
+        [
+            "Temptation of Sloth (Lv. 36)",
+            "High chance of reducing all enemy's ATK speed at the start of every wave."
+        ],
+        [
+            "Perfection of Sloth (Lv. 75)",
+            "Very high chance of inflicting Silence to skill targets."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "Marie Hatanaka (畑中万里江)",
+        "illustrator": "Kiya Machi (木屋町)",
+        "description": "The spirit of the demon of sloth, one of the seven deadly sins. She's as lazy as ever, but she showed up to celebrate nonetheless. Surely it wasn't just so that she could ditch work... Pandora looked into her future, but she concluded that Belphegor will always be lazy, no matter what she does. Even in Yata Mirror's alternate world she couldn't manage to get out of a simple test grade Kotatsu. So, she's pretty much exactly what you'd expect from the demon of sloth.",
+        "how_to_acquire": "◦ Limited Jewel Summon from 30/08/2017 - 06/09/2017\n◦ Trade at Exchange for 200 Mochi 06/09/2017",
+        "notes_and_trivia": "◦ Summon rate increased until 06/09/2017\n◦ Can only be exchanged once",
+        "quote": {
+            "main": [
+                "\"Temptation wins again...\"",
+                "/wiki/Special:Upload?wpDestFile=Belphegor_Party_Main.ogg"
+            ],
+            "skill": [
+                "\"\"",
+                "/wiki/Special:Upload?wpDestFile=Belphegor_Party_Skill.ogg"
+            ],
+            "summon": [
+                "\"Let's just relax over here for a minute...\"",
+                "/wiki/Special:Upload?wpDestFile=Belphegor_Party_Summon.ogg"
+            ],
+            "limit_break": [
+                "\"\"",
+                "/wiki/Special:Upload?wpDestFile=Belphegor_Party_Limit_Break.ogg"
+            ]
+        }
+    },
+    "faction": null
+}

@@ -1,0 +1,53 @@
+{
+    "id": 333,
+    "name": "Gobluild",
+    "alias": "Gobluild",
+    "pic_url": "https://vignette.wikia.nocookie.net/mira-miracle/images/1/15/Gobluild.png/revision/latest?cb=20170909054636",
+    "artwork_url": "https://vignette.wikia.nocookie.net/mira-miracle/images/a/ae/Gobluild_Artwork.png/revision/latest?cb=20170903163141",
+    "max_atk": 7800,
+    "max_hp": 5700,
+    "mlb_atk": 9563,
+    "mlb_hp": 6988,
+    "rarity": 4,
+    "daemon_type": "phantasma",
+    "daemon_class": "ranged",
+    "skill": [
+        [
+            "Prayer to the Old Gods",
+            "Restore 3718/4578 HP to self, increase crit rate for a limited time 20% "
+        ]
+    ],
+    "ability": [
+        [
+            "Divine Goblin Protection (Lv. 59)",
+            "Slightly increases max HP of all allies."
+        ]
+    ],
+    "bond": [],
+    "additional_data": {
+        "voice_actor": "",
+        "illustrator": "--",
+        "description": "The spirit of a brave goblin with a strong sense of justice. A heroine among goblins, she worships the goblin gods of old and overcame great obstacles in order to obtain their ancient wisdom. No other goblins remember the old gods like she does—only she still knows their true names. These gods had the pwoer to destroy the balance of the world, and so they altered goblins' memories to prevent their religion from spreading. That was the first time she resisted the gods' wishes. She refuses to forget how they sacrificed themselves for the greater good.",
+        "how_to_acquire": "◦ Limited Jewel Summon from 30/08/2017 - 06/09/2017\n◦ Trade at Exchange for 50 Mochi 06/09/2017",
+        "notes_and_trivia": "◦ Summon rate increased until 06/09/2017\n◦ Can only be exchanged once",
+        "quote": {
+            "main": [
+                "\"Shall we say a prayer together?\"",
+                "/wiki/Special:Upload?wpDestFile=Gobluild_Main.ogg"
+            ],
+            "skill": [
+                "\"Please, lend me your aid!\"",
+                "/wiki/Special:Upload?wpDestFile=Gobluild_Skill.ogg"
+            ],
+            "summon": [
+                "\"My name's Gobild, and I'm a goblin! Nice to meet you!\"",
+                "/wiki/Special:Upload?wpDestFile=Gobluild_Summon.ogg"
+            ],
+            "limit_break": [
+                "\"\"",
+                "/wiki/Special:Upload?wpDestFile=Gobluild_Limit_Break.ogg"
+            ]
+        }
+    },
+    "faction": null
+}

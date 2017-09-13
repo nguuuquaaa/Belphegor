@@ -1,0 +1,44 @@
+[
+    {
+        "name": "Sanada Yukimura",
+        "rarity": 5,
+        "price": 200,
+        "jump": 50,
+        "limit": 999
+    },
+    {
+        "name": "Gyobu Tanuki",
+        "rarity": 5,
+        "price": 200,
+        "jump": 50,
+        "limit": 999
+    },
+    {
+        "name": "Onimaru Kunitsuna [Defiant]",
+        "rarity": 5,
+        "price": 500,
+        "jump": 0,
+        "limit": 1
+    },
+    {
+        "name": "Princess Oto [Ocean Flower]",
+        "rarity": 5,
+        "price": 500,
+        "jump": 0,
+        "limit": 1
+    },
+    {
+        "name": "Kintaro [Vacation]",
+        "rarity": 5,
+        "price": 100,
+        "jump": 0,
+        "limit": 1
+    },
+    {
+        "name": "Daji [Seductive Swimsuit]",
+        "rarity": 5,
+        "price": 100,
+        "jump": 0,
+        "limit": 1
+    }
+]
