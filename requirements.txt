@@ -1,6 +1,5 @@
 aiohttp
 beautifulsoup4
-discord.py
 google-api-python-client
 lxml
 pafy
@@ -8,3 +7,4 @@ Pillow
 psutil
 xmltodict
 youtube-dl
+fuzzywuzzy
