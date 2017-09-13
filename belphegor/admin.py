@@ -104,6 +104,18 @@ class AdminBot:
         else:
             await ctx.send(f'```\n{value}\n{result}\n```')
 
+    @commands.command()
+    @checks.owner_only()
+    async def block(self, ctx, member:discord.Member):
+        self.bot.block_users.append(member.id)
+        await ctx.send(f"{member.name} has been blocked (temporary).")
+
+    @commands.command()
+    @checks.owner_only()
+    async def unblock(self, ctx, member:discord.Member):
+        self.bot.block_users.remove(member.id)
+        await ctx.send(f"{member.name} has been unblocked.")
+
 #==================================================================================================================================================
 
 def setup(bot):

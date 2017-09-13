@@ -116,7 +116,7 @@ class Reaction:
     async def emoji(self, ctx, *args):
         out = ""
         for name in args:
-            emoji = discord.utils.find(lambda a:a.name==name, self.bot.get_guild(config.test_server_id).emojis)
+            emoji = discord.utils.find(lambda a:a.name==name, self.bot.get_guild(config.test_guild_id).emojis)
             out = f"{out}{emoji}"
         if out:
             await ctx.send(out)

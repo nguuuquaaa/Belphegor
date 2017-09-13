@@ -5,4 +5,7 @@ belphegor.misc
 belphegor.help
 belphegor.reaction
 belphegor.music
-belphegor.mod
+belphegor.guild
+belphegor.random
+belphegor.remind
+belphegor.tag

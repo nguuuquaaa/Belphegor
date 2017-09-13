@@ -85,8 +85,8 @@ class EsBot():
         self.bot = bot
         self.chip_library = []
         for chip_type in ("weaponoid", "character", "pa_tech", "collab"):
-            for i in os.listdir(config.chip_path+chip_type):
-                with open(config.chip_path+chip_type+"/"+i, encoding='utf-8') as file:
+            for i in os.listdir(f"{config.data_path}/chip/{chip_type}"):
+                with open(f"{config.data_path}/chip/{chip_type}/{i}", encoding='utf-8') as file:
                     new_chip = Chip.from_file(i[:-4], file)
                     self.chip_library.append(new_chip)
         test_guild = self.bot.get_guild(config.test_guild_id)

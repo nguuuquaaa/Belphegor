@@ -9,6 +9,8 @@ from urllib.parse import quote
 import time
 from datetime import datetime, timezone
 import asyncio
+import unicodedata
+import re
 
 #==================================================================================================================================================
 
@@ -78,7 +80,7 @@ class MiscBot:
         for e in e_value:
             await message.add_reaction(e)
         try:
-            with open(f"{config.data_path}misc/jankenpon/{ctx.author.id}.txt", encoding="utf-8") as file:
+            with open(f"{config.data_path}/misc/jankenpon/{ctx.author.id}.txt", encoding="utf-8") as file:
                 win = [int(i) for i in file.read().split()]
         except:
             win = [0, 0, 0]
@@ -120,10 +122,12 @@ class MiscBot:
                 embed.description = f"*\"{self.quote(streak)}\"*"
                 embed.set_footer(text=f"{win[0]}W - {win[1]}D - {win[2]}L")
                 await message.edit(embed=embed)
-        with open(f"{config.data_path}misc/jankenpon/{ctx.author.id}.txt", "w+", encoding="utf-8") as file:
+        with open(f"{config.data_path}/misc/jankenpon/{ctx.author.id}.txt", "w+", encoding="utf-8") as file:
             file.write(f"{win[0]} {win[1]} {win[2]}")
 
     async def on_message(self, message):
+        if message.author.bot:
+            return
         inp = message.content
         if inp[:3] in ("/o/", "\\o\\"):
             reply = ""
@@ -141,7 +145,7 @@ class MiscBot:
             await msg.edit(content=f"pong ({int(1000*(msg.created_at-message.created_at).total_seconds())}ms)")
 
     @commands.command()
-    async def avatar(self, ctx, member:discord.Member=None):
+    async def avatar(self, ctx, *, member:discord.Member=None):
         if not member:
             member = ctx.author
         embed = discord.Embed(title=f"{member.display_name}'s avatar", url=member.avatar_url)
@@ -178,22 +182,6 @@ class MiscBot:
         embed.add_field(name="Uptime", value=f"{d}d {h}h{m}m{s}s")
         embed.set_footer(text=datetime.now(timezone.utc).astimezone().strftime("%a, %Y-%m-%d at %I:%M:%S %p, GMT%z"))
         await ctx.send(embed=embed)
-
-    @commands.command()
-    @checks.manager_only()
-    async def welcome(self, ctx):
-        with open(f"{config.data_path}misc/welcome/{ctx.guild.id}.txt", "w+", encoding="utf-8") as file:
-            file.write(str(ctx.channel.id))
-        await ctx.send("Got it.")
-
-    async def on_member_join(self, member):
-        try:
-            with open(f"{config.data_path}misc/welcome/{member.guild.id}.txt", encoding="utf-8") as file:
-                channel_id = int(file.read().strip())
-            channel = member.guild.get_channel(channel_id)
-            await channel.send(f"*\"Eeeeehhhhhh, go away {member.mention}, I don't want any more work...\"*")
-        except:
-            pass
 
     @commands.command()
     async def fancy(self, ctx, *, textin:str):
@@ -252,7 +240,8 @@ class MiscBot:
         #timezone convert
         try:
             zone_data = data.find('div', class_="vk_c vk_gy vk_sh card-section _MZc")
-            embed = discord.Embed(title="Search result:", description=f"**Timezone**\n{zone_data.text}",
+            text = "\n".join([t.get_text().strip() for t in zone_data.find_all(True, recursive=False)])
+            embed = discord.Embed(title="Search result:", description=f"**Timezone**\n{text}",
                                   colour=discord.Colour.dark_orange())
             embed.add_field(name="See also:", value='\n\n'.join([f"[{t.text}]({t['href']})" for t in search_results[0:4]]), inline=True)
             return embed
@@ -371,13 +360,13 @@ class MiscBot:
             pass
 
         #translate
-        tag = data.find("div", id="tw-ob")
+        tag = data.find("div", class_="_NId")
         try:
             inp = tag.find("a", id="tw-nosp")
             out = tag.find("pre", id="tw-target-text")
             link = tag.find("a", id="tw-gtlink")
             langs = tuple(tag.find_all("option", selected="1"))
-            embed = discord.Embed(title="Search result:", description=f"**Translation**\n[Google Translate](link['href'])", colour=discord.Colour.dark_orange())
+            embed = discord.Embed(title="Search result:", description=f"[Google Translate]({link['href']})", colour=discord.Colour.dark_orange())
             embed.add_field(name=langs[0].text, value=inp.text)
             embed.add_field(name=langs[1].text, value=out.text)
             embed.add_field(name="See also:", value='\n\n'.join([f"[{t.text}]({t['href']})" for t in search_results[0:4]]), inline=True)
@@ -397,9 +386,8 @@ class MiscBot:
                   "hl": "en"}
         if ctx.channel.name.startswith("nsfw"):
             params["safe"] = "off"
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.3; Win64; x64) Gecko/20100101 Firefox/53.0'}
         async with ctx.typing():
-            bytes_ = await request.fetch(self.bot.session, 'https://www.google.com/search', params=params, headers=headers)
+            bytes_ = await request.fetch(self.bot.session, "https://www.google.com/search", params=params)
             result = await self.bot.loop.run_in_executor(None, self.parse_google, bytes_)
             if isinstance(result, discord.Embed):
                 return await ctx.send(embed=result)
@@ -421,22 +409,23 @@ class MiscBot:
 
     @commands.command()
     async def char(self, ctx, *, characters):
+        characters = re.sub(r"\s", "", characters)
         if len(characters) > 20:
             await ctx.send("Too many characters.")
         else:
-            await ctx.send("\n".join([f"`\\U{ord(c):08x}` - {unicodedata.name(c, 'No name found.')}" for c in characters]))
+            await ctx.send("\n".join([f"`\\U{ord(c):08x}` - `{c}` - {unicodedata.name(c, 'No name found.')}" for c in characters]))
 
     @commands.command()
     async def poll(self, ctx, *, data):
-        stuff = data.splitlines()
-        items = stuff[1:]
+        stuff = data.strip().splitlines()
+        items = stuff[1:10]
         int_to_emoji = {}
         emoji_to_int = {}
         for i in range(len(items)):
             e = config.emojis[str(i+1)]
             int_to_emoji[i+1] = e
             emoji_to_int[e] = i+1
-        embed = discord.Embed(title=f"Polling: {stuff[0]}", description="\n".join([f"{int_to_emoji[i+1]} {s}" for i, s in enumerate(items)]), colour=discord.Colour.green())
+        embed = discord.Embed(title=f"Polling: {stuff[0]}", description="\n".join([f"{int_to_emoji[i+1]} {s}" for i, s in enumerate(items)]), colour=discord.Colour.dark_green())
         message = await ctx.send(embed=embed)
         for i in range(len(items)):
             await message.add_reaction(int_to_emoji[i+1])

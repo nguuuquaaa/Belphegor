@@ -7,6 +7,7 @@ import random
 import json
 import re
 from bs4 import BeautifulSoup as BS
+from fuzzywuzzy import process
 
 #==================================================================================================================================================
 
@@ -18,13 +19,10 @@ class Daemon:
 
     @classmethod
     def from_file(cls, filename):
-        try:
-            with open(f"{config.data_path}daemon/daemon/{filename}", encoding="utf-8") as file:
-                data = json.load(file)
-                id = data.pop("id")
-                return cls(id, **data)
-        except:
-            return None
+        with open(f"{config.data_path}/daemon/daemon/{filename}", encoding="utf-8") as file:
+            data = json.load(file)
+            id = data.pop("id")
+            return cls(id, **data)
 
     @classmethod
     def empty(cls, id):
@@ -83,7 +81,7 @@ class Daemon:
 
     def to_file(self):
         jsonable = self.__dict__
-        with open(f"{config.data_path}daemon/daemon/{self.id}.json", "w+", encoding="utf-8") as file:
+        with open(f"{config.data_path}/daemon/daemon/{self.id}.json", "w+", encoding="utf-8") as file:
             json.dump(jsonable, file, indent=4, ensure_ascii=False)
 
     @property
@@ -114,6 +112,22 @@ class Daemon:
         else:
             return config.no_img
 
+    @property
+    def voice_actor(self):
+        return self.additional_data["voice_actor"]
+
+    @property
+    def illustrator(self):
+        return self.additional_data["illustrator"]
+
+    @property
+    def how_to_acquire(self):
+        return self.additional_data["how_to_acquire"]
+
+    @property
+    def description(self):
+        return self.additional_data["description"]
+
 #==================================================================================================================================================
 
 class MiniDaemon:
@@ -136,33 +150,27 @@ class MiniDaemon:
 #==================================================================================================================================================
 
 class Player:
-    def __init__(self, member_id, mochi=0, daemons=[], exchange=[]):
+    def __init__(self, id, mochi=0, daemons=[], exchange={}):
         self.mochi = mochi
-        self.member_id = member_id
+        self.id = id
         self.daemons = daemons
         self.exchange = exchange
 
     @classmethod
-    def from_file(cls, member_id):
-        try:
-            with open(f"{config.data_path}daemon/simulation/player/{member_id}.json", encoding="utf-8") as file:
-                data = json.load(file)
-                daemons = []
-                for d in data["daemons"]:
-                    daemons.append(MiniDaemon(d["id"], d["rarity"], d["lb"]))
-                return cls(data["member_id"], data["mochi"], daemons, data["exchange"])
-        except Exception as e:
-            #print(e)
-            new_player = cls(member_id)
-            new_player.to_file()
-            return new_player
+    def from_file(cls, filename):
+        with open(f"{config.data_path}/daemon/simulation/player/{filename}", encoding="utf-8") as file:
+            data = json.load(file)
+            daemons = []
+            for d in data["daemons"]:
+                daemons.append(MiniDaemon(d["id"], d["rarity"], d["lb"]))
+            return cls(data["id"], data["mochi"], daemons, data["exchange"])
 
     def to_file(self):
-        jsonable = {"member_id": self.member_id,
+        jsonable = {"id": self.id,
                     "mochi": self.mochi,
                     "daemons": [d.__dict__ for d in self.daemons],
                     "exchange": self.exchange}
-        with open(f"{config.data_path}daemon/simulation/player/{self.member_id}.json", "w+", encoding="utf-8") as file:
+        with open(f"{config.data_path}/daemon/simulation/player/{self.id}.json", "w+", encoding="utf-8") as file:
             json.dump(jsonable, file, indent=4, ensure_ascii=False)
 
     def sort_daemons(self):
@@ -194,14 +202,20 @@ class OtogiBot():
         self.bot = bot
 
         self.daemons = {}
-        for filename in os.listdir(f"{config.data_path}daemon/daemon"):
+        for filename in os.listdir(f"{config.data_path}/daemon/daemon"):
             if filename.endswith('.json'):
                 data = Daemon.from_file(filename)
                 self.daemons[data.id] = data
 
-        with open(f"{config.data_path}daemon/simulation/summon/jewel.json", encoding="utf-8") as file:
+        with open(f"{config.data_path}/daemon/simulation/summon/jewel.json", encoding="utf-8") as file:
             raw_summon = json.load(file)
             self.summon = {3: raw_summon["3"], 4: raw_summon["4"], 5: raw_summon["5"]}
+
+        self.players = {}
+        for filename in os.listdir(f"{config.data_path}/daemon/simulation/player"):
+            if filename.endswith(".json"):
+                new_player = Player.from_file(filename)
+                self.players[new_player.id] = new_player
 
         test_guild = self.bot.get_guild(config.test_guild_id)
         self.emoji = {}
@@ -218,22 +232,12 @@ class OtogiBot():
                 return [self.daemons[d_id],]
         except:
             pass
+        regex = re.compile(".*?".join(name.split()), flags=re.I)
         for daemon in self.daemons.values():
-            check = True
-            for word in name.lower().split():
-                if word not in daemon.name.lower():
-                    check = False
-                    break
-            if check:
+            if regex.search(daemon.name):
                 result.append(daemon)
-            elif daemon.name != daemon.alias:
-                check = True
-                for word in name.split():
-                    if word.lower() not in daemon.alias.lower():
-                        check = False
-                        break
-                if check:
-                    result.append(daemon)
+            elif regex.search(daemon.alias):
+                result.append(daemon)
         if no_prompt:
             for daemon in result:
                 if name.lower() in (daemon.name.lower(), daemon.alias.lower()):
@@ -284,56 +288,82 @@ class OtogiBot():
         else:
             await ctx.send(f"Can't find {name} in database.")
 
-    def _search_att(self, att, value):
+    def _search_att(self, attrs):
         result = []
-        try:
-            value = int(value)
-            for daemon in self.daemons.values():
-                target_value = getattr(daemon, att, None)
-                if value == target_value:
-                    result.append((daemon, target_value))
-        except:
-            att = att.lower()
-            if att == ("va", "seiyuu"):
-                att = "voice_actor"
-            elif att in ("illu", "artist"):
-                att = "illustrator"
-            elif att in ("how", "acquire", "get"):
-                att = "how_to_acquire"
-            elif att in ("trivia", "note", "notes"):
-                att = "notes_and_trivia"
-            value_set = value.lower().split()
-            for daemon in self.daemons.values():
-                check = True
-                for word in value_set:
-                    if att in ("voice_actor", "illustrator", "description", "how_to_acquire", "notes_and_trivia"):
-                        target_value = daemon.additional_data.get(att, None)
-                    else:
-                        target_value = getattr(daemon, att, None)
-                    if target_value:
-                        if word in target_value.lower():
-                            continue
-                    check = False
-                    break
-                if check:
-                    result.append((daemon, target_value))
+        re_attrs = []
+        for attr in attrs:
+            orig_att = attr[0]
+            value = attr[1]
+            try:
+                re_value = int(value)
+                if orig_att == "atk":
+                    att = "max_atk"
+                elif orig_att == "hp":
+                    att = "max_hp"
+                else:
+                    att = orig_att
+            except:
+                if orig_att in ("va", "seiyuu"):
+                    att = "voice_actor"
+                elif orig_att in ("illu", "artist"):
+                    att = "illustrator"
+                elif orig_att in ("how", "acquire", "get"):
+                    att = "how_to_acquire"
+                elif orig_att in ("trivia", "note", "notes"):
+                    att = "notes_and_trivia"
+                elif orig_att == "desc":
+                    att = "description"
+                elif orig_att == "class":
+                    att = "daemon_class"
+                elif orig_att == "type":
+                    att = "daemon_type"
+                else:
+                    att = orig_att
+                re_value = re.compile(".*?".join(value.split()), flags=re.I)
+            re_attrs.append((att, re_value, orig_att))
+        for daemon in self.daemons.values():
+            check = True
+            dattrs = ""
+            for attr in re_attrs:
+                value = attr[1]
+                if isinstance(value, int):
+                    target_value = getattr(daemon, attr[0], None)
+                    if value != target_value:
+                        check = False
+                        break
+                else:
+                    target_value = getattr(daemon, attr[0], None)
+                    if not value.search(target_value):
+                        check = False
+                        break
+                    if len(target_value) > 100:
+                        target_value = f"{target_value[:100]}..."
+                dattrs = f"{dattrs}\n    {attr[2]}: {target_value}"
+            if check:
+                result.append((daemon, dattrs))
         return result
 
-    @commands.command(aliases=["ds", "search"], name="dsearch")
-    async def search_att(self, ctx, att, *, value:str):
-        result = self._search_att(att, value)
+    @commands.command(aliases=["search",])
+    async def ds(self, ctx, *, data):
+        data = data.strip().splitlines()
+        attrs = []
+        for d in data:
+            stuff = d.partition(" ")
+            att = stuff[0].lower()
+            attrs.append((att, stuff[2]))
+        result = self._search_att(attrs)
         if not result:
             return await ctx.send("No result found.")
         result.sort(key=lambda x: x[0].id)
         result_pages = []
         for i, r in enumerate(result):
-            if i%10 == 0:
-                result_pages.append(f"#*{r[0].id}* **{r[0].name}**\n    {att}: {r[1]}")
+            if i%5 == 0:
+                result_pages.append(f"#*{r[0].id}* **{r[0].name}**{r[1]}")
             else:
-                result_pages[i//10] = f"{result_pages[i//10]}\n\n*#{r[0].id}* **{r[0].name}**\n    {att}: {r[1]}"
+                result_pages[i//5] = f"{result_pages[i//5]}\n\n*#{r[0].id}* **{r[0].name}**{r[1]}"
         max_page = len(result_pages)
         current_page = 0
-        embed = discord.Embed(title="Search result:", colour=discord.Colour.orange())
+        embed = discord.Embed(title=f"Search result: {len(result)} results", colour=discord.Colour.orange())
 
         def data(page):
             embed.description = result_pages[page]
@@ -370,21 +400,21 @@ class OtogiBot():
     @update.command()
     @checks.otogi_guild_only()
     async def create(self, ctx, *, data:str):
+        cur_index = 1
+        while cur_index in self.daemons.keys():
+            cur_index += 1
         data = data.strip().splitlines()
         try:
-            id = int(data[0])
-            if int(data[0]) in self.daemons.keys():
-                return await ctx.send("Daemon ID existed.")
-            new_daemon = Daemon.empty(int(data[0]))
-            new_daemon.name = data[1]
-            new_daemon.alias = data[2]
+            new_daemon = Daemon.empty(cur_index)
+            new_daemon.name = data[0]
+            new_daemon.alias = data[1]
             try:
-                new_daemon.max_atk = data[3]
-                new_daemon.max_hp = data[4]
+                new_daemon.max_atk = data[2]
+                new_daemon.max_hp = data[3]
             except:
                 pass
             for i, d in enumerate(data):
-                if i > 4 and i%2 == 1:
+                if i > 3 and i%2 == 0:
                     if ">" in d:
                         new_daemon.bond.append((d, data[i+1]))
                     elif "(Lv" in d:
@@ -405,7 +435,7 @@ class OtogiBot():
         daemon = await self.filter(ctx, name, result, prompt_all=True)
         if not daemon:
             return
-        os.remove(f"{config.data_path}daemon/daemon/{daemon.id}.json")
+        os.remove(f"{config.data_path}/daemon/daemon/{daemon.id}.json")
         name_remember = daemon.name
         self.daemons.pop(daemon.id, None)
         await ctx.send(f"The entry for {name_remember} has been deleted.")
@@ -418,19 +448,32 @@ class OtogiBot():
         daemon = await self.filter(ctx, data[0], result, prompt_all=True)
         if not daemon:
             return
-        if data[1].lower() in ("id", "name", "alias","pic_url", "artwork_url", "max_atk", "max_hp",
+        field = data[1]
+        value = data[2]
+        if field.lower() in ("id", "name", "alias","pic_url", "artwork_url", "max_atk", "max_hp",
                                "mlb_atk", "mlb_hp", "rarity", "daemon_type", "daemon_class", "faction"):
-            if data[1] in ("skill", "ability", "bond"):
+            if field in ("skill", "ability", "bond"):
                 sab = []
                 for ab, cd in enumerate(data):
                     if ab > 1 and ab%2 == 0:
                         sab.append((cd, data[ab+1]))
-                setattr(daemon, data[1], sab)
+                setattr(daemon, field, sab)
             else:
-                if data[2]:
-                    setattr(daemon, data[1], data[2])
+                try:
+                    value = int(value)
+                except:
+                    pass
+                if field == "id":
+                    if value in self.daemons.keys() and value != daemon.id:
+                        return await ctx.send("This ID is already existed.")
+                    else:
+                        os.remove(f"{config.data_path}/daemon/daemon/{daemon.id}.json")
+                        daemon = self.daemons.pop(daemon.id)
+                if value:
+                    setattr(daemon, field, value)
                 else:
-                    setattr(daemon, data[1], None)
+                    setattr(daemon, field, None)
+
             daemon.to_file()
             await ctx.send(f"The entry for {daemon.name} has been edited.")
         else:
@@ -444,11 +487,11 @@ class OtogiBot():
         if not daemon:
             return
         if daemon.rarity in (3, 4, 5):
-            if daemon.id in summon[daemon.rarity]:
+            if daemon.id in self.summon[daemon.rarity]:
                 return await ctx.send(f"The daemon {daemon.name} is already in summon pool.")
             else:
                 self.summon[daemon.rarity].append(daemon.id)
-        with open(f"{config.data_path}daemon/simulation/summon/jewel.json", "w+", encoding="utf-8") as file:
+        with open(f"{config.data_path}/daemon/simulation/summon/jewel.json", "w+", encoding="utf-8") as file:
             json.dump(self.summon, file, indent=4, ensure_ascii=False)
         await ctx.send(f"The daemon {daemon.name} has been added to summon pool.")
 
@@ -462,7 +505,7 @@ class OtogiBot():
         for index, name in enumerate(self.summon[str(daemon.rarity)]):
             if name == daemon.name:
                 self.summon[key].pop(index)
-                with open(f"{config.data_path}daemon/simulation/summon/jewel.json", "w+", encoding="utf-8") as file:
+                with open(f"{config.data_path}/daemon/simulation/summon/jewel.json", "w+", encoding="utf-8") as file:
                     json.dump(self.summon, file, indent=4, ensure_ascii=False)
                 return await ctx.send(f"The daemon {daemon.name} has been removed from summon pool.")
         await ctx.send(f"The daemon {daemon.name} is not in summon pool.")
@@ -502,6 +545,9 @@ class OtogiBot():
         if base_name == "Commander Yashichi":
             base_name = "Yashichi"
             form = "Commander Form"
+        elif base_name in ("Tsukuyomi", "Tsukiyomi"):
+            base_name = "Tsukuyomi"
+            form = "Original Form"
         else:
             bytes_ = await request.fetch(self.bot.session, f"http://otogi.wikia.com/api/v1/Search/List?query={quote(name)}&limit=5&batch=1&namespaces=0%2C14")
             search_query = json.loads(bytes_)
@@ -533,7 +579,8 @@ class OtogiBot():
 
     def _bs_process(self, daemon, form, raw_data, pic_kind):
         bs_data = BS(raw_data.decode("utf-8"), "lxml")
-        tags = tuple(bs_data.find("div", attrs={"class": "tabbertab", "title": lambda x:x.lower()==form.lower()}).find_all("tr"))
+        relevant_data = bs_data.find("div", attrs={"class": "tabbertab", "title": lambda x:x==form})
+        tags = tuple(relevant_data.find_all("tr"))
 
         new_daemon = Daemon.empty(daemon.id)
 
@@ -611,7 +658,7 @@ class OtogiBot():
     @commands.cooldown(rate=1, per=1, type=commands.BucketType.user)
     async def lunchsummon(self, ctx):
         if ctx.invoked_subcommand is None:
-            player = self._find_player(ctx.author.id)
+            player = self.get_player(ctx.author.id)
             roll = random.randint(1,100)
             if 0 < roll <= 4:
                 rarity = 5
@@ -694,17 +741,22 @@ class OtogiBot():
 
         await format.embed_page(ctx, max_page=max_page, embed=data)
 
-    def _find_player(self, member_id):
-        return Player.from_file(member_id)
+    def get_player(self, id):
+        player = self.players.get(id)
+        if player is None:
+            player = Player(id)
+            self.players[player.id] = player
+            player.to_file()
+        return player
 
     @commands.command()
     async def mybox(self, ctx, *, member:discord.Member=None):
         try:
             target = member
-            player = self._find_player(target.id)
+            player = self.get_player(target.id)
         except:
             target = ctx.author
-            player = self._find_player(target.id)
+            player = self.get_player(target.id)
         player.sort_daemons()
         mybox_daemons = {3: [], 4: [], 5: []}
         rare = {3: 0, 4: 0, 5: 0}
@@ -755,7 +807,7 @@ class OtogiBot():
 
     @commands.command()
     async def mochi(self, ctx, *, names):
-        player = self._find_player(ctx.author.id)
+        player = self.get_player(ctx.author.id)
         data = [n.strip() for n in names.split("&")]
         number_of_daemons = 0
         total_mochi = 0
@@ -771,7 +823,7 @@ class OtogiBot():
 
     @commands.command()
     async def mochibulk(self, ctx, *, names):
-        player = self._find_player(ctx.author.id)
+        player = self.get_player(ctx.author.id)
         data = [n.strip() for n in names.split("&")]
         number_of_daemons = 0
         failed = 0
@@ -790,7 +842,7 @@ class OtogiBot():
 
     @commands.command()
     async def mochiall(self, ctx, rarity:int):
-        player = self._find_player(ctx.author.id)
+        player = self.get_player(ctx.author.id)
         total = 0
         for mini_daemon in player.daemons[:]:
             if mini_daemon.rarity==rarity:
@@ -800,17 +852,17 @@ class OtogiBot():
 
     @commands.command()
     async def gift(self, ctx, member:discord.Member, *, name):
-        myself = self._find_player(ctx.author.id)
-        player = self._find_player(member.id)
+        myself = self.get_player(ctx.author.id)
+        player = self.get_player(member.id)
         mini_daemon = self._process_name(myself, name)
-        if daemon:
+        if mini_daemon:
             player.gimme(myself, mini_daemon)
             await ctx.send(f"{ctx.author.display_name} gave {member.display_name} {self.daemons[mini_daemon.id].name} lb{mini_daemon.lb}.")
 
     @commands.command()
     async def gimme(self, ctx, member:discord.Member, price:int, *, name):
-        myself = self._find_player(ctx.author.id)
-        player = self._find_player(member.id)
+        myself = self.get_player(ctx.author.id)
+        player = self.get_player(member.id)
         mini_daemon = self._process_name(player, name)
         if mini_daemon:
             if myself.mochi >= price:
@@ -844,7 +896,7 @@ class OtogiBot():
 
     @commands.command()
     async def limitbreak(self, ctx, *, name=None):
-        player = self._find_player(ctx.author.id)
+        player = self.get_player(ctx.author.id)
         if name:
             try:
                 mini_daemon = self._process_name(player, name)

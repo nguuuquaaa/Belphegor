@@ -11,6 +11,7 @@ from io import BytesIO
 import json
 import locale
 import random
+import re
 
 #==================================================================================================================================================
 
@@ -23,27 +24,45 @@ class Buffer(queue.Queue):
             self.not_full.notify()
             return item
 
+    def _discard(self, number):
+        with self.mutex:
+            item = None
+            for i in range(min(number, len(self.queue))):
+                item = self.queue.popleft()
+                if item[0] == b"":
+                    self.queue.append((b"", item[1]))
+                    break
+            self.not_full.notify()
+            return item[1]
+
 #==================================================================================================================================================
 
 class FFmpegWithBuffer(discord.FFmpegPCMAudio):
     def __init__(self, *args, **kwargs):
         discord.FFmpegPCMAudio.__init__(self, *args, **kwargs)
-
-        self._buffer = Buffer(3000)
+        self._buffer = Buffer(config.BUFFER_SIZE)
+        self.counter = 0
         thread = Thread(target=self.read_buffer, args=())
         thread.daemon = True
         thread.start()
 
     def read(self):
-        return self._buffer.get()
+        item = self._buffer.get()
+        self.counter = item[1]
+        return item[0]
 
     def read_buffer(self):
+        counter = 0
         while True:
             ret = self._stdout.read(OpusEncoder.FRAME_SIZE)
+            counter += 1
             if len(ret) != OpusEncoder.FRAME_SIZE:
-                self._buffer.put(b'')
+                self._buffer.put((b"", counter))
                 return
-            self._buffer.put(ret)
+            self._buffer.put((ret, counter))
+
+    def fast_forward(self, number):
+        return self._buffer._discard(number)
 
 #==================================================================================================================================================
 
@@ -53,6 +72,7 @@ class Song:
         self.channel = message.channel
         self.title = title
         self.url = url
+        self.default_volume = 1.0
 
     def raw_update(self):
         video = pafy.new(self.url)
@@ -66,11 +86,15 @@ class Song:
         except:
             url = video.streams[-1].url
         self.duration = video.duration
-        self.music = discord.PCMVolumeTransformer(FFmpegWithBuffer(url, before_options="-reconnect 1 -reconnect_at_eof 1 -reconnect_streamed 1 -reconnect_delay_max 2"), volume=1)
+        self.music = discord.PCMVolumeTransformer(FFmpegWithBuffer(url, before_options="-reconnect 1 -reconnect_at_eof 1 -reconnect_streamed 1 -reconnect_delay_max 2"), volume=self.default_volume)
 
-    @property
     def info(self):
-        return f"{self.title} ({self.duration})"
+        second_elapsed = int(self.music.original.counter * 0.02)
+        return f"{self.title} ({second_elapsed//3600:02}:{second_elapsed%3600//60:02}:{second_elapsed%60:02} / {self.duration})"
+
+    def time_elapsed(self):
+        second_elapsed = int(self.music.original.counter * 0.02)
+        return (second_elapsed//3600, second_elapsed%3600//60, second_elapsed%60)
 
 #==================================================================================================================================================
 
@@ -144,24 +168,30 @@ class MusicPlayer:
         self.voice_client = None
 
     async def play_till_eternity(self):
-        while True:
-            self.play_next_song.clear()
-            if not self.current_song:
-                try:
-                    self.current_song = await asyncio.wait_for(self.queue.get(), 120, loop=self.bot.loop)
-                except asyncio.TimeoutError:
+        try:
+            regex = re.compile(r"(?<!\\)[*_]")
+            while True:
+                self.play_next_song.clear()
+                if not self.current_song:
                     try:
-                        await self.leave_voice()
-                        await self.channel.send("*\"No music? Time to sleep then. Yaaawwnnnn~~\"*")
-                        return
-                    except:
-                        return
+                        self.current_song = await asyncio.wait_for(self.queue.get(), 120, loop=self.bot.loop)
+                    except asyncio.TimeoutError:
+                        try:
+                            await self.leave_voice()
+                            await self.channel.send("*\"No music? Time to sleep then. Yaaawwnnnn~~\"*")
+                            return
+                        except:
+                            return
+                try:
+                    await self.bot.loop.run_in_executor(None, self.current_song.raw_update)
+                    self.voice_client.play(self.current_song.music, after=self._next_part)
+                    name = regex.sub(lambda m: f"\\{m.group(0)}", self.current_song.requestor.display_name)
+                    await self.current_song.channel.send(f"Playing **{self.current_song.title}** requested by {name}.")
                 except:
-                    return
-            await self.bot.loop.run_in_executor(None, self.current_song.raw_update)
-            self.voice_client.play(self.current_song.music, after=self._next_part)
-            await self.current_song.channel.send(f"Playing **{self.current_song.title}** requested by {self.current_song.requestor.display_name}.")
-            await self.play_next_song.wait()
+                    self._next_part("")
+                await self.play_next_song.wait()
+        except asyncio.CancelledError:
+            return
 
 #==================================================================================================================================================
 
@@ -178,6 +208,7 @@ class MusicBot:
         YOUTUBE_API_SERVICE_NAME = "youtube"
         YOUTUBE_API_VERSION = "v3"
         self.youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, developerKey=DEVELOPER_KEY)
+        self.lock = asyncio.Lock()
 
     def get_music_player(self, guild_id):
         try:
@@ -201,20 +232,18 @@ class MusicBot:
         except AttributeError:
             return await ctx.send("You are not in a voice channel.")
         music_player = self.get_music_player(voice_channel.guild.id)
-        await music_player.lock.acquire()
-        msg = await ctx.send("Connecting...")
-        current_voice = discord.utils.find(lambda vc: vc.guild.id==voice_channel.guild.id, self.bot.voice_clients)
-        if current_voice:
-            await current_voice.disconnect()
-        try:
-            voice_client = await asyncio.wait_for(voice_channel.connect(), 10, loop=self.bot.loop)
-        except asyncio.TimeoutError:
-            await msg.edit("Cannot connect to voice. Try to join other voice channel.")
-            return music_player.lock.release()
-        music_player.ready_to_play(voice_client)
-        music_player.channel = ctx.channel
-        music_player.lock.release()
-        await msg.edit(content=f"{self.bot.user.display_name} joined {voice_channel.name}.")
+        async with music_player.lock:
+            msg = await ctx.send("Connecting...")
+            current_voice = discord.utils.find(lambda vc: vc.guild.id==voice_channel.guild.id, self.bot.voice_clients)
+            if current_voice:
+                await current_voice.disconnect()
+            try:
+                voice_client = await voice_channel.connect(timeout=20, reconnect=True)
+            except:
+                return await msg.edit(content="Cannot connect to voice. Try joining other voice channel.")
+            music_player.ready_to_play(voice_client)
+            music_player.channel = ctx.channel
+            await msg.edit(content=f"{self.bot.user.display_name} joined {voice_channel.name}.")
 
     @music.command(aliases=["l",])
     async def leave(self, ctx):
@@ -242,8 +271,18 @@ class MusicBot:
     async def queue(self, ctx, *, name:str=""):
         music_player = self.get_music_player(ctx.guild.id)
         if not name:
+            try:
+                if music_player.voice_client.is_playing():
+                    state = "Playing"
+                else:
+                    state = "Paused"
+            except:
+                state = "Stopped"
             playlist = music_player.queue.display_playlist()
-            current_song_info = music_player.current_song.info if music_player.current_song else "None"
+            try:
+                current_song_info = music_player.current_song.info()
+            except:
+                current_song_info = ""
             if playlist:
                 page_data = []
                 for i,p in enumerate(playlist):
@@ -253,7 +292,7 @@ class MusicBot:
                         page_data[i//10] = f"{page_data[i//10]}\n\n{p}"
                 current_page = 0
                 max_page = len(page_data)
-                embed = discord.Embed(title=f"(Playing) {current_song_info}", colour=discord.Colour.green())
+                embed = discord.Embed(title=f"({state}) {current_song_info}", colour=discord.Colour.green())
                 embed.set_thumbnail(url="http://i.imgur.com/HKIOv84.png")
                 embed.set_footer(text=f"(Page {1}/{max_page})")
 
@@ -264,9 +303,10 @@ class MusicBot:
 
                 await format.embed_page(ctx, max_page=max_page, embed=data)
             else:
-                return await ctx.send(embed=discord.Embed(title=f"(Playing) {current_song_info}", colour=discord.Colour.green()))
+                await ctx.send(embed=discord.Embed(title=f"({state}) {current_song_info}", colour=discord.Colour.green()))
         else:
-            results = await self.bot.loop.run_in_executor(None, self.youtube_search, name)
+            async with self.lock:
+                results = await self.bot.loop.run_in_executor(None, self.youtube_search, name)
             stuff = '\n\n'.join([f"{i+1}: [{v['snippet']['title']}](https://youtu.be/{v['id']['videoId']})" for i,v in enumerate(results)])
             embed = discord.Embed(title="\U0001f3b5 Video search result: ", description=f"{stuff}\n\n<>: cancel", colour=discord.Colour.green())
             embed.set_thumbnail(url="http://i.imgur.com/HKIOv84.png")
@@ -294,6 +334,7 @@ class MusicBot:
     async def volume(self, ctx, vol:int):
         music_player = self.get_music_player(ctx.guild.id)
         if 0 <= vol <= 200:
+            music_player.current_song.default_volume = vol / 100
             music_player.current_song.music.volume = vol / 100
             await ctx.send(f"Volume for current song has been set to {vol}%.")
         else:
@@ -400,7 +441,8 @@ class MusicBot:
             name = name[3:]
         else:
             shuffle = False
-        results = await self.bot.loop.run_in_executor(None, self.youtube_search, name, "playlist")
+        async with self.lock:
+            results = await self.bot.loop.run_in_executor(None, self.youtube_search, name, "playlist")
         stuff = '\n\n'.join([f"{i+1}: [{p['snippet']['title']}](https://www.youtube.com/playlist?list={p['id']['playlistId']})\nBy: {p['snippet']['channelTitle']}" for i,p in enumerate(results)])
         embed = discord.Embed(title="\U0001f3b5 Playlist search result: ", description=f"{stuff}\n\n<>: cancel", colour=discord.Colour.green())
         embed.set_thumbnail(url="http://i.imgur.com/HKIOv84.png")
@@ -416,7 +458,8 @@ class MusicBot:
             #print(e)
             return
         async with ctx.typing():
-            items = await self.bot.loop.run_in_executor(None, self.youtube_playlist_items, ctx.message, result["id"]["playlistId"])
+            async with self.lock:
+                items = await self.bot.loop.run_in_executor(None, self.youtube_playlist_items, ctx.message, result["id"]["playlistId"])
             if shuffle:
                 random.shuffle(items)
                 add_text = " in random position"
@@ -469,18 +512,24 @@ class MusicBot:
         else:
             return await ctx.send("Position out of range.")
 
-        description = format.unifix(video["snippet"]["description"]).strip()
+        snippet = video["snippet"]
+        description = format.unifix(snippet["description"]).strip()
         description_page = format.split_page(description, 1000)
         max_page = len(description_page)
-        embed = discord.Embed(title=f"\U0001f3b5 {video['snippet']['title']}", url=url, colour=discord.Colour.green())
+        embed = discord.Embed(title=f"\U0001f3b5 {snippet['title']}", url=url, colour=discord.Colour.green())
         embed.set_thumbnail(url="http://i.imgur.com/HKIOv84.png")
-        embed.add_field(name="Uploader", value=f"[{video['snippet']['channelTitle']}](https://www.youtube.com/channel/{video['snippet']['channelId']})")
-        embed.add_field(name="Date", value=video["snippet"]["publishedAt"][:10])
-        embed.add_field(name="Duration", value=f"\U0001f552 {video['contentDetails']['duration'][2:].lower()}")
-        embed.add_field(name="Views", value=f"\U0001f441 {int(video['statistics']['viewCount']):n}")
-        embed.add_field(name="Likes", value=f"\U0001f44d {int(video['statistics']['likeCount']):n}")
-        embed.add_field(name="Dislikes", value=f"\U0001f44e {int(video['statistics']['dislikeCount']):n}")
+        embed.add_field(name="Uploader", value=f"[{snippet['channelTitle']}](https://www.youtube.com/channel/{snippet['channelId']})")
+        embed.add_field(name="Date", value=snippet["publishedAt"][:10])
+        embed.add_field(name="Duration", value=f"\U0001f552 {video['contentDetails'].get('duration', '0s')[2:].lower()}")
+        embed.add_field(name="Views", value=f"\U0001f441 {int(video['statistics'].get('viewCount', 0)):n}")
+        embed.add_field(name="Likes", value=f"\U0001f44d {int(video['statistics'].get('likeCount', 0)):n}")
+        embed.add_field(name="Dislikes", value=f"\U0001f44e {int(video['statistics'].get('dislikeCount', 0)):n}")
         embed.add_field(name="Description", value="desu", inline=False)
+        for key in ("maxres", "standard", "high", "medium", "default"):
+            value = snippet["thumbnails"].get(key, None)
+            if value is not None:
+                embed.set_image(url=value["url"])
+                break
 
         def data(page):
             embed.set_field_at(6, name="Description", value=f"{description_page[page]}\n\n(Page {page+1}/{max_page})", inline=False)
@@ -498,6 +547,21 @@ class MusicBot:
         elif vc.is_playing():
             vc.pause()
             await ctx.send("Paused.")
+
+    @music.command(aliases=["f"])
+    async def forward(self, ctx, seconds: int=10):
+        music_player = self.get_music_player(ctx.guild.id)
+        song = music_player.current_song
+        if song:
+            if 0 < seconds < 60:
+                tbefore = song.time_elapsed()
+                safter = int(song.music.original.fast_forward(seconds*50) * 0.02)
+                tafter = (safter//3600, safter%3600//60, safter%60)
+                await ctx.send(f"Forward from {tbefore[0]:02}:{tbefore[1]:02}:{tbefore[2]:02} to {tafter[0]:02}:{tafter[1]:02}:{tafter[2]:02}.")
+            else:
+                await ctx.send("Fast forward time must be between 1 and 59 seconds.")
+        else:
+            await ctx.send("No song is currently playing.")
 
 #==================================================================================================================================================
 

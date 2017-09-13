@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from belphegor.utils import token, config
+from belphegor.utils import token, config, checks
 import asyncio
 import aiohttp
 import psutil
@@ -16,10 +16,14 @@ class Belphegor(commands.Bot):
         self.process.cpu_percent(None)
         self.start_time = time.time()
         self.loop.create_task(self.load())
+        self.block_users = []
 
     async def on_message(self, message):
         if message.author.bot:
             return
+        elif not self.block_users:
+            if message.author.id in self.block_users:
+                return
         await self.process_commands(message)
 
     async def on_ready(self):

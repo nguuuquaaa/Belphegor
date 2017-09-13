@@ -7,15 +7,7 @@ otogi_guild_id = 231283203095134208
 
 creampie_guild_id = 301713435635482624
 
-data_path = "data/"
-
-chip_path = f"{data_path}chip/"
-
-otogi_path = f"{data_path}daemon/"
-
-daemon_path = f"{data_path}daemon/daemon/"
-
-adventure_path = f"{data_path}adventure/"
+data_path = "data"
 
 emojis = {"A": "\U0001F1E6", "B": "\U0001F1E7", "C": "\U0001F1E8", "D": "\U0001F1E9", "E": "\U0001F1EA",
           "F": "\U0001F1EB", "G": "\U0001F1EC", "H": "\U0001F1ED", "I": "\U0001F1EE", "J": "\U0001F1EF",
@@ -28,4 +20,6 @@ emojis = {"A": "\U0001F1E6", "B": "\U0001F1E7", "C": "\U0001F1E8", "D": "\U0001F
 
 no_img = "http://i.imgur.com/62di8EB.jpg"
 
-BUFFER_SIZE = 3000 #equivalent to 1 minute
+BUFFER_SIZE = 3000
+
+USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36"
