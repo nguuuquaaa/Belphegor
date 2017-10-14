@@ -73,5 +73,5 @@ class Belphegor(commands.Bot):
 #==================================================================================================================================================
 
 if __name__ == "__main__":
-    belphegor = Belphegor(command_prefix=commands.when_mentioned_or("!!", ">>", "b>"), owner_id=config.owner_id)
+    belphegor = Belphegor(command_prefix=commands.when_mentioned_or("!!", ">>", "b>"), owner_id=config.OWNER_ID)
     belphegor.run(token.TOKEN)
