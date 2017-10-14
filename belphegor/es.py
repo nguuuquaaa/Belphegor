@@ -1,78 +1,134 @@
 import discord
 from discord.ext import commands
-import os
 from PIL import Image
 from io import BytesIO
-from .utils import config, request
+from . import utils
+from .utils import config, checks
 import aiohttp
 import asyncio
+import re
+import html
+from bs4 import BeautifulSoup as BS
+
+CATEGORY_DICT = {"sword":        "Sword",
+                 "wl":           "Wired Lance",
+                 "partisan":     "Partisan",
+                 "td":           "Twin Dagger",
+                 "ds":           "Double Saber",
+                 "knuckle":      "Knuckle",
+                 "katana":       "Katana",
+                 "db":           "Dual Blade",
+                 "gs":           "Gunslash",
+                 "rifle":        "Assault Rifle",
+                 "launcher":     "Launcher",
+                 "tmg":          "Twin Machine Gun",
+                 "bow":          "Bullet Bow",
+                 "rod":          "Rod",
+                 "talis":        "Talis",
+                 "wand":         "Wand",
+                 "jb":           "Jet Boot",
+                 "tact":         "Tact"}
+ATK_EMOJI = ("satk", "ratk", "tatk")
+URLS = {"sword":        "https://pso2.arks-visiphone.com/wiki/Simple_Swords_List",
+        "wl":           "https://pso2.arks-visiphone.com/wiki/Simple_Wired_Lances_List",
+        "partisan":     "https://pso2.arks-visiphone.com/wiki/Simple_Partizans_List",
+        "td":           "https://pso2.arks-visiphone.com/wiki/Simple_Twin_Daggers_List",
+        "ds":           "https://pso2.arks-visiphone.com/wiki/Simple_Double_Sabers_List",
+        "knuckle":      "https://pso2.arks-visiphone.com/wiki/Simple_Knuckles_List",
+        "katana":       "https://pso2.arks-visiphone.com/wiki/Simple_Katanas_List",
+        "db":           "https://pso2.arks-visiphone.com/wiki/Simple_Dual_Blades_List",
+        "gs":           "https://pso2.arks-visiphone.com/wiki/Simple_Gunslashes_List",
+        "rifle":        "https://pso2.arks-visiphone.com/wiki/Simple_Assault_Rifles_List",
+        "launcher":     "https://pso2.arks-visiphone.com/wiki/Simple_Launchers_List",
+        "tmg":          "https://pso2.arks-visiphone.com/wiki/Simple_Twin_Machine_Guns_List",
+        "bow":          "https://pso2.arks-visiphone.com/wiki/Simple_Bullet_Bows_List",
+        "rod":          "https://pso2.arks-visiphone.com/wiki/Simple_Rods_List",
+        "talis":        "https://pso2.arks-visiphone.com/wiki/Simple_Talises_List",
+        "wand":         "https://pso2.arks-visiphone.com/wiki/Simple_Wands_List",
+        "jb":           "https://pso2.arks-visiphone.com/wiki/Simple_Jet_Boots_List",
+        "tact":         "https://pso2.arks-visiphone.com/wiki/Simple_Takts_List"}
+ICON_DICT = {"Ability.png":            "ability",
+             "SpecialAbilityIcon.PNG": "saf",
+             "Special Ability":        "saf",
+             "Potential.png":          "potential",
+             "PA":                     "pa",
+             "Set Effect":             "set_effect"}
+for ele in ("Fire", "Ice", "Lightning", "Wind", "Light", "Dark"):
+    ICON_DICT[ele] = ele.lower()
+SPECIAL_DICT = {"color:purple": "arena",
+                "color:red":    "photon",
+                "color:orange": "fuse",
+                "color:green":  "weaponoid"}
+CLASS_DICT = {"Hunter": "hu", "Fighter": "fi", "Ranger": "ra", "Gunner": "gu",
+              "Force": "fo", "Techer": "te", "Braver": "br", "Bouncer": "bo",
+              "Summoner": "su", "Hero": "hr"}
 
 #==================================================================================================================================================
 
 class Chip:
-    def __init__(self, ctype="Chip", nameEN=None, nameJP=None, url_thumbnail=None, url_swiki=None, url_weapon=None, active=None, class_bonus=[],
-                 rarity=None, HP=None, CP=None, element=None, element_value=None, cost=None, frame=None, description=None, released_ability=None):
-        self.nameEN = nameEN
-        self.nameJP = nameJP
-        self.ctype = ctype
-        self.active = active
-        self.class_bonus = class_bonus
-        self.rarity = rarity
-        self.cost = cost
-        self.element = element
-        self.element_value = element_value
-        self.HP = HP
-        self.CP = CP
-        self.frame = frame
-        self.description = description
-        self.url_swiki = url_swiki
-        self.url_weapon = url_weapon
-        self._url_thumbnail = url_thumbnail
-        self.released_ability = released_ability
+    def __init__(self, data):
+        data.pop("_id", None)
+        for key, value in data.items():
+            setattr(self, key, value)
 
-    @property
-    def url_thumbnail(self):
-        if "://" in self._url_thumbnail:
-            return self._url_thumbnail
-        else:
-            return "http://i.imgur.com/0dD1lVh.png"
-
-    def embed_form(self, emoji):
-        embed = discord.Embed(title=self.nameEN, url=self.url_weapon, colour=discord.Colour.blue())
-        embed.set_thumbnail(url=self.url_thumbnail)
-        try:
-            if "Add" in self.released_ability and "element" in self.released_ability:
-                stuff = self.released_ability.split()
-                another_element = emoji[stuff[2]]
-                if another_element:
-                    element = "{}{}{}{}".format(emoji[self.element], self.element_value, another_element, stuff[1])
-                else:
-                    another_element = emoji[stuff[1]]
-                    element = "{}{}{}".format(emoji[self.element], another_element, self.element_value)
+    def embed_form(self, cog, la_form="en"):
+        form = getattr(self, f"{la_form}_data")
+        emojis = cog.emojis
+        embed = discord.Embed(title=getattr(self, f"{la_form}_name"), url=self.url, colour=discord.Colour.blue())
+        embed.set_thumbnail(url=self.pic_url)
+        embed.add_field(name=self.category.capitalize(),
+                        value=f"**Rarity** {self.rarity}\*\n**Class bonus** {emojis[self.class_bonus[0]]}{emojis[self.class_bonus[1]]}\n**HP/CP** {self.hp}/{self.cp}")
+        embed.add_field(name="Active" if self.active else "Passive",
+                        value=f"**Cost** {self.cost}\n**Element** {emojis[self.element]}{self.element_value}\n**Multiplication** {form['frame']}")
+        abi = form["ability"]
+        embed.add_field(name="Ability", value=f"**{abi['name']}**\n{abi['description']}", inline=False)
+        embed.add_field(name="Duration", value=abi["effect_time"])
+        for item in abi["value"]:
+            sp_value = item.get("sp_value")
+            if sp_value:
+                desc = f"{item['value']}/{sp_value}"
             else:
-                element = "{}{}".format(emoji[self.element], self.element_value)
-        except:
-            element = "{}{}".format(emoji[self.element], self.element_value)
-        embed.add_field(name="**{}**".format(self.ctype), value="**Rarity** {}\*\n**Class bonus** {}{}\n**HP/CP** {}/{}".format(self.rarity, emoji[self.class_bonus[0]], emoji[self.class_bonus[1]], self.HP, self.CP))
-        embed.add_field(name="**{}**".format(self.active), value="**Cost** {}\n**Element** {}\n**Multiplication** {}".format(self.cost, element, self.frame))
-        embed.add_field(name="Description", value=self.description, inline=False)
-        embed.set_author(name=self.nameJP, url=self.url_swiki)
-        if self.released_ability:
-            embed.add_field(name="Released ability", value=self.released_ability, inline=False)
+                desc = item['value']
+            embed.add_field(name=item["type"], value=desc)
+        embed.add_field(name="Released ability", value=form['released_ability'], inline=False)
+        embed.add_field(name="Illustrator", value=form['illustrator'])
+        embed.add_field(name="CV", value=form['cv'])
         return embed
 
-    @classmethod
-    def from_file(cls, name, file):
-        data = [d.strip() for d in file.readlines()]
-        try:
-            new_chip = cls(data[0], name, data[1], data[2], data[3],
-                           data[4], data[5], data[6].split(), int(data[7]), int(data[8]), int(data[9]),
-                           data[10], int(data[11]), int(data[12]), data[13], data[14], data[15])
-        except IndexError:
-            new_chip = cls(data[0], name, data[1], data[2], data[3],
-                       data[4], data[5], data[6].split(), int(data[7]), int(data[8]), int(data[9]),
-                       data[10], int(data[11]), int(data[12]), data[13], data[14])
-        return new_chip
+#==================================================================================================================================================
+
+class Weapon:
+    def __init__(self, data):
+        data.pop("_id", None)
+        for key, value in data.items():
+            setattr(self, key, value)
+
+    def embed_form(self, cog):
+        emojis = cog.emojis
+        ctgr = self.category
+        embed = discord.Embed(title=f"{emojis[ctgr]}{self.en_name}", url= URLS[ctgr], colour=discord.Colour.blue())
+        description = ""
+        most = self.rarity//3
+        for i in range(most):
+            emoji = emojis.get(f"star_{i}", None)
+            description = f"{description}{emoji}{emoji}{emoji}"
+        if self.rarity > most*3:
+            emoji = emojis.get(f"star_{most}", None)
+            for i in range(self.rarity - most*3):
+                description = f"{description}{emoji}"
+        if self.classes == "all_classes":
+            usable_classes = ''.join([str(emojis[cl]) for cl in CLASS_DICT.values()])
+        else:
+            usable_classes = ''.join([str(emojis[cl]) for cl in self.classes])
+        embed.description = f"{description}\n{usable_classes}"
+        if self.pic_url:
+            embed.set_thumbnail(url=self.pic_url)
+        embed.add_field(name="Requirement", value=self.requirement)
+        max_atk = self.atk['max']
+        embed.add_field(name="ATK", value="\n".join([f"{emojis[e]}{max_atk[e]}" for e in ATK_EMOJI]))
+        for prp in self.properties:
+            embed.add_field(name=f"{emojis[prp['type']]}{prp['name']}", value=prp['description'])
+        return embed
 
 #==================================================================================================================================================
 
@@ -83,113 +139,164 @@ class EsBot():
 
     def __init__(self, bot):
         self.bot = bot
-        self.chip_library = []
-        for chip_type in ("weaponoid", "character", "pa_tech", "collab"):
-            for i in os.listdir(f"{config.data_path}/chip/{chip_type}"):
-                with open(f"{config.data_path}/chip/{chip_type}/{i}", encoding='utf-8') as file:
-                    new_chip = Chip.from_file(i[:-4], file)
-                    self.chip_library.append(new_chip)
-        test_guild = self.bot.get_guild(config.test_guild_id)
-        self.emoji = {}
+        self.pool = {
+            "chip": (Chip, bot.db.chip_library),
+            "weapon": (Weapon, bot.db.weapon_list)
+        }
+        test_guild = self.bot.get_guild(config.TEST_GUILD_ID)
+        self.emojis = {}
         for emoji_name in ("fire", "ice", "lightning", "wind", "light", "dark",
-                           "hu", "fi", "ra", "gu", "fo", "te", "br", "bo"):
-            self.emoji[emoji_name] = discord.utils.find(lambda e:e.name==emoji_name, test_guild.emojis)
+                           "hu", "fi", "ra", "gu", "fo", "te", "br", "bo", "su", "hr",
+                           "satk", "ratk", "tatk", "ability", "potential", "set_effect",
+                           "pa", "saf", "star_0", "star_1", "star_2", "star_3", "star_4"):
+            self.emojis[emoji_name] = discord.utils.find(lambda e:e.name==emoji_name, test_guild.emojis)
+        for emoji_name in CATEGORY_DICT:
+            self.emojis[emoji_name] = discord.utils.find(lambda e:e.name==emoji_name, test_guild.emojis)
 
-    def _search(self, name):
-        result = []
-        for chip in self.chip_library:
-            check = True
-            for word in name.split():
-                if word.lower() not in chip.nameEN.lower():
-                    check = False
-                    break
-            if check:
-                result.append(chip)
+    async def _search(self, name, pool_name, *, no_prompt=False):
+        name = name.lower()
+        pool_list = self.pool[pool_name]
+        pool = pool_list[1]
+        cls = pool_list[0]
+        regex = ".*?".join(map(re.escape, name.split()))
+        cursor = pool.find({
+            "$or": [
+                {
+                    "en_name": {
+                        "$regex": regex,
+                        "$options": "i"
+                    }
+                },
+                {
+                    "jp_name": {
+                        "$regex": regex,
+                        "$options": "i"
+                    }
+                }
+            ]
+        })
+        if no_prompt:
+            async for item in cursor:
+                if name in (item["en_name"].lower(), item["jp_name"].lower()):
+                    return cls(item)
+            item = cursor.next_object()
+            if item:
+                return cls(item)
+            else:
+                return None
+        else:
+            return [cls(item) async for item in cursor]
+
+    async def filter(self, ctx, name, result, *, prompt_all=False):
         if not result:
-            for chip in self.chip_library:
-                check = True
-                for word in name:
-                    if word not in chip.nameJP:
-                        check = False
-                        break
-                if check:
-                    result.append(chip)
-        if len(result)>1:
-            for chip in result:
-                if name.lower() == chip.nameEN.lower() or name == chip.nameJP:
-                    result = [chip,]
-                    break
-        return result
+            await ctx.send(f"Can't find {name} in database.")
+            return None
+        elif not prompt_all:
+            if len(result) == 1:
+                return result[0]
+        await ctx.send("Do you mean:\n```\n{}\n<>: cancel\n```".format('\n'.join([f"{index+1}: {item.en_name}" for index, item in enumerate(result)])))
+        msg = await self.bot.wait_for("message", check=lambda m:m.author.id==ctx.author.id)
+        try:
+            index = int(msg.content)-1
+        except:
+            return None
+        if index in range(len(result)):
+            return result[index]
+        else:
+            return None
 
     @commands.command(aliases=["c",])
-    async def chip(self, ctx, *, name:str):
-        result = self._search(name)
-        if not result:
-            await ctx.send("Can't find {} in database.".format(name))
+    async def chip(self, ctx, *, name):
+        result = await self._search(name, "chip")
+        chip = await self.filter(ctx, name, result)
+        if not chip:
             return
-        if len(result) > 1:
-            await ctx.send("Do you mean:\n```\n{}\nc: cancel\n```".format('\n'.join([str(index+1)+": "+c.nameEN for index, c in enumerate(result)])))
-            msg = await self.bot.wait_for("message", check=lambda m:m.author==ctx.author)
-            try:
-                if int(msg.content)-1 in range(len(result)):
-                    chip = result[int(msg.content)-1]
-            except:
-                return
-        else:
-            chip = result[0]
-        await ctx.send(embed=chip.embed_form(self.emoji))
+        await ctx.send(embed=chip.embed_form(self))
+
+    @commands.command(aliases=["cjp",])
+    async def chipjp(self, ctx, *, name):
+        result = await self._search(name, "chip")
+        chip = await self.filter(ctx, name, result)
+        if not chip:
+            return
+        await ctx.send(embed=chip.embed_form(self, "jp"))
+
+    @commands.command(aliases=["w",])
+    async def weapon(self, ctx, *, name):
+        result = await self._search(name, "weapon")
+        weapon = await self.filter(ctx, name, result)
+        if not weapon:
+            return
+        await ctx.send(embed=weapon.embed_form(self))
 
     @commands.command()
-    async def team(self, ctx, *, load:str):
-        with ctx.channel.typing():
-            chips = []
-            for c in load.split(">"):
-                try:
-                    chips.append(self._search(c)[-1])
-                except:
-                    pass
-            pics = []
-            for index, chip in enumerate(chips):
-                bytes_ = await request.fetch(self.bot.session, chip.url_thumbnail)
-                pics.append(Image.open(BytesIO(bytes_)))
+    @checks.owner_only()
+    async def wupdate(self, ctx, *args):
+        msg = await ctx.send("Fetching...")
+        weapon_list = self.pool["weapon"][1]
+        if not args:
+            urls = URLS
+        else:
+            urls = {key: value for key, value in URLS.items() if key in args}
+        weapons = []
+        for category, url in urls.items():
+            bytes_ = await utils.fetch(self.bot.session, url)
+            category_weapons = await self.bot.loop.run_in_executor(None, self.bs_parse, category, bytes_)
+            weapons.extend(category_weapons)
+            print(f"Done parsing {CATEGORY_DICT[category]}.")
+        await weapon_list.delete_many({
+            "category": {
+                "$in": tuple(urls.keys())
+            }
+        })
+        await weapon_list.insert_many(weapons)
+        print("Done everything.")
+        await msg.edit(content = "Done.")
 
-            def construct():
-                team_pic = Image.new('RGBA', (520,120))
-                pics[0].thumbnail((120, 120))
-                team_pic.paste(pics[0], (0, 0))
-                for index, pic in enumerate(pics[1:]):
-                    pic.thumbnail((100, 100))
-                    team_pic.paste(pic, (120+index*100,20))
-                return team_pic
-
-            team_pic = await self.bot.loop.run_in_executor(None, construct)
-            current_load = BytesIO()
-            team_pic.save(current_load, format = "png")
-            current_load.name = "current_load.png"
-            current_load.seek(0)
-            await ctx.send(file=discord.File(current_load))
-
-            element_value = {"fire":0, "ice":0, "lightning":0, "wind":0, "light":0, "dark":0}
-            for chip in chips:
-                element_value[chip.element] = element_value[chip.element] + chip.element_value
-                try:
-                    if "Add" in chip.released_ability and "element" in chip.released_ability:
-                        new_element = chip.released_ability.split()[1]
-                        if new_element in element_value:
-                            element_value[new_element] += chip.element_value
-                        else:
-                            another_element = chip.released_ability.split()[2]
-                            element_value[another_element] += int(new_element)
-                except:
-                    pass
-            new_embed = discord.Embed(colour=discord.Colour.teal())
-            new_embed.add_field(name="Cost: {}".format(sum([i.cost if not i.released_ability else i.cost-6 if "6." in i.released_ability.split() else i.cost for i in chips])),
-                                value="{}{}\n{}{}".format(self.emoji["fire"], element_value["fire"], self.emoji["wind"], element_value["wind"]))
-            new_embed.add_field(name="HP: {}".format(sum([i.HP for i in chips])),
-                                value="{}{}\n{}{}".format(self.emoji["ice"], element_value["ice"], self.emoji["light"], element_value["light"]))
-            new_embed.add_field(name="CP: {}".format(sum([i.CP for i in chips])),
-                                value="{}{}\n{}{}".format(self.emoji["lightning"], element_value["lightning"], self.emoji["dark"], element_value["dark"]))
-            await ctx.send(embed=new_embed)
+    def bs_parse(self, category, bytes_):
+        category_weapons = []
+        data = BS(bytes_.decode("utf-8"), "lxml")
+        table = tuple(data.find("table", class_="wikitable sortable").find_all(True, recursive=False))[1:]
+        for item in table:
+            weapon = {"category": category}
+            relevant = item.find_all(True, recursive=False)
+            try:
+                weapon["en_name"] = utils.unifix(relevant[2].find("a").get_text())
+                weapon["jp_name"] = utils.unifix(relevant[2].find("p").get_text())
+            except:
+                continue
+            try:
+                weapon["rarity"] = int(relevant[0].find("img")["alt"])
+            except:
+                weapon["rarity"] = None
+            try:
+                weapon["pic_url"] = f"https://pso2.arks-visiphone.com{relevant[1].find('img')['src'].replace('64px-', '240px-')}"
+            except:
+                weapon["pic_url"] = None
+            weapon["requirement"] = utils.unifix(relevant[3].get_text())
+            weapon["atk"] = {"base": {ATK_EMOJI[i]: int(l.strip()) for i, l in enumerate(relevant[5].find_all(text=True))},
+                             "max":  {ATK_EMOJI[i]: int(l.strip()) for i, l in enumerate(relevant[6].find_all(text=True))}}
+            weapon["properties"] = []
+            for child in relevant[7].find_all(True, recursive=False):
+                if child.name == "img":
+                    cur = {"type": ICON_DICT[child["alt"]]}
+                elif child.name == "span":
+                    cur["name"] = utils.unifix(child.get_text())
+                    cur["description"] = utils.unifix(html.unescape(child["data-simple-tooltip"]).replace("<br>", "\n"))
+                    color = child.find("span")
+                    if color:
+                        cur["special"] = SPECIAL_DICT[color["style"]]
+                    weapon["properties"].append(cur)
+            weapon["classes"] = []
+            for ctag in relevant[8].find_all("img"):
+                cl = ctag["alt"]
+                if cl == "All Class":
+                    weapon["classes"] = "all_classes"
+                    break
+                else:
+                    weapon["classes"].append(CLASS_DICT[cl])
+            category_weapons.append(weapon)
+        return category_weapons
 
 #==================================================================================================================================================
 

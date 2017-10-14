@@ -1,11 +1,5 @@
 import discord
 from discord.ext import commands
-import re
-import os
-import json
-from .utils import config, format
-from urllib.parse import quote
-import time
 from fuzzywuzzy import process
 
 #==================================================================================================================================================
@@ -13,127 +7,68 @@ from fuzzywuzzy import process
 class TagBot:
     def __init__(self, bot):
         self.bot = bot
-        self.tags = {}
-        for filename in os.listdir(f"{config.data_path}/tags"):
-            if filename.endswith(".json"):
-                with open(f"{config.data_path}/tags/{filename}", encoding="utf-8") as file:
-                    cur_tag = json.load(file)
-                    self.tags[cur_tag["name"]] = cur_tag
-
-    def save(self, tag):
-        with open(f"{config.data_path}/tags/{tag['filename']}.json", "w+", encoding="utf-8") as file:
-            json.dump(tag, file, indent=4, ensure_ascii=False)
+        self.tag_list = bot.db.tag_list
 
     @commands.group(name="tag", invoke_without_command=True)
     async def tag_cmd(self, ctx, *, name):
         if ctx.invoked_subcommand is None:
-            tag = self.tags.get(name, None)
+            tag = await self.tag_list.find_one({"name": name})
             if tag is None:
-                relevant = process.extract(name, self.tags.keys(), limit=5)
-                text = "\n".join([r[0] for r in relevant if r[1]>50])
-                await ctx.send(f"Cannot find {name} in database.\nDo you mean:\n```\n{text}\n```")
+                await ctx.send(f"Cannot find tag {name} in database.")
             else:
-                if tag.get("alias_of", None) is not None:
-                    tag = self.tags[tag["alias_of"]]
+                alias_of = tag.get("alias_of", None)
+                if alias_of is not None:
+                    tag = await self.tag_list.find_one({"name": alias_of})
                 await ctx.send(tag["content"])
 
     @tag_cmd.command()
-    async def create(self, ctx, *, data):
-        data = data.strip().partition("\n")
-        name = data[0]
-        content = data[2]
-        if len(name) > 30:
-            await ctx.send("Tag name too long.")
-        elif name in self.tags.keys():
-            await ctx.send("Tag already existed.")
+    async def create(self, ctx, name, *, content):
+        value = {"name": name, "content": content, "author_id": author_id}
+        before = await self.tag_list.find_one_and_update({"name": name}, {"$setOnInsert": value}, upsert=True)
+        if before is not None:
+            await ctx.send(f"Cannot create already existed tag.")
         else:
-            new_tag = {"name": name, "content": content, "creator_id": ctx.author.id, "filename": "_".join([f"{ord(c):x}" for c in name])}
-            self.tags[name] = new_tag
-            self.save(new_tag)
             await ctx.send(f"Tag {name} created.")
 
     @tag_cmd.command()
-    async def edit(self, ctx, *, data):
-        data = data.strip().partition("\n")
-        name = data[0]
-        content = data[2]
-        tag = self.tags.get(name, None)
-        if tag is None:
-            await ctx.send(f"Cannot find {name} in database.")
-        elif tag.get("alias_of", None) is not None:
-            await ctx.send(f"Cannot edit tag alias.")
-        elif ctx.author.id != tag["creator_id"]:
-            await ctx.send("You are not the creator of tag {name}.")
+    async def edit(self, ctx, name, *, content):
+        before = await self.tag_list.find_one_and_update({"name": name, "author_id": ctx.author.id, "content": {"$exists": True}}, {"$set": {"content": content}})
+        if before is not None:
+            await ctx.send(f"Cannot edit tag.\nEither tag doesn't exist, tag is an alias or you are not the creator of the tag.")
         else:
-            tag["content"] = content
-            self.save(tag)
             await ctx.send(f"Tag {name} edited.")
 
     @tag_cmd.command()
-    async def append(self, ctx, *, data):
-        data = data.strip().partition("\n")
-        name = data[0]
-        content = data[2]
-        tag = self.tags.get(name, None)
-        if tag is None:
-            await ctx.send(f"Cannot find {name} in database.")
-        elif tag.get("alias_of", None) is not None:
-            await ctx.send(f"Cannot edit tag alias.")
-        elif ctx.author.id != tag["creator_id"]:
-            await ctx.send("You are not the creator of tag {name}.")
+    async def alias(self, ctx, name, alias_of):
+        tag_alias_of = await self.tag_list.find_one({"name": alias_of})
+        if tag_alias_of is not None:
+            alias_of_alias = tag_alias_of.get("alias_of")
+            if alias_of_alias is not None:
+                alias_of = alias_of_alias
+        value = {"name": name, "alias_of": alias_of, "author_id": ctx.author.id}
+        before = await self.tag_list.find_one_and_update({"name": name}, {"$set": value}, upsert=True)
+        if before is not None:
+            await ctx.send(f"Cannot create already existed tag.")
         else:
-            tag["content"] = f"{tag['content']} {content}"
-            self.save(tag)
-            await ctx.send(f"Tag {name} edited.")
-
-    @tag_cmd.command()
-    async def alias(self, ctx, *, data):
-        data = data.strip().partition("\n")
-        alias_name = data[0]
-        name = data[2]
-        if len(alias_name) > 30:
-            await ctx.send("Tag name too long.")
-        if alias_name in self.tags.keys():
-            await ctx.send("Tag already existed.")
-        elif name not in self.tags.keys():
-            await ctx.send("Target tag doesn't exist.")
-        else:
-            tag = self.tags.get(name, None)
-            if tag.get("alias_of", None) is not None:
-                tag = self.tags[tag["alias_of"]]
-            if tag.get("aliases", None) is None:
-                tag["aliases"] = [alias_name,]
-            else:
-                tag["aliases"].append(alias_name)
-            self.save(tag)
-            new_tag = {"name": alias_name, "alias_of": name, "creator_id": ctx.author.id, "filename": "_".join([f"{ord(c):x}" for c in alias_name])}
-            self.tags[alias_name] = new_tag
-            self.save(new_tag)
-            await ctx.send(f"Tag alias {alias_name} created.")
+            await self.tag_list.update_one({"name": alias_of, "aliases": {"$nin": [name]}}, {"$push": {"aliases": name}})
+            await ctx.send(f"Tag alias {name} for {alias_of} created.")
 
     @tag_cmd.command()
     async def delete(self, ctx, *, name):
-        tag = self.tags.get(name, None)
-        if tag is None:
-            await ctx.send(f"Cannot find {name} in database.")
-        elif ctx.author.id != tag["creator_id"]:
-            await ctx.send("You are not the creator of tag {name}.")
+        before = await self.tag_list.find_one_and_delete({"name": name, "author_id": ctx.author.id})
+        if before is not None:
+            aliases = before.get("aliases", [])
+            if aliases:
+                await self.tag_list.delete_many({"name": {"$in": aliases}})
+            await ctx.send(f"Tag {name} and its aliases deleted.")
         else:
-            tag = self.tags.pop(name)
-            os.remove(f"{config.data_path}/tags/{tag['filename']}.json")
-            for alias_tag_name in tag.get("aliases", []):
-                alias_tag = self.tags.pop(alias_tag_name)
-                os.remove(f"{config.data_path}/tags/{alias_tag['filename']}.json")
-            if tag.get("alias_of", None) is not None:
-                root_tag = self.tags[tag["alias_of"]]
-                root_tag["aliases"].remove(name)
-                self.save(root_tag)
-            await ctx.send(f"Tag {name} deleted.")
+            await ctx.send(f"Cannot delete tag.\nEither tag doesn't exist or you are not the creator of the tag.")
 
-    @tag_cmd.command(name="find")
-    async def tag_find(self, ctx, *, name):
-        relevant = process.extract(name, self.tags.keys(), limit=10)
-        text = "\n".join([r[0] for r in relevant if r[1]>50])
+    @tag_cmd.command()
+    async def find(self, ctx, *, name):
+        tag_names = await self.tag_list.distinct("name", {})
+        relevant = process.extract(name, tag_names, limit=10)
+        text = "\n".join([f"{r[0]} ({r[1]}%)" for r in relevant if r[1]>50])
         await ctx.send(f"Result:\n```\n{text}\n```")
 
 #==================================================================================================================================================

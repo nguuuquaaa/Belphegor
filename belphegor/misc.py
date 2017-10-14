@@ -2,15 +2,14 @@ import discord
 from discord.ext import commands
 import random
 from .board_game import dices
-from .utils import config, checks, request, format
-import json
+from . import utils
+from .utils import config, checks
 from bs4 import BeautifulSoup as BS
 from urllib.parse import quote
-import time
-from datetime import datetime, timezone
 import asyncio
 import unicodedata
 import re
+from pymongo import ReturnDocument
 
 #==================================================================================================================================================
 
@@ -21,9 +20,8 @@ class MiscBot:
 
     def __init__(self, bot):
         self.bot = bot
-        self.add_quote()
+        self.jankenpon_record = bot.db.jankenpon_record
 
-    def add_quote(self):
         self.w_quote =          ["I won! Yay!",
                                  "Hehehe, I'm good at this.",
                                  "Lalala~"]
@@ -37,7 +35,7 @@ class MiscBot:
                                  "I'm on a roll!",
                                  "Triple kill! Penta kill!!!",
                                  "(smug)"]
-        self.dstreak_quote =    ["This kinda... \\*put on shades\\* draws out for too long.",
+        self.dstreak_quote =    ["This kinda... draws out for too long.",
                                  "Tie again... How many tie in a row did we have?",
                                  "(staaaareeee~)"]
         self.lstreak_quote =    ["E-eh? Did you cheat or something?",
@@ -75,27 +73,23 @@ class MiscBot:
     async def jankenpon(self, ctx):
         embed = discord.Embed(description="What will you use? Rock, paper or scissor?")
         message = await ctx.send(embed=embed)
-        e_value = {"\u270a": 1, "\u270b": 2, "\u270c": 3, "\u274c": 0}
-        e_emoji = ("\u274c", "\u270a", "\u270b", "\u270c")
-        for e in e_value:
+        possible_reactions = ("\u270a", "\u270b", "\u270c", "\u274c")
+        for e in possible_reactions:
             await message.add_reaction(e)
-        try:
-            with open(f"{config.data_path}/misc/jankenpon/{ctx.author.id}.txt", encoding="utf-8") as file:
-                win = [int(i) for i in file.read().split()]
-        except:
-            win = [0, 0, 0]
+        record = await self.jankenpon_record.find_one_and_update({"id": ctx.author.id}, {"$setOnInsert": {"id": ctx.author.id, "win": 0, "draw": 0, "lose": 0}},
+            upsert=True, return_document=ReturnDocument.AFTER)
         streak = ""
         while True:
             try:
-                reaction, user = await self.bot.wait_for("reaction_add", check=lambda r,u:u.id==ctx.author.id and r.emoji in e_value and r.message.id==message.id, timeout=20)
+                reaction, user = await self.bot.wait_for("reaction_add", check=lambda r,u:u.id==ctx.author.id and r.emoji in possible_reactions and r.message.id==message.id, timeout=30)
             except:
                 embed.description = "\"I'm tir..e...d.....zzzz...........\""
                 await message.clear_reactions()
                 await message.edit(embed=embed)
                 break
-            roll = random.randint(1,3)
-            value = e_value[reaction.emoji]
-            if value == 0:
+            roll = random.randint(0,2)
+            value = possible_reactions.index(reaction.emoji)
+            if value == 3:
                 embed.title = ""
                 embed.description = "\"No more jankenpon? Yay!!!\""
                 await message.clear_reactions()
@@ -104,26 +98,25 @@ class MiscBot:
             else:
                 await message.remove_reaction(reaction, user)
                 if (value - roll) % 3 == 0:
-                    win[1] += 1
+                    record["draw"] += 1
                     streak += "d"
                 elif (value - roll) % 3 == 2:
-                    win[2] += 1
+                    record["lose"] += 1
                     if "w" in streak:
                         streak += "w"
                     else:
                         streak = "w"
                 else:
-                    win[0] += 1
+                    record["win"] += 1
                     if "l" in streak:
                         streak += "l"
                     else:
                         streak = "l"
-                embed.title = f"I use {e_emoji[roll]}"
+                embed.title = f"I use {possible_reactions[roll]}"
                 embed.description = f"*\"{self.quote(streak)}\"*"
-                embed.set_footer(text=f"{win[0]}W - {win[1]}D - {win[2]}L")
+                embed.set_footer(text=f"{record['win']}W - {record['draw']}D - {record['lose']}L")
                 await message.edit(embed=embed)
-        with open(f"{config.data_path}/misc/jankenpon/{ctx.author.id}.txt", "w+", encoding="utf-8") as file:
-            file.write(f"{win[0]} {win[1]} {win[2]}")
+        await self.jankenpon_record.update_one({"id": ctx.author.id}, {"$set": {"win": record["win"], "draw": record["draw"], "lose": record["lose"]}})
 
     async def on_message(self, message):
         if message.author.bot:
@@ -140,9 +133,9 @@ class MiscBot:
                 else:
                     pass
             await message.channel.send(reply)
-        if inp == "ping":
+        elif inp == "ping":
             msg = await message.channel.send("pong")
-            await msg.edit(content=f"pong ({int(1000*(msg.created_at-message.created_at).total_seconds())}ms)")
+            await msg.edit(content=f"pong (ws: {int(1000*self.bot.latency)}ms, edit: {int(1000*(msg.created_at-message.created_at).total_seconds())}ms)")
 
     @commands.command()
     async def avatar(self, ctx, *, member:discord.Member=None):
@@ -166,21 +159,21 @@ class MiscBot:
         process = self.bot.process
         embed = discord.Embed(colour=discord.Colour.blue())
         embed.set_author(name="{}".format(self.bot.user), icon_url=self.bot.user.avatar_url)
-        owner = self.bot.get_user(config.owner_id)
-        embed.add_field(name="Owner", value="{}".format(owner))
+        owner = self.bot.get_user(config.OWNER_ID)
+        embed.add_field(name="Owner", value=f"{owner.name}#{owner.discriminator}")
         embed.add_field(name="Library", value="discord.py[rewrite]")
         embed.add_field(name="Created at", value=str(self.bot.user.created_at)[:10])
         embed.add_field(name="Guilds", value=f"{len(self.bot.guilds)} guilds")
         cpu_percentage = process.cpu_percent(None)
-        embed.add_field(name="Process", value=f"CPU: {(cpu_percentage/self.bot.cpu_count):.1f}%\nRAM: {(process.memory_info().rss/1024/1024):.2f} MBs")
-        now_time = time.time()
-        uptime = int(now_time - self.bot.start_time)
+        embed.add_field(name="Process", value=f"CPU: {(cpu_percentage/self.bot.cpu_count):.2f}%\nRAM: {(process.memory_info().rss/1024/1024):.2f} MBs")
+        now_time = utils.now_time()
+        uptime = int((now_time - self.bot.start_time).total_seconds())
         d = uptime // 86400
         h = (uptime % 86400) // 3600
-        m = ((uptime % 86400) % 3600) // 60
-        s = ((uptime % 86400) % 3600) % 60
+        m = (uptime % 3600) // 60
+        s = uptime % 60
         embed.add_field(name="Uptime", value=f"{d}d {h}h{m}m{s}s")
-        embed.set_footer(text=datetime.now(timezone.utc).astimezone().strftime("%a, %Y-%m-%d at %I:%M:%S %p, GMT%z"))
+        embed.set_footer(text=utils.format_time(now_time.astimezone()))
         await ctx.send(embed=embed)
 
     @commands.command()
@@ -188,10 +181,7 @@ class MiscBot:
         textout = ""
         textin = textin.upper()
         for charin in textin:
-            try:
-                charout = config.emojis[charin]
-            except:
-                charout = charin
+            charout = config.FANCY_CHARS.get(charin, charin)
             textout = f"{textout}{charout} "
         await ctx.send(textout)
 
@@ -199,10 +189,10 @@ class MiscBot:
     async def hi(self, ctx):
         await ctx.send("*\"Go away...\"*")
 
-    @commands.group()
-    async def say(self, ctx):
+    @commands.group(invoke_without_command=True)
+    async def say(self, ctx, *, something):
         if ctx.invoked_subcommand is None:
-            await ctx.send("What?")
+            await ctx.send(f"*\"{something}\"*")
 
     @say.command(aliases=["hello",], name="hi")
     async def say_hi(self, ctx):
@@ -214,6 +204,8 @@ class MiscBot:
 
     def parse_google(self, bytes_):
         data = BS(bytes_.decode("utf-8"), "lxml")
+        for script in data("script"):
+            script.decompose()
 
         search_results = []
         for tag in data.find_all("a"):
@@ -379,6 +371,7 @@ class MiscBot:
         return f"**Search result:**\n{search_results[0]['href']}\n**See also:**\n{other}"
 
     @commands.command(aliases=["g"])
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     async def google(self, ctx, *, search):
         params = {"q": search,
                   "safe": "on",
@@ -387,7 +380,7 @@ class MiscBot:
         if ctx.channel.name.startswith("nsfw"):
             params["safe"] = "off"
         async with ctx.typing():
-            bytes_ = await request.fetch(self.bot.session, "https://www.google.com/search", params=params)
+            bytes_ = await utils.fetch(self.bot.session, "https://www.google.com/search", params=params)
             result = await self.bot.loop.run_in_executor(None, self.parse_google, bytes_)
             if isinstance(result, discord.Embed):
                 return await ctx.send(embed=result)
@@ -405,7 +398,7 @@ class MiscBot:
             embed.description = f"{defines[page]}\n\n(Page {page+1}/{max_page})"
             return embed
 
-        await format.embed_page(ctx, max_page=max_page, embed=data)
+        await utils.embed_page(ctx, max_page=max_page, embed=data)
 
     @commands.command()
     async def char(self, ctx, *, characters):
@@ -422,7 +415,7 @@ class MiscBot:
         int_to_emoji = {}
         emoji_to_int = {}
         for i in range(len(items)):
-            e = config.emojis[str(i+1)]
+            e = config.FANCY_CHARS[str(i+1)]
             int_to_emoji[i+1] = e
             emoji_to_int[e] = i+1
         embed = discord.Embed(title=f"Polling: {stuff[0]}", description="\n".join([f"{int_to_emoji[i+1]} {s}" for i, s in enumerate(items)]), colour=discord.Colour.dark_green())
@@ -444,6 +437,16 @@ class MiscBot:
             if value == max_number:
                 max_result.append(items[emoji_to_int[key]-1])
         await ctx.send(f"Poll ended.\nHighest vote: {' and '.join(max_result)} with {max_number} votes.")
+
+    @commands.command()
+    async def shrug(self, ctx):
+        await ctx.send("¯\_(ツ)_/¯")
+
+    @commands.command()
+    async def servericon(self, ctx):
+        embed = discord.Embed(title=f"{ctx.guild.name}'s icon")
+        embed.set_image(url=ctx.guild.icon_url_as(format='png'))
+        await ctx.send(embed=embed)
 
 #==================================================================================================================================================
 

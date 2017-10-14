@@ -1,3 +1,4 @@
+discord.py[rewrite]
 aiohttp
 beautifulsoup4
 google-api-python-client
@@ -8,3 +9,5 @@ psutil
 xmltodict
 youtube-dl
 fuzzywuzzy
+python-Levenshtein
+motor

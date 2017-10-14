@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
-from .utils import checks, request
+from . import utils
+from .utils import checks
 import aiohttp
 import json
 import xmltodict
@@ -30,7 +31,7 @@ class RandomBot:
         params = {"tags":   f"rating:{rating} {tag}",
                   "limit":  1,
                   "random": "true"}
-        bytes_ = await request.fetch(self.bot.session, "https://danbooru.donmai.us/posts.json", params=params)
+        bytes_ = await utils.fetch(self.bot.session, "https://danbooru.donmai.us/posts.json", params=params)
         pic = json.loads(bytes_)[0]
         embed = discord.Embed(title="Danbooru", url=f"https://danbooru.donmai.us/posts/{pic['id']}", colour=discord.Colour.red())
         embed.set_image(url=f"https://danbooru.donmai.us{pic['file_url']}")
@@ -40,7 +41,7 @@ class RandomBot:
         params = {"tags":   f"rating:safe order:random {tags}",
                   "limit":  1,
                   "page":   page}
-        bytes_ = await request.fetch(self.bot.session, "http://konachan.net/post.json", params=params)
+        bytes_ = await utils.fetch(self.bot.session, "http://konachan.net/post.json", params=params)
         pic = json.loads(bytes_)[0]
         embed = discord.Embed(title="Konachan", url=f"http://konachan.net/post/show/{pic['id']}", colour=discord.Colour.red())
         embed.set_image(url=f"http:{pic['sample_url']}")
@@ -53,7 +54,7 @@ class RandomBot:
                   "tags":   tags,
                   "limit":  100,
                   "pid":   page}
-        bytes_ = await request.fetch(self.bot.session, "https://safebooru.org/index.php", params=params)
+        bytes_ = await utils.fetch(self.bot.session, "https://safebooru.org/index.php", params=params)
         data = xmltodict.parse(bytes_.decode("utf-8"))
         pic = random.choice(data['posts']['post'])
         embed = discord.Embed(title="Safebooru", url=f"https://safebooru.org/index.php?page=post&s=view&id={pic['@id']}", colour=discord.Colour.red())
@@ -64,7 +65,7 @@ class RandomBot:
         params = {"tags":   tags,
                   "limit":  100,
                   "page":   page}
-        bytes_ = await request.fetch(self.bot.session, "https://yande.re/post.json", params=params)
+        bytes_ = await utils.fetch(self.bot.session, "https://yande.re/post.json", params=params)
         pics = json.loads(bytes_)
         pic = random.choice(pics)
         if pic["rating"] != "s":
@@ -76,13 +77,13 @@ class RandomBot:
     async def get_image_sancom(self, tags):
         params = {"tags":   f"rating:e order:random {tags}",
                   "commit": "Search"}
-        bytes_ = await request.fetch(self.bot.session, "https://chan.sankakucomplex.com/", params=params)
+        bytes_ = await utils.fetch(self.bot.session, "https://chan.sankakucomplex.com/", params=params)
         data = BS(bytes_.decode("utf-8"), "lxml")
         items = tuple(data.find_all(lambda x: getattr(x, "name", None)=="span" and x.get("class", None)==["thumb", "blacklisted"] and x.parent.get("class", None)!=["popular-preview-post"]))
         item = random.choice(items)
         a = item.find("a")
         post_url = f"https://chan.sankakucomplex.com{a['href']}"
-        bytes_ = await request.fetch(self.bot.session, post_url)
+        bytes_ = await utils.fetch(self.bot.session, post_url)
         post_data = BS(bytes_.decode("utf-8"), "lxml")
         img_link = post_data.find("a", id="highres")
         embed = discord.Embed(title="Sankaku Complex", url=post_url, colour=discord.Colour.red())

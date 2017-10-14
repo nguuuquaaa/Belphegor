@@ -15,20 +15,20 @@ class AdminBot:
     def __init__(self, bot):
         self.bot = bot
 
-    async def reload_extension(self, message, extension):
+    async def reload_extension(self, ctx, extension):
         try:
             self.bot.unload_extension(extension)
             self.bot.load_extension(extension)
             print(f"Reloaded {extension}")
-            await message.add_reaction("\u2705")
+            await ctx.confirm()
         except Exception as e:
             print(f"Failed reloading {extension}: {e}")
-            await message.add_reaction("\u274c")
+            await ctx.deny()
 
-    async def reload_all_extensions(self, message):
+    async def reload_all_extensions(self, ctx):
         with open("extensions.txt") as file:
             extensions = [e for e in file.read().splitlines() if e]
-        for extension in extensions:
+        for extension in self.bot.extensions:
             self.bot.unload_extension(extension)
         check = True
         for extension in extensions:
@@ -39,17 +39,17 @@ class AdminBot:
                 print(f"Failed reloading {extension}: {e}")
                 check = False
         if check:
-            await message.add_reaction("\u2705")
+            await ctx.confirm()
         else:
-            await message.add_reaction("\u274c")
+            await ctx.deny()
 
     @commands.command()
     @checks.owner_only()
     async def reload(self, ctx, extension:str=""):
         if extension:
-            await self.reload_extension(ctx.message, extension)
+            await self.reload_extension(ctx, extension)
         else:
-            await self.reload_all_extensions(ctx.message)
+            await self.reload_all_extensions(ctx)
 
     @commands.command()
     @checks.owner_only()
@@ -57,10 +57,10 @@ class AdminBot:
         if extension in self.bot.extensions:
             self.bot.unload_extension(extension)
             print(f"Unloaded {extension}")
-            await ctx.message.add_reaction("\u2705")
+            await ctx.confirm()
         else:
             print(f"Extension {extension} doesn't exist.")
-            await ctx.message.add_reaction("\u274c")
+            await ctx.deny()
 
     @commands.command()
     @checks.owner_only()
@@ -75,12 +75,13 @@ class AdminBot:
     @commands.command(name="eval")
     @checks.owner_only()
     async def _eval(self, ctx, *, data:str):
-        if data.startswith("```") and data.endswith("```"):
+        data = data.strip()
+        if data.startswith("```"):
             data = data.splitlines()[1:]
         else:
             data = data.splitlines()
-        data = "\n ".join(data).strip("` \n")
-        code = f"async def func():\n {data}"
+        data = "\n    ".join(data).strip("` \n")
+        code = f"async def func():\n    {data}"
         env = {'self': self,
                'ctx': ctx,
                'discord': discord}
@@ -108,7 +109,7 @@ class AdminBot:
     @checks.owner_only()
     async def block(self, ctx, member:discord.Member):
         self.bot.block_users.append(member.id)
-        await ctx.send(f"{member.name} has been blocked (temporary).")
+        await ctx.send(f"{member.name} has been temporary blocked.")
 
     @commands.command()
     @checks.owner_only()

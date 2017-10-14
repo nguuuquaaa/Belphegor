@@ -3,9 +3,9 @@ belphegor.otogi
 belphegor.es
 belphegor.misc
 belphegor.help
-belphegor.reaction
 belphegor.music
 belphegor.guild
 belphegor.random
 belphegor.remind
 belphegor.tag
+belphegor.sticker

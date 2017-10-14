@@ -3,28 +3,10 @@ from discord.ext import commands
 import time
 from datetime import datetime, timezone
 import asyncio
-from .utils import config, format, checks
+from . import utils
+from .utils import checks
 import json
 import re
-
-#==================================================================================================================================================
-
-class RemindEvent:
-    def __init__(self, event_time, wait_time, member, channel, remind_text):
-        self.event_time = event_time
-        self.wait_time = wait_time
-        self.member = member
-        self.channel = channel
-        self.remind = remind_text
-
-    def to_dict(self):
-        return {"event_time": self.event_time, "wait_time": self.wait_time, "member_id": self.member.id, "channel_id": self.channel.id, "remind": self.remind}
-
-    @classmethod
-    def from_data(cls, bot, data):
-        channel = bot.get_channel(data["channel_id"])
-        member = discord.utils.find(lambda m:m.id==data["member_id"], channel.guild.members)
-        return cls(data["event_time"], data["wait_time"], member, channel, data["remind"])
 
 #==================================================================================================================================================
 
@@ -32,43 +14,41 @@ class RemindBot:
     def __init__(self, bot):
         self.bot = bot
         self.active = asyncio.Event()
-        try:
-            with open(f"{config.data_path}/misc/all_events.json", encoding="utf-8") as file:
-                self.all_events = [RemindEvent.from_data(bot, d) for d in json.load(file)]
-        except Exception as e:
-            print(e)
-            self.all_events = []
+        self.event_list = bot.db.remind_event_list
         self.reminder = bot.loop.create_task(self.check_till_eternity())
 
-    @commands.command()
-    @checks.owner_only()
-    async def unload_remind(self, ctx):
-        self.reminder.cancel()
-        self.bot.unload_extension("belphegor.remind")
-        await ctx.message.add_reaction("\u2705")
-
     async def check_till_eternity(self):
-        events = self.all_events
-        try:
-            while True:
-                if not events:
-                    self.active.clear()
-                    await self.active.wait()
-                time_left = events[0].event_time - time.time()
-                if time_left > 61:
+        events = self.event_list
+        while True:
+            closest_event = await events.find_one({}, sort=[("event_time", 1)])
+            if closest_event is None:
+                self.active.clear()
+                await self.active.wait()
+            else:
+                remind_event = closest_event.copy()
+                remind_event["create_time"] = remind_event["create_time"].replace(tzinfo=timezone.utc)
+                remind_event["event_time"] = remind_event["event_time"].replace(tzinfo=timezone.utc)
+                time_left = (remind_event["event_time"] - utils.now_time()).total_seconds()
+                print(time_left)
+                if time_left > 65:
                     await asyncio.sleep(60)
                 else:
-                    event = events.pop(0)
-                    with open(f"{config.data_path}/misc/all_events.json", "w+", encoding="utf-8") as file:
-                        json.dump([e.to_dict() for e in events], file, indent=4, ensure_ascii=False)
                     if time_left > 0:
-                        self.bot.loop.create_task(self.start_reminder(event))
-        except asyncio.CancelledError:
-            return
+                        self.bot.loop.create_task(self.start_reminder(remind_event, time_left))
+                    else:
+                        await self.do_remind(remind_event, "Oops I forgot to tell you but ")
+                    await events.delete_one(closest_event)
 
-    async def start_reminder(self, remind_event):
-        await asyncio.sleep(remind_event.event_time-time.time())
-        await remind_event.channel.send(f"{remind_event.member.mention}, {remind_event.wait_time} ago you asked me to remind you: \"{remind_event.remind}\"")
+    async def do_remind(self, remind_event, optional_text=""):
+        wait_time = utils.now_time() - remind_event["create_time"]
+        wait_time_text = utils.seconds_to_text(wait_time.total_seconds())
+        channel = self.bot.get_channel(remind_event["channel_id"])
+        member = channel.guild.get_member(remind_event["author_id"])
+        await channel.send(f"{optional_text}{member.mention}, {wait_time_text} ago you asked me to remind you: \"{remind_event['text']}\"")
+
+    async def start_reminder(self, remind_event, time_left):
+        await asyncio.sleep(time_left)
+        await self.do_remind(remind_event)
 
     @commands.group(aliases=["reminder"])
     async def remind(self, ctx):
@@ -77,77 +57,72 @@ class RemindBot:
 
     @remind.command(name="me")
     async def remind_me(self, ctx, *, remind_text):
-        wait_time = format.extract_time(remind_text)
-        if wait_time > 0:
-            if wait_time > 1000000000:
-                return await ctx.send("Time too large.")
-            wait_text = format.seconds_to_text(wait_time)
-            self.all_events.append(RemindEvent(time.time()+wait_time, wait_text, ctx.author, ctx.channel, remind_text))
-            self.all_events.sort(key=lambda e:e.event_time)
-            self.active.set()
-            with open(f"{config.data_path}/misc/all_events.json", "w+", encoding="utf-8") as file:
-                json.dump([e.to_dict() for e in self.all_events], file, indent=4, ensure_ascii=False)
-            await ctx.send(f"Got it, I'll remind you {wait_text} later.")
+        try:
+            wait_time = utils.extract_time(remind_text)
+            seconds = wait_time.total_seconds()
+        except:
+            return await ctx.send("Time too large.")
+        if seconds > 0:
+            create_time = utils.now_time()
+            new_event = {
+                "create_time":  create_time,
+                "event_time": create_time + wait_time,
+                "author_id": ctx.author.id,
+                "channel_id": ctx.channel.id,
+                "text": remind_text
+            }
+            if seconds < 65:
+                self.bot.loop.create_task(self.start_reminder(new_event, seconds))
+            else:
+                await self.event_list.insert_one(new_event)
+                self.active.set()
+            await ctx.send(f"Got it, I'll remind you {utils.seconds_to_text(seconds)} later.")
         else:
             await ctx.send("Can't read the time.")
 
     @remind.command(name="list")
     async def remind_list(self, ctx):
         self_events = []
-        for event in self.all_events:
-            if event.member.id == ctx.author.id:
-                self_events.append(event)
+        async for ev in self.event_list.find({"author_id": ctx.author.id}, sort={"event_time": 1}):
+            ev["create_time"] = ev["create_time"].replace(tzinfo=timezone.utc)
+            ev["event_time"] = ev["event_time"].replace(tzinfo=timezone.utc)
+            self_events.append(ev)
         description = []
-        cur_time = time.time()
+        cur_time = utils.now_time()
         for i, e in enumerate(self_events):
-            if i%20 == 0:
-                description.append(f"{i+1}. ***{e.remind}***\n  In {format.seconds_to_text(int(e.event_time-cur_time))}")
-            else:
-                description[i//20] = f"{description[i//20]}\n\n{i+1}. ***{e.remind}***\n  In {format.seconds_to_text(int(e.event_time-cur_time))}"
+            if i%5 == 0:
+                description.append("")
+            description[i//5] = f"{description[i//5]}\n\n{i+1}. ***{e['text']}***\n  In {utils.seconds_to_text((e['event_time']-cur_time).total_seconds())}"
         max_page = len(description)
         embed = discord.Embed(title=f"All reminders for {ctx.author.display_name}", colour=discord.Colour.dark_teal())
 
         def data(page):
             embed.description = f"{description[page]}\n\n(Page {page+1}/{max_page})" if description else "None."
-            embed.set_footer(text=datetime.now(timezone.utc).astimezone().strftime("%a, %Y-%m-%d at %I:%M:%S %p, GMT%z"))
+            embed.set_footer(text=utils.format_time(utils.now_time()))
             return embed
 
-        await format.embed_page(ctx, max_page=max_page, embed=data)
+        await utils.embed_page(ctx, max_page=max_page, embed=data)
 
     @remind.command(name="delete")
     async def remind_delete(self, ctx, position:int):
-        self_events = []
-        for event in self.all_events:
-            if event.member.id == ctx.author.id:
-                self_events.append(event)
+        self_events = [ev async for ev in self.event_list.find({"author_id": ctx.author.id}, sort={"event_time": 1})]
         if 0 < position <= len(self_events):
-            message = await ctx.send(f"Delet this?")
-            e_emoji = ("\u2705", "\u274c")
-            for e in e_emoji:
-                await message.add_reaction(e)
-            try:
-                reaction, user = await self.bot.wait_for("reaction_add", check=lambda r,u:r.emoji in e_emoji and u.id==ctx.author.id and r.message.id==message.id, timeout=60)
-                if reaction.emoji == "\u2705":
-                    self.all_events.remove(self_events[position-1])
-                    with open(f"{config.data_path}/misc/all_events.json", "w+", encoding="utf-8") as file:
-                        json.dump([e.to_dict() for e in self.all_events], file, indent=4, ensure_ascii=False)
-                    await message.edit(content=f"Deleted.")
-                else:
-                    await message.edit(content="Cancelled deleting.")
-            except asyncio.TimeoutError:
-                await message.edit(content="Timeout, cancelled deleting.")
-            try:
-                await message.clear_reactions()
-            except:
-                pass
+            sentences = {
+                "initial":  "Delet this?",
+                "yes":      f"Deleted.",
+                "no":       "Cancelled deleting.",
+                "timeout":  "Timeout, cancelled deleting."
+            }
+            check = await utils.yes_no_prompt(ctx, sentences)
+            await self.event_list.delete_one(self_events[position-1])
         else:
             await ctx.send("Position out of range.")
 
     @commands.command()
     async def ftime(self, ctx, *, phrase):
-        i = format.extract_time(phrase)
-        if i:
-            await ctx.send(format.seconds_to_text(i))
+        i = utils.extract_time(phrase).total_seconds()
+        if i > 0:
+            await ctx.send(utils.seconds_to_text(i))
         else:
             await ctx.send("Can't extract time.")
 

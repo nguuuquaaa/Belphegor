@@ -1,4 +1,4 @@
 
-token = None
+TOKEN = None
 
-youtube_key = None
+GOOGLE_CLIENT_API_KEY = None

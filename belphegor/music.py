@@ -2,7 +2,8 @@ import discord
 from discord.ext import commands
 import asyncio
 import pafy
-from .utils import request, config, token, format
+from . import utils
+from .utils import config, token
 from apiclient.discovery import build
 from discord.opus import Encoder as OpusEncoder
 import queue
@@ -69,7 +70,6 @@ class FFmpegWithBuffer(discord.FFmpegPCMAudio):
 class Song:
     def __init__(self, message, title, url):
         self.requestor = message.author
-        self.channel = message.channel
         self.title = title
         self.url = url
         self.default_volume = 1.0
@@ -154,7 +154,7 @@ class MusicPlayer:
             self.voice_client.stop()
             self.current_song = None
 
-    def _next_part(self, e):
+    def _next_part(self, e=None):
         if e:
             print(e)
         if not self.repeat:
@@ -164,7 +164,7 @@ class MusicPlayer:
     async def leave_voice(self):
         self.player = None
         self.repeat = False
-        await self.voice_client.disconnect()
+        await self.voice_client.disconnect(force=True)
         self.voice_client = None
 
     async def play_till_eternity(self):
@@ -186,9 +186,10 @@ class MusicPlayer:
                     await self.bot.loop.run_in_executor(None, self.current_song.raw_update)
                     self.voice_client.play(self.current_song.music, after=self._next_part)
                     name = regex.sub(lambda m: f"\\{m.group(0)}", self.current_song.requestor.display_name)
-                    await self.current_song.channel.send(f"Playing **{self.current_song.title}** requested by {name}.")
+                    await self.channel.send(f"Playing **{self.current_song.title}** requested by {name}.")
                 except:
-                    self._next_part("")
+                    await ctx.send("Error: cannot open song.")
+                    self._next_part()
                 await self.play_next_song.wait()
         except asyncio.CancelledError:
             return
@@ -204,10 +205,7 @@ class MusicBot:
         self.bot = bot
         self.music_players = {}
         locale.setlocale(locale.LC_ALL, '')
-        DEVELOPER_KEY = token.youtube_key
-        YOUTUBE_API_SERVICE_NAME = "youtube"
-        YOUTUBE_API_VERSION = "v3"
-        self.youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, developerKey=DEVELOPER_KEY)
+        self.youtube = build("youtube", "v3", developerKey=token.GOOGLE_CLIENT_API_KEY)
         self.lock = asyncio.Lock()
 
     def get_music_player(self, guild_id):
@@ -236,7 +234,7 @@ class MusicBot:
             msg = await ctx.send("Connecting...")
             current_voice = discord.utils.find(lambda vc: vc.guild.id==voice_channel.guild.id, self.bot.voice_clients)
             if current_voice:
-                await current_voice.disconnect()
+                await current_voice.disconnect(force=True)
             try:
                 voice_client = await voice_channel.connect(timeout=20, reconnect=True)
             except:
@@ -301,7 +299,7 @@ class MusicBot:
                     embed.set_footer(text=f"(Page {page+1}/{max_page})")
                     return embed
 
-                await format.embed_page(ctx, max_page=max_page, embed=data)
+                await utils.embed_page(ctx, max_page=max_page, embed=data)
             else:
                 await ctx.send(embed=discord.Embed(title=f"({state}) {current_song_info}", colour=discord.Colour.green()))
         else:
@@ -354,23 +352,15 @@ class MusicBot:
     async def delete(self, ctx, position:int):
         music_player = self.get_music_player(ctx.guild.id)
         if 0 < position <= music_player.queue.size():
-            message = await ctx.send(f"Delet this?")
-            e_emoji = ("\u2705", "\u274c")
-            for e in e_emoji:
-                await message.add_reaction(e)
-            try:
-                reaction, user = await self.bot.wait_for("reaction_add", check=lambda r,u:r.emoji in e_emoji and u.id==ctx.author.id and r.message.id==message.id, timeout=60)
-                if reaction.emoji == "\u2705":
-                    song = music_player.queue.delete(position-1)
-                    await message.edit(content=f"Deleted **{song.title}** from queue.")
-                else:
-                    await message.edit(content="Cancelled deleting.")
-            except asyncio.TimeoutError:
-                await message.edit(content="Timeout, cancelled deleting.")
-            try:
-                await message.clear_reactions()
-            except:
-                pass
+            sentences = {
+                "initial":  "Delet this?",
+                "yes":      f"Deleted **{song.title}** from queue.",
+                "no":       "Cancelled deleting.",
+                "timeout":  "Timeout, cancelled deleting."
+            }
+            check = await utils.yes_no_prompt(ctx, sentences)
+            if check:
+                song = music_player.queue.delete(position-1)
         else:
             await ctx.send("Position out of range.")
 
@@ -472,23 +462,15 @@ class MusicBot:
     @music.command()
     async def purge(self, ctx):
         music_player = self.get_music_player(ctx.guild.id)
-        message = await ctx.send(f"Purge queue?")
-        e_emoji = ("\u2705", "\u274c")
-        for e in e_emoji:
-            await message.add_reaction(e)
-        try:
-            reaction, user = await self.bot.wait_for("reaction_add", check=lambda r,u:r.emoji in e_emoji and u.id==ctx.author.id and r.message.id==message.id, timeout=60)
-            if reaction.emoji == "\u2705":
-                music_player.queue.playlist[:] = []
-                await message.edit(content=f"Queue purged.")
-            else:
-                await message.edit(content="Cancelled purging.")
-        except asyncio.TimeoutError:
-            await message.edit(content="Timeout, cancelled purging.")
-        try:
-            await message.clear_reactions()
-        except:
-            pass
+        sentences = {
+            "initial":  f"Purge queue?",
+            "yes":      "Queue purged.",
+            "no":       "Cancelled purging.",
+            "timeout":  "Timeout, cancelled purging."
+        }
+        check = await utils.yes_no_prompt(ctx, sentences)
+        if check:
+            music_player.queue.playlist[:] = []
 
     def youtube_video_info(self, url):
         video_id = url[17:]
@@ -513,8 +495,8 @@ class MusicBot:
             return await ctx.send("Position out of range.")
 
         snippet = video["snippet"]
-        description = format.unifix(snippet["description"]).strip()
-        description_page = format.split_page(description, 1000)
+        description = utils.unifix(snippet["description"]).strip()
+        description_page = utils.split_page(description, 500)
         max_page = len(description_page)
         embed = discord.Embed(title=f"\U0001f3b5 {snippet['title']}", url=url, colour=discord.Colour.green())
         embed.set_thumbnail(url="http://i.imgur.com/HKIOv84.png")
@@ -535,7 +517,7 @@ class MusicBot:
             embed.set_field_at(6, name="Description", value=f"{description_page[page]}\n\n(Page {page+1}/{max_page})", inline=False)
             return embed
 
-        await format.embed_page(ctx, max_page=max_page, embed=data)
+        await utils.embed_page(ctx, max_page=max_page, embed=data)
 
     @music.command(aliases=["t",])
     async def toggle(self, ctx):
@@ -562,6 +544,12 @@ class MusicBot:
                 await ctx.send("Fast forward time must be between 1 and 59 seconds.")
         else:
             await ctx.send("No song is currently playing.")
+
+    @music.command()
+    async def setchannel(self, ctx):
+        music_player = self.get_music_player(ctx.guild.id)
+        music_player.channel = ctx.channel
+        await ctx.message.add_reaction("\u2705")
 
 #==================================================================================================================================================
 
