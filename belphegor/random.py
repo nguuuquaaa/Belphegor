@@ -27,23 +27,26 @@ class RandomBot:
             message.content = ">>help random"
             await self.bot.process_commands(message)
 
-    async def get_image_danbooru(self, rating, tag):
+    async def get_image_danbooru(self, tag, rating):
         params = {"tags":   f"rating:{rating} {tag}",
                   "limit":  1,
                   "random": "true"}
         bytes_ = await utils.fetch(self.bot.session, "https://danbooru.donmai.us/posts.json", params=params)
         pic = json.loads(bytes_)[0]
-        embed = discord.Embed(title="Danbooru", url=f"https://danbooru.donmai.us/posts/{pic['id']}", colour=discord.Colour.red())
+        title = "Danbooru" if rating=="safe" else "NSFW Danbooru"
+        embed = discord.Embed(title="Danbooru", description=utils.discord_escape(pic.get("tag_string", "")), url=f"https://danbooru.donmai.us/posts/{pic['id']}", colour=discord.Colour.red())
         embed.set_image(url=f"https://danbooru.donmai.us{pic['file_url']}")
         return embed
 
-    async def get_image_konachan(self, tags, page=1):
-        params = {"tags":   f"rating:safe order:random {tags}",
+    async def get_image_konachan(self, tags, rating, page=1):
+        params = {"tags":   f"rating:{rating} order:random {tags}",
                   "limit":  1,
                   "page":   page}
-        bytes_ = await utils.fetch(self.bot.session, "http://konachan.net/post.json", params=params)
+        domain = "net" if rating=="safe" else "com"
+        bytes_ = await utils.fetch(self.bot.session, f"http://konachan.{domain}/post.json", params=params)
         pic = json.loads(bytes_)[0]
-        embed = discord.Embed(title="Konachan", url=f"http://konachan.net/post/show/{pic['id']}", colour=discord.Colour.red())
+        title = "Konachan" if rating=="safe" else "NSFW Konachan"
+        embed = discord.Embed(title="Konachan", description=utils.discord_escape(pic.get("tags", "")), url=f"http://konachan.{domain}/post/show/{pic['id']}", colour=discord.Colour.red())
         embed.set_image(url=f"http:{pic['sample_url']}")
         return embed
 
@@ -57,7 +60,7 @@ class RandomBot:
         bytes_ = await utils.fetch(self.bot.session, "https://safebooru.org/index.php", params=params)
         data = xmltodict.parse(bytes_.decode("utf-8"))
         pic = random.choice(data['posts']['post'])
-        embed = discord.Embed(title="Safebooru", url=f"https://safebooru.org/index.php?page=post&s=view&id={pic['@id']}", colour=discord.Colour.red())
+        embed = discord.Embed(title="Safebooru", description=utils.discord_escape(pic.get("@tags", "")), url=f"https://safebooru.org/index.php?page=post&s=view&id={pic['@id']}", colour=discord.Colour.red())
         embed.set_image(url=f"http:{pic['@file_url']}")
         return embed
 
@@ -70,7 +73,7 @@ class RandomBot:
         pic = random.choice(pics)
         if pic["rating"] != "s":
             raise Exception("nsfw img")
-        embed = discord.Embed(title="Yandere", url=f"https://yande.re/post/show/{pic['id']}", colour=discord.Colour.red())
+        embed = discord.Embed(title="Yandere", description=utils.discord_escape(pic.get("tag", "")), url=f"https://yande.re/post/show/{pic['id']}", colour=discord.Colour.red())
         embed.set_image(url=pic['sample_url'])
         return embed
 
@@ -86,7 +89,9 @@ class RandomBot:
         bytes_ = await utils.fetch(self.bot.session, post_url)
         post_data = BS(bytes_.decode("utf-8"), "lxml")
         img_link = post_data.find("a", id="highres")
-        embed = discord.Embed(title="Sankaku Complex", url=post_url, colour=discord.Colour.red())
+        relevant = post_data.find("ul", id="tag-sidebar")
+        pic_tags = " ".join([t.find("a").text.strip().replace(" ", r"\_") for t in relevant.find_all(True, recursive=False)])
+        embed = discord.Embed(title="Sankaku Complex", description=pic_tags, url=post_url, colour=discord.Colour.red())
         embed.set_image(url=f"https:{img_link['href']}")
         return embed
 
@@ -102,35 +107,40 @@ class RandomBot:
                 retries -= 1
         await ctx.send("Query failed. Please try again.")
 
-    @r.command(aliases=["h",])
-    @checks.nsfw()
-    async def hentai(self, ctx, tag=""):
-        with ctx.typing():
-            await self.retry_wrap(ctx, self.get_image_danbooru, "explicit", tag)
-
     @r.command(aliases=["d",])
     async def danbooru(self, ctx, tag=""):
         with ctx.typing():
-            await self.retry_wrap(ctx, self.get_image_danbooru, "safe", tag)
+            await self.retry_wrap(ctx, self.get_image_danbooru, tag, "safe")
+
+    @r.command(aliases=["dh"])
+    @checks.nsfw()
+    async def danbooru_h(self, ctx, tag=""):
+        with ctx.typing():
+            await self.retry_wrap(ctx, self.get_image_danbooru, tag, "explicit")
 
     @r.command(aliases=["k",])
-    async def konachan(self, ctx, *, tags):
+    async def konachan(self, ctx, *, tags=""):
         with ctx.typing():
-            await self.retry_wrap(ctx, self.get_image_konachan, tags)
+            await self.retry_wrap(ctx, self.get_image_konachan, tags, "safe")
+
+    @r.command(aliases=["kh",])
+    async def konachan_h(self, ctx, *, tags=""):
+        with ctx.typing():
+            await self.retry_wrap(ctx, self.get_image_konachan, tags, "explicit")
 
     @r.command(aliases=["s",])
-    async def safebooru(self, ctx, *, tags):
+    async def safebooru(self, ctx, *, tags=""):
         with ctx.typing():
             await self.retry_wrap(ctx, self.get_image_safebooru, tags)
 
     @r.command(aliases=["y",])
-    async def yandere(self, ctx, *, tags):
+    async def yandere(self, ctx, *, tags=""):
         with ctx.typing():
             await self.retry_wrap(ctx, self.get_image_yandere, tags)
 
     @r.command(aliases=["sc",])
     @checks.nsfw()
-    async def sancom(self, ctx, *, tags):
+    async def sancom(self, ctx, *, tags=""):
         with ctx.typing():
             await self.retry_wrap(ctx, self.get_image_sancom, tags)
 

@@ -5,7 +5,6 @@ from .board_game import dices
 from . import utils
 from .utils import config, checks
 from bs4 import BeautifulSoup as BS
-from urllib.parse import quote
 import asyncio
 import unicodedata
 import re
@@ -211,7 +210,7 @@ class MiscBot:
         for tag in data.find_all("a"):
             attributes = tag.attrs
             if "onmousedown" in attributes.keys() and len(attributes) == 2:
-                tag['href'] = tag['href'].replace("(", "%28").replace(")", "%29")
+                tag['href'] = utils.safe_url(tag['href'])
                 search_results.append(tag)
             if len(search_results) > 4:
                 break
@@ -224,7 +223,7 @@ class MiscBot:
             embed = discord.Embed(title="Search result:", description="**Unit convert**", colour=discord.Colour.dark_orange())
             embed.add_field(name=unit_in.text, value=results[0].input['value'])
             embed.add_field(name=unit_out.text, value=results[1].input['value'])
-            embed.add_field(name="See also:", value='\n\n'.join([f"[{t.text}]({t['href']})" for t in search_results[0:4]]), inline=True)
+            embed.add_field(name="See also:", value='\n\n'.join([f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[0:4]]), inline=True)
             return embed
         except:
             pass
@@ -235,7 +234,7 @@ class MiscBot:
             text = "\n".join([t.get_text().strip() for t in zone_data.find_all(True, recursive=False)])
             embed = discord.Embed(title="Search result:", description=f"**Timezone**\n{text}",
                                   colour=discord.Colour.dark_orange())
-            embed.add_field(name="See also:", value='\n\n'.join([f"[{t.text}]({t['href']})" for t in search_results[0:4]]), inline=True)
+            embed.add_field(name="See also:", value='\n\n'.join([f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[0:4]]), inline=True)
             return embed
         except:
             pass
@@ -248,7 +247,7 @@ class MiscBot:
             embed = discord.Embed(title="Search result:", description="**Currency**", colour=discord.Colour.dark_orange())
             embed.add_field(name=unit[0]['value'], value=inp[0]['value'])
             embed.add_field(name=unit[1]['value'], value=inp[1]['value'])
-            embed.add_field(name="See also:", value='\n\n'.join([f"[{t.text}]({t['href']})" for t in search_results[0:4]]), inline=True)
+            embed.add_field(name="See also:", value='\n\n'.join([f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[0:4]]), inline=True)
             return embed
         except:
             pass
@@ -258,7 +257,7 @@ class MiscBot:
             inp = data.find("span", class_="cwclet").text
             out = data.find("span", class_="cwcot").text
             embed = discord.Embed(title="Search result:", description=f"**Calculator**\n{inp}\n\n {out}", colour=discord.Colour.dark_orange())
-            embed.add_field(name="See also:", value='\n\n'.join([f"[{t.text}]({t['href']})" for t in search_results[0:4]]), inline=True)
+            embed.add_field(name="See also:", value='\n\n'.join([f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[0:4]]), inline=True)
             return embed
         except:
             pass
@@ -275,12 +274,12 @@ class MiscBot:
             title = tag.find("div", class_="_Q1n").div.text
             url_tag = tag.find("a", class_="q _KCd _tWc fl")
             try:
-                url = f"\n[{url_tag.text}]({url_tag['href']})"
+                url = f"\n[{url_tag.text}]({utils.safe_url(url_tag['href'])})"
             except:
                 url = ""
             description = f"**{title}**\n{tag.find('div', class_='_cgc').find('span').text.replace('MORE', '').replace('…', '')}{url}"
             embed = discord.Embed(title="Search result:", description=description, colour=discord.Colour.dark_orange())
-            embed.add_field(name="See also:", value='\n\n'.join([f"[{t.text}]({t['href']})" for t in search_results[0:4]]), inline=True)
+            embed.add_field(name="See also:", value='\n\n'.join([f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[0:4]]), inline=True)
             return embed
         except:
             pass
@@ -315,7 +314,7 @@ class MiscBot:
                         defines[current_page] = f"{defines[current_page]}\n**{t.text}**"
                     else:
                         defines[current_page] = f"{defines[current_page]}\n- {t.text}"
-            see_also = '\n\n'.join([f"[{t.text}]({t['href']})" for t in search_results[1:5]])
+            see_also = '\n\n'.join([f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[1:5]])
             if len(defines) > 1:
                 return (defines, see_also)
             else:
@@ -328,7 +327,7 @@ class MiscBot:
         #weather
         tag = data.find("div", class_="g tpo knavi obcontainer mod")
         try:
-            embed = discord.Embed(title="Search result:", description=f"**Weather**\n[More on weather.com]({tag.find('td', class_='_Hif').a['href']})",
+            embed = discord.Embed(title="Search result:", description=f"**Weather**\n[More on weather.com]({utils.safe_url(tag.find('td', class_='_Hif').a['href'])})",
                                   colour=discord.Colour.dark_orange())
             embed.set_thumbnail(url=f"https:{tag.find('img', id='wob_tci')['src']}")
             embed.add_field(name=tag.find("div", class_="vk_gy vk_h").text,
@@ -337,7 +336,7 @@ class MiscBot:
             embed.add_field(name="Precipitation", value=tag.find('span', id='wob_pp').text)
             embed.add_field(name="Humidity", value=tag.find('span', id='wob_hm').text)
             embed.add_field(name="Wind", value=tag.find('span', id='wob_ws').text)
-            embed.add_field(name="See also:", value='\n\n'.join([f"[{t.text}]({t['href']})" for t in search_results[1:5]]), inline=True)
+            embed.add_field(name="See also:", value='\n\n'.join([f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[1:5]]), inline=True)
             return embed
         except:
             pass
@@ -346,7 +345,7 @@ class MiscBot:
         tag = data.find("div", class_="_oDd")
         try:
             embed = discord.Embed(title="Search result:", description=f"{tag.text}\n[{search_results[0].text}]({search_results[0]['href']})", colour=discord.Colour.dark_orange())
-            embed.add_field(name="See also:", value='\n\n'.join([f"[{t.text}]({t['href']})" for t in search_results[1:5]]), inline=True)
+            embed.add_field(name="See also:", value='\n\n'.join([f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[1:5]]), inline=True)
             return embed
         except:
             pass
@@ -361,7 +360,7 @@ class MiscBot:
             embed = discord.Embed(title="Search result:", description=f"[Google Translate]({link['href']})", colour=discord.Colour.dark_orange())
             embed.add_field(name=langs[0].text, value=inp.text)
             embed.add_field(name=langs[1].text, value=out.text)
-            embed.add_field(name="See also:", value='\n\n'.join([f"[{t.text}]({t['href']})" for t in search_results[0:4]]), inline=True)
+            embed.add_field(name="See also:", value='\n\n'.join([f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[0:4]]), inline=True)
             return embed
         except:
             pass
@@ -398,7 +397,7 @@ class MiscBot:
             embed.description = f"{defines[page]}\n\n(Page {page+1}/{max_page})"
             return embed
 
-        await utils.embed_page(ctx, max_page=max_page, embed=data)
+        await ctx.embed_page(max_page=max_page, embed=data)
 
     @commands.command()
     async def char(self, ctx, *, characters):

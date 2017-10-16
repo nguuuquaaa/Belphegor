@@ -408,7 +408,7 @@ class OtogiBot():
             embed.set_footer(text=f"(Page {page+1}/{max_page})")
             return embed
 
-        await utils.embed_page(ctx, max_page=max_page, embed=data)
+        await ctx.embed_page(max_page=max_page, embed=data)
 
     @commands.command(aliases=["trivia",])
     async def t(self, ctx, *, name:str):
@@ -635,16 +635,16 @@ class OtogiBot():
 
         #skills, abilities and bonds
         sub_pattern = re.compile(re.escape("(MAX/MLB)"), re.IGNORECASE)
-        new_daemon.skills.append((utils.unifix(tags[7].text), sub_pattern.sub("", utils.unifix(tags[8].text))))
+        new_daemon.skills.append({"name": utils.unifix(tags[7].text), "effect": sub_pattern.sub("", utils.unifix(tags[8].text))})
         for i in (10, 12):
             ability_value = utils.unifix(str(tags[i].text))
             if len(ability_value) > 5:
-                new_daemon.abilities.append((utils.unifix(tags[i-1].text), ability_value))
+                new_daemon.abilities.append({"name": utils.unifix(tags[i-1].text), "effect": ability_value})
         for i in (14, 15):
             bond_data = tuple(tags[i].find_all("td"))
             bond_value = utils.unifix(str(bond_data[1].text))
             if len(bond_value) > 5:
-                new_daemon.bonds.append((re.sub(' +', ' ', utils.unifix(bond_data[0].text)), bond_value))
+                new_daemon.bonds.append({"name": re.sub(' +', ' ', utils.unifix(bond_data[0].text)), "effect": bond_value})
 
         #additional info
         add_keys = {16: "voice_actor", 18: "illustrator", 20: "description", 22: "how_to_acquire", 24: "notes_and_trivia"}
@@ -766,7 +766,7 @@ class OtogiBot():
             embed.set_field_at(2, name=str(self.emojis['star'])*5, value=f"{summon_pools[5][cur5-1]}\n(Page {cur5}/{max_pages[5]})" if summon_pools[5] else "None", inline=False)
             return embed
 
-        await utils.embed_page(ctx, max_page=max_page, embed=data)
+        await ctx.embed_page(max_page=max_page, embed=data)
 
     @commands.command()
     async def mybox(self, ctx, *, member: discord.Member=None):
@@ -802,7 +802,7 @@ class OtogiBot():
             embed.set_field_at(2, name=str(self.emojis['star'])*5, value=f"{mybox_daemons[5][cur5-1]}\n(Page {cur5}/{max_pages[5]})" if mybox_daemons[5] else "None", inline=False)
             return embed
 
-        await utils.embed_page(ctx, max_page=max_page, embed=data)
+        await ctx.embed_page(max_page=max_page, embed=data)
 
     def _process_name(self, name):
         if name[-3:] in ("lb0", "lb1", "lb2", "lb3", "lb4"):
@@ -879,7 +879,7 @@ class OtogiBot():
                 total_mochi += self.mochi_cost(dm) * (d["lb"] + 1)
             else:
                 i += 1
-        await self.player_list.find_one_and_update({"id": ctx.author.id}, {"$inc": {"mochi": total_mochi}, "$pull": {"daemons": player["daemons"]}})
+        await self.player_list.find_one_and_update({"id": ctx.author.id}, {"$inc": {"mochi": total_mochi}, "$set": {"daemons": player["daemons"]}})
         await ctx.send(f"{ctx.author.display_name} sold all {rarity}* daemons for {total_mochi}{self.emojis['mochi']}.")
 
     @commands.command()
@@ -931,7 +931,7 @@ class OtogiBot():
                         "no":       "Trade failed.",
                         "timeout":  "Timeout, cancelled trading."
                     }
-                    check = await utils.yes_no_prompt(ctx, sentences=sentences, target=member)
+                    check = await ctx.yes_no_prompt(sentences=sentences, target=member)
                     if check:
                         dm = target["daemons"].pop(i)
                         myself["daemons"].append(dm)
@@ -1001,13 +1001,12 @@ class OtogiBot():
                 page_data[i//5] = f"{page_data[i//5]}\n\n{i+1}. **{field[1]}**\n   MLB Effective Skill DMG: {field[61]}\n   MLB Auto ATK DMG: {field[59]}"
         max_page = len(page_data)
         embed = discord.Embed(title=f"Nuker rank", colour=discord.Colour.orange())
-        embed.add_field(name="\u200B", value="Data taken from [Otogi Effective Stats Spreadsheet](https://docs.google.com/spreadsheets/d/1oJnQ5TYL5d9LJ04HMmsuXBvJSAxqhYqcggDZKOctK2k/edit#gid=0)")
 
         def data(page):
             embed.description = f"{page_data[page]}\n\n(Page {page+1}/{max_page})"
             return embed
 
-        await utils.embed_page(ctx, max_page=max_page, embed=data)
+        await ctx.embed_page(max_page=max_page, embed=data)
 
     def list_get(self, iterable, index, default=None):
         try:
@@ -1037,13 +1036,12 @@ class OtogiBot():
             page_data[i//5] = f"{page_data[i//5]}\n\n{i+1}. **{field[1]}**\n   MLB Debuff Value: {mlb_debuff}\n   MLB Effective Skill DMG: {field[61]}\n   Skill Effect: {self.list_get(field, 76, 'N/A')}"
         max_page = len(page_data)
         embed = discord.Embed(title=f"Debuffer list", colour=discord.Colour.orange())
-        embed.add_field(name="\u200B", value="Data taken from [Otogi Effective Stats Spreadsheet](https://docs.google.com/spreadsheets/d/1oJnQ5TYL5d9LJ04HMmsuXBvJSAxqhYqcggDZKOctK2k/edit#gid=0)")
 
         def data(page):
             embed.description = f"{page_data[page]}\n\n(Page {page+1}/{max_page})"
             return embed
 
-        await utils.embed_page(ctx, max_page=max_page, embed=data)
+        await ctx.embed_page(max_page=max_page, embed=data)
 
     @commands.command(aliases=["buffer"])
     async def buffers(self, ctx):
@@ -1061,16 +1059,15 @@ class OtogiBot():
             page_data[i//5] = f"{page_data[i//5]}\n\n{i+1}. **{field[1]}**\n   MLB Buff Value: {mlb_buff}\n   Skill Effect: {self.list_get(field, 76, 'N/A')}"
         max_page = len(page_data)
         embed = discord.Embed(title=f"Buffer list", colour=discord.Colour.orange())
-        embed.add_field(name="\u200B", value="Data taken from [Otogi Effective Stats Spreadsheet](https://docs.google.com/spreadsheets/d/1oJnQ5TYL5d9LJ04HMmsuXBvJSAxqhYqcggDZKOctK2k/edit#gid=0)")
 
         def data(page):
             embed.description = f"{page_data[page]}\n\n(Page {page+1}/{max_page})"
             return embed
 
-        await utils.embed_page(ctx, max_page=max_page, embed=data)
+        await ctx.embed_page(max_page=max_page, embed=data)
 
-    @commands.command(aliases=["gcqstr", "gcqstat"])
-    async def gcqstats(self, ctx):
+    @commands.command()
+    async def gcqstr(self, ctx):
         cur = self.daemon_collection.aggregate([
             {"$project": {"_id": 0, "name": "$name", "atk": "$max_atk", "hp": "$max_hp", "total_stat": {"$add": [{"$divide": ["$max_atk", 10]}, "$max_hp"]}}},
             {"$sort": {"total_stat": -1}}
@@ -1089,7 +1086,7 @@ class OtogiBot():
             embed.description = f"{page_data[page]}\n\n(Page {page+1}/{max_page})"
             return embed
 
-        await utils.embed_page(ctx, max_page=max_page, embed=data)
+        await ctx.embed_page(max_page=max_page, embed=data)
 
     @commands.group()
     async def exchange(self, ctx):

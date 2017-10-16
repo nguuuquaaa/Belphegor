@@ -28,7 +28,7 @@ class AdminBot:
     async def reload_all_extensions(self, ctx):
         with open("extensions.txt") as file:
             extensions = [e for e in file.read().splitlines() if e]
-        for extension in self.bot.extensions:
+        for extension in self.bot.extensions.copy():
             self.bot.unload_extension(extension)
         check = True
         for extension in extensions:

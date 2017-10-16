@@ -54,12 +54,15 @@ class HelpBot:
                         "`>>d`, `>>daemon` - Check a daemon info\n"
                         "`>>t`, `>>trivia` - Daemon trivia stuff\n"
                         "`>>p`, `>>pic` - Illustrations\n"
+                        "Note: Data taken from [Otogi Wikia](http://otogi.wikia.com/)\n\n"
                         "`>>ds`, `>>search` - Search for relevant daemons\n"
                         "Command takes multiple lines with format `<attribute> <value>`\n"
                         "Attributes include: name, alias, type, class, max_atk, max_hp, mlb_atk, mlb_hp, rarity, skill, ability, bond, faction, voice_actor, illustrator, how_to_acquire, notes_and_trivia and description\n\n"
                         "`>>update` - Update database\n\n"
                         "`>>nuker(s)` - Nuker rank\n"
-                        "`>>buffer(s)`, `>>debuffer(s)` - List of supporters", inline=False)
+                        "`>>buffer(s)`, `>>debuffer(s)` - List of supporters\n"
+                        "Note: Data taken from [Otogi Effective Stats Spreadsheet](https://docs.google.com/spreadsheets/d/1oJnQ5TYL5d9LJ04HMmsuXBvJSAxqhYqcggDZKOctK2k/edit#gid=0)\n"
+                        "`>>gcqstr` - Guild Conquest STR rank", inline=False)
         embed.add_field(name="Simulation", value=
                         "`>>ls` - ~~salt~~ Lunchtime summon simulation\n"
                         "Note: has 1 seconds cooldown to prevent spam\n"
@@ -101,8 +104,9 @@ class HelpBot:
                         "`s`, `safebooru` - [Safebooru](https://safebooru.org)\n"
                         "`k`, `konachan` - [Konachan](http://konachan.net)\n"
                         "`y`, `yandere` - [Yandere](https://yande.re)\n\n"
-                        "These are usable in channels with nsfw prefix only\n"
-                        "`h`, `hentai` - [NSFW Danbooru](https://danbooru.donmai.us)\n"
+                        "These are usable in nsfw channels only\n"
+                        "`dh`, `danbooru_h` - [NSFW Danbooru](https://danbooru.donmai.us)\n"
+                        "`kh`, `konachan_h` - [NSFW Konachan](http://konachan.com)\n"
                         "`sc`, `sancom` - [NSFW Sankaku Complex](https://chan.sankakucomplex.com)\n")
         embed.add_field(name="Notes", value=
                         "A subcommand is meant to be used with main command.\n"
@@ -174,7 +178,7 @@ class HelpBot:
                         "A subcommand is meant to be used with main command.\n"
                         "For example, `>>tag create belphybot The laziest bot ever.` is a valid command.\n\n"
                         "A tag name cannot contains spaces.\n"
-                        "Tag create/edit follows the format `<name> <content>`.", inline=False)
+                        "Tag create/edit follows the format `<name> <linebreak> <content>`.", inline=False)
         await ctx.send(embed=embed)
 
     @help.command()
@@ -184,11 +188,10 @@ class HelpBot:
                             f"`>>jkp`, `>>jankenpon` - Play jankenpon with {self.bot.user.name}\n"
                             "`>>dice <maxside> <amount>` - Roll dices\n"
                             "`>>poll <question and choices>` - Make a poll\n"
-                            "Question and choices are separated by line break\n"
-                            "`>>fancy` - Fancilize a sentence\n\n"
+                            "Question and choices are separated by line break\n\n"
+                            "`>>fancy` - Fancilize a sentence\n"
                             "`>>avatar` - Get your or a user avatar\n"
-                            "`>>r`, `>>random` - Random image\n"
-                            "`>>g>`, `>>google` - Google search\n"
+                            "`>>g`, `>>google` - Google search\n"
                             "`>>stats` - Bot info", inline=False)
         await ctx.send(embed=embed)
 

@@ -68,9 +68,9 @@ class FFmpegWithBuffer(discord.FFmpegPCMAudio):
 #==================================================================================================================================================
 
 class Song:
-    def __init__(self, message, title, url):
-        self.requestor = message.author
-        self.title = title
+    def __init__(self, requestor, title, url):
+        self.requestor = requestor
+        self.title = utils.discord_escape(title)
         self.url = url
         self.default_volume = 1.0
 
@@ -169,7 +169,6 @@ class MusicPlayer:
 
     async def play_till_eternity(self):
         try:
-            regex = re.compile(r"(?<!\\)[*_]")
             while True:
                 self.play_next_song.clear()
                 if not self.current_song:
@@ -185,7 +184,7 @@ class MusicPlayer:
                 try:
                     await self.bot.loop.run_in_executor(None, self.current_song.raw_update)
                     self.voice_client.play(self.current_song.music, after=self._next_part)
-                    name = regex.sub(lambda m: f"\\{m.group(0)}", self.current_song.requestor.display_name)
+                    name = utils.discord_escape(self.current_song.requestor.display_name)
                     await self.channel.send(f"Playing **{self.current_song.title}** requested by {name}.")
                 except:
                     await ctx.send("Error: cannot open song.")
@@ -299,13 +298,13 @@ class MusicBot:
                     embed.set_footer(text=f"(Page {page+1}/{max_page})")
                     return embed
 
-                await utils.embed_page(ctx, max_page=max_page, embed=data)
+                await ctx.embed_page(max_page=max_page, embed=data)
             else:
                 await ctx.send(embed=discord.Embed(title=f"({state}) {current_song_info}", colour=discord.Colour.green()))
         else:
             async with self.lock:
                 results = await self.bot.loop.run_in_executor(None, self.youtube_search, name)
-            stuff = '\n\n'.join([f"{i+1}: [{v['snippet']['title']}](https://youtu.be/{v['id']['videoId']})" for i,v in enumerate(results)])
+            stuff = '\n\n'.join([f"{i+1}: [{utils.discord_escape(v['snippet']['title'])}](https://youtu.be/{v['id']['videoId']})" for i,v in enumerate(results)])
             embed = discord.Embed(title="\U0001f3b5 Video search result: ", description=f"{stuff}\n\n<>: cancel", colour=discord.Colour.green())
             embed.set_thumbnail(url="http://i.imgur.com/HKIOv84.png")
             await ctx.send(embed=embed)
@@ -319,8 +318,7 @@ class MusicBot:
             except Exception as e:
                 #print(e)
                 return
-            title = result["snippet"]["title"]
-            music_player.queue.put(Song(ctx.message, title, f"https://youtu.be/{result['id']['videoId']}"))
+            music_player.queue.put(Song(ctx.message.author, result["snippet"]["title"], f"https://youtu.be/{result['id']['videoId']}"))
             await ctx.send(f"Added **{title}** to queue.")
 
     @music.command(aliases=["s",])
@@ -358,7 +356,7 @@ class MusicBot:
                 "no":       "Cancelled deleting.",
                 "timeout":  "Timeout, cancelled deleting."
             }
-            check = await utils.yes_no_prompt(ctx, sentences)
+            check = await ctx.yes_no_prompt(sentences)
             if check:
                 song = music_player.queue.delete(position-1)
         else:
@@ -385,10 +383,9 @@ class MusicBot:
                 msg = await self.bot.wait_for("message", check=lambda m:m.author.id==ctx.author.id and m.attachments, timeout=120)
             except asyncio.TimeoutError:
                 try:
-                    await msg.clear_reactions()
+                    return await msg.clear_reactions()
                 except:
                     return
-                return
             try:
                 await ctx.message.clear_reactions()
             except:
@@ -398,7 +395,7 @@ class MusicBot:
         playlist = json.loads(bytes_.getvalue().decode("utf-8"))
         try:
             for song in playlist:
-                music_player.queue.put(Song(msg, song["title"] , song["url"]))
+                music_player.queue.put(Song(msg.author, song["title"], song["url"]))
             await ctx.send(f"Added {len(playlist)} songs to queue.")
         except:
             await ctx.send("Wrong format for imported file.")
@@ -410,14 +407,14 @@ class MusicBot:
             if song["snippet"]["title"] in ("Deleted video", "Private video"):
                 continue
             else:
-                results.append(Song(message, song["snippet"]["title"], f"https://youtu.be/{song['snippet']['resourceId']['videoId']}"))
+                results.append(Song(message.author, song["snippet"]["title"], f"https://youtu.be/{song['snippet']['resourceId']['videoId']}"))
         while playlist_items.get("nextPageToken", None):
             playlist_items = self.youtube.playlistItems().list(playlistId=playlist_id, part="snippet", maxResults=50, pageToken=playlist_items["nextPageToken"]).execute()
             for song in playlist_items.get("items", None):
                 if song["snippet"]["title"] in ("Deleted video", "Private video"):
                     continue
                 else:
-                    results.append(Song(message, song["snippet"]["title"], f"https://youtu.be/{song['snippet']['resourceId']['videoId']}"))
+                    results.append(Song(message.author, song["snippet"]["title"], f"https://youtu.be/{song['snippet']['resourceId']['videoId']}"))
         return results
 
     @music.command(aliases=["p",])
@@ -433,7 +430,7 @@ class MusicBot:
             shuffle = False
         async with self.lock:
             results = await self.bot.loop.run_in_executor(None, self.youtube_search, name, "playlist")
-        stuff = '\n\n'.join([f"{i+1}: [{p['snippet']['title']}](https://www.youtube.com/playlist?list={p['id']['playlistId']})\nBy: {p['snippet']['channelTitle']}" for i,p in enumerate(results)])
+        stuff = '\n\n'.join([f"{i+1}: [{utils.discord_escape(p['snippet']['title'])}](https://www.youtube.com/playlist?list={p['id']['playlistId']})\nBy: {p['snippet']['channelTitle']}" for i,p in enumerate(results)])
         embed = discord.Embed(title="\U0001f3b5 Playlist search result: ", description=f"{stuff}\n\n<>: cancel", colour=discord.Colour.green())
         embed.set_thumbnail(url="http://i.imgur.com/HKIOv84.png")
         await ctx.send(embed=embed)
@@ -468,7 +465,7 @@ class MusicBot:
             "no":       "Cancelled purging.",
             "timeout":  "Timeout, cancelled purging."
         }
-        check = await utils.yes_no_prompt(ctx, sentences)
+        check = await ctx.yes_no_prompt(sentences)
         if check:
             music_player.queue.playlist[:] = []
 
@@ -517,7 +514,7 @@ class MusicBot:
             embed.set_field_at(6, name="Description", value=f"{description_page[page]}\n\n(Page {page+1}/{max_page})", inline=False)
             return embed
 
-        await utils.embed_page(ctx, max_page=max_page, embed=data)
+        await ctx.embed_page(max_page=max_page, embed=data)
 
     @music.command(aliases=["t",])
     async def toggle(self, ctx):

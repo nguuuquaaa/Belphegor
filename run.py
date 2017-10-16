@@ -18,6 +18,71 @@ class BelphegorContext(commands.Context):
     async def deny(self):
         await self.message.add_reaction("\u274c")
 
+    async def embed_page(self, *, max_page, embed, timeout=60, target=None):
+        _loop = self.bot.loop
+        message = await self.send(embed=embed(0))
+        target = target or self.author
+        current_page = 0
+        possible_reactions = ("\u23ee", "\u25c0", "\u25b6", "\u23ed", "\u274c")
+        for r in possible_reactions:
+            _loop.create_task(message.add_reaction(r))
+        while True:
+            try:
+                reaction, user = await self.bot.wait_for("reaction_add", check=lambda r,u: u.id==target.id and r.emoji in possible_reactions and r.message.id==message.id, timeout=timeout)
+            except:
+                try:
+                    return await message.clear_reactions()
+                except:
+                    return
+            if reaction.emoji == "\u25c0":
+                current_page = max(current_page-1, 0)
+                await message.edit(embed=embed(current_page))
+            elif reaction.emoji == "\u25b6":
+                current_page = min(current_page+1, max_page-1)
+                await message.edit(embed=embed(current_page))
+            elif reaction.emoji == "\u23ee":
+                current_page = max(current_page-10, 0)
+                await message.edit(embed=embed(current_page))
+            elif reaction.emoji == "\u23ed":
+                current_page = min(current_page+10, max_page-1)
+                await message.edit(embed=embed(current_page))
+            else:
+                try:
+                    return await message.clear_reactions()
+                except:
+                    return
+            try:
+                await message.remove_reaction(reaction, user)
+            except:
+                pass
+
+    async def yes_no_prompt(self, *, sentences, timeout=60, target=None):
+        _loop = self.bot.loop
+        message = await self.send(sentences["initial"])
+        target = target or self.author
+        possible_reactions = ("\u2705", "\u274c")
+        for r in possible_reactions:
+            _loop.create_task(message.add_reaction(r))
+        try:
+            reaction, user = await self.bot.wait_for("reaction_add", check=lambda r,u: u.id==target.id and r.emoji in possible_reactions and r.message.id==message.id, timeout=timeout)
+        except:
+            _loop.create_task(message.edit(content=sentences["timeout"]))
+            try:
+                _loop.create_task(message.clear_reactions())
+            except:
+                pass
+            return False
+        try:
+            _loop.create_task(message.clear_reactions())
+        except:
+            pass
+        if reaction.emoji == "\u2705":
+            _loop.create_task(message.edit(content=sentences["yes"]))
+            return True
+        else:
+            _loop.create_task(message.edit(content=sentences["no"]))
+            return False
+
 #==================================================================================================================================================
 
 class Belphegor(commands.Bot):

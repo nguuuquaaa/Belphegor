@@ -4,7 +4,6 @@ import time
 from datetime import datetime, timezone
 import asyncio
 from . import utils
-from .utils import checks
 import json
 import re
 
@@ -113,7 +112,7 @@ class RemindBot:
                 "no":       "Cancelled deleting.",
                 "timeout":  "Timeout, cancelled deleting."
             }
-            check = await utils.yes_no_prompt(ctx, sentences)
+            check = await ctx.yes_no_prompt(sentences)
             await self.event_list.delete_one(self_events[position-1])
         else:
             await ctx.send("Position out of range.")
