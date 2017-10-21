@@ -96,8 +96,8 @@ class AdminBot:
         code = f"async def func():\n    {data}"
         env = {
             'self': self,
-           'ctx': ctx,
-           'discord': discord
+            'ctx': ctx,
+            'discord': discord
         }
         env.update(locals())
         try:

@@ -263,11 +263,7 @@ class EsBot():
             category_weapons = await self.bot.loop.run_in_executor(None, self.bs_parse, category, bytes_)
             weapons.extend(category_weapons)
             print(f"Done parsing {CATEGORY_DICT[category]}.")
-        await weapon_list.delete_many({
-            "category": {
-                "$in": tuple(urls.keys())
-            }
-        })
+        await weapon_list.delete_many({"category": {"$in": tuple(urls.keys())}})
         await weapon_list.insert_many(weapons)
         print("Done everything.")
         await msg.edit(content = "Done.")
@@ -293,8 +289,10 @@ class EsBot():
             except:
                 weapon["pic_url"] = None
             weapon["requirement"] = utils.unifix(relevant[3].get_text())
-            weapon["atk"] = {"base": {ATK_EMOJI[i]: int(l.strip()) for i, l in enumerate(relevant[5].find_all(text=True))},
-                             "max":  {ATK_EMOJI[i]: int(l.strip()) for i, l in enumerate(relevant[6].find_all(text=True))}}
+            weapon["atk"] = {
+                "base": {ATK_EMOJI[i]: int(l.strip()) for i, l in enumerate(relevant[5].find_all(text=True))},
+                "max":  {ATK_EMOJI[i]: int(l.strip()) for i, l in enumerate(relevant[6].find_all(text=True))}
+            }
             weapon["properties"] = []
             for child in relevant[7].find_all(True, recursive=False):
                 if child.name == "img":
