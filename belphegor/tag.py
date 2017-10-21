@@ -33,7 +33,7 @@ class TagBot:
     @tag_cmd.command()
     async def edit(self, ctx, name, *, content):
         before = await self.tag_list.find_one_and_update({"name": name, "author_id": ctx.author.id, "content": {"$exists": True}}, {"$set": {"content": content}})
-        if before is not None:
+        if before is None:
             await ctx.send(f"Cannot edit tag.\nEither tag doesn't exist, tag is an alias or you are not the creator of the tag.")
         else:
             await ctx.send(f"Tag {name} edited.")
@@ -47,7 +47,7 @@ class TagBot:
                 alias_of = alias_of_alias
         value = {"name": name, "alias_of": alias_of, "author_id": ctx.author.id}
         before = await self.tag_list.find_one_and_update({"name": name}, {"$set": value}, upsert=True)
-        if before is not None:
+        if before is None:
             await ctx.send(f"Cannot create already existed tag.")
         else:
             await self.tag_list.update_one({"name": alias_of, "aliases": {"$nin": [name]}}, {"$push": {"aliases": name}})
