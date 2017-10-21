@@ -21,26 +21,38 @@ class MiscBot:
         self.bot = bot
         self.jankenpon_record = bot.db.jankenpon_record
 
-        self.w_quote =          ["I won! Yay!",
-                                 "Hehehe, I'm good at this.",
-                                 "Lalala~"]
-        self.d_quote =          ["It's a tie.",
-                                 "It's a draw.",
-                                 "Again!"]
-        self.l_quote =          ["I-I lost...",
-                                 "I won't lose next time!",
-                                 "Why?"]
-        self.wstreak_quote =    ["I'm invincible!",
-                                 "I'm on a roll!",
-                                 "Triple kill! Penta kill!!!",
-                                 "(smug)"]
-        self.dstreak_quote =    ["This kinda... draws out for too long.",
-                                 "Tie again... How many tie in a row did we have?",
-                                 "(staaaareeee~)"]
-        self.lstreak_quote =    ["E-eh? Did you cheat or something?",
-                                 "Mwuu... this is frustrating...",
-                                 "Eeeeeek! EEEEEEEKKKKKKK!",
-                                 "(attemp to logout to reset the game)"]
+        self.w_quote = [
+            "I won! Yay!",
+            "Hehehe, I'm good at this.",
+            "Lalala~"
+        ]
+        self.d_quote = [
+            "It's a tie.",
+            "It's a draw.",
+            "Again!"
+        ]
+        self.l_quote = [
+            "I-I lost...",
+            "I won't lose next time!",
+            "Why?"
+        ]
+        self.wstreak_quote = [
+            "I'm invincible!",
+            "I'm on a roll!",
+            "Triple kill! Penta kill!!!",
+            "(smug)"
+        ]
+        self.dstreak_quote = [
+            "This kinda... draws out for too long.",
+            "Tie again... How many tie in a row did we have?",
+            "(staaaareeee~)"
+        ]
+        self.lstreak_quote = [
+            "E-eh? Did you cheat or something?",
+            "Mwuu... this is frustrating...",
+            "Eeeeeek! EEEEEEEKKKKKKK!",
+            "(attemp to logout to reset the game)"
+        ]
 
     def quote(self, streak):
         if streak.endswith("ddd"):
@@ -75,12 +87,20 @@ class MiscBot:
         possible_reactions = ("\u270a", "\u270b", "\u270c", "\u274c")
         for e in possible_reactions:
             await message.add_reaction(e)
-        record = await self.jankenpon_record.find_one_and_update({"id": ctx.author.id}, {"$setOnInsert": {"id": ctx.author.id, "win": 0, "draw": 0, "lose": 0}},
-            upsert=True, return_document=ReturnDocument.AFTER)
+        record = await self.jankenpon_record.find_one_and_update(
+            {"id": ctx.author.id},
+            {"$setOnInsert": {"id": ctx.author.id, "win": 0, "draw": 0, "lose": 0}},
+            return_document=ReturnDocument.AFTER,
+            upsert=True
+        )
         streak = ""
         while True:
             try:
-                reaction, user = await self.bot.wait_for("reaction_add", check=lambda r,u:u.id==ctx.author.id and r.emoji in possible_reactions and r.message.id==message.id, timeout=30)
+                reaction, user = await self.bot.wait_for(
+                    "reaction_add",
+                    check=lambda r,u: u.id==ctx.author.id and r.emoji in possible_reactions and r.message.id==message.id,
+                    timeout=30
+                )
             except:
                 embed.description = "\"I'm tir..e...d.....zzzz...........\""
                 await message.clear_reactions()
@@ -115,7 +135,10 @@ class MiscBot:
                 embed.description = f"*\"{self.quote(streak)}\"*"
                 embed.set_footer(text=f"{record['win']}W - {record['draw']}D - {record['lose']}L")
                 await message.edit(embed=embed)
-        await self.jankenpon_record.update_one({"id": ctx.author.id}, {"$set": {"win": record["win"], "draw": record["draw"], "lose": record["lose"]}})
+        await self.jankenpon_record.update_one(
+            {"id": ctx.author.id},
+            {"$set": {"win": record["win"], "draw": record["draw"], "lose": record["lose"]}}
+         )
 
     async def on_message(self, message):
         if message.author.bot:
@@ -148,8 +171,10 @@ class MiscBot:
     async def dice(self, ctx, max_side:int, number_of_dices:int = 2):
         if 120 >= max_side > 3 and 0 < number_of_dices <= 100:
             RNG = dices.Dices(max_side, number_of_dices)
-            await ctx.send("```\nRoll result:\n{}\n\nDistribution:\n{}\n```"
-                               .format(", ".join([str(r) for r in RNG.rolls]), "\n".join(["{} showed up {} times.".format(i, RNG.rolls.count(i)) for i in range(1, max_side+1)])))
+            await ctx.send(
+                "```\nRoll result:\n{}\n\nDistribution:\n{}\n```"
+                .format(", ".join([str(r) for r in RNG.rolls]), "\n".join(["{} showed up {} times.".format(i, RNG.rolls.count(i)) for i in range(1, max_side+1)]))
+            )
         else:
             await ctx.send("Max side must be between 4 and 120 and number of dices must be between 1 and 100")
 
@@ -177,12 +202,9 @@ class MiscBot:
 
     @commands.command()
     async def fancy(self, ctx, *, textin:str):
-        textout = ""
         textin = textin.upper()
-        for charin in textin:
-            charout = config.FANCY_CHARS.get(charin, charin)
-            textout = f"{textout}{charout} "
-        await ctx.send(textout)
+        textout = [config.FANCY_CHARS.get(charin, charin) for charin in textin]
+        await ctx.send(" ".join(textout))
 
     @commands.command(aliases=["hello",])
     async def hi(self, ctx):
@@ -223,7 +245,7 @@ class MiscBot:
             embed = discord.Embed(title="Search result:", description="**Unit convert**", colour=discord.Colour.dark_orange())
             embed.add_field(name=unit_in.text, value=results[0].input['value'])
             embed.add_field(name=unit_out.text, value=results[1].input['value'])
-            embed.add_field(name="See also:", value='\n\n'.join([f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[0:4]]), inline=True)
+            embed.add_field(name="See also:", value='\n\n'.join([f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[0:4]]), inline=False)
             return embed
         except:
             pass
@@ -232,9 +254,12 @@ class MiscBot:
         try:
             zone_data = data.find('div', class_="vk_c vk_gy vk_sh card-section _MZc")
             text = "\n".join([t.get_text().strip() for t in zone_data.find_all(True, recursive=False)])
-            embed = discord.Embed(title="Search result:", description=f"**Timezone**\n{text}",
-                                  colour=discord.Colour.dark_orange())
-            embed.add_field(name="See also:", value='\n\n'.join([f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[0:4]]), inline=True)
+            embed = discord.Embed(
+                title="Search result:",
+                description=f"**Timezone**\n{text}",
+                colour=discord.Colour.dark_orange()
+            )
+            embed.add_field(name="See also:", value='\n\n'.join([f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[0:4]]), inline=False)
             return embed
         except:
             pass
@@ -247,7 +272,7 @@ class MiscBot:
             embed = discord.Embed(title="Search result:", description="**Currency**", colour=discord.Colour.dark_orange())
             embed.add_field(name=unit[0]['value'], value=inp[0]['value'])
             embed.add_field(name=unit[1]['value'], value=inp[1]['value'])
-            embed.add_field(name="See also:", value='\n\n'.join([f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[0:4]]), inline=True)
+            embed.add_field(name="See also:", value='\n\n'.join([f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[0:4]]), inline=False)
             return embed
         except:
             pass
@@ -257,7 +282,7 @@ class MiscBot:
             inp = data.find("span", class_="cwclet").text
             out = data.find("span", class_="cwcot").text
             embed = discord.Embed(title="Search result:", description=f"**Calculator**\n{inp}\n\n {out}", colour=discord.Colour.dark_orange())
-            embed.add_field(name="See also:", value='\n\n'.join([f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[0:4]]), inline=True)
+            embed.add_field(name="See also:", value='\n\n'.join([f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[0:4]]), inline=False)
             return embed
         except:
             pass
@@ -287,7 +312,25 @@ class MiscBot:
         #definition
         tag = data.find("div", class_="lr_container")
         try:
-            relevant_data = tag.find_all(lambda t: (t.name=="div" and (t.get("data-dobid")=="dfn" or t.get("class") in (["lr_dct_sf_h"], ["xpdxpnd", "vk_gy"], ["vmod", "vk_gy"]) or t.get("style")=="float:left")) or (t.name=="span" and (t.get("data-dobid")=="hdw" or t.get("class")==["lr_dct_ph"])))
+            relevant_data = tag.find_all(
+                lambda t:
+                    (
+                        t.name=="div"
+                        and (
+                            t.get("data-dobid")=="dfn"
+                            or t.get("class") in (["lr_dct_sf_h"], ["xpdxpnd", "vk_gy"], ["vmod", "vk_gy"])
+                            or t.get("style")=="float:left"
+                        )
+                    )
+                    or
+                    (
+                        t.name=="span"
+                        and (
+                            t.get("data-dobid")=="hdw"
+                            or t.get("class")==["lr_dct_ph"]
+                        )
+                    )
+            )
             word = ""
             pronoun = ""
             current_page = -1
@@ -319,7 +362,7 @@ class MiscBot:
                 return (defines, see_also)
             else:
                 embed = discord.Embed(title="Search result:", description=defines[0], colour=discord.Colour.dark_orange())
-                embed.add_field(name="See also:", value=see_also, inline=True)
+                embed.add_field(name="See also:", value=see_also, inline=False)
                 return embed
         except:
             pass
@@ -336,7 +379,7 @@ class MiscBot:
             embed.add_field(name="Precipitation", value=tag.find('span', id='wob_pp').text)
             embed.add_field(name="Humidity", value=tag.find('span', id='wob_hm').text)
             embed.add_field(name="Wind", value=tag.find('span', id='wob_ws').text)
-            embed.add_field(name="See also:", value='\n\n'.join([f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[1:5]]), inline=True)
+            embed.add_field(name="See also:", value='\n\n'.join([f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[1:5]]), inline=False)
             return embed
         except:
             pass
@@ -345,7 +388,7 @@ class MiscBot:
         tag = data.find("div", class_="_oDd")
         try:
             embed = discord.Embed(title="Search result:", description=f"{tag.text}\n[{search_results[0].text}]({search_results[0]['href']})", colour=discord.Colour.dark_orange())
-            embed.add_field(name="See also:", value='\n\n'.join([f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[1:5]]), inline=True)
+            embed.add_field(name="See also:", value='\n\n'.join([f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[1:5]]), inline=False)
             return embed
         except:
             pass
@@ -360,7 +403,7 @@ class MiscBot:
             embed = discord.Embed(title="Search result:", description=f"[Google Translate]({link['href']})", colour=discord.Colour.dark_orange())
             embed.add_field(name=langs[0].text, value=inp.text)
             embed.add_field(name=langs[1].text, value=out.text)
-            embed.add_field(name="See also:", value='\n\n'.join([f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[0:4]]), inline=True)
+            embed.add_field(name="See also:", value='\n\n'.join([f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[0:4]]), inline=False)
             return embed
         except:
             pass
@@ -372,10 +415,12 @@ class MiscBot:
     @commands.command(aliases=["g"])
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     async def google(self, ctx, *, search):
-        params = {"q": search,
-                  "safe": "on",
-                  "lr": "lang_en",
-                  "hl": "en"}
+        params = {
+            "q": search,
+            "safe": "on",
+            "lr": "lang_en",
+            "hl": "en"
+        }
         if ctx.channel.name.startswith("nsfw"):
             params["safe"] = "off"
         async with ctx.typing():

@@ -38,7 +38,8 @@ class GuildBot:
             await ctx.send("{user.name} has been banned.")
             await user.send(
                 f"You have been banned from {ctx.guild.name} by {ctx.author.name}.\nReason: {reason}\n\n"
-                "If you think this action is unjustified, please contact the mods to unlift the ban.")
+                "If you think this action is unjustified, please contact the mods to unlift the ban."
+            )
         except:
             await ctx.deny()
 
@@ -123,14 +124,14 @@ class GuildBot:
                 await ctx.deny()
 
     @selfrole.command()
-    @checks.role_manager_only()
+    @checks.manager_only()
     async def add(self, ctx, *, name):
         role = discord.utils.find(lambda r:r.name.lower()==name.lower(), ctx.guild.roles)
         await self.selfrole_list.update({"guild_id": ctx.guild.id}, {"$addToSet": {"role_ids": role.id}, "$setOnInsert": {"guild_id": ctx.guild.id}}, upsert=True)
         await ctx.confirm()
 
     @selfrole.command()
-    @checks.role_manager_only()
+    @checks.manager_only()
     async def remove(self, ctx, *, name):
         role = discord.utils.find(lambda r:r.name.lower()==name.lower(), ctx.guild.roles)
         await self.selfrole_list.update({"guild_id": ctx.guild.id}, {"$pull": {"role_ids": role.id}})
@@ -194,16 +195,19 @@ class GuildBot:
 
     async def on_member_join(self, member):
         channel_data = await self.welcome_channel_list.find_one({"guild_id": member.guild.id})
-        channel = member.guild.get_channel(channel_data.get("channel_id"))
-        if channel:
-            await channel.send(f"*\"Eeeeehhhhhh, go away {member.mention}, I don't want any more work...\"*")
-            if member.guild.id == config.OTOGI_GUILD_ID:
-                await asyncio.sleep(5)
-                otogi_guild = self.bot.get_guild(config.OTOGI_GUILD_ID)
-                await member.send(f"Welcome to {otogi_guild.name}.\n"
-                                  "Please read the rules in #server-rules before doing anything.\n"
-                                  "You can use `>>help` to get a list of available commands.\n\n"
-                                  "Have a nice day!")
+        if channel_data:
+            channel = member.guild.get_channel(channel_data.get("channel_id"))
+            if channel:
+                await channel.send(f"*\"Eeeeehhhhhh, go away {member.mention}, I don't want any more work...\"*")
+                if member.guild.id == config.OTOGI_GUILD_ID:
+                    await asyncio.sleep(5)
+                    otogi_guild = self.bot.get_guild(config.OTOGI_GUILD_ID)
+                    await member.send(
+                        f"Welcome to {otogi_guild.name}.\n"
+                        "Please read the rules in #server-rules before doing anything.\n"
+                        "You can use `>>help` to get a list of available commands.\n\n"
+                        "Have a nice day!"
+                    )
 
     @commands.command()
     @checks.manager_only()

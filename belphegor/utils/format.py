@@ -43,7 +43,15 @@ def split_page(text, split_len, *, safe_mode=True):
 
 def seconds_to_text(seconds):
     seconds = int(seconds)
-    wt = [("year", seconds//31536000), ("month", seconds%31536000//2592000), ("week", seconds%31536000%2592000//604800), ("day", seconds%31536000%2592000%604800//86400), ("hour", seconds%86400//3600), ("minute", seconds%3600//60), ("second", seconds%60)]
+    wt = [
+        ("year", seconds//31536000),
+        ("month", seconds%31536000//2592000),
+        ("week", seconds%31536000%2592000//604800),
+        ("day", seconds%31536000%2592000%604800//86400),
+        ("hour", seconds%86400//3600),
+        ("minute", seconds%3600//60),
+        ("second", seconds%60)
+    ]
     text_body = ""
     for item in wt:
         if item[1] > 1:
@@ -52,7 +60,7 @@ def seconds_to_text(seconds):
             text_body = f"{text_body} {item[1]} {item[0]}"
     return text_body.strip()
 
-time_regex = re.compile(r"(\d+\.?\d*)(?:\s*)(w(?:(?:eek)?s?)?|d(?:(?:ay)s?)?|h(?:(?:our)s?)?|m(?:(?:in)(?:ute)?s?)?|s(?:(?:ec)(?:ond)?s?)?)(?:\b)", flags=re.I)
+time_regex = re.compile(r"(\d+\.?\d*)(?:[ \t]*)(w(?:(?:eek)?s?)?|d(?:(?:ay)s?)?|h(?:(?:our)s?)?|m(?:(?:in)(?:ute)?s?)?|s(?:(?:ec)(?:ond)?s?)?)(?:\b)", flags=re.I)
 
 def extract_time(text):
     extract = time_regex.findall(text)
@@ -84,4 +92,4 @@ def discord_escape(any_string):
     return discord_regex.sub(lambda m: f"\\{m.group(0)}", any_string)
 
 def safe_url(any_url):
-    return quote(any_url, safe=r":/&$+,;=@#~")
+    return quote(any_url, safe=r":/&$+,;=@#~%")

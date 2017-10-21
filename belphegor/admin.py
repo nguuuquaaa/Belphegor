@@ -17,6 +17,12 @@ class AdminBot:
 
     async def reload_extension(self, ctx, extension):
         try:
+            if extension == "belphegor.remind":
+                self.bot.get_cog("RemindBot").reminder.cancel()
+            elif extension == "belphegor.music":
+                _loop = self.bot.loop
+                for mp in self.bot.get_cog("MusicBot").music_players.values():
+                    _loop.create_task(mp.leave_voice())
             self.bot.unload_extension(extension)
             self.bot.load_extension(extension)
             print(f"Reloaded {extension}")
@@ -29,6 +35,12 @@ class AdminBot:
         with open("extensions.txt") as file:
             extensions = [e for e in file.read().splitlines() if e]
         for extension in self.bot.extensions.copy():
+            if extension == "belphegor.remind":
+                self.bot.get_cog("RemindBot").reminder.cancel()
+            elif extension == "belphegor.music":
+                _loop = self.bot.loop
+                for mp in self.bot.get_cog("MusicBot").music_players.values():
+                    _loop.create_task(mp.leave_voice())
             self.bot.unload_extension(extension)
         check = True
         for extension in extensions:
@@ -82,9 +94,11 @@ class AdminBot:
             data = data.splitlines()
         data = "\n    ".join(data).strip("` \n")
         code = f"async def func():\n    {data}"
-        env = {'self': self,
-               'ctx': ctx,
-               'discord': discord}
+        env = {
+            'self': self,
+           'ctx': ctx,
+           'discord': discord
+        }
         env.update(locals())
         try:
             exec(code, env)
@@ -107,13 +121,13 @@ class AdminBot:
 
     @commands.command()
     @checks.owner_only()
-    async def block(self, ctx, member:discord.Member):
-        self.bot.block_users.append(member.id)
+    async def block(self, ctx, member: discord.Member):
+        self.bot.block_users.add(member.id)
         await ctx.send(f"{member.name} has been temporary blocked.")
 
     @commands.command()
     @checks.owner_only()
-    async def unblock(self, ctx, member:discord.Member):
+    async def unblock(self, ctx, member: discord.Member):
         self.bot.block_users.remove(member.id)
         await ctx.send(f"{member.name} has been unblocked.")
 

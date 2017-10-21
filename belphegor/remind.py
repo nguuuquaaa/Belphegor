@@ -18,25 +18,28 @@ class RemindBot:
 
     async def check_till_eternity(self):
         events = self.event_list
-        while True:
-            closest_event = await events.find_one({}, sort=[("event_time", 1)])
-            if closest_event is None:
-                self.active.clear()
-                await self.active.wait()
-            else:
-                remind_event = closest_event.copy()
-                remind_event["create_time"] = remind_event["create_time"].replace(tzinfo=timezone.utc)
-                remind_event["event_time"] = remind_event["event_time"].replace(tzinfo=timezone.utc)
-                time_left = (remind_event["event_time"] - utils.now_time()).total_seconds()
-                print(time_left)
-                if time_left > 65:
-                    await asyncio.sleep(60)
+        try:
+            while True:
+                closest_event = await events.find_one({}, sort=[("event_time", 1)])
+                if closest_event is None:
+                    self.active.clear()
+                    await self.active.wait()
                 else:
-                    if time_left > 0:
-                        self.bot.loop.create_task(self.start_reminder(remind_event, time_left))
+                    remind_event = closest_event.copy()
+                    remind_event["create_time"] = remind_event["create_time"].replace(tzinfo=timezone.utc)
+                    remind_event["event_time"] = remind_event["event_time"].replace(tzinfo=timezone.utc)
+                    time_left = (remind_event["event_time"] - utils.now_time()).total_seconds()
+                    print(time_left)
+                    if time_left > 65:
+                        await asyncio.sleep(60)
                     else:
-                        await self.do_remind(remind_event, "Oops I forgot to tell you but ")
-                    await events.delete_one(closest_event)
+                        if time_left > 0:
+                            self.bot.loop.create_task(self.start_reminder(remind_event, time_left))
+                        else:
+                            await self.do_remind(remind_event, "Oops I forgot to tell you but ")
+                        await events.delete_one(closest_event)
+        except asyncio.CancelledError:
+            return
 
     async def do_remind(self, remind_event, optional_text=""):
         wait_time = utils.now_time() - remind_event["create_time"]
@@ -108,11 +111,11 @@ class RemindBot:
         if 0 < position <= len(self_events):
             sentences = {
                 "initial":  "Delet this?",
-                "yes":      f"Deleted.",
+                "yes":      "Deleted.",
                 "no":       "Cancelled deleting.",
                 "timeout":  "Timeout, cancelled deleting."
             }
-            check = await ctx.yes_no_prompt(sentences)
+            check = await ctx.yes_no_prompt(sentences=sentences)
             await self.event_list.delete_one(self_events[position-1])
         else:
             await ctx.send("Position out of range.")

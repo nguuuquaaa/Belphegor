@@ -10,58 +10,75 @@ import re
 import html
 from bs4 import BeautifulSoup as BS
 
-CATEGORY_DICT = {"sword":        "Sword",
-                 "wl":           "Wired Lance",
-                 "partisan":     "Partisan",
-                 "td":           "Twin Dagger",
-                 "ds":           "Double Saber",
-                 "knuckle":      "Knuckle",
-                 "katana":       "Katana",
-                 "db":           "Dual Blade",
-                 "gs":           "Gunslash",
-                 "rifle":        "Assault Rifle",
-                 "launcher":     "Launcher",
-                 "tmg":          "Twin Machine Gun",
-                 "bow":          "Bullet Bow",
-                 "rod":          "Rod",
-                 "talis":        "Talis",
-                 "wand":         "Wand",
-                 "jb":           "Jet Boot",
-                 "tact":         "Tact"}
+CATEGORY_DICT = {
+    "sword":        "Sword",
+    "wl":           "Wired Lance",
+    "partisan":     "Partisan",
+    "td":           "Twin Dagger",
+    "ds":           "Double Saber",
+    "knuckle":      "Knuckle",
+    "katana":       "Katana",
+    "db":           "Dual Blade",
+    "gs":           "Gunslash",
+    "rifle":        "Assault Rifle",
+    "launcher":     "Launcher",
+    "tmg":          "Twin Machine Gun",
+    "bow":          "Bullet Bow",
+    "rod":          "Rod",
+    "talis":        "Talis",
+    "wand":         "Wand",
+    "jb":           "Jet Boot",
+    "tact":         "Tact"
+}
 ATK_EMOJI = ("satk", "ratk", "tatk")
-URLS = {"sword":        "https://pso2.arks-visiphone.com/wiki/Simple_Swords_List",
-        "wl":           "https://pso2.arks-visiphone.com/wiki/Simple_Wired_Lances_List",
-        "partisan":     "https://pso2.arks-visiphone.com/wiki/Simple_Partizans_List",
-        "td":           "https://pso2.arks-visiphone.com/wiki/Simple_Twin_Daggers_List",
-        "ds":           "https://pso2.arks-visiphone.com/wiki/Simple_Double_Sabers_List",
-        "knuckle":      "https://pso2.arks-visiphone.com/wiki/Simple_Knuckles_List",
-        "katana":       "https://pso2.arks-visiphone.com/wiki/Simple_Katanas_List",
-        "db":           "https://pso2.arks-visiphone.com/wiki/Simple_Dual_Blades_List",
-        "gs":           "https://pso2.arks-visiphone.com/wiki/Simple_Gunslashes_List",
-        "rifle":        "https://pso2.arks-visiphone.com/wiki/Simple_Assault_Rifles_List",
-        "launcher":     "https://pso2.arks-visiphone.com/wiki/Simple_Launchers_List",
-        "tmg":          "https://pso2.arks-visiphone.com/wiki/Simple_Twin_Machine_Guns_List",
-        "bow":          "https://pso2.arks-visiphone.com/wiki/Simple_Bullet_Bows_List",
-        "rod":          "https://pso2.arks-visiphone.com/wiki/Simple_Rods_List",
-        "talis":        "https://pso2.arks-visiphone.com/wiki/Simple_Talises_List",
-        "wand":         "https://pso2.arks-visiphone.com/wiki/Simple_Wands_List",
-        "jb":           "https://pso2.arks-visiphone.com/wiki/Simple_Jet_Boots_List",
-        "tact":         "https://pso2.arks-visiphone.com/wiki/Simple_Takts_List"}
-ICON_DICT = {"Ability.png":            "ability",
-             "SpecialAbilityIcon.PNG": "saf",
-             "Special Ability":        "saf",
-             "Potential.png":          "potential",
-             "PA":                     "pa",
-             "Set Effect":             "set_effect"}
+URLS = {
+    "sword":        "https://pso2.arks-visiphone.com/wiki/Simple_Swords_List",
+    "wl":           "https://pso2.arks-visiphone.com/wiki/Simple_Wired_Lances_List",
+    "partisan":     "https://pso2.arks-visiphone.com/wiki/Simple_Partizans_List",
+    "td":           "https://pso2.arks-visiphone.com/wiki/Simple_Twin_Daggers_List",
+    "ds":           "https://pso2.arks-visiphone.com/wiki/Simple_Double_Sabers_List",
+    "knuckle":      "https://pso2.arks-visiphone.com/wiki/Simple_Knuckles_List",
+    "katana":       "https://pso2.arks-visiphone.com/wiki/Simple_Katanas_List",
+    "db":           "https://pso2.arks-visiphone.com/wiki/Simple_Dual_Blades_List",
+    "gs":           "https://pso2.arks-visiphone.com/wiki/Simple_Gunslashes_List",
+    "rifle":        "https://pso2.arks-visiphone.com/wiki/Simple_Assault_Rifles_List",
+    "launcher":     "https://pso2.arks-visiphone.com/wiki/Simple_Launchers_List",
+    "tmg":          "https://pso2.arks-visiphone.com/wiki/Simple_Twin_Machine_Guns_List",
+    "bow":          "https://pso2.arks-visiphone.com/wiki/Simple_Bullet_Bows_List",
+    "rod":          "https://pso2.arks-visiphone.com/wiki/Simple_Rods_List",
+    "talis":        "https://pso2.arks-visiphone.com/wiki/Simple_Talises_List",
+    "wand":         "https://pso2.arks-visiphone.com/wiki/Simple_Wands_List",
+    "jb":           "https://pso2.arks-visiphone.com/wiki/Simple_Jet_Boots_List",
+    "tact":         "https://pso2.arks-visiphone.com/wiki/Simple_Takts_List"
+}
+ICON_DICT = {
+    "Ability.png":            "ability",
+    "SpecialAbilityIcon.PNG": "saf",
+    "Special Ability":        "saf",
+    "Potential.png":          "potential",
+    "PA":                     "pa",
+    "Set Effect":             "set_effect"
+}
 for ele in ("Fire", "Ice", "Lightning", "Wind", "Light", "Dark"):
     ICON_DICT[ele] = ele.lower()
-SPECIAL_DICT = {"color:purple": "arena",
-                "color:red":    "photon",
-                "color:orange": "fuse",
-                "color:green":  "weaponoid"}
-CLASS_DICT = {"Hunter": "hu", "Fighter": "fi", "Ranger": "ra", "Gunner": "gu",
-              "Force": "fo", "Techer": "te", "Braver": "br", "Bouncer": "bo",
-              "Summoner": "su", "Hero": "hr"}
+SPECIAL_DICT = {
+    "color:purple": "arena",
+    "color:red":    "photon",
+    "color:orange": "fuse",
+    "color:green":  "weaponoid"
+}
+CLASS_DICT = {
+    "Hunter":   "hu",
+    "Fighter":  "fi",
+    "Ranger":   "ra",
+    "Gunner":   "gu",
+    "Force":    "fo",
+    "Techer":   "te",
+    "Braver":   "br",
+    "Bouncer":  "bo",
+    "Summoner": "su",
+    "Hero":     "hr"
+}
 
 #==================================================================================================================================================
 
@@ -127,7 +144,7 @@ class Weapon:
         max_atk = self.atk['max']
         embed.add_field(name="ATK", value="\n".join([f"{emojis[e]}{max_atk[e]}" for e in ATK_EMOJI]))
         for prp in self.properties:
-            embed.add_field(name=f"{emojis[prp['type']]}{prp['name']}", value=prp['description'])
+            embed.add_field(name=f"{emojis[prp['type']]}{prp['name']}", value=prp['description'], inline=False)
         return embed
 
 #==================================================================================================================================================
@@ -145,10 +162,12 @@ class EsBot():
         }
         test_guild = self.bot.get_guild(config.TEST_GUILD_ID)
         self.emojis = {}
-        for emoji_name in ("fire", "ice", "lightning", "wind", "light", "dark",
-                           "hu", "fi", "ra", "gu", "fo", "te", "br", "bo", "su", "hr",
-                           "satk", "ratk", "tatk", "ability", "potential", "set_effect",
-                           "pa", "saf", "star_0", "star_1", "star_2", "star_3", "star_4"):
+        for emoji_name in (
+            "fire", "ice", "lightning", "wind", "light", "dark",
+            "hu", "fi", "ra", "gu", "fo", "te", "br", "bo", "su", "hr",
+            "satk", "ratk", "tatk", "ability", "potential", "set_effect",
+            "pa", "saf", "star_0", "star_1", "star_2", "star_3", "star_4"
+        ):
             self.emojis[emoji_name] = discord.utils.find(lambda e:e.name==emoji_name, test_guild.emojis)
         for emoji_name in CATEGORY_DICT:
             self.emojis[emoji_name] = discord.utils.find(lambda e:e.name==emoji_name, test_guild.emojis)

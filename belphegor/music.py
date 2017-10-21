@@ -13,6 +13,7 @@ import json
 import locale
 import random
 import re
+from pymongo import ReturnDocument
 
 #==================================================================================================================================================
 
@@ -86,7 +87,13 @@ class Song:
         except:
             url = video.streams[-1].url
         self.duration = video.duration
-        self.music = discord.PCMVolumeTransformer(FFmpegWithBuffer(url, before_options="-reconnect 1 -reconnect_at_eof 1 -reconnect_streamed 1 -reconnect_delay_max 2"), volume=self.default_volume)
+        self.music = discord.PCMVolumeTransformer(
+            FFmpegWithBuffer(
+                url,
+                before_options="-reconnect 1 -reconnect_at_eof 1 -reconnect_streamed 1 -reconnect_delay_max 2"
+            ),
+            volume=self.default_volume
+        )
 
     def info(self):
         second_elapsed = int(self.music.original.counter * 0.02)
@@ -96,25 +103,54 @@ class Song:
         second_elapsed = int(self.music.original.counter * 0.02)
         return (second_elapsed//3600, second_elapsed%3600//60, second_elapsed%60)
 
+    def to_dict(self):
+        if self.requestor:
+            id = self.requestor.id
+        else:
+            id = None
+        return {"requestor_id": id, "title": self.title, "url": self.url}
+
 #==================================================================================================================================================
 
 class Playlist():
-    def __init__(self):
+    def __init__(self, bot, guild_id):
+        self.playlist_data = bot.db.music_playlist_data
+        self.guild_id = guild_id
         self.playlist = []
-        self._lock = asyncio.Event()
+        self._wait = asyncio.Event()
+        self._lock = asyncio.Lock()
 
-    def put(self, item):
-        self.playlist.append(item)
-        self._lock.set()
+    async def put(self, song):
+        async with self._lock:
+            self.playlist.append(song)
+            self._wait.set()
+            await self.playlist_data.update_one({"guild_id": self.guild_id}, {"$push": {"playlist": song.to_dict()}})
+
+    async def put_many(self, songs):
+        if songs:
+            async with self._lock:
+                self.playlist.extend(songs)
+                self._wait.set()
+                await self.playlist_data.update_one({"guild_id": self.guild_id}, {"$push": {"playlist": {"$each": [s.to_dict() for s in songs]}}})
 
     async def get(self):
         if not self.playlist:
-            self._lock.clear()
-            await self._lock.wait()
-        return self.playlist.pop(0)
+            self._wait.clear()
+            await self._wait.wait()
+        async with self._lock:
+            song = self.playlist.pop(0)
+            await self.playlist_data.update_one({"guild_id": self.guild_id}, {"$pop": {"playlist": -1}})
+            return song
 
-    def delete(self, position):
-        return self.playlist.pop(position)
+    async def delete(self, position):
+        async with self._lock:
+            self.playlist.pop(position)
+            await self.playlist_data.update_one({"guild_id": self.guild_id}, {"$set": {"playlist": [s.to_dict() for s in self.playlist]}})
+
+    async def purge(self):
+        async with self._lock:
+            self.playlist.clear()
+            await self.playlist_data.update_one({"guild_id": self.guild_id}, {"$set": {"playlist": []}})
 
     def size(self):
         return len(self.playlist)
@@ -134,9 +170,10 @@ class Playlist():
 #==================================================================================================================================================
 
 class MusicPlayer:
-    def __init__(self, bot):
+    def __init__(self, bot, guild_id, *, initial=[]):
         self.bot = bot
-        self.queue = Playlist()
+        self.guild_id = guild_id
+        self.queue = Playlist(bot, guild_id)
         self.voice_client = None
         self.current_song = None
         self.play_next_song = asyncio.Event()
@@ -144,6 +181,8 @@ class MusicPlayer:
         self.channel = None
         self.player = None
         self.lock = asyncio.Lock()
+        guild = bot.get_guild(guild_id)
+        self.queue.playlist.extend([Song(guild.get_member(s["requestor_id"]), s["title"], s["url"]) for s in initial])
 
     def ready_to_play(self, voice_client):
         self.voice_client = voice_client
@@ -162,6 +201,7 @@ class MusicPlayer:
         self.bot.loop.call_soon_threadsafe(self.play_next_song.set)
 
     async def leave_voice(self):
+        self.player.cancel()
         self.player = None
         self.repeat = False
         await self.voice_client.disconnect(force=True)
@@ -176,19 +216,15 @@ class MusicPlayer:
                         self.current_song = await asyncio.wait_for(self.queue.get(), 120, loop=self.bot.loop)
                     except asyncio.TimeoutError:
                         try:
-                            await self.leave_voice()
-                            await self.channel.send("*\"No music? Time to sleep then. Yaaawwnnnn~~\"*")
+                            self.bot.loop.create_task(self.leave_voice())
+                            self.bot.loop.create_task(self.channel.send("*\"No music? Time to sleep then. Yaaawwnnnn~~\"*"))
                             return
                         except:
                             return
-                try:
-                    await self.bot.loop.run_in_executor(None, self.current_song.raw_update)
-                    self.voice_client.play(self.current_song.music, after=self._next_part)
-                    name = utils.discord_escape(self.current_song.requestor.display_name)
-                    await self.channel.send(f"Playing **{self.current_song.title}** requested by {name}.")
-                except:
-                    await ctx.send("Error: cannot open song.")
-                    self._next_part()
+                await self.bot.loop.run_in_executor(None, self.current_song.raw_update)
+                self.voice_client.play(self.current_song.music, after=self._next_part)
+                name = utils.discord_escape(self.current_song.requestor.display_name)
+                await self.channel.send(f"Playing **{self.current_song.title}** requested by {name}.")
                 await self.play_next_song.wait()
         except asyncio.CancelledError:
             return
@@ -202,16 +238,22 @@ class MusicBot:
 
     def __init__(self, bot):
         self.bot = bot
+        self.playlist_data = bot.db.music_playlist_data
         self.music_players = {}
         locale.setlocale(locale.LC_ALL, '')
         self.youtube = build("youtube", "v3", developerKey=token.GOOGLE_CLIENT_API_KEY)
         self.lock = asyncio.Lock()
 
-    def get_music_player(self, guild_id):
-        try:
-            mp = self.music_players[guild_id]
-        except KeyError:
-            mp = MusicPlayer(self.bot)
+    async def get_music_player(self, guild_id):
+        mp = self.music_players.get(guild_id)
+        if not mp:
+            mp_data = await self.playlist_data.find_one_and_update(
+                {"guild_id": guild_id},
+                {"$setOnInsert": {"guild_id": guild_id, "playlist": []}},
+                return_document=ReturnDocument.AFTER,
+                upsert=True
+            )
+            mp = MusicPlayer(self.bot, guild_id, initial=mp_data["playlist"])
             self.music_players[guild_id] = mp
         return mp
 
@@ -228,7 +270,7 @@ class MusicBot:
             voice_channel = ctx.author.voice.channel
         except AttributeError:
             return await ctx.send("You are not in a voice channel.")
-        music_player = self.get_music_player(voice_channel.guild.id)
+        music_player = await self.get_music_player(voice_channel.guild.id)
         async with music_player.lock:
             msg = await ctx.send("Connecting...")
             current_voice = discord.utils.find(lambda vc: vc.guild.id==voice_channel.guild.id, self.bot.voice_clients)
@@ -244,11 +286,10 @@ class MusicBot:
 
     @music.command(aliases=["l",])
     async def leave(self, ctx):
-        music_player = self.get_music_player(ctx.guild.id)
+        music_player = await self.get_music_player(ctx.guild.id)
         await music_player.lock.acquire()
         try:
             name = music_player.voice_client.channel.name
-            music_player.player.cancel()
             await music_player.leave_voice()
             await ctx.send(f"{self.bot.user.display_name} left {name}.")
         except AttributeError:
@@ -266,7 +307,7 @@ class MusicBot:
 
     @music.command(aliases=["q",])
     async def queue(self, ctx, *, name:str=""):
-        music_player = self.get_music_player(ctx.guild.id)
+        music_player = await self.get_music_player(ctx.guild.id)
         if not name:
             try:
                 if music_player.voice_client.is_playing():
@@ -318,17 +359,18 @@ class MusicBot:
             except Exception as e:
                 #print(e)
                 return
-            music_player.queue.put(Song(ctx.message.author, result["snippet"]["title"], f"https://youtu.be/{result['id']['videoId']}"))
+            title = result["snippet"]["title"]
+            await music_player.queue.put(Song(ctx.message.author, title, f"https://youtu.be/{result['id']['videoId']}"))
             await ctx.send(f"Added **{title}** to queue.")
 
     @music.command(aliases=["s",])
     async def skip(self, ctx):
-        music_player = self.get_music_player(ctx.guild.id)
+        music_player = await self.get_music_player(ctx.guild.id)
         music_player.skip()
 
     @music.command(aliases=["v",])
     async def volume(self, ctx, vol:int):
-        music_player = self.get_music_player(ctx.guild.id)
+        music_player = await self.get_music_player(ctx.guild.id)
         if 0 <= vol <= 200:
             music_player.current_song.default_volume = vol / 100
             music_player.current_song.music.volume = vol / 100
@@ -338,7 +380,7 @@ class MusicBot:
 
     @music.command(aliases=["r",])
     async def repeat(self, ctx):
-        music_player = self.get_music_player(ctx.guild.id)
+        music_player = await self.get_music_player(ctx.guild.id)
         if music_player.repeat:
             music_player.repeat = False
             await ctx.send("Repeat mode has been turned off.")
@@ -348,34 +390,48 @@ class MusicBot:
 
     @music.command(aliases=["d",])
     async def delete(self, ctx, position:int):
-        music_player = self.get_music_player(ctx.guild.id)
+        music_player = await self.get_music_player(ctx.guild.id)
         if 0 < position <= music_player.queue.size():
+            title = music_player.queue[position].title
             sentences = {
                 "initial":  "Delet this?",
-                "yes":      f"Deleted **{song.title}** from queue.",
+                "yes":      f"Deleted **{title}** from queue.",
                 "no":       "Cancelled deleting.",
                 "timeout":  "Timeout, cancelled deleting."
             }
-            check = await ctx.yes_no_prompt(sentences)
+            check = await ctx.yes_no_prompt(sentences=sentences)
             if check:
-                song = music_player.queue.delete(position-1)
+                await music_player.queue.delete(position-1)
         else:
             await ctx.send("Position out of range.")
 
     @music.command()
+    async def purge(self, ctx):
+        music_player = await self.get_music_player(ctx.guild.id)
+        sentences = {
+            "initial":  f"Purge queue?",
+            "yes":      "Queue purged.",
+            "no":       "Cancelled purging.",
+            "timeout":  "Timeout, cancelled purging."
+        }
+        check = await ctx.yes_no_prompt(sentences=sentences)
+        if check:
+            await music_player.queue.purge()
+
+    @music.command()
     async def export(self, ctx, *, name="playlist"):
-        music_player = self.get_music_player(ctx.guild.id)
+        music_player = await self.get_music_player(ctx.guild.id)
         jsonable = []
         if music_player.current_song:
-            jsonable.append({"title": music_player.current_song.title, "url":music_player.current_song.url})
+            jsonable.append({"title": music_player.current_song.title, "url": music_player.current_song.url})
         for song in music_player.queue.playlist:
-            jsonable.append({"title": song.title, "url":song.url})
+            jsonable.append({"title": song.title, "url": song.url})
         bytes_ = json.dumps(jsonable, indent=4, ensure_ascii=False).encode("utf-8")
         await ctx.send(file=discord.File(bytes_, f"{name}.json"))
 
     @music.command(name="import")
     async def music_import(self, ctx):
-        music_player = self.get_music_player(ctx.guild.id)
+        music_player = await self.get_music_player(ctx.guild.id)
         msg = ctx.message
         if not ctx.message.attachments:
             await msg.add_reaction("\U0001f504")
@@ -394,8 +450,7 @@ class MusicBot:
         await msg.attachments[0].save(bytes_)
         playlist = json.loads(bytes_.getvalue().decode("utf-8"))
         try:
-            for song in playlist:
-                music_player.queue.put(Song(msg.author, song["title"], song["url"]))
+            await music_player.queue.put_many([Song(msg.author, s["title"], s["url"]) for s in playlist])
             await ctx.send(f"Added {len(playlist)} songs to queue.")
         except:
             await ctx.send("Wrong format for imported file.")
@@ -419,7 +474,7 @@ class MusicBot:
 
     @music.command(aliases=["p",])
     async def playlist(self, ctx, *, name):
-        music_player = self.get_music_player(ctx.guild.id)
+        music_player = await self.get_music_player(ctx.guild.id)
         if name.startswith("-random "):
             shuffle = True
             name = name[8:]
@@ -452,22 +507,8 @@ class MusicBot:
                 add_text = " in random position"
             else:
                 add_text = ""
-            for item in items:
-                music_player.queue.put(item)
+            await music_player.queue.put_many(items)
             await ctx.send(f"Added {len(items)} songs to queue{add_text}.")
-
-    @music.command()
-    async def purge(self, ctx):
-        music_player = self.get_music_player(ctx.guild.id)
-        sentences = {
-            "initial":  f"Purge queue?",
-            "yes":      "Queue purged.",
-            "no":       "Cancelled purging.",
-            "timeout":  "Timeout, cancelled purging."
-        }
-        check = await ctx.yes_no_prompt(sentences)
-        if check:
-            music_player.queue.playlist[:] = []
 
     def youtube_video_info(self, url):
         video_id = url[17:]
@@ -477,7 +518,7 @@ class MusicBot:
 
     @music.command(aliases=["i",])
     async def info(self, ctx, position: int=0):
-        music_player = self.get_music_player(ctx.guild.id)
+        music_player = await self.get_music_player(ctx.guild.id)
         position -= 1
         if position < 0:
             try:
@@ -518,7 +559,7 @@ class MusicBot:
 
     @music.command(aliases=["t",])
     async def toggle(self, ctx):
-        music_player = self.get_music_player(ctx.guild.id)
+        music_player = await self.get_music_player(ctx.guild.id)
         vc = music_player.voice_client
         if vc.is_paused():
             vc.resume()
@@ -529,7 +570,7 @@ class MusicBot:
 
     @music.command(aliases=["f"])
     async def forward(self, ctx, seconds: int=10):
-        music_player = self.get_music_player(ctx.guild.id)
+        music_player = await self.get_music_player(ctx.guild.id)
         song = music_player.current_song
         if song:
             if 0 < seconds < 60:
@@ -544,9 +585,9 @@ class MusicBot:
 
     @music.command()
     async def setchannel(self, ctx):
-        music_player = self.get_music_player(ctx.guild.id)
+        music_player = await self.get_music_player(ctx.guild.id)
         music_player.channel = ctx.channel
-        await ctx.message.add_reaction("\u2705")
+        await ctx.confirm()
 
 #==================================================================================================================================================
 

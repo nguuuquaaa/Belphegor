@@ -12,6 +12,8 @@ class StickerBot:
         self.sticker_regex = re.compile(r"(?<=[$+])\w+", flags=re.I)
 
     async def on_message(self, message):
+        if message.author.bot:
+            return
         result = self.sticker_regex.findall(message.content)
         st = await self.sticker_list.find_one({"name": {"$in": result}})
         if st:

@@ -21,40 +21,43 @@ class BelphegorContext(commands.Context):
     async def embed_page(self, *, max_page, embed, timeout=60, target=None):
         _loop = self.bot.loop
         message = await self.send(embed=embed(0))
-        target = target or self.author
-        current_page = 0
-        possible_reactions = ("\u23ee", "\u25c0", "\u25b6", "\u23ed", "\u274c")
-        for r in possible_reactions:
-            _loop.create_task(message.add_reaction(r))
-        while True:
-            try:
-                reaction, user = await self.bot.wait_for("reaction_add", check=lambda r,u: u.id==target.id and r.emoji in possible_reactions and r.message.id==message.id, timeout=timeout)
-            except:
+        if max_page > 1:
+            target = target or self.author
+            current_page = 0
+            possible_reactions = ("\u23ee", "\u25c0", "\u25b6", "\u23ed", "\u274c")
+            for r in possible_reactions:
+                _loop.create_task(message.add_reaction(r))
+            while True:
                 try:
-                    return await message.clear_reactions()
+                    reaction, user = await self.bot.wait_for(
+                        "reaction_add",
+                        check=lambda r,u: u.id==target.id and r.emoji in possible_reactions and r.message.id==message.id,
+                        timeout=timeout
+                    )
                 except:
-                    return
-            if reaction.emoji == "\u25c0":
-                current_page = max(current_page-1, 0)
+                    try:
+                        return await message.clear_reactions()
+                    except:
+                        return
+                e = reaction.emoji
+                if e == "\u25c0":
+                    current_page = max(current_page-1, 0)
+                elif e == "\u25b6":
+                    current_page = min(current_page+1, max_page-1)
+                elif e == "\u23ee":
+                    current_page = max(current_page-10, 0)
+                elif e == "\u23ed":
+                    current_page = min(current_page+10, max_page-1)
+                else:
+                    try:
+                        return await message.clear_reactions()
+                    except:
+                        return
                 await message.edit(embed=embed(current_page))
-            elif reaction.emoji == "\u25b6":
-                current_page = min(current_page+1, max_page-1)
-                await message.edit(embed=embed(current_page))
-            elif reaction.emoji == "\u23ee":
-                current_page = max(current_page-10, 0)
-                await message.edit(embed=embed(current_page))
-            elif reaction.emoji == "\u23ed":
-                current_page = min(current_page+10, max_page-1)
-                await message.edit(embed=embed(current_page))
-            else:
                 try:
-                    return await message.clear_reactions()
+                    await message.remove_reaction(reaction, user)
                 except:
-                    return
-            try:
-                await message.remove_reaction(reaction, user)
-            except:
-                pass
+                    pass
 
     async def yes_no_prompt(self, *, sentences, timeout=60, target=None):
         _loop = self.bot.loop
@@ -64,7 +67,11 @@ class BelphegorContext(commands.Context):
         for r in possible_reactions:
             _loop.create_task(message.add_reaction(r))
         try:
-            reaction, user = await self.bot.wait_for("reaction_add", check=lambda r,u: u.id==target.id and r.emoji in possible_reactions and r.message.id==message.id, timeout=timeout)
+            reaction, user = await self.bot.wait_for(
+                "reaction_add",
+                check=lambda r,u: u.id==target.id and r.emoji in possible_reactions and r.message.id==message.id,
+                timeout=timeout
+            )
         except:
             _loop.create_task(message.edit(content=sentences["timeout"]))
             try:
@@ -94,7 +101,7 @@ class Belphegor(commands.Bot):
         self.process.cpu_percent(None)
         self.start_time = utils.now_time()
         self.loop.create_task(self.load())
-        self.block_users = []
+        self.block_users = set()
         self.mongo_client = motor_asyncio.AsyncIOMotorClient()
         self.db = self.mongo_client.belphydb
 

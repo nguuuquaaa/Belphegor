@@ -9,7 +9,7 @@ import traceback
 from bs4 import BeautifulSoup as BS
 from apiclient.discovery import build
 import asyncio
-from pymongo import ReturnDocument
+from pymongo import ReturnDocument, UpdateOne
 import json
 
 #==================================================================================================================================================
@@ -22,19 +22,24 @@ class Daemon:
 
     @classmethod
     def empty(cls, id):
-        return cls({"id": id, "name": None, "alias": None, "pic_url": None, "artwork_url": None, "max_atk": 0, "max_hp": 0,
+        return cls({
+            "id": id, "name": None, "alias": None, "pic_url": None, "artwork_url": None, "max_atk": 0, "max_hp": 0,
             "mlb_atk": None, "mlb_hp": None, "rarity": 0, "daemon_type": None, "daemon_class": None, "skills": [], "abilities": [], "bonds": [],
             "faction": None, "voice_actor": None, "illustrator": None, "description": None, "how_to_acquire": None, "notes_and_trivia": None,
-            "quotes": {"main": {}, "skill": {}, "summon": {}, "limit_break": {}}})
+            "quotes": {"main": {}, "skill": {}, "summon": {}, "limit_break": {}}
+        })
 
     def embed_form(self, cog):
         emojis = cog.emojis
         data_embed = discord.Embed(colour=discord.Colour.orange())
-        data_embed.add_field(name=f"{emojis.get(self.daemon_type, '')} #{self.id} {self.name}",
-                             value=f"{emojis.get(self.daemon_class, '')} | {str(emojis['star'])*self.rarity}\n"
-                                   f"{emojis['atk']}{self.atk}\n{emojis['hp']}{self.hp}"
-                                   "\n----------------------------------------------------------------------------------",
-                             inline=False)
+        data_embed.add_field(
+            name=f"{emojis.get(self.daemon_type, '')} #{self.id} {self.name}",
+            value=
+                f"{emojis.get(self.daemon_class, '')} | {str(emojis['star'])*self.rarity}\n"
+                f"{emojis['atk']}{self.atk}\n{emojis['hp']}{self.hp}"
+                "\n----------------------------------------------------------------------------------",
+            inline=False
+        )
         check = len(self.skills) + len(self.abilities) + len(self.bonds) - 1
         field_list = ("skills", "abilities", "bonds")
         for index, key in enumerate(("skill", "ability", "bond")):
@@ -71,10 +76,15 @@ class Daemon:
         data_embed.add_field(name="How to Acquire", value=self.how_to_acquire or "--", inline=False)
         data_embed.add_field(name="Notes & Trivia", value=self.notes_and_trivia or "--", inline=False)
         quotes = self.quotes
-        data_embed.add_field(name="Quotes", value=f"Main: [{quotes['main'].get('value')}]({quotes['main'].get('url')})\n"
-                                                  f"Skill: [{quotes['skill'].get('value')}]({quotes['skill'].get('url')})\n"
-                                                  f"Summon: [{quotes['summon'].get('value')}]({quotes['summon'].get('url')})\n"
-                                                  f"Limit break: [{quotes['limit_break'].get('value')}]({quotes['limit_break'].get('url')})\n", inline=False)
+        data_embed.add_field(
+            name="Quotes",
+            value=
+                f"Main: [{quotes['main'].get('value')}]({quotes['main'].get('url')})\n"
+                f"Skill: [{quotes['skill'].get('value')}]({quotes['skill'].get('url')})\n"
+                f"Summon: [{quotes['summon'].get('value')}]({quotes['summon'].get('url')})\n"
+                f"Limit break: [{quotes['limit_break'].get('value')}]({quotes['limit_break'].get('url')})\n",
+            inline=False
+        )
         return pic_embed, data_embed
 
     @property
@@ -424,10 +434,14 @@ class OtogiBot():
     async def update(self, ctx):
         if ctx.invoked_subcommand is None:
             embed = discord.Embed(title=":cd: Update database", colour=discord.Colour.orange())
-            embed.add_field(name="Otogi SSA server only command", value=
-                            "`>>update create <data>` - Add an entry to database.")
-            embed.add_field(name="Public command", value=
-                            "`>>update wikia <name>` - Update an entry with the information from wikia.\n")
+            embed.add_field(
+                name="Otogi SSA server only command",
+                value="`>>update create <data>` - Add an entry to database."
+            )
+            embed.add_field(
+                name="Public command",
+                value="`>>update wikia <name>` - Update an entry with the information from wikia.\n"
+            )
             await ctx.send(embed=embed)
 
     @update.command()
@@ -484,8 +498,10 @@ class OtogiBot():
             return
         field = data[1]
         value = data[2]
-        if field.lower() in ("name", "alias","pic_url", "artwork_url", "max_atk", "max_hp", "mlb_atk", "mlb_hp", "rarity",
-                             "daemon_type", "daemon_class", "skill", "ability1", "ability2", "bond1", "bond2", "faction"):
+        if field.lower() in (
+            "name", "alias","pic_url", "artwork_url", "max_atk", "max_hp", "mlb_atk", "mlb_hp", "rarity",
+            "daemon_type", "daemon_class", "skill", "ability1", "ability2", "bond1", "bond2", "faction"
+        ):
             try:
                 if field.lower() in ("skill", "ability1", "ability2", "bond1", "bond2"):
                     value = {"name": data[2], "effect": data[3]}
@@ -672,8 +688,12 @@ class OtogiBot():
 
     async def get_player(self, id):
         async with self.lock:
-            return await self.player_list.find_one_and_update({"id": id}, {"$setOnInsert": {"id": id, "mochi": 0, "daemons": []}},
-                return_document=ReturnDocument.AFTER, upsert=True)
+            return await self.player_list.find_one_and_update(
+                {"id": id},
+                {"$setOnInsert": {"id": id, "mochi": 0, "daemons": []}},
+                return_document=ReturnDocument.AFTER,
+                upsert=True
+            )
 
     async def batch_search(self, id_list):
         return {daemon["id"]: daemon async for daemon in self.daemon_collection.find({"id": {"$in": id_list}}, projection={"_id": False, "id": True, "name": True, "rarity": True})}
@@ -843,7 +863,7 @@ class OtogiBot():
             player["daemons"].pop(index)
             number_of_daemons += 1
             total_mochi += self.mochi_cost(daemon) * (lb + 1)
-        await self.player_list.find_one_and_update({"id": ctx.author.id}, {"$inc": {"mochi": total_mochi}, "$set": {"daemons": player["daemons"]}})
+        await self.player_list.update_one({"id": ctx.author.id}, {"$inc": {"mochi": total_mochi}, "$set": {"daemons": player["daemons"]}})
         await ctx.send(f"{ctx.author.display_name} sold {number_of_daemons} daemon(s) for {total_mochi}{self.emojis['mochi']}.\n{len(names)-number_of_daemons} failed.")
 
     @mochi.command()
@@ -862,7 +882,7 @@ class OtogiBot():
                     total_mochi += self.mochi_cost(daemon) * (target["lb"] + 1)
                 else:
                     i += 1
-        await self.player_list.find_one_and_update({"id": ctx.author.id}, {"$inc": {"mochi": total_mochi}, "$set": {"daemons": player["daemons"]}})
+        await self.player_list.update_one({"id": ctx.author.id}, {"$inc": {"mochi": total_mochi}, "$set": {"daemons": player["daemons"]}})
         await ctx.send(f"{ctx.author.display_name} sold {number_of_daemons} daemon(s) for {total_mochi}{self.emojis['mochi']}.")
 
     @mochi.command()
@@ -879,7 +899,7 @@ class OtogiBot():
                 total_mochi += self.mochi_cost(dm) * (d["lb"] + 1)
             else:
                 i += 1
-        await self.player_list.find_one_and_update({"id": ctx.author.id}, {"$inc": {"mochi": total_mochi}, "$set": {"daemons": player["daemons"]}})
+        await self.player_list.update_one({"id": ctx.author.id}, {"$inc": {"mochi": total_mochi}, "$set": {"daemons": player["daemons"]}})
         await ctx.send(f"{ctx.author.display_name} sold all {rarity}* daemons for {total_mochi}{self.emojis['mochi']}.")
 
     @commands.command()
@@ -902,10 +922,11 @@ class OtogiBot():
                 i += 1
         else:
             return await ctx.send(f"You don't even have {daemon.name} lb{lb}.")
-        await self.player_list.update_one({"id": myself["id"]}, {"$set": {"daemons": myself["daemons"]}})
-        await self.player_list.update_one({"id": target["id"]}, {"$set": {"daemons": target["daemons"]}})
+        await self.player_list.bulk_write([
+            UpdateOne({"id": myself["id"]}, {"$set": {"daemons": myself["daemons"]}}),
+            UpdateOne({"id": target["id"]}, {"$set": {"daemons": target["daemons"]}})
+        ])
         await ctx.send(f"{ctx.author.display_name} gave {member.display_name} {daemon.name} lb{dm['lb']}.")
-
 
     @commands.command()
     async def gimme(self, ctx, member: discord.Member, *, data):
@@ -943,8 +964,10 @@ class OtogiBot():
                     i += 1
             else:
                 return await ctx.send(f"{member.display_name} doesn't have {daemon.name} lb{lb}.")
-        await self.player_list.update_one({"id": myself["id"]}, {"$set": {"daemons": myself["daemons"]}, "$inc": {"mochi": -price}})
-        await self.player_list.update_one({"id": target["id"]}, {"$set": {"daemons": target["daemons"]}, "$inc": {"mochi": price}})
+        await self.player_list.bulk_write([
+            UpdateOne({"id": myself["id"]}, {"$set": {"daemons": myself["daemons"]}}),
+            UpdateOne({"id": target["id"]}, {"$set": {"daemons": target["daemons"]}})
+        ])
         await ctx.send(f"{ctx.author.display_name} gave {member.display_name} {daemon.name} lb{dm['lb']}.")
 
     def lb_that(self, player, mini_id):
@@ -1069,8 +1092,27 @@ class OtogiBot():
     @commands.command()
     async def gcqstr(self, ctx):
         cur = self.daemon_collection.aggregate([
-            {"$project": {"_id": 0, "name": "$name", "atk": "$max_atk", "hp": "$max_hp", "total_stat": {"$add": [{"$divide": ["$max_atk", 10]}, "$max_hp"]}}},
-            {"$sort": {"total_stat": -1}}
+            {
+                "$project": {
+                    "_id": 0,
+                    "name": "$name",
+                    "atk": "$max_atk",
+                    "hp": "$max_hp",
+                    "total_stat": {
+                        "$add": [
+                            {
+                                "$divide": ["$max_atk", 10]
+                            },
+                            "$max_hp"
+                         ]
+                    }
+                }
+            },
+            {
+                "$sort": {
+                    "total_stat": -1
+                }
+            }
         ])
         i = 0
         page_data = []

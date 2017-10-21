@@ -18,12 +18,35 @@ async def pie_chart(data, *, unit="count", aa=4):
         prev_angle = 0
         for index, item in enumerate(data):
             cur_angle = prev_angle + 360*item[1]/number_of_items
-            draw.pieslice((aa*20, aa*20, aa*480, aa*480), -90.0+prev_angle, -90.0+cur_angle, fill=item[2])
-            draw.rectangle((aa*525, aa*(27+index*60), aa*550, aa*(52+index*60)), fill=item[2])
-            draw.text((aa*560, aa*(30+index*60)), item[0], font=font, fill=(0, 0, 0))
-            draw.text((aa*560, aa*(55+index*60)), f"{item[1]} {unit} - {100*item[1]/number_of_items:.2f}%", font=font, fill=(0, 0, 0))
+            draw.pieslice(
+                (aa*20, aa*20, aa*480, aa*480),
+                -90.0+prev_angle,
+                -90.0+cur_angle,
+                fill=item[2]
+            )
+            draw.rectangle(
+                (aa*525, aa*(27+index*60), aa*550, aa*(52+index*60)),
+                fill=item[2]
+            )
+            draw.text(
+                (aa*560, aa*(30+index*60)),
+                item[0],
+                font=font,
+                fill=(0, 0, 0)
+            )
+            draw.text(
+                (aa*560, aa*(55+index*60)),
+                f"{item[1]} {unit} - {100*item[1]/number_of_items:.2f}%",
+                font=font,
+                fill=(0, 0, 0)
+            )
             prev_angle = cur_angle
-        draw.text((aa*560, aa*(30+number_of_fields*60)), f"Total: {number_of_items} {unit}", font=big_font, fill=(0, 0, 0))
+        draw.text(
+            (aa*560, aa*(30+number_of_fields*60)),
+            f"Total: {number_of_items} {unit}",
+            font=big_font,
+            fill=(0, 0, 0)
+        )
         if aa > 1:
             resized_pic = pic.resize((800, max(500, 70 + 60*number_of_fields)), resample=Image.HAMMING)
         else:
