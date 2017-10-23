@@ -37,7 +37,7 @@ class RandomBot:
         pic = json.loads(bytes_)[0]
         title = "Danbooru" if rating=="safe" else "NSFW Danbooru"
         embed = discord.Embed(
-            title="Danbooru",
+            title=title,
             description=utils.discord_escape(pic.get("tag_string", "")),
             url=f"https://danbooru.donmai.us/posts/{pic['id']}",
             colour=discord.Colour.red()
@@ -56,7 +56,7 @@ class RandomBot:
         pic = json.loads(bytes_)[0]
         title = "Konachan" if rating=="safe" else "NSFW Konachan"
         embed = discord.Embed(
-            title="Konachan",
+            title=title,
             description=utils.discord_escape(pic.get("tags", "")),
             url=f"http://konachan.{domain}/post/show/{pic['id']}",
             colour=discord.Colour.red()

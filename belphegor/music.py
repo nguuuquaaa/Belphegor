@@ -74,6 +74,7 @@ class Song:
         self.title = utils.discord_escape(title)
         self.url = url
         self.default_volume = 1.0
+        self.index = 0
 
     def raw_update(self):
         video = pafy.new(self.url)
@@ -113,25 +114,57 @@ class Song:
 #==================================================================================================================================================
 
 class Playlist():
-    def __init__(self, bot, guild_id):
+    def __init__(self, bot, guild_id, *, next_index):
         self.playlist_data = bot.db.music_playlist_data
         self.guild_id = guild_id
         self.playlist = []
         self._wait = asyncio.Event()
         self._lock = asyncio.Lock()
+        self.next_index = next_index
 
     async def put(self, song):
         async with self._lock:
+            song.index = self.next_index
+            self.next_index += 1
             self.playlist.append(song)
             self._wait.set()
-            await self.playlist_data.update_one({"guild_id": self.guild_id}, {"$push": {"playlist": song.to_dict()}})
+            await self.playlist_data.update_one(
+                {
+                    "guild_id": self.guild_id
+                },
+                {
+                    "$set": {
+                        "next_index": self.next_index
+                    },
+                    "$push": {
+                        "playlist": song.to_dict()
+                    }
+                }
+            )
 
     async def put_many(self, songs):
         if songs:
             async with self._lock:
+                for s in songs:
+                    s.index = self.next_index
+                    self.next_index += 1
                 self.playlist.extend(songs)
                 self._wait.set()
-                await self.playlist_data.update_one({"guild_id": self.guild_id}, {"$push": {"playlist": {"$each": [s.to_dict() for s in songs]}}})
+                await self.playlist_data.update_one(
+                    {
+                        "guild_id": self.guild_id
+                    },
+                    {
+                        "$set": {
+                            "next_index": self.next_index
+                        },
+                        "$push": {
+                            "playlist": {
+                                "$each": [s.to_dict() for s in songs]
+                            }
+                        }
+                    }
+                )
 
     async def get(self):
         if not self.playlist:
@@ -144,8 +177,9 @@ class Playlist():
 
     async def delete(self, position):
         async with self._lock:
-            self.playlist.pop(position)
-            await self.playlist_data.update_one({"guild_id": self.guild_id}, {"$set": {"playlist": [s.to_dict() for s in self.playlist]}})
+            song = self.playlist.pop(position)
+            await self.playlist_data.update_one({"guild_id": self.guild_id}, {"$pull": {"playlist": {"index": song.index}}})
+            return song
 
     async def purge(self):
         async with self._lock:
@@ -170,10 +204,10 @@ class Playlist():
 #==================================================================================================================================================
 
 class MusicPlayer:
-    def __init__(self, bot, guild_id, *, initial=[]):
+    def __init__(self, bot, guild_id, *, initial, next_index):
         self.bot = bot
         self.guild_id = guild_id
-        self.queue = Playlist(bot, guild_id)
+        self.queue = Playlist(bot, guild_id, next_index=next_index)
         self.voice_client = None
         self.current_song = None
         self.play_next_song = asyncio.Event()
@@ -249,11 +283,11 @@ class MusicBot:
         if not mp:
             mp_data = await self.playlist_data.find_one_and_update(
                 {"guild_id": guild_id},
-                {"$setOnInsert": {"guild_id": guild_id, "playlist": []}},
+                {"$setOnInsert": {"guild_id": guild_id, "next_index": 0, "playlist": []}},
                 return_document=ReturnDocument.AFTER,
                 upsert=True
             )
-            mp = MusicPlayer(self.bot, guild_id, initial=mp_data["playlist"])
+            mp = MusicPlayer(self.bot, guild_id, initial=mp_data["playlist"], next_index=mp_data["next_index"])
             self.music_players[guild_id] = mp
         return mp
 
@@ -392,7 +426,7 @@ class MusicBot:
     async def delete(self, ctx, position:int):
         music_player = await self.get_music_player(ctx.guild.id)
         if 0 < position <= music_player.queue.size():
-            title = music_player.queue[position].title
+            title = music_player.queue(position).title
             sentences = {
                 "initial":  "Delet this?",
                 "yes":      f"Deleted **{title}** from queue.",
@@ -450,6 +484,8 @@ class MusicBot:
         await msg.attachments[0].save(bytes_)
         playlist = json.loads(bytes_.getvalue().decode("utf-8"))
         try:
+            if len(playlist) > 10000:
+                return await ctx.send("Too many entries.")
             await music_player.queue.put_many([Song(msg.author, s["title"], s["url"]) for s in playlist])
             await ctx.send(f"Added {len(playlist)} songs to queue.")
         except:

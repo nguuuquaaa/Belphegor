@@ -1,8 +1,7 @@
 import discord
 from discord.ext import commands
 import random
-from .board_game import dices
-from . import utils
+from . import utils, board_game
 from .utils import config, checks
 from bs4 import BeautifulSoup as BS
 import asyncio
@@ -168,12 +167,13 @@ class MiscBot:
         await ctx.send(embed=embed)
 
     @commands.command()
-    async def dice(self, ctx, max_side:int, number_of_dices:int = 2):
+    async def dice(self, ctx, max_side: int, number_of_dices: int):
         if 120 >= max_side > 3 and 0 < number_of_dices <= 100:
-            RNG = dices.Dices(max_side, number_of_dices)
+            rng = board_game.Dices(max_side, number_of_dices)
+            roll_result = rng.roll()
             await ctx.send(
                 "```\nRoll result:\n{}\n\nDistribution:\n{}\n```"
-                .format(", ".join([str(r) for r in RNG.rolls]), "\n".join(["{} showed up {} times.".format(i, RNG.rolls.count(i)) for i in range(1, max_side+1)]))
+                .format(", ".join([str(r) for r in roll_result]), "\n".join(["{} showed up {} times.".format(i, roll_result.count(i)) for i in range(1, max_side+1)]))
             )
         else:
             await ctx.send("Max side must be between 4 and 120 and number of dices must be between 1 and 100")
@@ -370,11 +370,17 @@ class MiscBot:
         #weather
         tag = data.find("div", class_="g tpo knavi obcontainer mod")
         try:
-            embed = discord.Embed(title="Search result:", description=f"**Weather**\n[More on weather.com]({utils.safe_url(tag.find('td', class_='_Hif').a['href'])})",
-                                  colour=discord.Colour.dark_orange())
+            embed = discord.Embed(
+                title="Search result:",
+                description=f"**Weather**\n[More on weather.com]({utils.safe_url(tag.find('td', class_='_Hif').a['href'])})",
+                colour=discord.Colour.dark_orange()
+            )
             embed.set_thumbnail(url=f"https:{tag.find('img', id='wob_tci')['src']}")
-            embed.add_field(name=tag.find("div", class_="vk_gy vk_h").text,
-                            value=f"{tag.find('div', id='wob_dts').text}\n{tag.find('div', id='wob_dcp').text}", inline=False)
+            embed.add_field(
+                name=tag.find("div", class_="vk_gy vk_h").text,
+                value=f"{tag.find('div', id='wob_dts').text}\n{tag.find('div', id='wob_dcp').text}",
+                inline=False
+            )
             embed.add_field(name="Temperature", value=f"{tag.find('span', id='wob_tm').text}°C | {tag.find('span', id='wob_ttm').text}°F")
             embed.add_field(name="Precipitation", value=tag.find('span', id='wob_pp').text)
             embed.add_field(name="Humidity", value=tag.find('span', id='wob_hm').text)

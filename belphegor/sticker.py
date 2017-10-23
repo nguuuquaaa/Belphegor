@@ -42,6 +42,14 @@ class StickerBot:
             await ctx.send("Url should start with http or https.")
 
     @sticker.command()
+    async def edit(self, ctx, name, url):
+        before = await self.tag_list.find_one_and_update({"name": name, "author_id": ctx.author.id}, {"$set": {"url": url}})
+        if before is None:
+            await ctx.send(f"Cannot edit sticker.\nEither sticker doesn't exist or you are not the creator of the sticker.")
+        else:
+            await ctx.send(f"Sticker {name} edited.")
+
+    @sticker.command()
     async def find(self, ctx, *, name):
         sticker_names = await self.sticker_list.distinct("name", {})
         relevant = process.extract(name, sticker_names, limit=10)

@@ -1,28 +1,22 @@
 import random
 
+#==================================================================================================================================================
 
 class Dices:
     def __init__(self, max_side, number_of_dices):
         self.max_side = max_side
         self.number_of_dices = number_of_dices
-        self.rolls=[]
-        self.roll()
 
     def roll(self):
-        self.rolls.clear()
-        for i in range(self.number_of_dices):
-            self.rolls.append(random.randint(1, self.max_side))
-        return self.rolls
+        self._rolls = tuple(1+random.randrange(self.max_side) for i in range(self.number_of_dices))
+        return list(self._rolls)
 
     def total(self):
-        number = 0
-        for i in self.rolls:
-            number += i
-        return number
+        return sum(self._rolls)
 
     def dupe(self):
-        number = self.rolls[0]
-        for i in self.rolls:
+        number = self._rolls[0]
+        for i in self._rolls:
             if i != number:
                 return False
         return True

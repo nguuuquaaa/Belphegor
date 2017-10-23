@@ -191,7 +191,9 @@ class HelpBot:
         embed.add_field(
             name="Manage server permission only",
             value=
-                "`>>welcome` - Set welcome message on the channel invoked\n"
+                "`>>set`\n"
+                "`>>unset`\n"
+                "Note: these 2 commands are used to set up welcome channel (`welcome`), NSFW role (`nsfwrole`) and log channel (`log`)\n\n"
                 "`>>mute` - Give a member \"Muted\" role if exists\n"
                 "Can specify reason and temporary (24h or less) ban time\n"
                 "`>>unmute` - Remove \"Muted\" role from a member\n\n"
@@ -199,12 +201,7 @@ class HelpBot:
                 "`>>ban` - Ban member, with optional reason\n"
                 "`>>unban` - Unban member, with optional reason\n\n"
                 "`>>purge` - Bulk delete messages, default 100 (most recent messages)\n"
-                "`>>purgereact` - Remove reactions of messages with given ids",
-            inline=False
-        )
-        embed.add_field(
-            name="Manage roles permission only",
-            value=
+                "`>>purgereact` - Remove reactions of messages with given ids\n\n"
                 "`>>selfrole add` - Add an existed role to selfrole pool\n"
                 "`>>selfrole remove` - Remove a role from selfrole pool",
             inline=False
@@ -277,6 +274,7 @@ class HelpBot:
             value=
                 "`>>sticker add` - Add a sticker\n"
                 "Format: `sticker_name_no_space pic_url`\n\n"
+                "`sticker edit` - Edit sticker url\n"
                 "`>>sticker find` - Find a sticker with given name",
             inline=False
         )

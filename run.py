@@ -59,7 +59,7 @@ class BelphegorContext(commands.Context):
                 except:
                     pass
 
-    async def yes_no_prompt(self, *, sentences, timeout=60, target=None):
+    async def yes_no_prompt(self, *, sentences, timeout=60, target=None, delete_mode=False):
         _loop = self.bot.loop
         message = await self.send(sentences["initial"])
         target = target or self.author
@@ -73,22 +73,26 @@ class BelphegorContext(commands.Context):
                 timeout=timeout
             )
         except:
-            _loop.create_task(message.edit(content=sentences["timeout"]))
+            result = False
+            if not delete_mode:
+                _loop.create_task(message.edit(content=sentences["timeout"]))
+        else:
+            if reaction.emoji == "\u2705":
+                result = True
+                if not delete_mode:
+                    _loop.create_task(message.edit(content=sentences["yes"]))
+            else:
+                result = False
+                if not delete_mode:
+                    _loop.create_task(message.edit(content=sentences["no"]))
+        if delete_mode:
+            _loop.create_task(message.detete())
+        else:
             try:
                 _loop.create_task(message.clear_reactions())
             except:
                 pass
-            return False
-        try:
-            _loop.create_task(message.clear_reactions())
-        except:
-            pass
-        if reaction.emoji == "\u2705":
-            _loop.create_task(message.edit(content=sentences["yes"]))
-            return True
-        else:
-            _loop.create_task(message.edit(content=sentences["no"]))
-            return False
+        return result
 
 #==================================================================================================================================================
 

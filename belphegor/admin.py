@@ -15,14 +15,21 @@ class AdminBot:
     def __init__(self, bot):
         self.bot = bot
 
+    def cancel_task_of(self, extension):
+        _loop = self.bot.loop
+        if extension == "belphegor.remind":
+            cog = self.bot.get_cog("RemindBot")
+            if cog:
+                cog.reminder.cancel()
+        elif extension == "belphegor.music":
+            cog = self.bot.get_cog("MusicBot")
+            if cog:
+                for mp in cog.music_players.values():
+                    _loop.create_task(mp.leave_voice())
+
     async def reload_extension(self, ctx, extension):
         try:
-            if extension == "belphegor.remind":
-                self.bot.get_cog("RemindBot").reminder.cancel()
-            elif extension == "belphegor.music":
-                _loop = self.bot.loop
-                for mp in self.bot.get_cog("MusicBot").music_players.values():
-                    _loop.create_task(mp.leave_voice())
+            self.cancel_task_of(extension)
             self.bot.unload_extension(extension)
             self.bot.load_extension(extension)
             print(f"Reloaded {extension}")
@@ -35,12 +42,7 @@ class AdminBot:
         with open("extensions.txt") as file:
             extensions = [e for e in file.read().splitlines() if e]
         for extension in self.bot.extensions.copy():
-            if extension == "belphegor.remind":
-                self.bot.get_cog("RemindBot").reminder.cancel()
-            elif extension == "belphegor.music":
-                _loop = self.bot.loop
-                for mp in self.bot.get_cog("MusicBot").music_players.values():
-                    _loop.create_task(mp.leave_voice())
+            self.cancel_task_of(extension)
             self.bot.unload_extension(extension)
         check = True
         for extension in extensions:

@@ -15,10 +15,20 @@ class GuildBot:
 
     def __init__(self, bot):
         self.bot = bot
-        self.welcome_channel_list = bot.db.welcome_channel_list
+        self.guild_task_list = bot.db.guild_task_list
         self.banned_emojis = []
-        self.nsfw_role_list = bot.db.nsfw_role_list
-        self.selfrole_list = bot.db.selfrole_list
+
+    @commands.group(name="set")
+    @checks.manager_only()
+    async def cmd_set(self, ctx):
+        if ctx.invoked_subcommand is None:
+            pass
+
+    @commands.group(name="unset")
+    @checks.manager_only()
+    async def cmd_unset(self, ctx):
+        if ctx.invoked_subcommand is None:
+            pass
 
     @commands.command()
     @checks.manager_only()
@@ -63,12 +73,20 @@ class GuildBot:
         except:
             await ctx.deny()
 
-    @commands.command()
-    @checks.manager_only()
-    async def setnsfwrole(self, ctx, *, name):
+    @cmd_set.command()
+    async def nsfwrole(self, ctx, *, name):
         role = discord.utils.find(lambda r: name.lower() in r.name.lower(), ctx.guild.roles)
         if role:
-            await self.nsfw_role_list.update_one({"guild_id": ctx.guild.id}, {"$set": {"role_id": role.id}}, upsert=True)
+            await self.guild_task_list.update_one({"guild_id": ctx.guild.id}, {"$set": {"nsfw_role_id": role.id}}, upsert=True)
+            return await ctx.confirm()
+        else:
+            await ctx.deny()
+
+    @cmd_unset.command(name="nsfwrole")
+    async def nonsfwrole(self, ctx, *, name):
+        role = discord.utils.find(lambda r: name.lower() in r.name.lower(), ctx.guild.roles)
+        if role:
+            await self.guild_task_list.update_one({"guild_id": ctx.guild.id}, {"$unset": {"nsfw_role_id": role.id}})
             return await ctx.confirm()
         else:
             await ctx.deny()
@@ -78,8 +96,8 @@ class GuildBot:
         '''
             Add role 18+ for accessing creampie channel, which is NSFW.
         '''
-        role_data = await self.nsfw_role_list.find_one({"guild_id": ctx.guild.id})
-        role = discord.utils.find(lambda r: r.id==role_data["role_id"], ctx.guild.roles)
+        role_data = await self.guild_task_list.find_one({"guild_id": ctx.guild.id})
+        role = discord.utils.find(lambda r: r.id==role_data.get("nsfw_role_id"), ctx.guild.roles)
         if role:
             await ctx.author.add_roles(role)
             await ctx.confirm()
@@ -91,8 +109,8 @@ class GuildBot:
         '''
             Remove role 18+.
         '''
-        role_data = await self.nsfw_role_list.find_one({"guild_id": ctx.guild.id})
-        role = discord.utils.find(lambda r: r.id==role_data["role_id"], ctx.guild.roles)
+        role_data = await self.guild_task_list.find_one({"guild_id": ctx.guild.id})
+        role = discord.utils.find(lambda r: r.id==role_data.get("nsfw_role_id"), ctx.guild.roles)
         if role in ctx.author.roles:
             await ctx.author.remove_roles(role)
             await ctx.confirm()
@@ -100,12 +118,142 @@ class GuildBot:
             await ctx.deny()
 
     async def get_selfroles(self, guild):
-        role_data = await self.selfrole_list.find_one({"guild_id": guild.id})
+        role_data = await self.guild_task_list.find_one({"guild_id": guild.id})
         if role_data:
-            roles = [discord.utils.find(lambda r: r.id==role_id, guild.roles) for role_id in role_data["role_ids"]]
+            roles = [discord.utils.find(lambda r: r.id==role_id, guild.roles) for role_id in role_data["selfrole_ids"]]
             return [r for r in roles if r is not None]
         else:
             return []
+
+    @cmd_set.command()
+    async def welcome(self, ctx, channel: discord.TextChannel=None):
+        target = channel or ctx.channel
+        await self.guild_task_list.update_one({"guild_id": ctx.guild.id}, {"$set": {"welcome_channel_id": target.id}}, upsert=True)
+        await ctx.confirm()
+
+    @cmd_unset.command(name="welcome")
+    async def nowelcome(self, ctx):
+        result = await self.guild_task_list.update_one({"guild_id": ctx.guild.id}, {"$unset": {"welcome_channel_id": ""}})
+        if result.acknowledged:
+            await ctx.confirm()
+
+    @cmd_set.command(name="log")
+    async def logchannel(self, ctx, channel: discord.TextChannel=None):
+        target = channel or ctx.channel
+        await self.guild_task_list.update_one({"guild_id": ctx.guild.id}, {"$set": {"log_channel_id": target.id}}, upsert=True)
+        await ctx.confirm()
+
+    @cmd_unset.command(name="log")
+    async def nolog(self, ctx):
+        result = await self.guild_task_list.update_one({"guild_id": ctx.guild.id}, {"$log": {"welcome_channel_id": ""}})
+        if result.acknowledged:
+            await ctx.confirm()
+
+    async def on_member_join(self, member):
+        if member.bot:
+            return
+        guild = member.guild
+        guild_data = await self.guild_task_list.find_one({"guild_id": guild.id})
+        if guild_data:
+            welcome_channel = guild.get_channel(guild_data.get("welcome_channel_id"))
+            if welcome_channel:
+                await welcome_channel.send(f"*\"Eeeeehhhhhh, go away {member.mention}, I don't want any more work...\"*")
+                if guild.id == config.OTOGI_GUILD_ID:
+                    await asyncio.sleep(5)
+                    otogi_guild = self.bot.get_guild(config.OTOGI_GUILD_ID)
+                    await member.send(
+                        f"Welcome to {otogi_guild.name}.\n"
+                        "Please read the rules in #server-rules before doing anything.\n"
+                        "You can use `>>help` to get a list of available commands.\n\n"
+                        "Have a nice day!"
+                    )
+            log_channel = guild.get_channel(guild_data.get("log_channel_id"))
+            if log_channel:
+                embed = discord.Embed(colour=discord.Colour.dark_orange())
+                embed.add_field(name="Event", value="member_join", inline=False)
+                embed.add_field(name="ID", value=member.id)
+                embed.add_field(name="Name", value=str(member))
+                embed.set_footer(text=utils.format_time(utils.now_time()))
+                await log_channel.send(embed=embed)
+
+    async def on_member_remove(self, member):
+        if member.bot:
+            return
+        guild = member.guild
+        guild_data = await self.guild_task_list.find_one({"guild_id": guild.id})
+        if guild_data:
+            log_channel = guild.get_channel(guild_data.get("log_channel_id"))
+            if log_channel:
+                embed = discord.Embed(colour=discord.Colour.dark_orange())
+                embed.add_field(name="Event", value="member_leave", inline=False)
+                embed.add_field(name="ID", value=member.id)
+                embed.add_field(name="Name", value=str(member))
+                embed.set_footer(text=utils.format_time(utils.now_time()))
+                await log_channel.send(embed=embed)
+
+    async def on_member_update(self, before, after):
+        if before.bot:
+            return
+        guild = before.guild
+        guild_data = await self.guild_task_list.find_one({"guild_id": guild.id})
+        if guild_data:
+            log_channel = guild.get_channel(guild_data.get("log_channel_id"))
+            if log_channel:
+                old_roles = set(before.roles)
+                new_roles = set(after.roles)
+                nick_change = before.nick != after.nick
+                role_change = old_roles != new_roles
+                if nick_change or role_change:
+                    embed = discord.Embed(colour=discord.Colour.dark_orange())
+                    embed.add_field(name="Event", value="member_update", inline=False)
+                    embed.add_field(name="ID", value=before.id)
+                    embed.add_field(name="Name", value=str(before))
+                    if nick_change:
+                        embed.add_field(name="Old nickname", value=before.nick, inline=False)
+                        embed.add_field(name="New nickname", value=after.nick, inline=False)
+                    if role_change:
+                        add_roles = new_roles - old_roles
+                        remove_roles = old_roles - new_roles
+                        if add_roles:
+                            embed.add_field(name="Roles add", value=", ".join([r.name for r in add_roles]), inline=False)
+                        if remove_roles:
+                            embed.add_field(name="Roles remove", value=", ".join([r.name for r in remove_roles]), inline=False)
+                    embed.set_footer(text=utils.format_time(utils.now_time()))
+                    await log_channel.send(embed=embed)
+
+    async def on_message_delete(self, message):
+        if message.author.bot:
+            return
+        guild = message.channel.guild
+        guild_data = await self.guild_task_list.find_one({"guild_id": guild.id})
+        if guild_data:
+            log_channel = guild.get_channel(guild_data.get("log_channel_id"))
+            if log_channel:
+                embed = discord.Embed(colour=discord.Colour.dark_orange())
+                embed.add_field(name="Event", value="message_delete", inline=False)
+                embed.add_field(name="ID", value=message.id)
+                embed.add_field(name="Author", value=str(message.author))
+                embed.add_field(name="Content", value=message.content[:1000], inline=False)
+                embed.set_footer(text=utils.format_time(utils.now_time()))
+                await log_channel.send(embed=embed)
+
+    async def on_message_edit(self, before, after):
+        if before.author.bot:
+            return
+        guild = before.channel.guild
+        guild_data = await self.guild_task_list.find_one({"guild_id": guild.id})
+        if guild_data:
+            log_channel = guild.get_channel(guild_data.get("log_channel_id"))
+            if log_channel:
+                if before.content != after.content:
+                    embed = discord.Embed(colour=discord.Colour.dark_orange())
+                    embed.add_field(name="Event", value="message_edit", inline=False)
+                    embed.add_field(name="ID", value=before.id)
+                    embed.add_field(name="Author", value=str(before.author))
+                    embed.add_field(name="Before", value=f"{before.content[:1000]}..." if len(before.content)>1000 else before.content, inline=False)
+                    embed.add_field(name="After", value=f"{after.content[:1000]}..." if len(after.content)>1000 else after.content, inline=False)
+                    embed.set_footer(text=utils.format_time(utils.now_time()))
+                    await log_channel.send(embed=embed)
 
     @commands.group(invoke_without_command=True)
     @commands.guild_only()
@@ -127,14 +275,14 @@ class GuildBot:
     @checks.manager_only()
     async def add(self, ctx, *, name):
         role = discord.utils.find(lambda r:r.name.lower()==name.lower(), ctx.guild.roles)
-        await self.selfrole_list.update({"guild_id": ctx.guild.id}, {"$addToSet": {"role_ids": role.id}, "$setOnInsert": {"guild_id": ctx.guild.id}}, upsert=True)
+        await self.guild_task_list.update_one({"guild_id": ctx.guild.id}, {"$addToSet": {"selfrole_ids": role.id}, "$setOnInsert": {"guild_id": ctx.guild.id}}, upsert=True)
         await ctx.confirm()
 
     @selfrole.command()
     @checks.manager_only()
     async def remove(self, ctx, *, name):
         role = discord.utils.find(lambda r:r.name.lower()==name.lower(), ctx.guild.roles)
-        await self.selfrole_list.update({"guild_id": ctx.guild.id}, {"$pull": {"role_ids": role.id}})
+        await self.guild_task_list.update_one({"guild_id": ctx.guild.id}, {"$pull": {"selfrole_ids": role.id}})
         await ctx.confirm()
 
     @selfrole.command()
@@ -168,46 +316,36 @@ class GuildBot:
                 await ctx.send(file=discord.File(bytes_, filename="distribution.png"))
 
     @commands.command()
-    @checks.owner_only()
-    async def deletemessage(self, ctx, msg_id:int):
+    @checks.manager_only()
+    async def mute(self, ctx, member: discord.Member, *, reason=""):
+        muted_role = discord.utils.find(lambda r:r.name=="Muted", ctx.guild.roles)
+        if muted_role is None:
+            return await ctx.deny()
+        await member.add_roles(muted_role)
         try:
-            message = await ctx.get_message(msg_id)
-            await message.delete()
-            await ctx.confirm()
-        except Exception as e:
-            print(e)
-            await ctx.deny()
-
-    @commands.command()
-    @checks.manager_only()
-    async def welcome(self, ctx):
-        await self.welcome_channel_list.update_one({"guild_id": ctx.guild.id}, {"$set": {"channel_id": ctx.channel.id}}, upsert=True)
-        await ctx.confirm()
-
-    @commands.command()
-    @checks.manager_only()
-    async def nowelcome(self, ctx):
-        result = await self.welcome_channel_list.delete_one({"guild_id": ctx.guild.id})
-        if result.delete_count > 0:
-            await ctx.confirm()
+            duration = utils.extract_time(reason).total_seconds()
+        except:
+            return await ctx.send("Time too large.")
+        if duration > 0:
+            await ctx.send(f"{member.mention} has been muted for {utils.seconds_to_text(duration)}.")
+            try:
+                before, after = await self.bot.wait_for(
+                    "member_update",
+                    check=lambda b,a: a.id==member.id and a.guild.id==member.guild.id and "Muted" not in [r.name for r in a.roles],
+                    timeout=duration
+                )
+            except asyncio.TimeoutError:
+                await member.remove_roles(muted_role)
+                await ctx.send(f"{member.mention} has been unmuted.")
         else:
-            await ctx.confirm()
+            await ctx.send(f"{member.mention} has been muted.")
 
-    async def on_member_join(self, member):
-        channel_data = await self.welcome_channel_list.find_one({"guild_id": member.guild.id})
-        if channel_data:
-            channel = member.guild.get_channel(channel_data.get("channel_id"))
-            if channel:
-                await channel.send(f"*\"Eeeeehhhhhh, go away {member.mention}, I don't want any more work...\"*")
-                if member.guild.id == config.OTOGI_GUILD_ID:
-                    await asyncio.sleep(5)
-                    otogi_guild = self.bot.get_guild(config.OTOGI_GUILD_ID)
-                    await member.send(
-                        f"Welcome to {otogi_guild.name}.\n"
-                        "Please read the rules in #server-rules before doing anything.\n"
-                        "You can use `>>help` to get a list of available commands.\n\n"
-                        "Have a nice day!"
-                    )
+    @commands.command()
+    @checks.manager_only()
+    async def unmute(self, ctx, member: discord.Member):
+        muted_role = discord.utils.find(lambda r:r.name=="Muted", ctx.guild.roles)
+        await member.remove_roles(muted_role)
+        await ctx.send(f"{member.mention} has been unmute.")
 
     @commands.command()
     @checks.manager_only()
@@ -228,43 +366,15 @@ class GuildBot:
             await ctx.confirm()
 
     @commands.command()
-    @checks.manager_only()
-    async def mute(self, ctx, member: discord.Member, *, reason=""):
-        muted_role = discord.utils.find(lambda r:r.name=="Muted", ctx.guild.roles)
-        if muted_role is None:
-            return await ctx.deny()
-        await member.add_roles(muted_role)
+    @checks.owner_only()
+    async def deletemessage(self, ctx, msg_id:int):
         try:
-            duration = utils.extract_time(reason).total_seconds()
-        except:
-            return await ctx.send("Time too large.")
-        if duration > 0:
-            await ctx.send(f"{member.mention} has been muted for {utils.seconds_to_text(duration)}.")
-            try:
-                before, after = await self.bot.wait_for("member_update", check=lambda b,a: a.id==member.id and a.guild.id==member.guild.id and "Muted" not in [r.name for r in a.roles], timeout=duration)
-            except asyncio.TimeoutError:
-                await member.remove_roles(muted_role)
-                await ctx.send(f"{member.mention} has been unmuted.")
-        else:
-            await ctx.send(f"{member.mention} has been muted.")
-
-    @commands.command()
-    @checks.manager_only()
-    async def unmute(self, ctx, member: discord.Member):
-        muted_role = discord.utils.find(lambda r:r.name=="Muted", ctx.guild.roles)
-        await member.remove_roles(muted_role)
-        await ctx.send(f"{member.mention} has been unmute.")
-
-    async def on_reaction_add(self, reaction, user):
-        guild = getattr(user, "guild", None)
-        if guild:
-            if guild.id == config.OTOGI_GUILD_ID:
-                try:
-                    e = reaction.emoji.id
-                except AttributeError:
-                    e = reaction.emoji
-                if e in self.banned_emojis:
-                    await reaction.message.clear_reactions()
+            message = await ctx.get_message(msg_id)
+            await message.delete()
+            await ctx.confirm()
+        except Exception as e:
+            print(e)
+            await ctx.deny()
 
     @commands.command()
     @checks.otogi_guild_only()
@@ -292,6 +402,17 @@ class GuildBot:
             except:
                 e_list.append("\n".join([f"`\\U{ord(c):08x}` - {unicodedata.name(c)}" for c in r.emoji]))
         await ctx.send("\n".join(e_list))
+
+    async def on_reaction_add(self, reaction, user):
+        guild = getattr(user, "guild", None)
+        if guild:
+            if guild.id == config.OTOGI_GUILD_ID:
+                try:
+                    e = reaction.emoji.id
+                except AttributeError:
+                    e = reaction.emoji
+                if e in self.banned_emojis:
+                    await reaction.message.clear_reactions()
 
 #==================================================================================================================================================
 
