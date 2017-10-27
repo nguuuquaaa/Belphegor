@@ -21,30 +21,38 @@ class BelphegorContext(commands.Context):
         vertical = isinstance(item, list)
         if vertical:
             message = await self.send(embed=item[0])
-            max_pages = [len(p) for p in embeds]
-            max_page = sum(max_pages)
-            max_vertical = len(max_pages)
+            max_page = sum([len(p) for p in embeds])
+            max_vertical = len(embeds)
+            if max_vertical == 1:
+                vertical = False
+                embeds = item
         else:
             message = await self.send(embed=item)
             max_page = len(embeds)
         if max_page > 1:
             target = target or self.author
             current_page = 0
+            if max_page > max_vertical:
+                possible_reactions = ["\u23ee", "\u25c0", "\u25b6", "\u23ed"]
+            else:
+                possible_reactions = []
             if vertical:
                 pool_index = 0
                 pool = item
                 max_page = len(pool)
-                possible_reactions = ("\u23ee", "\u25c0", "\u25b6", "\u23ed", "\U0001f53c", "\U0001f53d", "\u274c")
+                possible_reactions.extend(["\U0001f53c", "\U0001f53d", "\u274c"])
             else:
                 pool = embeds
-                possible_reactions = ("\u23ee", "\u25c0", "\u25b6", "\u23ed", "\u274c")
+                possible_reactions.append("\u274c")
             for r in possible_reactions:
                 _loop.create_task(message.add_reaction(r))
+
             async def rmv_rection(r, u):
                 try:
                     await message.remove_reaction(r, u)
                 except:
                     pass
+
             while True:
                 try:
                     reaction, user = await self.bot.wait_for(
@@ -55,7 +63,6 @@ class BelphegorContext(commands.Context):
                 except:
                     try:
                         await message.clear_reactions()
-
                     finally:
                         return
                 e = reaction.emoji
