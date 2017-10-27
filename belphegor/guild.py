@@ -32,21 +32,21 @@ class GuildBot:
 
     @commands.command()
     @checks.manager_only()
-    async def kick(self, ctx, user: discord.User, *, reason=None):
+    async def kick(self, ctx, member: discord.Member, *, reason=None):
         try:
-            await user.kick(reason=reason)
-            await ctx.send("{user.name} has been kicked.")
-            await user.send(f"You have been kicked from {ctx.guild.name} by {ctx.author.name}.\nReason: {reason}")
+            await member.kick(reason=reason)
+            await ctx.send("{member.name} has been kicked.")
+            await member.send(f"You have been kicked from {ctx.guild.name} by {ctx.author.name}.\nReason: {reason}")
         except:
             await ctx.deny()
 
     @commands.command()
     @checks.manager_only()
-    async def ban(self, ctx, user: discord.User, *, reason=None):
+    async def ban(self, ctx, member: discord.Member, *, reason=None):
         try:
-            await user.ban(reason=reason)
-            await ctx.send("{user.name} has been banned.")
-            await user.send(
+            await member.ban(reason=reason)
+            await ctx.send("{member.name} has been banned.")
+            await member.send(
                 f"You have been banned from {ctx.guild.name} by {ctx.author.name}.\nReason: {reason}\n\n"
                 "If you think this action is unjustified, please contact the mods to unlift the ban."
             )
@@ -72,6 +72,54 @@ class GuildBot:
             await ctx.send("{user.name} has been banned.")
         except:
             await ctx.deny()
+
+    @commands.command()
+    @checks.manager_only()
+    async def channelban(self, ctx, member: discord.Member, *, reason=None):
+        try:
+            await ctx.channel.set_permissions(target=member, read_messages=False)
+        except:
+            return await ctx.deny()
+        try:
+            duration = utils.extract_time(reason).total_seconds()
+        except:
+            return await ctx.send("Time too large.")
+        if duration <= 0:
+            duration = 600
+        await ctx.send(f"{member.mention} has been banned from this channel for {utils.seconds_to_text(duration)}.")
+        try:
+            before, after = await self.bot.wait_for(
+                "guild_channel_update",
+                check=lambda b, a: a.overwrites_for(member).read_messages in (None, True),
+                timeout=duration
+            )
+        except:
+            await ctx.channel.set_permissions(target=member, read_messages=None)
+            await ctx.send(f"{member.mention} has been unbanned from this channel.")
+
+    @commands.command(aliases=["shutup"])
+    @checks.manager_only()
+    async def channelmute(self, ctx, member: discord.Member, *, reason=None):
+        try:
+            await ctx.channel.set_permissions(target=member, send_messages=False)
+        except:
+            return await ctx.deny()
+        try:
+            duration = utils.extract_time(reason).total_seconds()
+        except:
+            return await ctx.send("Time too large.")
+        if duration <= 0:
+            duration = 600
+        await ctx.send(f"{member.mention} has been muted from this channel for {utils.seconds_to_text(duration)}.")
+        try:
+            before, after = await self.bot.wait_for(
+                "guild_channel_update",
+                check=lambda b, a: a.overwrites_for(member).send_messages in (None, True),
+                timeout=duration
+            )
+        except:
+            await ctx.channel.set_permissions(target=member, send_messages=None)
+            await ctx.send(f"{member.mention} has been unmuted from this channel.")
 
     @cmd_set.command()
     async def nsfwrole(self, ctx, *, name):
@@ -233,7 +281,11 @@ class GuildBot:
                 embed.add_field(name="Event", value="message_delete", inline=False)
                 embed.add_field(name="ID", value=message.id)
                 embed.add_field(name="Author", value=str(message.author))
-                embed.add_field(name="Content", value=message.content[:1000], inline=False)
+                embed.add_field(name="Channel", value=message.channel.mention)
+                if message.content:
+                    embed.add_field(name="Content", value=f"{message.content[:1000]}" if len(message.content)>1000 else message.content, inline=False)
+                if message.attachments:
+                    embed.add_field(name="Attachments", value="\n".join([a.url for a in message.attachments]))
                 embed.set_footer(text=utils.format_time(utils.now_time()))
                 await log_channel.send(embed=embed)
 
@@ -250,6 +302,7 @@ class GuildBot:
                     embed.add_field(name="Event", value="message_edit", inline=False)
                     embed.add_field(name="ID", value=before.id)
                     embed.add_field(name="Author", value=str(before.author))
+                    embed.add_field(name="Channel", value=before.channel.mention)
                     embed.add_field(name="Before", value=f"{before.content[:1000]}..." if len(before.content)>1000 else before.content, inline=False)
                     embed.add_field(name="After", value=f"{after.content[:1000]}..." if len(after.content)>1000 else after.content, inline=False)
                     embed.set_footer(text=utils.format_time(utils.now_time()))
@@ -349,7 +402,7 @@ class GuildBot:
 
     @commands.command()
     @checks.manager_only()
-    async def purge(self, ctx, number:int=10, *members:discord.Member):
+    async def purge(self, ctx, number: int=100, *members: discord.Member):
         if number > 0:
             if members:
                 await ctx.channel.purge(limit=number, check=lambda m:m.author in members)
@@ -367,7 +420,7 @@ class GuildBot:
 
     @commands.command()
     @checks.owner_only()
-    async def deletemessage(self, ctx, msg_id:int):
+    async def deletemessage(self, ctx, msg_id: int):
         try:
             message = await ctx.get_message(msg_id)
             await message.delete()

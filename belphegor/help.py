@@ -200,7 +200,7 @@ class HelpBot:
                 "`>>kick` - Kick member, with optional reason\n"
                 "`>>ban` - Ban member, with optional reason\n"
                 "`>>unban` - Unban member, with optional reason\n\n"
-                "`>>purge` - Bulk delete messages, default 100 (most recent messages)\n"
+                "`>>purge` - Bulk delete messages, default 10 (most recent messages)\n"
                 "`>>purgereact` - Remove reactions of messages with given ids\n\n"
                 "`>>selfrole add` - Add an existed role to selfrole pool\n"
                 "`>>selfrole remove` - Remove a role from selfrole pool",
@@ -212,7 +212,9 @@ class HelpBot:
                 "`>>selfrole` - Set selfrole with given name\n"
                 "`>>selfrole empty` - Set no selfrole\n"
                 "`>>selfrole list` - Display server selfrole pool\n"
-                "`>>selfrole distribution` - Pie chart showing selfrole distribution",
+                "`>>selfrole distribution` - Pie chart showing selfrole distribution\n\n"
+                "`>>creampie` - Add NSFW role\n"
+                "`>>censored` - Remove NSFW role",
             inline=False
         )
         await ctx.send(embed=embed)

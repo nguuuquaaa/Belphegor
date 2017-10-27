@@ -85,25 +85,26 @@ class RemindBot:
     @remind.command(name="list")
     async def remind_list(self, ctx):
         self_events = []
-        async for ev in self.event_list.find({"author_id": ctx.author.id}, sort={"event_time": 1}):
+        async for ev in self.event_list.find({"author_id": ctx.author.id}, sort=[("event_time", 1)]):
             ev["create_time"] = ev["create_time"].replace(tzinfo=timezone.utc)
             ev["event_time"] = ev["event_time"].replace(tzinfo=timezone.utc)
             self_events.append(ev)
         description = []
         cur_time = utils.now_time()
-        for i, e in enumerate(self_events):
-            if i%5 == 0:
-                description.append("")
-            description[i//5] = f"{description[i//5]}\n\n{i+1}. ***{e['text']}***\n  In {utils.seconds_to_text((e['event_time']-cur_time).total_seconds())}"
-        max_page = len(description)
-        embed = discord.Embed(title=f"All reminders for {ctx.author.display_name}", colour=discord.Colour.dark_teal())
-
-        def data(page):
-            embed.description = f"{description[page]}\n\n(Page {page+1}/{max_page})" if description else "None."
-            embed.set_footer(text=utils.format_time(utils.now_time()))
-            return embed
-
-        await utils.embed_page(ctx, max_page=max_page, embed=data)
+        embeds = []
+        max_page = (len(self_events) - 1) // 5 + 1
+        for index in range(0, len(self_events), 5):
+            desc = "\n\n".join([
+                f"`{i+1}.` ***{e['text']}***\n  In {utils.seconds_to_text((e['event_time']-cur_time).total_seconds())}"
+                for i, e in enumerate(self_events[index:index+5])
+            ])
+            embed = discord.Embed(
+                title=f"All reminders for {ctx.author.display_name}",
+                description=f"{desc}\n\n(Page {index//5+1}/{max_page})"
+            )
+            embed.set_footer(text=utils.format_time(cur_time))
+            embeds.append(embed)
+        await ctx.embed_page(embeds)
 
     @remind.command(name="delete")
     async def remind_delete(self, ctx, position:int):
@@ -115,14 +116,17 @@ class RemindBot:
                 "no":       "Cancelled deleting.",
                 "timeout":  "Timeout, cancelled deleting."
             }
-            check = await ctx.yes_no_prompt(sentences=sentences)
+            check = await ctx.yes_no_prompt(sentences)
             await self.event_list.delete_one(self_events[position-1])
         else:
             await ctx.send("Position out of range.")
 
     @commands.command()
     async def ftime(self, ctx, *, phrase):
-        i = utils.extract_time(phrase).total_seconds()
+        try:
+            i = utils.extract_time(phrase).total_seconds()
+        except:
+            await ctx.send("Time too large.")
         if i > 0:
             await ctx.send(utils.seconds_to_text(i))
         else:

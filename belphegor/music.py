@@ -14,6 +14,7 @@ import locale
 import random
 import re
 from pymongo import ReturnDocument
+import copy
 
 #==================================================================================================================================================
 
@@ -189,12 +190,6 @@ class Playlist():
     def size(self):
         return len(self.playlist)
 
-    def display_playlist(self):
-        playlist = []
-        for index, song in enumerate(self.playlist):
-            playlist.append(f"{index+1}. [{song.title}]({song.url})")
-        return playlist
-
     def __call__(self, position):
         try:
             return self.playlist[position]
@@ -350,30 +345,27 @@ class MusicBot:
                     state = "Paused"
             except:
                 state = "Stopped"
-            playlist = music_player.queue.display_playlist()
+            playlist = music_player.queue.playlist
             try:
                 current_song_info = music_player.current_song.info()
             except:
                 current_song_info = ""
             if playlist:
-                page_data = []
-                for i,p in enumerate(playlist):
-                    if i%10==0:
-                        page_data.append(p)
-                    else:
-                        page_data[i//10] = f"{page_data[i//10]}\n\n{p}"
-                current_page = 0
-                max_page = len(page_data)
-                embed = discord.Embed(title=f"({state}) {current_song_info}", colour=discord.Colour.green())
+                embeds = []
+                max_page = (len(playlist) - 1) // 10 + 1
+                for index in range(0, len(playlist), 10):
+                    desc = "\n\n".join([
+                        f"{index+i+1}. [{song.title}]({song.url})"
+                        for i, song in enumerate(playlist[index:index+10])
+                    ])
+                embed = discord.Embed(
+                    title=f"({state}) {current_song_info}",
+                    description=f"{desc}\n\n(Page {index//10+1}/{max_page})",
+                    colour=discord.Colour.green()
+                )
                 embed.set_thumbnail(url="http://i.imgur.com/HKIOv84.png")
                 embed.set_footer(text=f"(Page {1}/{max_page})")
-
-                def data(page):
-                    embed.description = page_data[page]
-                    embed.set_footer(text=f"(Page {page+1}/{max_page})")
-                    return embed
-
-                await ctx.embed_page(max_page=max_page, embed=data)
+                await ctx.embed_page(embeds)
             else:
                 await ctx.send(embed=discord.Embed(title=f"({state}) {current_song_info}", colour=discord.Colour.green()))
         else:
@@ -433,7 +425,7 @@ class MusicBot:
                 "no":       "Cancelled deleting.",
                 "timeout":  "Timeout, cancelled deleting."
             }
-            check = await ctx.yes_no_prompt(sentences=sentences)
+            check = await ctx.yes_no_prompt(sentences)
             if check:
                 await music_player.queue.delete(position-1)
         else:
@@ -448,7 +440,7 @@ class MusicBot:
             "no":       "Cancelled purging.",
             "timeout":  "Timeout, cancelled purging."
         }
-        check = await ctx.yes_no_prompt(sentences=sentences)
+        check = await ctx.yes_no_prompt(sentences)
         if check:
             await music_player.queue.purge()
 
@@ -557,41 +549,38 @@ class MusicBot:
         music_player = await self.get_music_player(ctx.guild.id)
         position -= 1
         if position < 0:
-            try:
-                url = music_player.current_song.url
-                video = await self.bot.loop.run_in_executor(None, self.youtube_video_info, url)
-            except:
+            song = music_player.current_song
+            if not song:
                 return await ctx.send("No song is currently playing.")
         elif position < music_player.queue.size():
-            url = music_player.queue(position).url
-            video = await self.bot.loop.run_in_executor(None, self.youtube_video_info, url)
+            song = music_player.queue(position)
         else:
             return await ctx.send("Position out of range.")
-
+        url = song.url
+        async with self.lock:
+            video = await self.bot.loop.run_in_executor(None, self.youtube_video_info, url)
         snippet = video["snippet"]
-        description = utils.unifix(snippet["description"]).strip()
+        description = utils.unifix(snippet.get("description", "None")).strip()
         description_page = utils.split_page(description, 500)
         max_page = len(description_page)
-        embed = discord.Embed(title=f"\U0001f3b5 {snippet['title']}", url=url, colour=discord.Colour.green())
-        embed.set_thumbnail(url="http://i.imgur.com/HKIOv84.png")
-        embed.add_field(name="Uploader", value=f"[{snippet['channelTitle']}](https://www.youtube.com/channel/{snippet['channelId']})")
-        embed.add_field(name="Date", value=snippet["publishedAt"][:10])
-        embed.add_field(name="Duration", value=f"\U0001f552 {video['contentDetails'].get('duration', '0s')[2:].lower()}")
-        embed.add_field(name="Views", value=f"\U0001f441 {int(video['statistics'].get('viewCount', 0)):n}")
-        embed.add_field(name="Likes", value=f"\U0001f44d {int(video['statistics'].get('likeCount', 0)):n}")
-        embed.add_field(name="Dislikes", value=f"\U0001f44e {int(video['statistics'].get('dislikeCount', 0)):n}")
-        embed.add_field(name="Description", value="desu", inline=False)
-        for key in ("maxres", "standard", "high", "medium", "default"):
-            value = snippet["thumbnails"].get(key, None)
-            if value is not None:
-                embed.set_image(url=value["url"])
-                break
-
-        def data(page):
-            embed.set_field_at(6, name="Description", value=f"{description_page[page]}\n\n(Page {page+1}/{max_page})", inline=False)
-            return embed
-
-        await ctx.embed_page(max_page=max_page, embed=data)
+        embeds = []
+        for index, desc in enumerate(description_page):
+            embed = discord.Embed(title=f"\U0001f3b5 {snippet['title']}", url=url, colour=discord.Colour.green())
+            embed.set_thumbnail(url="http://i.imgur.com/HKIOv84.png")
+            embed.add_field(name="Uploader", value=f"[{snippet['channelTitle']}](https://www.youtube.com/channel/{snippet['channelId']})")
+            embed.add_field(name="Date", value=snippet["publishedAt"][:10])
+            embed.add_field(name="Duration", value=f"\U0001f552 {video['contentDetails'].get('duration', '0s')[2:].lower()}")
+            embed.add_field(name="Views", value=f"\U0001f441 {int(video['statistics'].get('viewCount', 0)):n}")
+            embed.add_field(name="Likes", value=f"\U0001f44d {int(video['statistics'].get('likeCount', 0)):n}")
+            embed.add_field(name="Dislikes", value=f"\U0001f44e {int(video['statistics'].get('dislikeCount', 0)):n}")
+            embed.add_field(name="Description", value=f"{desc}\n\n(Page {index+1}/{max_page})", inline=False)
+            for key in ("maxres", "standard", "high", "medium", "default"):
+                value = snippet["thumbnails"].get(key, None)
+                if value is not None:
+                    embed.set_image(url=value["url"])
+                    break
+            embeds.append(embed)
+        await ctx.embed_page(embeds)
 
     @music.command(aliases=["t",])
     async def toggle(self, ctx):

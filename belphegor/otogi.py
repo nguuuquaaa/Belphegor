@@ -215,69 +215,12 @@ class OtogiBot():
 
         self.lock = asyncio.Lock()
 
-    async def _search(self, name, *, no_prompt=False):
-        try:
-            d_id = int(name)
-            result = await self.daemon_collection.find_one({"id": d_id})
-            if no_prompt:
-                return Daemon(result)
-            elif result:
-                return [Daemon(result)]
-            else:
-                return None
-        except:
-            pass
-        name = name.lower()
-        regex = ".*?".join(map(re.escape, name.split()))
-        cursor = self.daemon_collection.find({
-            "$or": [
-                {
-                    "name": {
-                        "$regex": regex,
-                        "$options": "i"
-                    }
-                },
-                {
-                    "alias": {
-                        "$regex": regex,
-                        "$options": "i"
-                    }
-                }
-            ]
-        })
-        if no_prompt:
-            async for daemon in cursor:
-                if name == daemon["name"].lower() or name == daemon["alias"].lower():
-                    break
-            try:
-                return Daemon(daemon)
-            except:
-                return None
-        else:
-            return [Daemon(daemon) async for daemon in cursor]
-
-    async def filter(self, ctx, name, result, *, prompt_all=False):
-        if not result:
-            await ctx.send(f"Can't find {name} in database.")
-            return None
-        elif not prompt_all:
-            if len(result) == 1:
-                return result[0]
-        await ctx.send("Do you mean:\n```\n{}\n<>: cancel\n```".format('\n'.join([f"{index+1}: {d.name}" for index, d in enumerate(result)])))
-        msg = await self.bot.wait_for("message", check=lambda m:m.author.id==ctx.author.id)
-        try:
-            index = int(msg.content)-1
-        except:
-            return None
-        if index in range(len(result)):
-            return result[index]
-        else:
-            return None
+    async def _search(self, ctx, name, *, prompt=None):
+        return await ctx.search(name, self.daemon_collection, cls=Daemon, atts=["id", "name", "alias"], name_att="name", emoji_att="daemon_class", prompt=prompt)
 
     @commands.command(aliases=["daemon",])
-    async def d(self, ctx, *, name:str):
-        result = await self._search(name)
-        daemon = await self.filter(ctx, name, result)
+    async def d(self, ctx, *, name: str):
+        daemon = await self._search(ctx, name)
         if not daemon:
             return
         pic_embed, data_embed = daemon.embed_form(self)
@@ -285,8 +228,8 @@ class OtogiBot():
         await ctx.send(embed=data_embed)
 
     @commands.command(aliases=["pic",])
-    async def p(self, ctx, *, name:str):
-        daemon = await self._search(name, no_prompt=True)
+    async def p(self, ctx, *, name: str):
+        daemon = await self._search(ctx, name, prompt=False)
         if daemon:
             pic_embed = discord.Embed(colour=discord.Colour.orange())
             pic_embed.set_image(url=daemon.true_url)
@@ -403,27 +346,24 @@ class OtogiBot():
         if not result:
             return await ctx.send("No result found.")
         result.sort(key=lambda x: x[0])
-        result_pages = []
-        for i, r in enumerate(result):
-            if i%5 == 0:
-                result_pages.append(f"*#{r[0]}* **{r[1]}**{r[2]}")
-            else:
-                result_pages[i//5] = f"{result_pages[i//5]}\n\n*#{r[0]}* **{r[1]}**{r[2]}"
-        max_page = len(result_pages)
-        current_page = 0
-        embed = discord.Embed(title=f"Search result: {len(result)} results", colour=discord.Colour.orange())
-
-        def data(page):
-            embed.description = result_pages[page]
-            embed.set_footer(text=f"(Page {page+1}/{max_page})")
-            return embed
-
-        await ctx.embed_page(max_page=max_page, embed=data)
+        embeds = []
+        max_page = (len(result) - 1) // 5 + 1
+        for index in range(0, len(result), 5):
+            desc = "\n\n".join([
+                f"*#{r[0]}* **{r[1]}**{r[2]}"
+                for i, r in enumerate(result[index:index+5])
+            ])
+            embed = discord.Embed(
+                title=f"Search result: {len(result)} results",
+                description=f"{desc}\n\n(Page {index//5+1}/{max_page})",
+                colour=discord.Colour.orange()
+            )
+            embeds.append(embed)
+        await ctx.embed_page(embeds)
 
     @commands.command(aliases=["trivia",])
     async def t(self, ctx, *, name:str):
-        result = await self._search(name)
-        daemon = await self.filter(ctx, name, result)
+        daemon = await self._search(ctx, name)
         if not daemon:
             return
         pic_embed, data_embed = daemon.more_info(self)
@@ -481,8 +421,7 @@ class OtogiBot():
     @update.command()
     @checks.owner_only()
     async def delete(self, ctx, *, name:str):
-        result = await self._search(name)
-        daemon = await self.filter(ctx, name, result, prompt_all=True)
+        daemon = await self._search(ctx, name, prompt=True)
         if not daemon:
             return
         await self.daemon_collection.find_one_and_delete({"id": daemon.id})
@@ -492,8 +431,7 @@ class OtogiBot():
     @checks.owner_only()
     async def edit(self, ctx, *, data:str):
         data = data.strip().splitlines()
-        result = await self._search(data[0])
-        daemon = await self.filter(ctx, data[0], result, prompt_all=True)
+        daemon = await self._search(ctx, name, prompt=True)
         if not daemon:
             return
         field = data[1]
@@ -526,8 +464,7 @@ class OtogiBot():
     @update.command(name="summon")
     @checks.owner_only()
     async def _summon(self, ctx, *, name:str):
-        result = await self._search(name)
-        daemon = await self.filter(ctx, name, result, prompt_all=True)
+        daemon = await self._search(ctx, name, prompt=True)
         if not daemon:
             return
         if daemon.rarity in (3, 4, 5):
@@ -542,8 +479,7 @@ class OtogiBot():
     @update.command()
     @checks.owner_only()
     async def nosummon(self, ctx, *, name:str):
-        result = await self._search(name)
-        daemon = await self.filter(ctx, name, result, prompt_all=True)
+        daemon = await self._search(ctx, name, prompt=True)
         if not daemon:
             return
         update_result = await self.summon_pool.update_one({"rarity": daemon.rarity}, {"$pull": {"pool": daemon.id}})
@@ -555,12 +491,10 @@ class OtogiBot():
     @update.command()
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     async def wikia(self, ctx, *, name:str):
-        result = await self._search(name)
-        daemon = await self.filter(ctx, name, result, prompt_all=True)
+        daemon = await self._search(ctx, name, prompt=True)
         if not daemon:
             return
-
-        with ctx.typing():
+        async with ctx.typing():
             try:
                 new_daemon = await self.search_wikia(daemon)
                 if new_daemon:
@@ -714,8 +648,7 @@ class OtogiBot():
             pool = await self.summon_pool.find_one({"rarity": rarity})
             daemon_id = random.choice(pool["pool"])
             await self.player_list.find_one_and_update({"id": id}, {"$push": {"daemons": {"$each": [{"id": daemon_id, "lb": 0}], "$sort": {"id": 1, "lb": -1}}}})
-            daemon_data = await self.daemon_collection.find_one({"id": daemon_id})
-            daemon = Daemon(daemon_data)
+            daemon = await ctx.search(daemon_id, self.daemon_collection, cls=Daemon, atts=["id"], name_att="name", prompt=False)
             embed = discord.Embed(title=f"{ctx.author.display_name} summoned {daemon.name}!", colour=discord.Colour.orange())
             scale_url = daemon.true_url
             data = scale_url.split("?cb=")
@@ -729,8 +662,7 @@ class OtogiBot():
 
     @lunchsummon.command()
     async def till(self, ctx, *, name):
-        result = await self._search(name)
-        daemon = await self.filter(ctx, name, result)
+        daemon = await self._search(ctx, name)
         if not daemon:
             return
         pool_data = await self.summon_pool.find_one({"rarity": daemon.rarity})
@@ -758,71 +690,75 @@ class OtogiBot():
 
     @lunchsummon.command(name="pool")
     async def show_summon_pool(self, ctx):
-        summon = {p["rarity"]: p["pool"] async for p in self.summon_pool.find({})}
-        summon_pools = {3: [], 4: [], 5: []}
-        for rarity, pool in summon.items():
+        summon_pool = {p["rarity"]: p["pool"] async for p in self.summon_pool.find({})}
+        embeds = []
+        for rarity, pool in summon_pool.items():
+            max_page = (len(pool)-1)//10+1
+            embed_pool = []
             daemons = [d async for d in self.daemon_collection.find({"id": {"$in": pool}}, projection={"_id": False, "id": True, "name": True})]
             daemons.sort(key=lambda x: x["id"])
-            for i, daemon in enumerate(daemons):
-                if i % 10 == 0:
-                    summon_pools[rarity].append("")
-                summon_pools[rarity][i//10] = f"{summon_pools[rarity][i//10]}{daemon['name']}\n"
-        max_pages = {3: len(summon_pools[3]), 4: len(summon_pools[4]), 5: len(summon_pools[5])}
-        max_page = max([v for k, v in max_pages.items()])
-        current_page = 0
-
-        embed = discord.Embed(title="Current summon pool", colour=discord.Colour.blue())
-        embed.add_field(name="3", value="3")
-        embed.add_field(name="4", value="4")
-        embed.add_field(name="5", value="5")
-        embed.set_footer(text="Use reactions below to navigate pages.")
-
-        def data(page):
-            cur3 = min(page+1, max_pages[3])
-            cur4 = min(page+1, max_pages[4])
-            cur5 = min(page+1, max_pages[5])
-            embed.set_field_at(0, name=str(self.emojis['star'])*3, value=f"{summon_pools[3][cur3-1]}\n(Page {cur3}/{max_pages[3]})" if summon_pools[3] else "None")
-            embed.set_field_at(1, name=str(self.emojis['star'])*4, value=f"{summon_pools[4][cur4-1]}\n(Page {cur4}/{max_pages[4]})" if summon_pools[4] else "None")
-            embed.set_field_at(2, name=str(self.emojis['star'])*5, value=f"{summon_pools[5][cur5-1]}\n(Page {cur5}/{max_pages[5]})" if summon_pools[5] else "None", inline=False)
-            return embed
-
-        await ctx.embed_page(max_page=max_page, embed=data)
+            for index in range(0, len(daemons), 10):
+                desc = "\n".join([daemon['name'] for daemon in daemons[index:index+10]])
+                embed = discord.Embed(
+                    title="Current summon pool:",
+                    description=f"{str(self.emojis['star'])*rarity}\n{desc}\n\n(Page {index//10+1}/{max_page} - Book {rarity-2}/3)",
+                    colour=discord.Colour.orange()
+                )
+                embed_pool.append(embed)
+            embeds.append(embed_pool)
+        await ctx.embed_page(embeds)
 
     @commands.command()
     async def mybox(self, ctx, *, member: discord.Member=None):
         target = member or ctx.author
         player = await self.get_player(target.id)
-        mybox_daemons = {3: [], 4: [], 5: []}
-        rare = {3: 0, 4: 0, 5: 0}
-        daemons = await self.batch_search([p['id'] for p in player['daemons']])
-        for m_daemon in player['daemons']:
-            daemon = daemons[m_daemon["id"]]
-            r = daemon["rarity"]
-            page = rare[r] // 10
-            if rare[r] % 10 == 0:
-                mybox_daemons[r].append("")
-            mybox_daemons[r][page] = f"{mybox_daemons[r][page]}{daemons[daemon['id']]['name']} lb{m_daemon['lb']}\n"
-            rare[r] += 1
-        max_pages = {3: len(mybox_daemons[3]), 4: len(mybox_daemons[4]), 5: len(mybox_daemons[5])}
-        max_page = max([v for k, v in max_pages.items()])
-
-        embed = discord.Embed(title=f"Mochi: {player['mochi']}{self.emojis['mochi']}", colour=discord.Colour.blue())
-        embed.set_author(name=f"{target.display_name}'s box", icon_url=target.avatar_url)
-        embed.add_field(name="3", value="3")
-        embed.add_field(name="4", value="4")
-        embed.add_field(name="5", value="5")
-        embed.set_footer(text="Use reactions below to navigate pages.")
-
-        def data(page):
-            cur3 = min(page+1, max_pages[3])
-            cur4 = min(page+1, max_pages[4])
-            cur5 = min(page+1, max_pages[5])
-            embed.set_field_at(0, name=str(self.emojis['star'])*3, value=f"{mybox_daemons[3][cur3-1]}\n(Page {cur3}/{max_pages[3]})" if mybox_daemons[3] else "None")
-            embed.set_field_at(1, name=str(self.emojis['star'])*4, value=f"{mybox_daemons[4][cur4-1]}\n(Page {cur4}/{max_pages[4]})" if mybox_daemons[4] else "None")
-            embed.set_field_at(2, name=str(self.emojis['star'])*5, value=f"{mybox_daemons[5][cur5-1]}\n(Page {cur5}/{max_pages[5]})" if mybox_daemons[5] else "None", inline=False)
-            return embed
-
-        await ctx.embed_page(max_page=max_page, embed=data)
+        lbs = {d["id"]: d["lb"] for d in player["daemons"]}
+        embeds = []
+        async for pool in self.daemon_collection.aggregate([
+            {
+                "$match": {
+                    "id": {
+                        "$in": list(lbs.keys())
+                    }
+                }
+            },
+            {
+                "$bucket": {
+                    "groupBy": "$rarity",
+                    "boundaries": [3, 4, 5, 6],
+                    "output": {
+                        "daemons": {
+                            "$push": {
+                                "name": "$name",
+                                "id": "$id"
+                            }
+                        }
+                    }
+                }
+            }
+        ]):
+            daemons = pool["daemons"]
+            max_page = (len(daemons)-1)//10+1
+            embed_pool = []
+            for index in range(0, len(daemons), 10):
+                desc = "\n".join([f"{daemon['name']} lb{lbs[daemon['id']]}" for daemon in daemons[index:index+10]])
+                embed = discord.Embed(
+                    title=f"Mochi: {player['mochi']}{self.emojis['mochi']}",
+                    description=f"{str(self.emojis['star'])*pool['_id']}\n{desc}\n\n(Page {index//10+1}/{max_page}",
+                    colour=discord.Colour.orange()
+                )
+                embed.set_author(name=f"{target.display_name}'s box", icon_url=target.avatar_url)
+                embed_pool.append(embed)
+            embeds.append(embed_pool)
+        if embeds:
+            for i, embed_pool in enumerate(embeds):
+                for embed in embed_pool:
+                    embed.description = f"{embed.description} - Book {i+1}/{len(embeds)})"
+            await ctx.embed_page(embeds)
+        else:
+            embed = discord.Embed(f"Mochi: {player['mochi']}{self.emojis['mochi']}", description="Empty", colour=discord.Colour.orange())
+            embed.set_author(name=f"{target.display_name}'s box", icon_url=target.avatar_url)
+            await ctx.send(embed=embed)
 
     def _process_name(self, name):
         if name[-3:] in ("lb0", "lb1", "lb2", "lb3", "lb4"):
@@ -853,7 +789,7 @@ class OtogiBot():
         total_mochi = 0
         for raw_name in names:
             name, lb = self._process_name(raw_name)
-            daemon = await self._search(name, no_prompt=True)
+            daemon = await self._search(ctx, name, prompt=False)
             for i, d in enumerate(player["daemons"]):
                 if d["id"] == daemon.id and d["lb"] == lb:
                     index = i
@@ -873,7 +809,7 @@ class OtogiBot():
         total_mochi = 0
         for raw_name in names:
             name, lb = self._process_name(raw_name)
-            daemon = await self._search(name, no_prompt=True)
+            daemon = await self._search(ctx, name, prompt=False)
             i = 0
             while i < len(player["daemons"]):
                 d = player["daemons"][i]
@@ -905,7 +841,7 @@ class OtogiBot():
     @commands.command()
     async def gift(self, ctx, member: discord.Member, *, name):
         name, lb = self._process_name(name)
-        daemon = await self._search(name, no_prompt=True)
+        daemon = await self._search(ctx, name, prompt=False)
         if not daemon:
             return await ctx.send(f"Can't find {name} in database.")
         myself = await self.get_player(ctx.author.id)
@@ -934,7 +870,7 @@ class OtogiBot():
         price = int(data[1].replace("mochi", "").replace("mc", "").strip(" s"))
         name = data[0].strip()
         name, lb = self._process_name(name)
-        daemon = await self._search(name, no_prompt=True)
+        daemon = await self._search(ctx, name, prompt=False)
         if not daemon:
             return await ctx.send(f"Can't find {name} in database.")
         myself = await self.get_player(ctx.author.id)
@@ -988,7 +924,7 @@ class OtogiBot():
         player = await self.get_player(ctx.author.id)
         if name:
             name, lb = self._process_name(player, name)
-            daemon = await self._search(name, no_prompt=True)
+            daemon = await self._search(ctx, name, prompt=False)
             self.lb_that(player, daemon.id)
         else:
             all_ids = set([])
@@ -1015,21 +951,21 @@ class OtogiBot():
         data = await self.stat_sheet.find_one({})
         sheet = data["values"]
         filter_sheet = [s for s in sheet if s[66]=="Damage"]
-        filter_sheet.sort(key=lambda x:-int(x[61].replace(",", "")))
-        page_data = []
-        for i, field in enumerate(filter_sheet):
-            if i%5 == 0:
-                page_data.append(f"{i+1}. **{field[1]}**\n   MLB Effective Skill DMG: {field[61]}\n   MLB Auto ATK DMG: {field[59]}")
-            else:
-                page_data[i//5] = f"{page_data[i//5]}\n\n{i+1}. **{field[1]}**\n   MLB Effective Skill DMG: {field[61]}\n   MLB Auto ATK DMG: {field[59]}"
-        max_page = len(page_data)
-        embed = discord.Embed(title=f"Nuker rank", colour=discord.Colour.orange())
-
-        def data(page):
-            embed.description = f"{page_data[page]}\n\n(Page {page+1}/{max_page})"
-            return embed
-
-        await ctx.embed_page(max_page=max_page, embed=data)
+        filter_sheet.sort(key=lambda x: -int(x[61].replace(",", "")))
+        embeds = []
+        max_page = (len(filter_sheet) - 1) // 5 + 1
+        for index in range(0, len(filter_sheet), 5):
+            desc = "\n\n".join([
+                f"{index+i+1}. **{field[1]}**\n   MLB Effective Skill DMG: {field[61]}\n   MLB Auto ATK DMG: {field[59]}"
+                for i, field in enumerate(filter_sheet[index:index+5])
+            ])
+            embed = discord.Embed(
+                title="Nuker rank",
+                description = f"{desc}\n\n(Page {index//5+1}/{max_page})",
+                colour=discord.Colour.orange()
+            )
+            embeds.append(embed)
+        await ctx.embed_page(embeds)
 
     def list_get(self, iterable, index, default=None):
         try:
@@ -1048,46 +984,43 @@ class OtogiBot():
         data = await self.stat_sheet.find_one({})
         sheet = data["values"]
         filter_sheet = [s for s in sheet if self.list_get(s, 76)=="Increases DMG Rec'd" or s[66]=="Debuff"]
-        filter_sheet.sort(key=lambda x:x[0])
-        page_data = []
-        for i, field in enumerate(filter_sheet):
-            mlb_debuff = self.list_get(field, 78, "N/A")
-            if not mlb_debuff:
-                mlb_debuff = "N/A"
-            if i%5 == 0:
-                page_data.append("")
-            page_data[i//5] = f"{page_data[i//5]}\n\n{i+1}. **{field[1]}**\n   MLB Debuff Value: {mlb_debuff}\n   MLB Effective Skill DMG: {field[61]}\n   Skill Effect: {self.list_get(field, 76, 'N/A')}"
-        max_page = len(page_data)
-        embed = discord.Embed(title=f"Debuffer list", colour=discord.Colour.orange())
-
-        def data(page):
-            embed.description = f"{page_data[page]}\n\n(Page {page+1}/{max_page})"
-            return embed
-
-        await ctx.embed_page(max_page=max_page, embed=data)
+        filter_sheet.sort(key=lambda x: x[0])
+        embeds = []
+        max_page = (len(filter_sheet) - 1) // 5 + 1
+        for index in range(0, len(filter_sheet), 5):
+            desc = "\n\n".join([
+                f"{index+i+1}. **{field[1]}**\n   MLB Debuff Value: {self.list_get(field, 78) or 'N/A'}\n"
+                f"   MLB Effective Skill DMG: {field[61]}\n   Skill Effect: {self.list_get(field, 76) or 'N/A'}"
+                for i, field in enumerate(filter_sheet[index:index+5])
+            ])
+            embed = discord.Embed(
+                title="Debuffer list",
+                description = f"{desc}\n\n(Page {index//5+1}/{max_page})",
+                colour=discord.Colour.orange()
+            )
+            embeds.append(embed)
+        await ctx.embed_page(embeds)
 
     @commands.command(aliases=["buffer"])
     async def buffers(self, ctx):
         data = await self.stat_sheet.find_one({})
         sheet = data["values"]
         filter_sheet = [s for s in sheet if s[66]=="Buff"]
-        filter_sheet.sort(key=lambda x:x[0])
-        page_data = []
-        for i, field in enumerate(filter_sheet):
-            mlb_buff = self.list_get(field, 78, "N/A")
-            if not mlb_buff:
-                mlb_buff = "N/A"
-            if i%5 == 0:
-                page_data.append("")
-            page_data[i//5] = f"{page_data[i//5]}\n\n{i+1}. **{field[1]}**\n   MLB Buff Value: {mlb_buff}\n   Skill Effect: {self.list_get(field, 76, 'N/A')}"
-        max_page = len(page_data)
-        embed = discord.Embed(title=f"Buffer list", colour=discord.Colour.orange())
-
-        def data(page):
-            embed.description = f"{page_data[page]}\n\n(Page {page+1}/{max_page})"
-            return embed
-
-        await ctx.embed_page(max_page=max_page, embed=data)
+        filter_sheet.sort(key=lambda x: x[0])
+        embeds = []
+        max_page = (len(filter_sheet) - 1) // 5 + 1
+        for index in range(0, len(filter_sheet), 5):
+            desc = "\n\n".join([
+                f"{index+i+1}. **{field[1]}**\n   MLB Buff Value: {self.list_get(field, 78) or 'N/A'}\n   Skill Effect: {self.list_get(field, 76) or 'N/A'}"
+                for i, field in enumerate(filter_sheet[index:index+5])
+            ])
+            embed = discord.Embed(
+                title="Buffer list",
+                description = f"{desc}\n\n(Page {index//5+1}/{max_page})",
+                colour=discord.Colour.orange()
+            )
+            embeds.append(embed)
+        await ctx.embed_page(embeds)
 
     @commands.command()
     async def gcqstr(self, ctx):
@@ -1104,7 +1037,7 @@ class OtogiBot():
                                 "$divide": ["$max_atk", 10]
                             },
                             "$max_hp"
-                         ]
+                        ]
                     }
                 }
             },
@@ -1114,21 +1047,21 @@ class OtogiBot():
                 }
             }
         ])
-        i = 0
-        page_data = []
-        async for daemon in cur:
-            if i%5 == 0:
-                page_data.append("")
-            page_data[i//5] = f"{page_data[i//5]}\n\n{i+1}. **{daemon['name']}**\n   Max ATK: {daemon['atk']}\n   Max HP: {daemon['hp']}\n   GCQ STR: {daemon['total_stat']}"
-            i += 1
-        max_page = len(page_data)
-        embed = discord.Embed(title=f"GCQ STR rank", colour=discord.Colour.orange())
-
-        def data(page):
-            embed.description = f"{page_data[page]}\n\n(Page {page+1}/{max_page})"
-            return embed
-
-        await ctx.embed_page(max_page=max_page, embed=data)
+        daemons = [d async for d in cur]
+        embeds = []
+        max_page = (len(daemons) - 1) // 5 + 1
+        for index in range(0, len(daemons), 5):
+            desc = "\n\n".join([
+                f"{index+i+1}. **{daemon['name']}**\n   Max ATK: {daemon['atk']}\n   Max HP: {daemon['hp']}\n   GCQ STR: {daemon['total_stat']}"
+                for i, daemon in enumerate(daemons[index:index+5])
+            ])
+            embed = discord.Embed(
+                title="GCQ STR rank",
+                description = f"{desc}\n\n(Page {index//5+1}/{max_page})",
+                colour=discord.Colour.orange()
+            )
+            embeds.append(embed)
+        await ctx.embed_page(embeds)
 
     @commands.group()
     async def exchange(self, ctx):

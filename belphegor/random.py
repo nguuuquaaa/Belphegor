@@ -27,7 +27,7 @@ class RandomBot:
             message.content = ">>help random"
             await self.bot.process_commands(message)
 
-    async def get_image_danbooru(self, tag, rating):
+    async def get_image_danbooru(self, tag, *, rating):
         params = {
             "tags":   f"rating:{rating} {tag}",
             "limit":  1,
@@ -45,7 +45,7 @@ class RandomBot:
         embed.set_image(url=f"https://danbooru.donmai.us{pic['file_url']}")
         return embed
 
-    async def get_image_konachan(self, tags, rating, page=1):
+    async def get_image_konachan(self, tags, *, rating, page=1):
         params = {
             "tags":   f"rating:{rating} order:random {tags}",
             "limit":  1,
@@ -64,7 +64,7 @@ class RandomBot:
         embed.set_image(url=f"http:{pic['sample_url']}")
         return embed
 
-    async def get_image_safebooru(self, tags, page=1):
+    async def get_image_safebooru(self, tags, *, page=1):
         params = {
             "page":   "dapi",
             "s":      "post",
@@ -85,7 +85,7 @@ class RandomBot:
         embed.set_image(url=f"http:{pic['@file_url']}")
         return embed
 
-    async def get_image_yandere(self, tags, page=1):
+    async def get_image_yandere(self, tags, *, page=1):
         params = {
             "tags":   tags,
             "limit":  100,
@@ -137,11 +137,11 @@ class RandomBot:
         embed.set_image(url=f"https:{img_link['href']}")
         return embed
 
-    async def retry_wrap(self, ctx, func, *args):
+    async def retry_wrap(self, ctx, func, *args, **kwargs):
         retries = self.retry
         while retries > 0:
             try:
-                embed = await func(*args)
+                embed = await func(*args, **kwargs)
                 return await ctx.send(embed=embed)
             except IndexError:
                 return await ctx.send("No result found.")
@@ -152,23 +152,23 @@ class RandomBot:
     @r.command(aliases=["d",])
     async def danbooru(self, ctx, tag=""):
         async with ctx.typing():
-            await self.retry_wrap(ctx, self.get_image_danbooru, tag, "safe")
+            await self.retry_wrap(ctx, self.get_image_danbooru, tag, rating="safe")
 
     @r.command(aliases=["dh"])
     @checks.nsfw()
     async def danbooru_h(self, ctx, tag=""):
         async with ctx.typing():
-            await self.retry_wrap(ctx, self.get_image_danbooru, tag, "explicit")
+            await self.retry_wrap(ctx, self.get_image_danbooru, tag, rating="explicit")
 
     @r.command(aliases=["k",])
     async def konachan(self, ctx, *, tags=""):
         async with ctx.typing():
-            await self.retry_wrap(ctx, self.get_image_konachan, tags, "safe")
+            await self.retry_wrap(ctx, self.get_image_konachan, tags, rating="safe")
 
     @r.command(aliases=["kh",])
     async def konachan_h(self, ctx, *, tags=""):
         async with ctx.typing():
-            await self.retry_wrap(ctx, self.get_image_konachan, tags, "explicit")
+            await self.retry_wrap(ctx, self.get_image_konachan, tags, rating="explicit")
 
     @r.command(aliases=["s",])
     async def safebooru(self, ctx, *, tags=""):

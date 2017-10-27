@@ -9,7 +9,7 @@ class StickerBot:
     def __init__(self, bot):
         self.bot = bot
         self.sticker_list = self.bot.db.sticker_list
-        self.sticker_regex = re.compile(r"(?<=[$+])\w+", flags=re.I)
+        self.sticker_regex = re.compile(r"(?<=[$+])\w+")
 
     async def on_message(self, message):
         if message.author.bot:

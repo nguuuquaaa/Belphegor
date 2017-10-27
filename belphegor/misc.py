@@ -358,12 +358,13 @@ class MiscBot:
                     else:
                         defines[current_page] = f"{defines[current_page]}\n- {t.text}"
             see_also = '\n\n'.join([f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[1:5]])
-            if len(defines) > 1:
-                return (defines, see_also)
-            else:
-                embed = discord.Embed(title="Search result:", description=defines[0], colour=discord.Colour.dark_orange())
+            embeds = []
+            max_page = len(defines)
+            for i, d in enumerate(defines):
+                embed = discord.Embed(title="Search result:", description=f"{defines[i]}\n\n(Page {i+1}/{max_page})", colour=discord.Colour.dark_orange())
                 embed.add_field(name="See also:", value=see_also, inline=False)
-                return embed
+                embeds.append(embed)
+            return embeds
         except:
             pass
 
@@ -436,19 +437,9 @@ class MiscBot:
                 return await ctx.send(embed=result)
             elif isinstance(result, str):
                 return await ctx.send(result)
-            elif isinstance(result, tuple):
-                defines = result[0]
-                see_also = result[1]
-                max_page = len(defines)
-                current_page = 0
-                embed = discord.Embed(title="Search result:", description=f"{defines[0]}\n\n(Page 1/{max_page})", colour=discord.Colour.dark_orange())
-                embed.add_field(name="See also:", value=see_also, inline=True)
-
-        def data(page):
-            embed.description = f"{defines[page]}\n\n(Page {page+1}/{max_page})"
-            return embed
-
-        await ctx.embed_page(max_page=max_page, embed=data)
+            elif isinstance(result, list):
+                pass
+        await ctx.embed_page(result)
 
     @commands.command()
     async def char(self, ctx, *, characters):

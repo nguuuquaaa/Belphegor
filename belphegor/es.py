@@ -156,10 +156,8 @@ class EsBot():
 
     def __init__(self, bot):
         self.bot = bot
-        self.pool = {
-            "chip": (Chip, bot.db.chip_library),
-            "weapon": (Weapon, bot.db.weapon_list)
-        }
+        self.chip_library = bot.db.chip_library
+        self.weapon_list = bot.db.weapon_list
         test_guild = self.bot.get_guild(config.TEST_GUILD_ID)
         self.emojis = {}
         for emoji_name in (
@@ -172,78 +170,23 @@ class EsBot():
         for emoji_name in CATEGORY_DICT:
             self.emojis[emoji_name] = discord.utils.find(lambda e:e.name==emoji_name, test_guild.emojis)
 
-    async def _search(self, name, pool_name, *, no_prompt=False):
-        name = name.lower()
-        pool_list = self.pool[pool_name]
-        pool = pool_list[1]
-        cls = pool_list[0]
-        regex = ".*?".join(map(re.escape, name.split()))
-        cursor = pool.find({
-            "$or": [
-                {
-                    "en_name": {
-                        "$regex": regex,
-                        "$options": "i"
-                    }
-                },
-                {
-                    "jp_name": {
-                        "$regex": regex,
-                        "$options": "i"
-                    }
-                }
-            ]
-        })
-        if no_prompt:
-            async for item in cursor:
-                if name in (item["en_name"].lower(), item["jp_name"].lower()):
-                    return cls(item)
-            item = cursor.next_object()
-            if item:
-                return cls(item)
-            else:
-                return None
-        else:
-            return [cls(item) async for item in cursor]
-
-    async def filter(self, ctx, name, result, *, prompt_all=False):
-        if not result:
-            await ctx.send(f"Can't find {name} in database.")
-            return None
-        elif not prompt_all:
-            if len(result) == 1:
-                return result[0]
-        await ctx.send("Do you mean:\n```\n{}\n<>: cancel\n```".format('\n'.join([f"{index+1}: {item.en_name}" for index, item in enumerate(result)])))
-        msg = await self.bot.wait_for("message", check=lambda m:m.author.id==ctx.author.id)
-        try:
-            index = int(msg.content)-1
-        except:
-            return None
-        if index in range(len(result)):
-            return result[index]
-        else:
-            return None
-
-    @commands.command(aliases=["c",])
-    async def chip(self, ctx, *, name):
-        result = await self._search(name, "chip")
-        chip = await self.filter(ctx, name, result)
+    @commands.command(aliases=["c", "chip"])
+    async def chipen(self, ctx, *, name):
+        chip = await ctx.search(name, self.chip_library, cls=Chip, atts=["en_name", "jp_name"], name_att="en_name", emoji_att="element")
         if not chip:
             return
         await ctx.send(embed=chip.embed_form(self))
 
     @commands.command(aliases=["cjp",])
     async def chipjp(self, ctx, *, name):
-        result = await self._search(name, "chip")
-        chip = await self.filter(ctx, name, result)
+        chip = await ctx.search(name, self.chip_library, cls=Chip, atts=["en_name", "jp_name"], name_att="jp_name", emoji_att="element")
         if not chip:
             return
         await ctx.send(embed=chip.embed_form(self, "jp"))
 
     @commands.command(aliases=["w",])
     async def weapon(self, ctx, *, name):
-        result = await self._search(name, "weapon")
-        weapon = await self.filter(ctx, name, result)
+        weapon = await ctx.search(name, self.weapon_list, cls=Weapon, atts=["en_name", "jp_name"], name_att="en_name", emoji_att="category")
         if not weapon:
             return
         await ctx.send(embed=weapon.embed_form(self))
@@ -252,7 +195,6 @@ class EsBot():
     @checks.owner_only()
     async def wupdate(self, ctx, *args):
         msg = await ctx.send("Fetching...")
-        weapon_list = self.pool["weapon"][1]
         if not args:
             urls = URLS
         else:
@@ -263,12 +205,17 @@ class EsBot():
             category_weapons = await self.bot.loop.run_in_executor(None, self.bs_parse, category, bytes_)
             weapons.extend(category_weapons)
             print(f"Done parsing {CATEGORY_DICT[category]}.")
-        await weapon_list.delete_many({"category": {"$in": tuple(urls.keys())}})
-        await weapon_list.insert_many(weapons)
+        await self.weapon_list.delete_many({"category": {"$in": tuple(urls.keys())}})
+        await self.weapon_list.insert_many(weapons)
         print("Done everything.")
         await msg.edit(content = "Done.")
 
     def bs_parse(self, category, bytes_):
+        def to_int(any_string):
+            try:
+                return int(any_string)
+            except:
+                return None
         category_weapons = []
         data = BS(bytes_.decode("utf-8"), "lxml")
         table = tuple(data.find("table", class_="wikitable sortable").find_all(True, recursive=False))[1:]
@@ -290,8 +237,8 @@ class EsBot():
                 weapon["pic_url"] = None
             weapon["requirement"] = utils.unifix(relevant[3].get_text())
             weapon["atk"] = {
-                "base": {ATK_EMOJI[i]: int(l.strip()) for i, l in enumerate(relevant[5].find_all(text=True))},
-                "max":  {ATK_EMOJI[i]: int(l.strip()) for i, l in enumerate(relevant[6].find_all(text=True))}
+                "base": {ATK_EMOJI[i]: to_int(l.strip()) for i, l in enumerate(relevant[5].find_all(text=True))},
+                "max":  {ATK_EMOJI[i]: to_int(l.strip()) for i, l in enumerate(relevant[6].find_all(text=True))}
             }
             weapon["properties"] = []
             for child in relevant[7].find_all(True, recursive=False):
