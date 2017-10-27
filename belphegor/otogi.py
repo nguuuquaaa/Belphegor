@@ -603,7 +603,10 @@ class OtogiBot():
         quote_keys = {27: "main", 28: "skill", 29: "summon", 30: "limit_break"}
         for i in (27, 28, 29, 30):
             quote_data = tuple(tags[i].find_all("td"))
-            new_daemon.quotes[quote_keys[i]] = utils.unifix(quote_data[1].text), quote_data[2].span.a["href"]
+            new_daemon.quotes[quote_keys[i]] = {
+                "value": utils.unifix(quote_data[1].text),
+                "url": quote_data[2].span.a["href"]
+            }
 
         #pic links
         for kind, raw_pic_data in pic_kind.items():
