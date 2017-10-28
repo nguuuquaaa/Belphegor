@@ -27,6 +27,7 @@ class BelphegorContext(commands.Context):
                 vertical = False
                 embeds = item
         else:
+            max_vertical = 1
             message = await self.send(embed=item)
             max_page = len(embeds)
         if max_page > 1:
