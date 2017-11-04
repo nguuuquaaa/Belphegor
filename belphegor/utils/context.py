@@ -21,7 +21,7 @@ class BelphegorContext(commands.Context):
         vertical = isinstance(item, list)
         if vertical:
             message = await self.send(embed=item[0])
-            max_page = sum([len(p) for p in embeds])
+            max_page = sum((len(p) for p in embeds))
             max_vertical = len(embeds)
             if max_vertical == 1:
                 vertical = False
@@ -41,7 +41,7 @@ class BelphegorContext(commands.Context):
                 pool_index = 0
                 pool = item
                 max_page = len(pool)
-                possible_reactions.extend(["\U0001f53c", "\U0001f53d", "\u274c"])
+                possible_reactions.extend(("\U0001f53c", "\U0001f53d", "\u274c"))
             else:
                 pool = embeds
                 possible_reactions.append("\u274c")
@@ -156,7 +156,7 @@ class BelphegorContext(commands.Context):
         })
         if prompt is False:
             async for item_data in cursor:
-                if name in [item_data.get(att, "").lower() for att in atts]:
+                if name in (item_data.get(att, "").lower() for att in atts):
                     break
             try:
                 return cls(item_data)
