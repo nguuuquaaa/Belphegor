@@ -211,7 +211,7 @@ class MusicPlayer:
         self.player = None
         self.lock = asyncio.Lock()
         guild = bot.get_guild(guild_id)
-        self.queue.playlist.extend([Song(guild.get_member(s["requestor_id"]), s["title"], s["url"]) for s in initial])
+        self.queue.playlist.extend((Song(guild.get_member(s["requestor_id"]), s["title"], s["url"]) for s in initial))
 
     def ready_to_play(self, voice_client):
         self.voice_client = voice_client
@@ -273,6 +273,10 @@ class MusicBot:
         self.youtube = build("youtube", "v3", developerKey=token.GOOGLE_CLIENT_API_KEY)
         self.lock = asyncio.Lock()
 
+    def cleanup(self):
+        for mp in self.music_players.values():
+            self.bot.loop.create_task(mp.leave_voice())
+
     async def get_music_player(self, guild_id):
         mp = self.music_players.get(guild_id)
         if not mp:
@@ -306,7 +310,7 @@ class MusicBot:
             if current_voice:
                 await current_voice.disconnect(force=True)
             try:
-                voice_client = await voice_channel.connect(timeout=20, reconnect=True)
+                voice_client = await voice_channel.connect(timeout=20, reconnect=False)
             except:
                 return await msg.edit(content="Cannot connect to voice. Try joining other voice channel.")
             music_player.ready_to_play(voice_client)
@@ -358,13 +362,13 @@ class MusicBot:
                         f"{index+i+1}. [{song.title}]({song.url})"
                         for i, song in enumerate(playlist[index:index+10])
                     ])
-                embed = discord.Embed(
-                    title=f"({state}) {current_song_info}",
-                    description=f"{desc}\n\n(Page {index//10+1}/{max_page})",
-                    colour=discord.Colour.green()
-                )
-                embed.set_thumbnail(url="http://i.imgur.com/HKIOv84.png")
-                embed.set_footer(text=f"(Page {1}/{max_page})")
+                    embed = discord.Embed(
+                        title=f"({state}) {current_song_info}",
+                        description=f"{desc}\n\n(Page {index//10+1}/{max_page})",
+                        colour=discord.Colour.green()
+                    )
+                    embed.set_thumbnail(url="http://i.imgur.com/HKIOv84.png")
+                    embeds.append(embed)
                 await ctx.embed_page(embeds)
             else:
                 await ctx.send(embed=discord.Embed(title=f"({state}) {current_song_info}", colour=discord.Colour.green()))

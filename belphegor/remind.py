@@ -16,6 +16,9 @@ class RemindBot:
         self.event_list = bot.db.remind_event_list
         self.reminder = bot.loop.create_task(self.check_till_eternity())
 
+    def cleanup(self):
+        self.reminder.cancel()
+
     async def check_till_eternity(self):
         events = self.event_list
         try:
@@ -94,10 +97,10 @@ class RemindBot:
         embeds = []
         max_page = (len(self_events) - 1) // 5 + 1
         for index in range(0, len(self_events), 5):
-            desc = "\n\n".join([
+            desc = "\n\n".join((
                 f"`{i+1}.` ***{e['text']}***\n  In {utils.seconds_to_text((e['event_time']-cur_time).total_seconds())}"
                 for i, e in enumerate(self_events[index:index+5])
-            ])
+            ))
             embed = discord.Embed(
                 title=f"All reminders for {ctx.author.display_name}",
                 description=f"{desc}\n\n(Page {index//5+1}/{max_page})"
@@ -126,7 +129,7 @@ class RemindBot:
         try:
             i = utils.extract_time(phrase).total_seconds()
         except:
-            await ctx.send("Time too large.")
+            return await ctx.send("Time too large.")
         if i > 0:
             await ctx.send(utils.seconds_to_text(i))
         else:

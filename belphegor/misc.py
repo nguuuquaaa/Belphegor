@@ -203,8 +203,7 @@ class MiscBot:
     @commands.command()
     async def fancy(self, ctx, *, textin:str):
         textin = textin.upper()
-        textout = [config.FANCY_CHARS.get(charin, charin) for charin in textin]
-        await ctx.send(" ".join(textout))
+        await ctx.send(" ".join((config.FANCY_CHARS.get(charin, charin) for charin in textin)))
 
     @commands.command(aliases=["hello",])
     async def hi(self, ctx):
@@ -221,7 +220,7 @@ class MiscBot:
 
     @say.command(name="welcome")
     async def say_welcome(self, ctx):
-        await ctx.send("*\"Welcome to `>>ls` hell...\"*")
+        await ctx.send("*\"You are welcome to leave me alone...\"*")
 
     def parse_google(self, bytes_):
         data = BS(bytes_.decode("utf-8"), "lxml")
@@ -245,7 +244,7 @@ class MiscBot:
             embed = discord.Embed(title="Search result:", description="**Unit convert**", colour=discord.Colour.dark_orange())
             embed.add_field(name=unit_in.text, value=results[0].input['value'])
             embed.add_field(name=unit_out.text, value=results[1].input['value'])
-            embed.add_field(name="See also:", value='\n\n'.join([f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[0:4]]), inline=False)
+            embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[0:4])), inline=False)
             return embed
         except:
             pass
@@ -259,7 +258,7 @@ class MiscBot:
                 description=f"**Timezone**\n{text}",
                 colour=discord.Colour.dark_orange()
             )
-            embed.add_field(name="See also:", value='\n\n'.join([f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[0:4]]), inline=False)
+            embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[0:4])), inline=False)
             return embed
         except:
             pass
@@ -272,7 +271,7 @@ class MiscBot:
             embed = discord.Embed(title="Search result:", description="**Currency**", colour=discord.Colour.dark_orange())
             embed.add_field(name=unit[0]['value'], value=inp[0]['value'])
             embed.add_field(name=unit[1]['value'], value=inp[1]['value'])
-            embed.add_field(name="See also:", value='\n\n'.join([f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[0:4]]), inline=False)
+            embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[0:4])), inline=False)
             return embed
         except:
             pass
@@ -282,7 +281,7 @@ class MiscBot:
             inp = data.find("span", class_="cwclet").text
             out = data.find("span", class_="cwcot").text
             embed = discord.Embed(title="Search result:", description=f"**Calculator**\n{inp}\n\n {out}", colour=discord.Colour.dark_orange())
-            embed.add_field(name="See also:", value='\n\n'.join([f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[0:4]]), inline=False)
+            embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[0:4])), inline=False)
             return embed
         except:
             pass
@@ -304,7 +303,7 @@ class MiscBot:
                 url = ""
             description = f"**{title}**\n{tag.find('div', class_='_cgc').find('span').text.replace('MORE', '').replace('…', '')}{url}"
             embed = discord.Embed(title="Search result:", description=description, colour=discord.Colour.dark_orange())
-            embed.add_field(name="See also:", value='\n\n'.join([f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[0:4]]), inline=True)
+            embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[0:4])), inline=True)
             return embed
         except:
             pass
@@ -357,7 +356,7 @@ class MiscBot:
                         defines[current_page] = f"{defines[current_page]}\n**{t.text}**"
                     else:
                         defines[current_page] = f"{defines[current_page]}\n- {t.text}"
-            see_also = '\n\n'.join([f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[1:5]])
+            see_also = '\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[1:5]))
             embeds = []
             max_page = len(defines)
             for i, d in enumerate(defines):
@@ -386,7 +385,7 @@ class MiscBot:
             embed.add_field(name="Precipitation", value=tag.find('span', id='wob_pp').text)
             embed.add_field(name="Humidity", value=tag.find('span', id='wob_hm').text)
             embed.add_field(name="Wind", value=tag.find('span', id='wob_ws').text)
-            embed.add_field(name="See also:", value='\n\n'.join([f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[1:5]]), inline=False)
+            embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[1:5])), inline=False)
             return embed
         except:
             pass
@@ -395,7 +394,7 @@ class MiscBot:
         tag = data.find("div", class_="_oDd")
         try:
             embed = discord.Embed(title="Search result:", description=f"{tag.text}\n[{search_results[0].text}]({search_results[0]['href']})", colour=discord.Colour.dark_orange())
-            embed.add_field(name="See also:", value='\n\n'.join([f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[1:5]]), inline=False)
+            embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[1:5])), inline=False)
             return embed
         except:
             pass
@@ -410,13 +409,13 @@ class MiscBot:
             embed = discord.Embed(title="Search result:", description=f"[Google Translate]({link['href']})", colour=discord.Colour.dark_orange())
             embed.add_field(name=langs[0].text, value=inp.text)
             embed.add_field(name=langs[1].text, value=out.text)
-            embed.add_field(name="See also:", value='\n\n'.join([f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[0:4]]), inline=False)
+            embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[0:4])), inline=False)
             return embed
         except:
             pass
 
         #non-special search
-        other = '\n\n'.join([f"<{r['href']}>" for r in search_results[1:5]])
+        other = '\n\n'.join((f"<{r['href']}>" for r in search_results[1:5]))
         return f"**Search result:**\n{search_results[0]['href']}\n**See also:**\n{other}"
 
     @commands.command(aliases=["g"])
@@ -459,7 +458,7 @@ class MiscBot:
             e = config.FANCY_CHARS[str(i+1)]
             int_to_emoji[i+1] = e
             emoji_to_int[e] = i+1
-        embed = discord.Embed(title=f"Polling: {stuff[0]}", description="\n".join([f"{int_to_emoji[i+1]} {s}" for i, s in enumerate(items)]), colour=discord.Colour.dark_green())
+        embed = discord.Embed(title=f"Polling: {stuff[0]}", description="\n".join((f"{int_to_emoji[i+1]} {s}" for i, s in enumerate(items))), colour=discord.Colour.dark_green())
         message = await ctx.send(embed=embed)
         for i in range(len(items)):
             await message.add_reaction(int_to_emoji[i+1])
@@ -488,6 +487,50 @@ class MiscBot:
         embed = discord.Embed(title=f"{ctx.guild.name}'s icon")
         embed.set_image(url=ctx.guild.icon_url_as(format='png'))
         await ctx.send(embed=embed)
+
+    @commands.group(invoke_without_command=True)
+    async def glitch(self, ctx, weight: int, *, text):
+        if ctx.invoked_subcommand is None:
+            if 0 < weight <= 50:
+                try:
+                    await ctx.message.delete()
+                except:
+                    pass
+                await ctx.send(
+                    embed=discord.Embed(
+                        title=f"{ctx.author.display_name} said:",
+                        description=
+                            "".join((
+                                "".join((
+                                    c,
+                                    "".join((random.choice("".join((config.GLITCH_UP, config.GLITCH_MIDDLE, config.GLITCH_DOWN))) for i in range(weight)))
+                                )) for c in text
+                            )),
+                        colour=discord.Colour.red()
+                    )
+                )
+            else:
+                await ctx.send("Weight value can only be between 1 and 50.")
+
+    @glitch.command(aliases=["m"])
+    async def meaningless(self, ctx, length: int=0):
+        if 0 <= length <= 500:
+            if length == 0:
+                length = random.randrange(20, 50)
+            try:
+                await ctx.message.delete()
+            except:
+                pass
+            text_body = "".join((random.choice(config.GLITCH_TEXT) for i in range(length)))
+            await ctx.send(
+                embed=discord.Embed(
+                    title=f"{ctx.author.display_name} said:",
+                    description="\n".join((text_body[i:i+50] for i in range(0, len(text_body), 50))),
+                    colour=discord.Colour.red()
+                )
+            )
+        else:
+            await ctx.send("Wha hold your horse with the length.")
 
 #==================================================================================================================================================
 

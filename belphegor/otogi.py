@@ -701,7 +701,7 @@ class OtogiBot():
             daemons = [d async for d in self.daemon_collection.find({"id": {"$in": pool}}, projection={"_id": False, "id": True, "name": True})]
             daemons.sort(key=lambda x: x["id"])
             for index in range(0, len(daemons), 10):
-                desc = "\n".join([daemon['name'] for daemon in daemons[index:index+10]])
+                desc = "\n".join((daemon['name'] for daemon in daemons[index:index+10]))
                 embed = discord.Embed(
                     title="Current summon pool:",
                     description=f"{str(self.emojis['star'])*rarity}\n{desc}\n\n(Page {index//10+1}/{max_page} - Book {rarity-2}/3)",
@@ -744,7 +744,7 @@ class OtogiBot():
             max_page = (len(daemons)-1)//10+1
             embed_pool = []
             for index in range(0, len(daemons), 10):
-                desc = "\n".join([f"{daemon['name']} lb{lbs[daemon['id']]}" for daemon in daemons[index:index+10]])
+                desc = "\n".join((f"{daemon['name']} lb{lbs[daemon['id']]}" for daemon in daemons[index:index+10]))
                 embed = discord.Embed(
                     title=f"Mochi: {player['mochi']}{self.emojis['mochi']}",
                     description=f"{str(self.emojis['star'])*pool['_id']}\n{desc}\n\n(Page {index//10+1}/{max_page}",
@@ -754,9 +754,10 @@ class OtogiBot():
                 embed_pool.append(embed)
             embeds.append(embed_pool)
         if embeds:
+            max_vertical = len(embeds)
             for i, embed_pool in enumerate(embeds):
                 for embed in embed_pool:
-                    embed.description = f"{embed.description} - Book {i+1}/{len(embeds)})"
+                    embed.description = f"{embed.description} - Book {i+1}/{max_vertical})"
             await ctx.embed_page(embeds)
         else:
             embed = discord.Embed(f"Mochi: {player['mochi']}{self.emojis['mochi']}", description="Empty", colour=discord.Colour.orange())
@@ -891,7 +892,7 @@ class OtogiBot():
                         "no":       "Trade failed.",
                         "timeout":  "Timeout, cancelled trading."
                     }
-                    check = await ctx.yes_no_prompt(sentences=sentences, target=member)
+                    check = await ctx.yes_no_prompt(sentences, target=member)
                     if check:
                         dm = target["daemons"].pop(i)
                         myself["daemons"].append(dm)
@@ -958,10 +959,10 @@ class OtogiBot():
         embeds = []
         max_page = (len(filter_sheet) - 1) // 5 + 1
         for index in range(0, len(filter_sheet), 5):
-            desc = "\n\n".join([
+            desc = "\n\n".join((
                 f"{index+i+1}. **{field[1]}**\n   MLB Effective Skill DMG: {field[61]}\n   MLB Auto ATK DMG: {field[59]}"
                 for i, field in enumerate(filter_sheet[index:index+5])
-            ])
+            ))
             embed = discord.Embed(
                 title="Nuker rank",
                 description = f"{desc}\n\n(Page {index//5+1}/{max_page})",
@@ -991,11 +992,11 @@ class OtogiBot():
         embeds = []
         max_page = (len(filter_sheet) - 1) // 5 + 1
         for index in range(0, len(filter_sheet), 5):
-            desc = "\n\n".join([
+            desc = "\n\n".join((
                 f"{index+i+1}. **{field[1]}**\n   MLB Debuff Value: {self.list_get(field, 78) or 'N/A'}\n"
                 f"   MLB Effective Skill DMG: {field[61]}\n   Skill Effect: {self.list_get(field, 76) or 'N/A'}"
                 for i, field in enumerate(filter_sheet[index:index+5])
-            ])
+            ))
             embed = discord.Embed(
                 title="Debuffer list",
                 description = f"{desc}\n\n(Page {index//5+1}/{max_page})",
@@ -1013,10 +1014,10 @@ class OtogiBot():
         embeds = []
         max_page = (len(filter_sheet) - 1) // 5 + 1
         for index in range(0, len(filter_sheet), 5):
-            desc = "\n\n".join([
+            desc = "\n\n".join((
                 f"{index+i+1}. **{field[1]}**\n   MLB Buff Value: {self.list_get(field, 78) or 'N/A'}\n   Skill Effect: {self.list_get(field, 76) or 'N/A'}"
                 for i, field in enumerate(filter_sheet[index:index+5])
-            ])
+            ))
             embed = discord.Embed(
                 title="Buffer list",
                 description = f"{desc}\n\n(Page {index//5+1}/{max_page})",
@@ -1054,10 +1055,10 @@ class OtogiBot():
         embeds = []
         max_page = (len(daemons) - 1) // 5 + 1
         for index in range(0, len(daemons), 5):
-            desc = "\n\n".join([
+            desc = "\n\n".join((
                 f"{index+i+1}. **{daemon['name']}**\n   Max ATK: {daemon['atk']}\n   Max HP: {daemon['hp']}\n   GCQ STR: {daemon['total_stat']}"
                 for i, daemon in enumerate(daemons[index:index+5])
-            ])
+            ))
             embed = discord.Embed(
                 title="GCQ STR rank",
                 description = f"{desc}\n\n(Page {index//5+1}/{max_page})",
@@ -1065,6 +1066,18 @@ class OtogiBot():
             )
             embeds.append(embed)
         await ctx.embed_page(embeds)
+
+    @commands.command()
+    @checks.owner_only()
+    async def datadump(self, ctx):
+        async for daemon in self.daemon_collection.find({}):
+            daemon.pop("_id")
+            with open(f"data/otogi/daemon/{daemon['id']}.json", "w", encoding="utf-8") as file:
+                json.dump(daemon, file, indent=4, ensure_ascii=False)
+        sum = {sp["rarity"]: sp["pool"] async for sp in self.summon_pool.find({})}
+        with open(f"data/otogi/jewel_summon.json", "w", encoding="utf-8") as file:
+            json.dump(sum, file, indent=4, ensure_ascii=False)
+        await ctx.confirm()
 
     @commands.group()
     async def exchange(self, ctx):

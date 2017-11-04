@@ -134,9 +134,9 @@ class Weapon:
             for i in range(self.rarity - most*3):
                 description = f"{description}{emoji}"
         if self.classes == "all_classes":
-            usable_classes = ''.join([str(emojis[cl]) for cl in CLASS_DICT.values()])
+            usable_classes = ''.join((str(emojis[cl]) for cl in CLASS_DICT.values()))
         else:
-            usable_classes = ''.join([str(emojis[cl]) for cl in self.classes])
+            usable_classes = ''.join((str(emojis[cl]) for cl in self.classes))
         embed.description = f"{description}\n{usable_classes}"
         if self.pic_url:
             embed.set_thumbnail(url=self.pic_url)

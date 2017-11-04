@@ -17,8 +17,9 @@ class HelpBot:
         creampie_guild = self.bot.get_guild(config.CREAMPIE_GUILD_ID)
         self.emoji = {}
         for emoji_name in ("mochi", "ranged"):
-            self.emoji[emoji_name] = discord.utils.find(lambda e:e.name==emoji_name, creampie_guild.emojis)
+            self.emoji[emoji_name] = discord.utils.find(lambda e: e.name==emoji_name, creampie_guild.emojis)
         self.emoji["hu"] = discord.utils.find(lambda e:e.name=="hu", test_guild.emojis)
+        self.suggest_channel = self.bot.get_channel(375418376492810252)
 
     @commands.group()
     async def help(self, ctx):
@@ -49,7 +50,14 @@ class HelpBot:
                 value=
                     "`ping` - pong\n"
                     "`\o\` - /o/\n"
-                    "`/o/` - \\o\\\n"
+                    "`/o/` - \\o\\\n",
+                inline=False
+            )
+            embed.add_field(
+                name="Feedback",
+                value=
+                    "`>>suggest` - Suggest anything\n",
+                inline=False
             )
             embed.set_footer(text="Prefix: >>, !! or bot mention")
             await ctx.send(embed=embed)
@@ -114,9 +122,9 @@ class HelpBot:
     async def game(self, ctx):
         embed = discord.Embed(colour=discord.Colour.teal())
         embed.add_field(
-            name="Board game [Currently not available]",
+            name="Board game",
             value=
-                "`>>monopoly` - Play monopoly\n"
+                "`>>monopoly` - Play monopoly [Currently not available]\n"
                 "`>>cangua` - Play co ca ngua",
             inline=False
         )
@@ -281,6 +289,35 @@ class HelpBot:
             inline=False
         )
         await ctx.send(embed=embed)
+
+    @commands.command()
+    async def detail(self, ctx, *args):
+        command = self.bot
+        try:
+            for cmd_name in args:
+                command = command.get_command(cmd_name)
+        except:
+            pass
+        else:
+            if command:
+                if not command.hidden:
+                    embed = discord.Embed(colour=discord.Colour.teal())
+                    embed.add_field(name="Full command", value=f"`{command.full_parent_name} {command.name}`")
+                    embed.add_field(name="Aliases", value=f"`{', '.join(command.aliases)}`" if command.aliases else "None")
+                    embed.add_field(name="Cog", value=command.cog_name)
+                    embed.add_field(name="Usage", value=command.help, inline=False)
+                    return await ctx.send(embed=embed)
+        await ctx.send(f"Command `{' '.join(args)}` doesn't exist.")
+
+    @commands.command()
+    async def suggest(self, ctx, *, content):
+        '''
+            Suggest stuff
+        '''
+        embed = discord.Embed(description=content)
+        embed.set_author(name=str(ctx.author), icon_url=ctx.author.avatar_url)
+        await self.suggest_channel.send(embed=embed)
+        await ctx.confirm()
 
 #==================================================================================================================================================
 

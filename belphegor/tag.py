@@ -68,7 +68,7 @@ class TagBot:
     async def find(self, ctx, *, name):
         tag_names = await self.tag_list.distinct("name", {})
         relevant = process.extract(name, tag_names, limit=10)
-        text = "\n".join([f"{r[0]} ({r[1]}%)" for r in relevant if r[1]>50])
+        text = "\n".join((f"{r[0]} ({r[1]}%)" for r in relevant if r[1]>50))
         await ctx.send(f"Result:\n```\n{text}\n```")
 
 #==================================================================================================================================================

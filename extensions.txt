@@ -9,3 +9,4 @@ belphegor.random
 belphegor.remind
 belphegor.tag
 belphegor.sticker
+belphegor.game

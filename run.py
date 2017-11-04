@@ -41,8 +41,13 @@ class Belphegor(commands.Bot):
         await self.change_presence(game=discord.Game(name='with Chronos-senpai'))
 
     async def close(self):
-        await super().close()
         await self.session.close()
+        for cog in self.cogs.values():
+            try:
+                cog.cleanup()
+            except:
+                pass
+        await super().close()
 
     async def load(self):
         await self.wait_until_ready()

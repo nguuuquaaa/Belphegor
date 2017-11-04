@@ -7,12 +7,12 @@ from urllib.parse import quote
 _keep_char = (".", "_", " ")
 
 def safe_filename(any_string):
-    return ''.join([c for c in any_string if c.isalnum() or c in _keep_char])
+    return ''.join((c for c in any_string if c.isalnum() or c in _keep_char))
 
 _keep_special_char = ("\n", "\t")
 
 def unifix(any_string):
-    return "".join([c for c in normalize("NFKD", any_string) if category(c)[0]!="C" or c in _keep_special_char]).strip()
+    return "".join((c for c in normalize("NFKD", any_string) if category(c)[0]!="C" or c in _keep_special_char)).strip()
 
 def split_page(text, split_len, *, safe_mode=True):
     description = re.split(r"(\s)", text)
@@ -88,8 +88,11 @@ def format_time(dt_obj):
 
 discord_regex = re.compile(r"(?<!\\)[*_\[\]]")
 
+def _match_this(match):
+    return f"\\{match.group(0)}"
+
 def discord_escape(any_string):
-    return discord_regex.sub(lambda m: f"\\{m.group(0)}", any_string)
+    return discord_regex.sub(_match_this, any_string)
 
 def safe_url(any_url):
     return quote(any_url, safe=r":/&$+,;=@#~%")

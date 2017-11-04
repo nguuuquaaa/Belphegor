@@ -5,6 +5,12 @@ from io import StringIO
 import traceback
 from contextlib import redirect_stdout
 
+NEED_CLOSE = {
+    "belphegor.remind": "RemindBot",
+    "belphegor.music": "MusicBot",
+    "belphegor.nuf": "NUFBot"
+}
+
 #==================================================================================================================================================
 
 class AdminBot:
@@ -15,34 +21,27 @@ class AdminBot:
     def __init__(self, bot):
         self.bot = bot
 
-    def cancel_task_of(self, extension):
-        _loop = self.bot.loop
-        if extension == "belphegor.remind":
-            cog = self.bot.get_cog("RemindBot")
-            if cog:
-                cog.reminder.cancel()
-        elif extension == "belphegor.music":
-            cog = self.bot.get_cog("MusicBot")
-            if cog:
-                for mp in cog.music_players.values():
-                    _loop.create_task(mp.leave_voice())
+    def cleanup(self, extension):
+        cog = self.bot.get_cog(NEED_CLOSE.get(extension))
+        if cog:
+            cog.cleanup()
 
     async def reload_extension(self, ctx, extension):
         try:
-            self.cancel_task_of(extension)
+            self.cleanup(extension)
             self.bot.unload_extension(extension)
             self.bot.load_extension(extension)
             print(f"Reloaded {extension}")
             await ctx.confirm()
-        except Exception as e:
-            print(f"Failed reloading {extension}: {e}")
+        except:
+            print(f"Failed reloading {extension}:\n{traceback.format_exc()}")
             await ctx.deny()
 
     async def reload_all_extensions(self, ctx):
         with open("extensions.txt") as file:
-            extensions = [e for e in file.read().splitlines() if e]
-        for extension in self.bot.extensions.copy():
-            self.cancel_task_of(extension)
+            extensions = (e for e in file.read().splitlines() if e)
+        for extension in tuple(self.bot.extensions.keys()):
+            self.cleanup(extension)
             self.bot.unload_extension(extension)
         check = True
         for extension in extensions:
@@ -50,7 +49,7 @@ class AdminBot:
                 self.bot.load_extension(extension)
                 print(f"Reloaded {extension}")
             except Exception as e:
-                print(f"Failed reloading {extension}: {e}")
+                print(f"Failed reloading {extension}:\n{traceback.format_exc()}")
                 check = False
         if check:
             await ctx.confirm()
@@ -69,6 +68,7 @@ class AdminBot:
     @checks.owner_only()
     async def unload(self, ctx, extension:str):
         if extension in self.bot.extensions:
+            self.cleanup(extension)
             self.bot.unload_extension(extension)
             print(f"Unloaded {extension}")
             await ctx.confirm()

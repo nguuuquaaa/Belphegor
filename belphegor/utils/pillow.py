@@ -5,38 +5,38 @@ import asyncio
 
 _loop = asyncio.get_event_loop()
 
-async def pie_chart(data, *, unit="count", aa=4):
+async def pie_chart(data, *, unit="counts", aa=4):
     def drawing():
         number_of_fields = len(data)
-        number_of_items = 0
-        for d in data:
-            number_of_items += d[1]
+        number_of_items = sum((d["count"] for d in data))
+        if number_of_items == 0:
+            return None
         pic = Image.new('RGB', (aa*800, aa*max(500, 70 + 60*number_of_fields)), (255, 255, 255))
         font = ImageFont.truetype(f"{config.DATA_PATH}/font/arial.ttf", aa*20)
         big_font = ImageFont.truetype(f"{config.DATA_PATH}/font/arialbd.ttf", aa*20)
         draw = ImageDraw.Draw(pic)
         prev_angle = 0
         for index, item in enumerate(data):
-            cur_angle = prev_angle + 360*item[1]/number_of_items
+            cur_angle = prev_angle + 360*item["count"]/number_of_items
             draw.pieslice(
                 (aa*20, aa*20, aa*480, aa*480),
                 -90.0+prev_angle,
                 -90.0+cur_angle,
-                fill=item[2]
+                fill=item["color"]
             )
             draw.rectangle(
                 (aa*525, aa*(27+index*60), aa*550, aa*(52+index*60)),
-                fill=item[2]
+                fill=item["color"]
             )
             draw.text(
                 (aa*560, aa*(30+index*60)),
-                item[0],
+                item["name"],
                 font=font,
                 fill=(0, 0, 0)
             )
             draw.text(
                 (aa*560, aa*(55+index*60)),
-                f"{item[1]} {unit} - {100*item[1]/number_of_items:.2f}%",
+                f"{item['count']} {unit} - {100*item['count']/number_of_items:.2f}%",
                 font=font,
                 fill=(0, 0, 0)
             )

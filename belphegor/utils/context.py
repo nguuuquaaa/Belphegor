@@ -121,7 +121,7 @@ class BelphegorContext(commands.Context):
                 if not delete_mode:
                     _loop.create_task(message.edit(content=sentences["no"]))
         if delete_mode:
-            _loop.create_task(message.detete())
+            _loop.create_task(message.delete())
         else:
             try:
                 _loop.create_task(message.clear_reactions())
@@ -174,10 +174,10 @@ class BelphegorContext(commands.Context):
             max_page = (len(result) - 1) // 10 + 1
             emojis = self.cog.emojis
             for index in range(0, len(result), 10):
-                desc = "\n".join([
-                    f"`{index+i+1}:` {emojis.get(getattr(item, emoji_att)) if emoji_att else ''}{getattr(item, name_att)}"
+                desc = "\n".join((
+                    f"`{index+i+1}:` {emojis.get(getattr(item, emoji_att), '') if emoji_att else ''}{getattr(item, name_att)}"
                     for i, item in enumerate(result[index:index+10])
-                ])
+                ))
                 embed = Embed(
                     title="Do you mean:",
                     description=f"{desc}\n\n(Page {index//10+1}/{max_page})"
