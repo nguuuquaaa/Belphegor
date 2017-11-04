@@ -82,7 +82,7 @@ class GuildBot:
     async def hackban(self, ctx, user_id: int, *, reason=None):
         try:
             user = await self.bot.get_user_info(user_id)
-            await guild.ban(user, reason=reason)
+            await ctx.guild.ban(user, reason=reason)
             await ctx.send("{user.name} has been banned.")
         except:
             await ctx.deny()
