@@ -1,34 +1,23 @@
 import discord
 from discord.ext import commands
-from .utils import checks
+from . import utils
+from .utils import checks, config
 from io import StringIO
 import traceback
 from contextlib import redirect_stdout
 
-NEED_CLOSE = {
-    "belphegor.remind": "RemindBot",
-    "belphegor.music": "MusicBot",
-    "belphegor.nuf": "NUFBot"
-}
-
 #==================================================================================================================================================
 
-class AdminBot:
+class Admin:
     '''
-    I should just call it OwnerOnlyBot but errr....
+        I should just call it OwnerOnlyCog but errr....
     '''
 
     def __init__(self, bot):
         self.bot = bot
 
-    def cleanup(self, extension):
-        cog = self.bot.get_cog(NEED_CLOSE.get(extension))
-        if cog:
-            cog.cleanup()
-
     async def reload_extension(self, ctx, extension):
         try:
-            self.cleanup(extension)
             self.bot.unload_extension(extension)
             self.bot.load_extension(extension)
             print(f"Reloaded {extension}")
@@ -38,13 +27,10 @@ class AdminBot:
             await ctx.deny()
 
     async def reload_all_extensions(self, ctx):
-        with open("extensions.txt") as file:
-            extensions = (e for e in file.read().splitlines() if e)
         for extension in tuple(self.bot.extensions.keys()):
-            self.cleanup(extension)
             self.bot.unload_extension(extension)
         check = True
-        for extension in extensions:
+        for extension in config.all_extensions:
             try:
                 self.bot.load_extension(extension)
                 print(f"Reloaded {extension}")
@@ -56,19 +42,18 @@ class AdminBot:
         else:
             await ctx.deny()
 
-    @commands.command()
+    @commands.command(hidden=True)
     @checks.owner_only()
-    async def reload(self, ctx, extension:str=""):
+    async def reload(self, ctx, extension=""):
         if extension:
             await self.reload_extension(ctx, extension)
         else:
             await self.reload_all_extensions(ctx)
 
-    @commands.command()
+    @commands.command(hidden=True)
     @checks.owner_only()
-    async def unload(self, ctx, extension:str):
+    async def unload(self, ctx, extension):
         if extension in self.bot.extensions:
-            self.cleanup(extension)
             self.bot.unload_extension(extension)
             print(f"Unloaded {extension}")
             await ctx.confirm()
@@ -76,19 +61,25 @@ class AdminBot:
             print(f"Extension {extension} doesn't exist.")
             await ctx.deny()
 
-    @commands.command()
+    @commands.command(hidden=True)
     @checks.owner_only()
     async def status(self, ctx, *, stuff):
-        await self.bot.change_presence(game=discord.Game(name=stuff))
+        data = stuff.partition(" ")
+        try:
+            t = int(data[0])
+            stuff = data[2]
+        except:
+            t = 0
+        await self.bot.change_presence(game=discord.Game(name=stuff, type=t))
 
-    @commands.command()
+    @commands.command(hidden=True)
     @checks.owner_only()
     async def logout(self, ctx):
         await self.bot.logout()
 
-    @commands.command(name="eval")
+    @commands.command(name="eval", hidden=True)
     @checks.owner_only()
-    async def _eval(self, ctx, *, data:str):
+    async def _eval(self, ctx, *, data: str):
         data = data.strip()
         if data.startswith("```"):
             data = data.splitlines()[1:]
@@ -97,9 +88,11 @@ class AdminBot:
         data = "\n    ".join(data).strip("` \n")
         code = f"async def func():\n    {data}"
         env = {
-            'self': self,
-            'ctx': ctx,
-            'discord': discord
+            "bot": self.bot,
+            "ctx": ctx,
+            "discord": discord,
+            "commands": commands,
+            "utils": utils
         }
         env.update(locals())
         try:
@@ -124,4 +117,4 @@ class AdminBot:
 #==================================================================================================================================================
 
 def setup(bot):
-    bot.add_cog(AdminBot(bot))
+    bot.add_cog(Admin(bot))

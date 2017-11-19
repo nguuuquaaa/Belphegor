@@ -14,7 +14,13 @@ import locale
 import random
 import re
 from pymongo import ReturnDocument
-import copy
+
+BELPHY_VOICE_URL = {
+    "https://vignette4.wikia.nocookie.net/mira-miracle/images/4/4d/Belphegor_Main.ogg/revision/latest?cb=20170201022200",
+    "https://vignette4.wikia.nocookie.net/mira-miracle/images/0/04/Belphegor_Skill.ogg/revision/latest?cb=20170201022201",
+    "https://vignette3.wikia.nocookie.net/mira-miracle/images/d/d9/Belphegor_Summon.ogg/revision/latest?cb=20170201022203",
+    "https://vignette4.wikia.nocookie.net/mira-miracle/images/5/58/Belphegor_Limit_Break.ogg/revision/latest?cb=20170201022206"
+}
 
 #==================================================================================================================================================
 
@@ -28,7 +34,7 @@ class Buffer(queue.Queue):
             return item
 
     def _discard(self, number):
-        with self.mutex:
+        with self.not_empty:
             item = None
             for i in range(min(number, len(self.queue))):
                 item = self.queue.popleft()
@@ -260,7 +266,7 @@ class MusicPlayer:
 
 #==================================================================================================================================================
 
-class MusicBot:
+class Music:
     '''
     Music is life.
     '''
@@ -275,7 +281,8 @@ class MusicBot:
 
     def cleanup(self):
         for mp in self.music_players.values():
-            self.bot.loop.create_task(mp.leave_voice())
+            mp.player.cancel()
+            self.bot.loop.create_task(mp.voice_client.disconnect(force=True))
 
     async def get_music_player(self, guild_id):
         mp = self.music_players.get(guild_id)
@@ -290,14 +297,13 @@ class MusicBot:
             self.music_players[guild_id] = mp
         return mp
 
-    @commands.group(aliases=["m",])
+    @commands.group(aliases=["m"])
     async def music(self, ctx):
         if ctx.invoked_subcommand is None:
-            message = ctx.message
-            message.content = ">>help music"
-            await self.bot.process_commands(message)
+            cmd = self.bot.get_command("help").get_command("music")
+            await ctx.invoke(cmd)
 
-    @music.command(aliases=["j",])
+    @music.command(aliases=["j"])
     async def join(self, ctx):
         try:
             voice_channel = ctx.author.voice.channel
@@ -313,11 +319,12 @@ class MusicBot:
                 voice_client = await voice_channel.connect(timeout=20, reconnect=False)
             except:
                 return await msg.edit(content="Cannot connect to voice. Try joining other voice channel.")
+            else:
+                self.bot.loop.create_task(msg.edit(content=f"{self.bot.user.display_name} joined {voice_channel.name}."))
             music_player.ready_to_play(voice_client)
             music_player.channel = ctx.channel
-            await msg.edit(content=f"{self.bot.user.display_name} joined {voice_channel.name}.")
 
-    @music.command(aliases=["l",])
+    @music.command(aliases=["l"])
     async def leave(self, ctx):
         music_player = await self.get_music_player(ctx.guild.id)
         await music_player.lock.acquire()
@@ -338,7 +345,7 @@ class MusicBot:
                 break
         return results
 
-    @music.command(aliases=["q",])
+    @music.command(aliases=["q"])
     async def queue(self, ctx, *, name:str=""):
         music_player = await self.get_music_player(ctx.guild.id)
         if not name:
@@ -379,26 +386,21 @@ class MusicBot:
             embed = discord.Embed(title="\U0001f3b5 Video search result: ", description=f"{stuff}\n\n<>: cancel", colour=discord.Colour.green())
             embed.set_thumbnail(url="http://i.imgur.com/HKIOv84.png")
             await ctx.send(embed=embed)
-            message = await self.bot.wait_for("message", check=lambda m:m.author.id==ctx.author.id)
-            try:
-                choose = int(message.content) - 1
-                if choose in range(5):
-                    result = results[choose]
-                else:
-                    return
-            except Exception as e:
-                #print(e)
+            index = await ctx.wait_for_choice(max=len(results))
+            if index is None:
                 return
+            else:
+                result = results[index]
             title = result["snippet"]["title"]
             await music_player.queue.put(Song(ctx.message.author, title, f"https://youtu.be/{result['id']['videoId']}"))
             await ctx.send(f"Added **{title}** to queue.")
 
-    @music.command(aliases=["s",])
+    @music.command(aliases=["s"])
     async def skip(self, ctx):
         music_player = await self.get_music_player(ctx.guild.id)
         music_player.skip()
 
-    @music.command(aliases=["v",])
+    @music.command(aliases=["v"])
     async def volume(self, ctx, vol:int):
         music_player = await self.get_music_player(ctx.guild.id)
         if 0 <= vol <= 200:
@@ -408,7 +410,7 @@ class MusicBot:
         else:
             await ctx.send("Volume must be between 0 and 200.")
 
-    @music.command(aliases=["r",])
+    @music.command(aliases=["r"])
     async def repeat(self, ctx):
         music_player = await self.get_music_player(ctx.guild.id)
         if music_player.repeat:
@@ -418,7 +420,7 @@ class MusicBot:
             music_player.repeat = True
             await ctx.send("Repeat mode has been turned on.")
 
-    @music.command(aliases=["d",])
+    @music.command(aliases=["d"])
     async def delete(self, ctx, position:int):
         music_player = await self.get_music_player(ctx.guild.id)
         if 0 < position <= music_player.queue.size():
@@ -504,7 +506,7 @@ class MusicBot:
                     results.append(Song(message.author, song["snippet"]["title"], f"https://youtu.be/{song['snippet']['resourceId']['videoId']}"))
         return results
 
-    @music.command(aliases=["p",])
+    @music.command(aliases=["p"])
     async def playlist(self, ctx, *, name):
         music_player = await self.get_music_player(ctx.guild.id)
         if name.startswith("-random "):
@@ -521,16 +523,11 @@ class MusicBot:
         embed = discord.Embed(title="\U0001f3b5 Playlist search result: ", description=f"{stuff}\n\n<>: cancel", colour=discord.Colour.green())
         embed.set_thumbnail(url="http://i.imgur.com/HKIOv84.png")
         await ctx.send(embed=embed)
-        message = await self.bot.wait_for("message", check=lambda m:m.author.id==ctx.author.id)
-        try:
-            choose = int(message.content) - 1
-            if choose in range(5):
-                result = results[choose]
-            else:
-                return
-        except Exception as e:
-            #print(e)
+        index = await ctx.wait_for_choice(max=len(results))
+        if index is None:
             return
+        else:
+            result = results[index]
         async with ctx.typing():
             async with self.lock:
                 items = await self.bot.loop.run_in_executor(None, self.youtube_playlist_items, ctx.message, result["id"]["playlistId"])
@@ -548,7 +545,8 @@ class MusicBot:
         video = result["items"][0]
         return video
 
-    @music.command(aliases=["i",])
+    @music.command(aliases=["i"])
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     async def info(self, ctx, position: int=0):
         music_player = await self.get_music_player(ctx.guild.id)
         position -= 1
@@ -586,7 +584,7 @@ class MusicBot:
             embeds.append(embed)
         await ctx.embed_page(embeds)
 
-    @music.command(aliases=["t",])
+    @music.command(aliases=["t"])
     async def toggle(self, ctx):
         music_player = await self.get_music_player(ctx.guild.id)
         vc = music_player.voice_client
@@ -621,4 +619,4 @@ class MusicBot:
 #==================================================================================================================================================
 
 def setup(bot):
-    bot.add_cog(MusicBot(bot))
+    bot.add_cog(Music(bot))

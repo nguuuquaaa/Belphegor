@@ -9,7 +9,7 @@ import re
 
 #==================================================================================================================================================
 
-class RemindBot:
+class Remind:
     def __init__(self, bot):
         self.bot = bot
         self.active = asyncio.Event()
@@ -21,32 +21,26 @@ class RemindBot:
 
     async def check_till_eternity(self):
         events = self.event_list
-        try:
-            while True:
-                closest_event = await events.find_one({}, sort=[("event_time", 1)])
-                if closest_event is None:
-                    self.active.clear()
-                    await self.active.wait()
+        while True:
+            closest_event = await events.find_one({}, sort=[("event_time", 1)])
+            if closest_event is None:
+                self.active.clear()
+                await self.active.wait()
+            else:
+                remind_event = closest_event.copy()
+                remind_event["event_time"] = remind_event["event_time"].replace(tzinfo=timezone.utc)
+                time_left = (remind_event["event_time"] - utils.now_time()).total_seconds()
+                if time_left > 65:
+                    await asyncio.sleep(60)
                 else:
-                    remind_event = closest_event.copy()
-                    remind_event["create_time"] = remind_event["create_time"].replace(tzinfo=timezone.utc)
-                    remind_event["event_time"] = remind_event["event_time"].replace(tzinfo=timezone.utc)
-                    time_left = (remind_event["event_time"] - utils.now_time()).total_seconds()
-                    print(time_left)
-                    if time_left > 65:
-                        await asyncio.sleep(60)
+                    if time_left > 0:
+                        self.bot.loop.create_task(self.start_reminder(remind_event, time_left))
                     else:
-                        if time_left > 0:
-                            self.bot.loop.create_task(self.start_reminder(remind_event, time_left))
-                        else:
-                            await self.do_remind(remind_event, "Oops I forgot to tell you but ")
-                        await events.delete_one(closest_event)
-        except asyncio.CancelledError:
-            return
+                        await self.do_remind(remind_event, "Oops I forgot to tell you but ")
+                    await events.delete_one(closest_event)
 
     async def do_remind(self, remind_event, optional_text=""):
-        wait_time = utils.now_time() - remind_event["create_time"]
-        wait_time_text = utils.seconds_to_text(wait_time.total_seconds())
+        wait_time_text = utils.seconds_to_text(remind_event["wait_time"])
         channel = self.bot.get_channel(remind_event["channel_id"])
         member = channel.guild.get_member(remind_event["author_id"])
         await channel.send(f"{optional_text}{member.mention}, {wait_time_text} ago you asked me to remind you: \"{remind_event['text']}\"")
@@ -63,20 +57,20 @@ class RemindBot:
     @remind.command(name="me")
     async def remind_me(self, ctx, *, remind_text):
         try:
-            wait_time = utils.extract_time(remind_text)
-            seconds = wait_time.total_seconds()
+            remind_text, wait_time = utils.extract_time(remind_text)
         except:
             return await ctx.send("Time too large.")
+        else:
+            seconds = wait_time.total_seconds()
         if seconds > 0:
-            create_time = utils.now_time()
             new_event = {
-                "create_time":  create_time,
-                "event_time": create_time + wait_time,
+                "wait_time":  seconds,
+                "event_time": utils.now_time() + wait_time,
                 "author_id": ctx.author.id,
                 "channel_id": ctx.channel.id,
                 "text": remind_text
             }
-            if seconds < 65:
+            if seconds <= 65:
                 self.bot.loop.create_task(self.start_reminder(new_event, seconds))
             else:
                 await self.event_list.insert_one(new_event)
@@ -89,7 +83,6 @@ class RemindBot:
     async def remind_list(self, ctx):
         self_events = []
         async for ev in self.event_list.find({"author_id": ctx.author.id}, sort=[("event_time", 1)]):
-            ev["create_time"] = ev["create_time"].replace(tzinfo=timezone.utc)
             ev["event_time"] = ev["event_time"].replace(tzinfo=timezone.utc)
             self_events.append(ev)
         description = []
@@ -98,7 +91,7 @@ class RemindBot:
         max_page = (len(self_events) - 1) // 5 + 1
         for index in range(0, len(self_events), 5):
             desc = "\n\n".join((
-                f"`{i+1}.` ***{e['text']}***\n  In {utils.seconds_to_text((e['event_time']-cur_time).total_seconds())}"
+                f"`{i+1}.` \"{e['text']}\"\n  In {utils.seconds_to_text((e['event_time']-cur_time).total_seconds())}"
                 for i, e in enumerate(self_events[index:index+5])
             ))
             embed = discord.Embed(
@@ -107,11 +100,14 @@ class RemindBot:
             )
             embed.set_footer(text=utils.format_time(cur_time))
             embeds.append(embed)
-        await ctx.embed_page(embeds)
+        if embeds:
+            await ctx.embed_page(embeds)
+        else:
+            await ctx.send("You have no reminder.")
 
     @remind.command(name="delete")
     async def remind_delete(self, ctx, position:int):
-        self_events = [ev async for ev in self.event_list.find({"author_id": ctx.author.id}, sort={"event_time": 1})]
+        self_events = [ev async for ev in self.event_list.find({"author_id": ctx.author.id}, sort=[("event_time", 1)])]
         if 0 < position <= len(self_events):
             sentences = {
                 "initial":  "Delet this?",
@@ -127,15 +123,21 @@ class RemindBot:
     @commands.command()
     async def ftime(self, ctx, *, phrase):
         try:
-            i = utils.extract_time(phrase).total_seconds()
+            text, time_ext = utils.extract_time(phrase)
+            time_ext = time_ext.total_seconds()
         except:
             return await ctx.send("Time too large.")
-        if i > 0:
-            await ctx.send(utils.seconds_to_text(i))
+        if time_ext > 0:
+            await ctx.send(utils.seconds_to_text(time_ext))
         else:
             await ctx.send("Can't extract time.")
+
+    @commands.command(aliases=["time"])
+    async def currenttime(self, ctx):
+        cur_time = utils.now_time()
+        await ctx.send(utils.format_time(cur_time))
 
 #==================================================================================================================================================
 
 def setup(bot):
-    bot.add_cog(RemindBot(bot))
+    bot.add_cog(Remind(bot))

@@ -8,9 +8,9 @@ import json
 
 #==================================================================================================================================================
 
-class GameBot:
+class Game:
     '''
-    Play board games with other users.
+        Play board games with other users.
     '''
 
     def __init__(self, bot):
@@ -32,9 +32,19 @@ class GameBot:
 
     @commands.command()
     async def cangua(self, ctx, *members: discord.Member):
+        '''
+            `>>cangua <optional: list of member mentions>`
+            Play ca ngua with the members in question.
+            Each user can only play one board game across all servers at a time.
+            Bots and those who are already playing are excluded.
+            If command is invoked without argument then the rules is displayed instead.
+
+            *Example:*
+            `>>cangua @nguuuquaaa @nguuutheee @nguuuvaaai`
+        '''
         if members:
-            all_members = [ctx.author]
-            all_members.extend(members)
+            all_members = set([ctx.author])
+            all_members.update((m for m in members if not m.bot))
             new_game = await board_game.CaNgua.new_game(ctx, all_members)
             self.games[new_game.game_id] = new_game
             await ctx.send("Co ca ngua starts now~")
@@ -43,96 +53,201 @@ class GameBot:
             await ctx.send(embed=embed)
             await ctx.send(f"{new_game.current_player.member.mention}'s turn ({new_game.current_player.color}):")
         else:
-            await ctx.send("Simple Vietnamese board game, 2~4 players.")
+            embed = discord.Embed(
+                title="Co Ca Ngua",
+                description=
+                    "Simple Vietnamese board game, 2~4 players.\n"
+                    "Each player has their own color, and possesses 4 horses.\n"
+                    "Horses start at the big bold spot of their color, and move counter-clockwise.\n"
+                    "You can't pass other horses, and horses can't be in the same spot, but your can kick other players' horses back to their stable.\n"
+                    "The goal is to have all the horses climb to the highest possible spot on your tower.\n"
+                    "The winner is the first one to do so.",
+                colour=discord.Colour.purple()
+            )
+            embed.add_field(
+                name="How to play",
+                value=
+                    "1. Players take turn roll the dices.\n"
+                    "2. If the roll results are 6 and 1 or two same side then you get another roll.\n"
+                    "3. If the roll results are 6 and 1 or two same side then you can let one of your horse out. Letting horse out consumes both roll results.\n"
+                    "4. The number of steps your horses can move is either roll result or both.\n"
+                    "5. If you are at the base of the tower then you can climb to any floor, but if you are in the middle then you can only climb one at a time."
+            )
+            embed.add_field(
+                name="Commands",
+                value=
+                    "`>>roll` - Roll dices\n"
+                    "`>>go` - Let your horse out\n"
+                    "`>>move` - Move horse(s)\n"
+                    "`>>climb` - Have your horse climb"
+            )
+            await ctx.send(embed=embed)
 
     @commands.command()
     async def whatgame(self, ctx, member: discord.Member=None):
-        if member:
-            target = member
+        '''
+            `>>whatgame <optional: member mention>`
+            Check if target is playing a game or not.
+            If you invoke command without member mention then the target is yourself.
+            Just don't try to add @everyone or @here since it's not a member mention at all.
+
+            *Example:*
+            `>>whatgame @nguuuquaaa`
+        '''
+        target = member or ctx.author
+        current_game = await self.get_game(target)
+        if current_game:
+            await ctx.send(f"{member.display_name} is participating in {game.name} in {game.channel.guild.name}.")
         else:
-            target = ctx.author
-        game = await self.get_game(target)
-        if player is None:
             await ctx.send(f"{member.display_name} is not participating in any game.")
-        else:
-            await ctx.send("{member.display_name} is participating in {game.name} in {game.channel.guild.name}.")
 
     @commands.command()
     async def roll(self, ctx):
+        '''
+            `>>roll`
+            Roll dices.
+            Part of board game commands.
+        '''
         current_game = await self.get_game(ctx.author)
-        if ctx.author.id == current_game.current_player.member.id:
-            await current_game.cmd_roll()
+        if current_game:
+            if ctx.author.id == current_game.current_player.member.id:
+                await current_game.cmd_roll()
 
     @commands.command()
     async def abandon(self, ctx):
-        sentences = {
-            "initial":  "Abandon dis?",
-            "yes":      "Done.",
-            "no":       "Then you are still in.",
-            "timeout":  "Timeout, cancelled abandoning."
-        }
-        check = await ctx.yes_no_prompt(sentences=sentences)
-        if not check:
-            return
+        '''
+            `>>abandon`
+            Abandon current game.
+            Part of board game commands.
+        '''
         current_game = await self.get_game(ctx.author)
-        player = current_game.get_player(member_id=ctx.author.id)
-        if len(current_game.players) > 2:
-            if player == current_game.current_player:
-                await current_game.next_turn()
-        await current_game.knock_out(player)
+        if current_game:
+            sentences = {
+                "initial":  "Abandon dis?",
+                "yes":      "Done.",
+                "no":       "Then you are still in.",
+                "timeout":  "Timeout, cancelled abandoning."
+            }
+            check = await ctx.yes_no_prompt(sentences)
+            if not check:
+                return
+            await current_game.cmd_abandon(ctx.author.id)
 
     @commands.command()
     async def gameover(self, ctx):
+        '''
+            `>>gameover`
+            Make a poll about ending the current game.
+            Part of board game commands.
+        '''
         current_game = await self.get_game(ctx.author)
-        await current_game.cmd_game_over()
+        if current_game:
+            await current_game.cmd_game_over()
 
     @commands.command()
     async def skip(self, ctx):
+        '''
+            `>>skip`
+            Skip/pass your turn.
+            Part of board game commands.
+        '''
         current_game = await self.get_game(ctx.author)
-        player = current_game.get_player(member_id=ctx.author.id)
-        if player == current_game.current_player:
-            await current_game.cmd_skip()
+        if current_game:
+            player = current_game.get_player(member_id=ctx.author.id)
+            if player == current_game.current_player:
+                await current_game.cmd_skip()
 
     @commands.command(name="map")
     async def _map(self, ctx):
+        '''
+            `>>map`
+            Display current game map.
+            Part of board game commands.
+        '''
         async with ctx.message.channel.typing():
             current_game = await self.get_game(ctx.author)
-            await current_game.cmd_map()
+            if current_game:
+                await current_game.cmd_map()
 
     @commands.command()
-    async def move(self, ctx, number:int, step:int):
+    async def move(self, ctx, number: int, step: int):
+        '''
+            `>>move <number> <step>`
+            Move horse number <number> by <step> steps.
+            Part of cangua commands.
+        '''
         current_game = await self.get_game(ctx.author)
-        player = current_game.get_player(member_id=ctx.author.id)
-        if player == current_game.current_player:
-            await current_game.cmd_move(ctx, number, step)
+        if current_game:
+            player = current_game.get_player(member_id=ctx.author.id)
+            if player == current_game.current_player:
+                await current_game.cmd_move(ctx, number, step)
 
     @commands.command()
     async def go(self, ctx):
+        '''
+            `>>move <number> <step>`
+            Move horse number <number> by <step> steps.
+            Part of cangua commands.
+
+            *Example:*
+            `>>move 1 10`
+        '''
         current_game = await self.get_game(ctx.author)
-        player = current_game.get_player(member_id=ctx.author.id)
-        if player == current_game.current_player:
-            await current_game.cmd_go()
+        if current_game:
+            player = current_game.get_player(member_id=ctx.author.id)
+            if player == current_game.current_player:
+                await current_game.cmd_go()
 
     @commands.command()
-    async def climb(self, ctx, number:int, step:int):
-        current_game = await self.get_game(ctx.author)
-        player = current_game.get_player(member_id=ctx.author.id)
-        if player == current_game.current_player:
-            await current_game.cmd_climb(number, step)
+    async def climb(self, ctx, number: int, step: int):
+        '''
+            `>>climb <number> <floor>`
+            Have horse number <number> climb the tower to floor <floor>.
+            Part of cangua commands.
 
-    @commands.group()
+            *Example:*
+            `>>climb 1 6`
+        '''
+        current_game = await self.get_game(ctx.author)
+        if current_game:
+            player = current_game.get_player(member_id=ctx.author.id)
+            if player == current_game.current_player:
+                await current_game.cmd_climb(number, step)
+
+    @commands.group(invoke_without_command=True)
     async def info(self, ctx):
+        '''
+            `>>info <optional: member mention>`
+            Check for info on a player.
+            Member should be playing the same game as you.
+            If you invoke command without member mention then the target is yourself.
+            Part of board game commands.
+
+            *Example:*
+            `>>info @nguuuquaaa`
+        '''
         if ctx.invoked_subcommand is None:
             pass
 
     @info.command()
     async def turn(self, ctx):
+        '''
+            `>>info turn`
+            Check for whose turn is currently.
+            Part of board game commands.
+        '''
         current_game = await self.get_game(ctx.author)
-        await ctx.send(f"It's currently {current_game.current_player.member.mention} 's turn.")
+        if current_game:
+            await ctx.send(f"It's currently {current_game.current_player.member.mention} 's turn.")
 
     @commands.command()
     async def gamestate(self, ctx):
-        current_game = await self.get_game(ctx.author)
+        '''
+            `>>gamestate`
+            Send current game state as JSON file.
+            For people who's interested in game internal state.
+            Part of board game commands.
+        '''
         simple_player_data = await self.player_list.find_one({"member_id": ctx.author.id})
         game_data = await self.game_list.find_one({"game_id": simple_player_data["game_id"]})
         game_data.pop("_id")
@@ -141,4 +256,4 @@ class GameBot:
 #==================================================================================================================================================
 
 def setup(bot):
-    bot.add_cog(GameBot(bot))
+    bot.add_cog(Game(bot))

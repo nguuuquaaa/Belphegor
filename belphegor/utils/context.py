@@ -63,8 +63,8 @@ class BelphegorContext(commands.Context):
                     )
                 except:
                     try:
-                        await message.clear_reactions()
-                    finally:
+                        return await message.clear_reactions()
+                    except:
                         return
                 e = reaction.emoji
                 if e == "\u25c0":
@@ -77,8 +77,8 @@ class BelphegorContext(commands.Context):
                     current_page = min(current_page+10, max_page-1)
                 elif e == "\u274c":
                     try:
-                        await message.clear_reactions()
-                    finally:
+                        return await message.clear_reactions()
+                    except:
                         return
                 elif vertical:
                     if e == "\U0001f53c":
@@ -129,7 +129,7 @@ class BelphegorContext(commands.Context):
                 pass
         return result
 
-    async def search(self, name, pool, *, cls=_do_nothing, atts=["id"], name_att, emoji_att=None, prompt=None):
+    async def search(self, name, pool, *, cls=_do_nothing, atts=["id"], name_att, emoji_att=None, prompt=None, sort={}):
         try:
             atts.remove("id")
             item_id = int(name)
@@ -144,16 +144,32 @@ class BelphegorContext(commands.Context):
                 return None
         name = name.lower()
         regex = ".*?".join(map(re.escape, name.split()))
-        cursor = pool.find({
-            "$or": [
-                {
-                    att: {
-                        "$regex": regex,
-                        "$options": "i"
-                    }
-                } for att in atts
-            ]
-        })
+        pipeline = [{
+            "$match": {
+                "$or": [
+                    {
+                        att: {
+                            "$regex": regex,
+                            "$options": "i"
+                        }
+                    } for att in atts
+                ]
+            }
+        }]
+        if sort:
+            add_fields = {}
+            sort_order = {}
+            for key, value in sort.items():
+                if isinstance(value, int):
+                    sort_order[key] = value
+                elif isinstance(value, (list, tuple)):
+                    new_field = f"_sort_{key}"
+                    add_fields[new_field] = {"$indexOfArray": [value, f"${key}"]}
+                    sort_order[new_field] = 1
+            if add_fields:
+                pipeline.append({"$addFields": add_fields})
+            pipeline.append({"$sort": sort_order})
+        cursor = pool.aggregate(pipeline)
         if prompt is False:
             async for item_data in cursor:
                 if name in (item_data.get(att, "").lower() for att in atts):
@@ -184,12 +200,20 @@ class BelphegorContext(commands.Context):
                 )
                 embeds.append(embed)
             self.bot.loop.create_task(self.embed_page(embeds))
-            msg = await self.bot.wait_for("message", check=lambda m: m.author.id==self.author.id)
-            try:
-                index = int(msg.content) - 1
-            except:
+            index = await self.wait_for_choice(max=len(result))
+            if index is None:
                 return None
-            if index in range(len(result)):
-                return result[index]
             else:
-                return None
+                return result[index]
+
+    async def wait_for_choice(self, *, max, target=None):
+        target = target or self.author
+        msg = await self.bot.wait_for("message", check=lambda m: m.author.id==target.id)
+        try:
+            result = int(msg.content) - 1
+        except:
+            return None
+        if 0 <= result < max:
+            return result
+        else:
+            return None

@@ -4,7 +4,7 @@ from fuzzywuzzy import process
 
 #==================================================================================================================================================
 
-class TagBot:
+class Tag:
     def __init__(self, bot):
         self.bot = bot
         self.tag_list = bot.db.tag_list
@@ -23,8 +23,8 @@ class TagBot:
 
     @tag_cmd.command()
     async def create(self, ctx, name, *, content):
-        value = {"name": name, "content": content, "author_id": author_id}
-        before = await self.tag_list.find_one_and_update({"name": name}, {"$setOnInsert": value}, upsert=True)
+        value = {"name": name, "content": content, "author_id": ctx.author.id}
+        before = await self.tag_list.find_one_and_update({"name": name.strip()}, {"$setOnInsert": value}, upsert=True)
         if before is not None:
             await ctx.send(f"Cannot create already existed tag.")
         else:
@@ -32,7 +32,7 @@ class TagBot:
 
     @tag_cmd.command()
     async def edit(self, ctx, name, *, content):
-        before = await self.tag_list.find_one_and_update({"name": name, "author_id": ctx.author.id, "content": {"$exists": True}}, {"$set": {"content": content}})
+        before = await self.tag_list.find_one_and_update({"name": name.strip(), "author_id": ctx.author.id, "content": {"$exists": True}}, {"$set": {"content": content}})
         if before is None:
             await ctx.send(f"Cannot edit tag.\nEither tag doesn't exist, tag is an alias or you are not the creator of the tag.")
         else:
@@ -74,4 +74,4 @@ class TagBot:
 #==================================================================================================================================================
 
 def setup(bot):
-    bot.add_cog(TagBot(bot))
+    bot.add_cog(Tag(bot))

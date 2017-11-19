@@ -5,11 +5,11 @@ from fuzzywuzzy import process
 
 #==================================================================================================================================================
 
-class StickerBot:
+class Sticker:
     def __init__(self, bot):
         self.bot = bot
         self.sticker_list = self.bot.db.sticker_list
-        self.sticker_regex = re.compile(r"(?<=[$+])\w+")
+        self.sticker_regex = re.compile(r"(?<=\$)\w+")
 
     async def on_message(self, message):
         if message.author.bot:
@@ -24,9 +24,8 @@ class StickerBot:
     @commands.group()
     async def sticker(self, ctx):
         if ctx.invoked_subcommand is None:
-            message = ctx.message
-            message.content = ">>help sticker"
-            await self.bot.process_commands(message)
+            cmd = self.bot.get_command("help").get_command("sticker")
+            await ctx.invoke(cmd)
 
     @sticker.command()
     async def add(self, ctx, name, url):
@@ -43,7 +42,7 @@ class StickerBot:
 
     @sticker.command()
     async def edit(self, ctx, name, url):
-        before = await self.tag_list.find_one_and_update({"name": name, "author_id": ctx.author.id}, {"$set": {"url": url}})
+        before = await self.sticker_list.find_one_and_update({"name": name, "author_id": ctx.author.id}, {"$set": {"url": url}})
         if before is None:
             await ctx.send(f"Cannot edit sticker.\nEither sticker doesn't exist or you are not the creator of the sticker.")
         else:
@@ -59,4 +58,4 @@ class StickerBot:
 #==================================================================================================================================================
 
 def setup(bot):
-    bot.add_cog(StickerBot(bot))
+    bot.add_cog(Sticker(bot))

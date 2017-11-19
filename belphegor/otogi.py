@@ -16,9 +16,9 @@ import json
 
 class Daemon:
     def __init__(self, data):
-        data.pop("_id", None)
         for key, value in data.items():
-            setattr(self, key, value)
+            if key[0] != "_":
+                setattr(self, key, value)
 
     @classmethod
     def empty(cls, id):
@@ -193,7 +193,7 @@ class Daemon:
 
 #==================================================================================================================================================
 
-class OtogiBot():
+class Otogi:
     '''
     Otogi daemon info and summon simulation.
     '''
@@ -216,10 +216,10 @@ class OtogiBot():
         self.lock = asyncio.Lock()
 
     async def _search(self, ctx, name, *, prompt=None):
-        return await ctx.search(name, self.daemon_collection, cls=Daemon, atts=["id", "name", "alias"], name_att="name", emoji_att="daemon_class", prompt=prompt)
+        return await ctx.search(name, self.daemon_collection, cls=Daemon, atts=["id", "name", "alias"], name_att="name", emoji_att="daemon_class", prompt=prompt, sort={"id": 1})
 
-    @commands.command(aliases=["daemon",])
-    async def d(self, ctx, *, name: str):
+    @commands.command(name="daemon", aliases=["d"])
+    async def cmd_daemon(self, ctx, *, name: str):
         daemon = await self._search(ctx, name)
         if not daemon:
             return
@@ -227,8 +227,8 @@ class OtogiBot():
         await ctx.send(embed=pic_embed)
         await ctx.send(embed=data_embed)
 
-    @commands.command(aliases=["pic",])
-    async def p(self, ctx, *, name: str):
+    @commands.command(name="pic", aliases=["p"])
+    async def cmd_pic(self, ctx, *, name: str):
         daemon = await self._search(ctx, name, prompt=False)
         if daemon:
             pic_embed = discord.Embed(colour=discord.Colour.orange())
@@ -327,16 +327,16 @@ class OtogiBot():
                 if isinstance(value, dict):
                     value = f"{value['name']}: {value['effect']}"
                 try:
-                    if len(value) > 100:
-                        value = f"{value[:100]}..."
+                    if len(value) > 200:
+                        value = f"{value[:200]}..."
                 except:
                     pass
                 new_daemon[2] = f"{new_daemon[2]}\n   {key}: {value}"
             result.append(new_daemon)
         return result
 
-    @commands.command(aliases=["search",])
-    async def ds(self, ctx, *, data):
+    @commands.command(name="daemonsearch", aliases=["ds"])
+    async def cmd_ds(self, ctx, *, data):
         data = data.strip().splitlines()
         attrs = []
         for d in data:
@@ -361,8 +361,8 @@ class OtogiBot():
             embeds.append(embed)
         await ctx.embed_page(embeds)
 
-    @commands.command(aliases=["trivia",])
-    async def t(self, ctx, *, name:str):
+    @commands.command(name="trivia", aliases=["t"])
+    async def cmd_t(self, ctx, *, name:str):
         daemon = await self._search(ctx, name)
         if not daemon:
             return
@@ -939,7 +939,7 @@ class OtogiBot():
         await self.player_list.update_one({"id": player["id"]}, {"$set": {"daemons": player["daemons"]}})
         await ctx.send("Limit breaking succeed.")
 
-    def get_sheet(self, sheet_id, *, sheet_range):
+    def get_sheet(self, sheet_id, sheet_range):
         result = self.google_sheets.spreadsheets().values().get(spreadsheetId=sheet_id, range=sheet_range).execute()
         return result
 
@@ -965,6 +965,27 @@ class OtogiBot():
             ))
             embed = discord.Embed(
                 title="Nuker rank",
+                description = f"{desc}\n\n(Page {index//5+1}/{max_page})",
+                colour=discord.Colour.orange()
+            )
+            embeds.append(embed)
+        await ctx.embed_page(embeds)
+
+    @commands.command(aliases=["auto"])
+    async def autoattack(self, ctx):
+        data = await self.stat_sheet.find_one({})
+        sheet = data["values"][1:]
+        filter_sheet = [s for s in sheet if s[21]!="Healer"]
+        filter_sheet.sort(key=lambda x: -int(x[59].replace(",", "")))
+        embeds = []
+        max_page = (len(filter_sheet) - 1) // 5 + 1
+        for index in range(0, len(filter_sheet), 5):
+            desc = "\n\n".join((
+                f"{index+i+1}. **{field[1]}**\n   Class: {field[21]}\n   MLB Auto ATK DMG: {field[59]}"
+                for i, field in enumerate(filter_sheet[index:index+5])
+            ))
+            embed = discord.Embed(
+                title="Auto attack rank",
                 description = f"{desc}\n\n(Page {index//5+1}/{max_page})",
                 colour=discord.Colour.orange()
             )
@@ -1091,4 +1112,4 @@ class OtogiBot():
 #==================================================================================================================================================
 
 def setup(bot):
-    bot.add_cog(OtogiBot(bot))
+    bot.add_cog(Otogi(bot))

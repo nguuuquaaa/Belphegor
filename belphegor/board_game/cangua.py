@@ -414,6 +414,7 @@ class CaNgua:
                     await self.channel.send("Poll ended.\nThe game won't end for now.")
         else:
             await self.channel.send(embed=discord.Embed(title=f"Winner: {self.winner.member.display_name}"))
+        self.players.clear()
         await self.player_list.delete_many({"game_id": self.game_id})
         await self.game_list.update_one({"game_id": self.game_id}, {"$set": {"players": []}})
         await self.channel.send(f"This round of co ca ngua is over.")
@@ -461,12 +462,19 @@ class CaNgua:
             for player in self.players:
                 for horse in player.horses:
                     new_map.paste(horse.image_data, horse.location(), mask=horse.image_data)
-            return new_map
+            pic = BytesIO()
+            new_map.save(pic, format="png")
+            return pic
 
         current_map = await self.bot.loop.run_in_executor(None, image_process)
-        pic = BytesIO()
-        current_map.save(pic, format="png")
-        await self.channel.send(file=discord.File(pic.getvalue(), filename="current_map.png"))
+        await self.channel.send(file=discord.File(current_map.getvalue(), filename="current_map.png"))
 
     async def cmd_info_turn(self):
         await self.channel.send(f"It's currently {self.current_player.member.mention}'s turn.")
+
+    async def cmd_abandon(self, author_id):
+        player = self.get_player(member_id=author_id)
+        if len(self.players) > 2:
+            if player == self.current_player:
+                await self.next_turn()
+        await self.knock_out(player)

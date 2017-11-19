@@ -8,10 +8,68 @@ import asyncio
 import unicodedata
 import re
 from pymongo import ReturnDocument
+import json
+from urllib.parse import quote
+
+FANCY_CHARS = {
+    "A": "\U0001F1E6", "B": "\U0001F1E7", "C": "\U0001F1E8", "D": "\U0001F1E9", "E": "\U0001F1EA",
+    "F": "\U0001F1EB", "G": "\U0001F1EC", "H": "\U0001F1ED", "I": "\U0001F1EE", "J": "\U0001F1EF",
+    "K": "\U0001F1F0", "L": "\U0001F1F1", "M": "\U0001F1F2", "N": "\U0001F1F3", "O": "\U0001F1F4",
+    "P": "\U0001F1F5", "Q": "\U0001F1F6", "R": "\U0001F1F7", "S": "\U0001F1F8", "T": "\U0001F1F9",
+    "U": "\U0001F1FA", "V": "\U0001F1FB", "W": "\U0001F1FC", "X": "\U0001F1FD", "Y": "\U0001F1FE",
+    "Z": "\U0001F1FF", "!": "\u2757", "?": "\u2753",
+    "0": "\u0030\u20E3", "1": "\u0031\u20E3", "2": "\u0032\u20E3", "3": "\u0033\u20E3", "4": "\u0034\u20E3",
+    "5": "\u0035\u20E3", "6": "\u0036\u20E3", "7": "\u0037\u20E3", "8": "\u0038\u20E3", "9": "\u0039\u20E3"
+}
+
+GLITCH_TEXT = "¡¢£¤¥¦§¨©ª«¬®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿĀāĂăĄąĆćĈĉĊċČčĎďĐđĒēĔĕĖėĘęĚěĜĝĞğĠġĢģĤĥĦħĨĩĪīĬĭĮįİıĲĳĴĵĶķĸĹĺĻļĽľĿŀŁłŃńŅņŇňŉŊŋŌōŎŏŐőŒœŔŕŖŗŘřŚśŜŝŞşŠšŢţŤťŦŧŨũŪūŬŭŮůŰűŲųŴŵŶŷŸŹźŻżŽž"
+
+GLITCH_UP = tuple("̍	̎	̄	̅	̿	̑	̆	̐	͒	͗͑	̇	̈	̊	͂	̓	̈́	͊	͋	͌̃	̂	̌	͐	̀	́	̋	̏	̒	̓̔	̽	̉	ͣ	ͤ	ͥ	ͦ	ͧ	ͨ	ͩͪ	ͫ	ͬ	ͭ	ͮ	ͯ	̾	͛	͆	̚".split())
+
+GLITCH_MIDDLE = tuple("̕	̛	̀	́	͘	̡	̢	̧	̨	̴̵	̶	͏	͜	͝	͞	͟	͠	͢	̸̷	͡	҉".split())
+
+GLITCH_DOWN = tuple("̖	̗	̘	̙	̜	̝	̞	̟	̠	̤̥	̦	̩	̪	̫	̬	̭	̮	̯	̰̱	̲	̳	̹	̺	̻	̼	ͅ	͇	͈͉	͍	͎	͓	͔	͕	͖	͙	͚	̣".split())
+
+GLITCH_ALL = tuple(i for j in (GLITCH_UP, GLITCH_MIDDLE, GLITCH_DOWN) for i in j)
+
+QUOTES = {
+    "win": [
+        "I won! Yay!",
+        "Hehehe, I'm good at this.",
+        "Lalala~"
+    ],
+    "draw": [
+        "It's a tie.",
+        "It's a draw.",
+        "Again!"
+    ],
+    "lose": [
+        "I-I lost...",
+        "I won't lose next time!",
+        "Why?"
+    ],
+    "winstreak": [
+        "I'm invincible!",
+        "I'm on a roll!",
+        "Triple kill! Penta kill!!!",
+        "(smug)"
+    ],
+    "drawstreak": [
+        "This kinda... draws out for too long.",
+        "Tie again... How many tie in a row did we have?",
+        "(staaaareeee~)"
+    ],
+    "losestreak": [
+        "E-eh? Did you cheat or something?",
+        "Mwuu... this is frustrating...",
+        "Eeeeeek! EEEEEEEKKKKKKK!",
+        "(attemp to logout to reset the game)"
+    ]
+}
 
 #==================================================================================================================================================
 
-class MiscBot:
+class Misc:
     '''
     Stuff that makes no difference if they aren't there.
     '''
@@ -19,65 +77,24 @@ class MiscBot:
     def __init__(self, bot):
         self.bot = bot
         self.jankenpon_record = bot.db.jankenpon_record
-
-        self.w_quote = [
-            "I won! Yay!",
-            "Hehehe, I'm good at this.",
-            "Lalala~"
-        ]
-        self.d_quote = [
-            "It's a tie.",
-            "It's a draw.",
-            "Again!"
-        ]
-        self.l_quote = [
-            "I-I lost...",
-            "I won't lose next time!",
-            "Why?"
-        ]
-        self.wstreak_quote = [
-            "I'm invincible!",
-            "I'm on a roll!",
-            "Triple kill! Penta kill!!!",
-            "(smug)"
-        ]
-        self.dstreak_quote = [
-            "This kinda... draws out for too long.",
-            "Tie again... How many tie in a row did we have?",
-            "(staaaareeee~)"
-        ]
-        self.lstreak_quote = [
-            "E-eh? Did you cheat or something?",
-            "Mwuu... this is frustrating...",
-            "Eeeeeek! EEEEEEEKKKKKKK!",
-            "(attemp to logout to reset the game)"
-        ]
+        self.google_lock = asyncio.Lock()
 
     def quote(self, streak):
         if streak.endswith("ddd"):
-            return random.choice(self.dstreak_quote + self.d_quote)
+            return random.choice(QUOTES["drawstreak"] + QUOTES["draw"])
         elif streak.count("w") > 2:
             if streak[-1] == "w":
-                return random.choice(self.w_quote + self.wstreak_quote)
-            else:
-                return random.choice(self.d_quote)
+                return random.choice(QUOTES["winstreak"] + QUOTES["win"])
         elif 0 < streak.count("w") <= 2:
             if streak[-1] == "w":
-                return random.choice(self.w_quote)
-            else:
-                return random.choice(self.d_quote)
+                return random.choice(QUOTES["win"])
         elif streak.count("l") > 2:
             if streak[-1] == "l":
-                return random.choice(self.l_quote + self.lstreak_quote)
-            else:
-                return random.choice(self.d_quote)
+                return random.choice(QUOTES["losestreak"] + QUOTES["lose"])
         elif 0 < streak.count("l") <= 2:
             if streak[-1] == "l":
-                return random.choice(self.l_quote)
-            else:
-                return random.choice(self.d_quote)
-        else:
-                return random.choice(self.d_quote)
+                return random.choice(QUOTES["lose"])
+        return random.choice(QUOTES["draw"])
 
     @commands.command(aliases=["jkp",])
     async def jankenpon(self, ctx):
@@ -117,17 +134,17 @@ class MiscBot:
                 await message.remove_reaction(reaction, user)
                 if (value - roll) % 3 == 0:
                     record["draw"] += 1
-                    streak += "d"
+                    streak = f"{streak}d"
                 elif (value - roll) % 3 == 2:
                     record["lose"] += 1
                     if "w" in streak:
-                        streak += "w"
+                        streak = f"{streak}w"
                     else:
                         streak = "w"
                 else:
                     record["win"] += 1
                     if "l" in streak:
-                        streak += "l"
+                        streak = f"{streak}l"
                     else:
                         streak = "l"
                 embed.title = f"I use {possible_reactions[roll]}"
@@ -137,7 +154,7 @@ class MiscBot:
         await self.jankenpon_record.update_one(
             {"id": ctx.author.id},
             {"$set": {"win": record["win"], "draw": record["draw"], "lose": record["lose"]}}
-         )
+        )
 
     async def on_message(self, message):
         if message.author.bot:
@@ -179,31 +196,40 @@ class MiscBot:
             await ctx.send("Max side must be between 4 and 120 and number of dices must be between 1 and 100")
 
     @commands.command()
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     async def stats(self, ctx):
-        process = self.bot.process
-        embed = discord.Embed(colour=discord.Colour.blue())
-        embed.set_author(name="{}".format(self.bot.user), icon_url=self.bot.user.avatar_url)
-        owner = self.bot.get_user(config.OWNER_ID)
-        embed.add_field(name="Owner", value=f"{owner.name}#{owner.discriminator}")
-        embed.add_field(name="Library", value="discord.py[rewrite]")
-        embed.add_field(name="Created at", value=str(self.bot.user.created_at)[:10])
-        embed.add_field(name="Guilds", value=f"{len(self.bot.guilds)} guilds")
-        cpu_percentage = process.cpu_percent(None)
-        embed.add_field(name="Process", value=f"CPU: {(cpu_percentage/self.bot.cpu_count):.2f}%\nRAM: {(process.memory_info().rss/1024/1024):.2f} MBs")
-        now_time = utils.now_time()
-        uptime = int((now_time - self.bot.start_time).total_seconds())
-        d = uptime // 86400
-        h = (uptime % 86400) // 3600
-        m = (uptime % 3600) // 60
-        s = uptime % 60
-        embed.add_field(name="Uptime", value=f"{d}d {h}h{m}m{s}s")
-        embed.set_footer(text=utils.format_time(now_time.astimezone()))
-        await ctx.send(embed=embed)
+        async with ctx.typing():
+            bytes_ = await utils.fetch(
+                self.bot.session,
+                "https://api.github.com/repos/nguuuquaaa/Belphegor/commits",
+                headers={"User-Agent": "nguuuquaaa"}
+            )
+            commits = json.loads(bytes_)
+            desc = "\n".join((f"[`{c['sha'][:7]}`]({c['html_url']}) {c['commit']['message']}" for c in commits[:3]))
+            process = self.bot.process
+            embed = discord.Embed(description=f"**Lastest changes:**\n{desc}", colour=discord.Colour.blue())
+            embed.set_author(name="{}".format(self.bot.user), icon_url=self.bot.user.avatar_url)
+            owner = self.bot.get_user(config.OWNER_ID)
+            embed.add_field(name="Owner", value=f"{owner.name}#{owner.discriminator}")
+            embed.add_field(name="Library", value="[discord.py\\[rewrite\\]](https://github.com/Rapptz/discord.py/tree/rewrite)")
+            embed.add_field(name="Created at", value=str(self.bot.user.created_at)[:10])
+            embed.add_field(name="Guilds", value=f"{len(self.bot.guilds)} guilds")
+            cpu_percentage = process.cpu_percent(None)
+            embed.add_field(name="Process", value=f"CPU: {(cpu_percentage/self.bot.cpu_count):.2f}%\nRAM: {(process.memory_info().rss/1024/1024):.2f} MBs")
+            now_time = utils.now_time()
+            uptime = int((now_time - self.bot.start_time).total_seconds())
+            d = uptime // 86400
+            h = (uptime % 86400) // 3600
+            m = (uptime % 3600) // 60
+            s = uptime % 60
+            embed.add_field(name="Uptime", value=f"{d}d {h}h{m}m{s}s")
+            embed.set_footer(text=utils.format_time(now_time.astimezone()))
+            await ctx.send(embed=embed)
 
     @commands.command()
     async def fancy(self, ctx, *, textin:str):
         textin = textin.upper()
-        await ctx.send(" ".join((config.FANCY_CHARS.get(charin, charin) for charin in textin)))
+        await ctx.send(" ".join((FANCY_CHARS.get(charin, charin) for charin in textin)))
 
     @commands.command(aliases=["hello",])
     async def hi(self, ctx):
@@ -293,7 +319,7 @@ class MiscBot:
             return f"**Search result:**\n{tag.find('a')['href']}\n\n**See also:**\n{other}"
 
         #wiki
-        tag = data.find("div", class_="kp-blk _Jw _Rqb _RJe")
+        tag = data.find("div", id="rhs")
         try:
             title = tag.find("div", class_="_Q1n").div.text
             url_tag = tag.find("a", class_="q _KCd _tWc fl")
@@ -419,26 +445,45 @@ class MiscBot:
         return f"**Search result:**\n{search_results[0]['href']}\n**See also:**\n{other}"
 
     @commands.command(aliases=["g"])
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     async def google(self, ctx, *, search):
-        params = {
-            "q": search,
-            "safe": "on",
-            "lr": "lang_en",
-            "hl": "en"
-        }
-        if ctx.channel.name.startswith("nsfw"):
-            params["safe"] = "off"
-        async with ctx.typing():
-            bytes_ = await utils.fetch(self.bot.session, "https://www.google.com/search", params=params)
-            result = await self.bot.loop.run_in_executor(None, self.parse_google, bytes_)
-            if isinstance(result, discord.Embed):
-                return await ctx.send(embed=result)
-            elif isinstance(result, str):
-                return await ctx.send(result)
-            elif isinstance(result, list):
-                pass
+        async with self.google_lock:
+            async with ctx.typing():
+                params = {
+                    "q": quote(search),
+                    "safe": "on",
+                    "lr": "lang_en",
+                    "hl": "en"
+                }
+                if ctx.channel.nsfw:
+                    params["safe"] = "off"
+                bytes_ = await utils.fetch(self.bot.session, "https://www.google.com/search", params=params)
+                result = await self.bot.loop.run_in_executor(None, self.parse_google, bytes_)
+                if isinstance(result, discord.Embed):
+                    return await ctx.send(embed=result)
+                elif isinstance(result, str):
+                    return await ctx.send(result)
+                elif isinstance(result, list):
+                    pass
         await ctx.embed_page(result)
+
+    @commands.command(aliases=["translate"])
+    async def gtrans(self, ctx, *, search):
+        async with self.google_lock:
+            async with ctx.typing():
+                params = {
+                    "tl": "en",
+                    "hl": "en",
+                    "sl": "auto",
+                    "ie": "UTF-8",
+                    "q": quote(search)
+                }
+                bytes_ = await utils.fetch(self.bot.session, "http://translate.google.com/m", params=params)
+                data = BS(bytes_.decode("utf-8"), "lxml")
+                tag = data.find("div", class_="t0")
+                embed = discord.Embed(colour=discord.Colour.dark_orange())
+                embed.add_field(name="Detect", value=search)
+                embed.add_field(name="English", value=tag.get_text())
+                await ctx.send(embed=embed)
 
     @commands.command()
     async def char(self, ctx, *, characters):
@@ -455,7 +500,7 @@ class MiscBot:
         int_to_emoji = {}
         emoji_to_int = {}
         for i in range(len(items)):
-            e = config.FANCY_CHARS[str(i+1)]
+            e = FANCY_CHARS[str(i+1)]
             int_to_emoji[i+1] = e
             emoji_to_int[e] = i+1
         embed = discord.Embed(title=f"Polling: {stuff[0]}", description="\n".join((f"{int_to_emoji[i+1]} {s}" for i, s in enumerate(items))), colour=discord.Colour.dark_green())
@@ -482,15 +527,16 @@ class MiscBot:
     async def shrug(self, ctx):
         await ctx.send("¯\_(ツ)_/¯")
 
-    @commands.command()
-    async def servericon(self, ctx):
-        embed = discord.Embed(title=f"{ctx.guild.name}'s icon")
-        embed.set_image(url=ctx.guild.icon_url_as(format='png'))
-        await ctx.send(embed=embed)
-
     @commands.group(invoke_without_command=True)
-    async def glitch(self, ctx, weight: int, *, text):
+    async def glitch(self, ctx, *, text):
         if ctx.invoked_subcommand is None:
+            data = text.partition(" ")
+            try:
+                weight = int(data[0])
+            except:
+                weight = 20
+            else:
+                text = data[2]
             if 0 < weight <= 50:
                 try:
                     await ctx.message.delete()
@@ -503,7 +549,7 @@ class MiscBot:
                             "".join((
                                 "".join((
                                     c,
-                                    "".join((random.choice("".join((config.GLITCH_UP, config.GLITCH_MIDDLE, config.GLITCH_DOWN))) for i in range(weight)))
+                                    "".join((random.choice(GLITCH_ALL) for i in range(weight)))
                                 )) for c in text
                             )),
                         colour=discord.Colour.red()
@@ -521,7 +567,7 @@ class MiscBot:
                 await ctx.message.delete()
             except:
                 pass
-            text_body = "".join((random.choice(config.GLITCH_TEXT) for i in range(length)))
+            text_body = "".join((random.choice(GLITCH_TEXT) for i in range(length)))
             await ctx.send(
                 embed=discord.Embed(
                     title=f"{ctx.author.display_name} said:",
@@ -535,4 +581,4 @@ class MiscBot:
 #==================================================================================================================================================
 
 def setup(bot):
-    bot.add_cog(MiscBot(bot))
+    bot.add_cog(Misc(bot))

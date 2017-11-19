@@ -1,7 +1,9 @@
 from unicodedata import normalize, category
 import re
 import asyncio
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
+import pytz
+from pytz import timezone
 from urllib.parse import quote
 
 _keep_char = (".", "_", " ")
@@ -12,13 +14,17 @@ def safe_filename(any_string):
 _keep_special_char = ("\n", "\t")
 
 def unifix(any_string):
-    return "".join((c for c in normalize("NFKD", any_string) if category(c)[0]!="C" or c in _keep_special_char)).strip()
+    return "".join((c for c in normalize("NFKC", any_string) if category(c)[0]!="C" or c in _keep_special_char)).strip()
 
 def split_page(text, split_len, *, safe_mode=True):
     description = re.split(r"(\s)", text)
     description_page = ["",]
     cur_index = 0
     for word in description:
+        if word=="@everyone":
+            word = "@\u200beveryone"
+        elif word=="@here":
+            word = "@\u200bhere"
         if safe_mode:
             if word[:7]=="http://" or word[:8]=="https://":
                 word = safe_url(word)
@@ -60,10 +66,18 @@ def seconds_to_text(seconds):
             text_body = f"{text_body} {item[1]} {item[0]}"
     return text_body.strip()
 
-time_regex = re.compile(r"(\d+\.?\d*)(?:[ \t]*)(w(?:(?:eek)?s?)?|d(?:(?:ay)s?)?|h(?:(?:our)s?)?|m(?:(?:in)(?:ute)?s?)?|s(?:(?:ec)(?:ond)?s?)?)(?:\b)", flags=re.I)
+time_regex = re.compile(
+    r"(?:[\s\b]*)"
+    r"(?:for|in|and|,|;|&)?(?:\s*)"
+    r"(\d+\.?\d*)(?:\s*)"
+    r"(w(?:(?:eek)?s?)?|d(?:(?:ay)s?)?|h(?:(?:our)s?)?|m(?:(?:in)(?:ute)?s?)?|s(?:(?:ec)(?:ond)?s?)?)"
+    r"(?:[\s\b]*)",
+    flags=re.I
+)
 
 def extract_time(text):
     extract = time_regex.findall(text)
+    new_text = time_regex.sub("", text)
     result = {"weeks": 0, "days": 0, "hours": 0, "minutes": 0, "seconds": 0}
     if extract:
         for wt in extract:
@@ -78,15 +92,20 @@ def extract_time(text):
                 result["minutes"] += float(wt[0])
             elif fc == "s":
                 result["seconds"] += float(wt[0])
-    return timedelta(**result)
+    return new_text, timedelta(**result)
 
-def now_time():
-    return datetime.now(timezone.utc)
+def now_time(tzinfo=pytz.utc):
+    return datetime.now(tzinfo)
 
 def format_time(dt_obj):
     return dt_obj.strftime("%a, %Y-%m-%d at %I:%M:%S %p, GMT%z")
 
-discord_regex = re.compile(r"(?<!\\)[*_\[\]]")
+jp_timezone = timezone("Asia/Tokyo")
+
+def jp_time(dt_obj):
+    return dt_obj.astimezone(jp_timezone).strftime("%a, %Y-%m-%d at %I:%M:%S %p, GMT%z (Tokyo/Japan)")
+
+discord_regex = re.compile(r"(?<!\\)[*_\[\]~`]")
 
 def _match_this(match):
     return f"\\{match.group(0)}"
