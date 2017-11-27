@@ -8,6 +8,7 @@ import xmltodict
 import random
 from bs4 import BeautifulSoup as BS
 import traceback
+import asyncio
 
 RATING = {
     "s": "safe",
@@ -25,6 +26,7 @@ class Random:
     def __init__(self, bot):
         self.bot = bot
         self.retry = 3
+        self.sc_lock = asyncio.Lock()
 
     def retry_wrap(func):
         async def new_func(self, ctx, *args, **kwargs):
@@ -194,8 +196,9 @@ class Random:
     @r.command(aliases=["sc",])
     @checks.nsfw()
     async def sancom(self, ctx, *, tags=""):
-        async with ctx.typing():
-            await self.get_image_sancom(ctx, tags)
+        async with sc_lock:
+            async with ctx.typing():
+                await self.get_image_sancom(ctx, tags)
 
     @r.command()
     @checks.owner_only()

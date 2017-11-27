@@ -15,6 +15,7 @@ class Admin:
 
     def __init__(self, bot):
         self.bot = bot
+        self.belphegor_config = bot.db.belphegor_config
 
     async def reload_extension(self, ctx, extension):
         try:
@@ -75,7 +76,7 @@ class Admin:
     @commands.command(hidden=True)
     @checks.owner_only()
     async def logout(self, ctx):
-        await self.bot.logout()
+        await self.bot.close()
 
     @commands.command(name="eval", hidden=True)
     @checks.owner_only()
@@ -113,6 +114,37 @@ class Admin:
                 await ctx.send(f'```\n{value}\n```')
         else:
             await ctx.send(f'```\n{value}\n{result}\n```')
+
+    @commands.command()
+    @checks.owner_only()
+    async def block(self, ctx, user: discord.User):
+        if user.id in self.bot.blocked_users:
+            await ctx.deny()
+        else:
+            self.bot.blocked_users.add(user.id)
+            await self.belphegor_config.update_one({"category": "blocked"}, {"$addToSet": {"user_ids": user.id}})
+            await ctx.send(f"{user.name} has been blocked.")
+
+    @commands.command()
+    @checks.owner_only()
+    async def unblock(self, ctx, user: discord.User):
+        if user.id in self.bot.blocked_users:
+            self.bot.blocked_users.remove(user.id)
+            await self.belphegor_config.update_one({"category": "blocked"}, {"$pull": {"user_ids": user.id}})
+            await ctx.send(f"{user.name} has been unblocked.")
+        else:
+            await ctx.deny()
+
+    @commands.command()
+    @checks.owner_only()
+    async def hackblock(self, ctx, user_id: int):
+        user = await self.bot.get_user_info(user_id)
+        if user.id in self.bot.blocked_users:
+            await ctx.deny()
+        else:
+            self.bot.blocked_users.add(user_id)
+            await self.belphegor_config.update_one({"category": "blocked"}, {"$addToSet": {"user_ids": user_id}})
+            await ctx.send(f"{user.name} has been blocked.")
 
 #==================================================================================================================================================
 

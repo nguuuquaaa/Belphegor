@@ -67,7 +67,7 @@ class Help:
                     "`>>suggest` - Suggest anything\n",
                 inline=False
             )
-            embed.set_footer(text="Prefix: >> or bot mention")
+            embed.set_footer(text="Default prefix: >> or bot mention")
             await ctx.send(embed=embed)
 
     @help.command()
@@ -135,10 +135,15 @@ class Help:
                 "Note: Data taken from [Arks-Visiphone](http://pso2.arks-visiphone.com/wiki/Main_Page)\n\n"
                 "`>>i`, `>>item` - Search for items\n"
                 "Note: Data taken from DB Kakia\n\n"
+                "`>>eq` - Display EQ schedule for the next 3 hours",
+            inline=False
+        )
+        embed.add_field(
+            name="Manage server permission only",
+            value=
                 "`>>set eq` - Set EQ alert channel\n"
                 "`>>unset eq` - Unset EQ alert channel\n"
-                "Special thanks to ACF for letting me use his EQ API.\n\n"
-                "`>>eq` - Display EQ schedule for the next 3 hours",
+                "Special thanks to ACF for letting me use his EQ API.",
             inline=False
         )
         await ctx.send(embed=embed)
@@ -355,6 +360,7 @@ class Help:
                 "`>>glitch m` - Generate a meaningless sentence\n\n"
                 "`>>avatar` - Get your or a user avatar\n"
                 "`>>g`, `>>google` - Google search\n"
+                "`>>gtrans`, `>>translate` - Google, but translate\n"
                 "`>>stats` - Bot info",
             inline=False
          )

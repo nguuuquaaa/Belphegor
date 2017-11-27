@@ -16,8 +16,10 @@ _keep_special_char = ("\n", "\t")
 def unifix(any_string):
     return "".join((c for c in normalize("NFKC", any_string) if category(c)[0]!="C" or c in _keep_special_char)).strip()
 
+_split_regex = re.compile(r"(\s)")
+
 def split_page(text, split_len, *, safe_mode=True):
-    description = re.split(r"(\s)", text)
+    description = _split_regex.split(text)
     description_page = ["",]
     cur_index = 0
     for word in description:
@@ -107,11 +109,8 @@ def jp_time(dt_obj):
 
 discord_regex = re.compile(r"(?<!\\)[*_\[\]~`]")
 
-def _match_this(match):
-    return f"\\{match.group(0)}"
-
 def discord_escape(any_string):
-    return discord_regex.sub(_match_this, any_string)
+    return discord_regex.sub(lambda m: f"\\{m.group(0)}", any_string)
 
 def safe_url(any_url):
     return quote(any_url, safe=r":/&$+,;=@#~%")

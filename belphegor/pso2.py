@@ -31,10 +31,14 @@ CATEGORY_DICT = {
     "talis":        "Talis",
     "wand":         "Wand",
     "jb":           "Jet Boot",
-    "tact":         "Tact"
+    "tact":         "Tact",
+    "rear":         "Rear",
+    "arm":          "Arm",
+    "leg":          "Leg",
+    "sub_unit":     "Sub Unit"
 }
 ATK_EMOJI = ("satk", "ratk", "tatk")
-URLS = {
+WEAPON_URLS = {
     "sword":        "https://pso2.arks-visiphone.com/wiki/Simple_Swords_List",
     "wl":           "https://pso2.arks-visiphone.com/wiki/Simple_Wired_Lances_List",
     "partisan":     "https://pso2.arks-visiphone.com/wiki/Simple_Partizans_List",
@@ -54,7 +58,14 @@ URLS = {
     "jb":           "https://pso2.arks-visiphone.com/wiki/Simple_Jet_Boots_List",
     "tact":         "https://pso2.arks-visiphone.com/wiki/Simple_Takts_List"
 }
-SORT_ORDER = tuple(CATEGORY_DICT.keys())
+WEAPON_SORT = tuple(WEAPON_URLS.keys())
+UNIT_CATEGORY = {
+    "rear":     "https://pso2.arks-visiphone.com/wiki/Unit_List:_Rear",
+    "arm":      "https://pso2.arks-visiphone.com/wiki/Arm_Units_List",
+    "leg":      "https://pso2.arks-visiphone.com/wiki/Unit_List:_Leg",
+    "sub_unit": "https://pso2.arks-visiphone.com/wiki/Unit_List:_Sub"
+}
+UNIT_SORT = tuple(UNIT_CATEGORY.keys())
 ICON_DICT = {
     "Ability.png":            "ability",
     "SpecialAbilityIcon.PNG": "saf",
@@ -135,7 +146,7 @@ class Weapon:
     def embed_form(self, cog):
         emojis = cog.emojis
         ctgr = self.category
-        embed = discord.Embed(title=f"{emojis[ctgr]}{self.en_name}", url= URLS[ctgr], colour=discord.Colour.blue())
+        embed = discord.Embed(title=f"{emojis[ctgr]}{self.en_name}", url= WEAPON_URLS[ctgr], colour=discord.Colour.blue())
         description = ""
         most = self.rarity//3
         for i in range(most):
@@ -157,7 +168,46 @@ class Weapon:
         max_atk = self.atk['max']
         embed.add_field(name="ATK", value="\n".join([f"{emojis[e]}{max_atk[e]}" for e in ATK_EMOJI]))
         for prp in self.properties:
-            embed.add_field(name=f"{emojis[prp['type']]}{prp['name']}", value=prp['description'], inline=False)
+            emoji_name = "rear" if prp["type"] == "set_effect" else prp["type"]
+            embed.add_field(name=f"{emojis[emoji_name]}{prp['name']}", value=prp["description"], inline=False)
+        return embed
+
+#==================================================================================================================================================
+
+class Unit:
+    def __init__(self, data):
+        for key, value in data.items():
+            if key[0] != "_":
+                setattr(self, key, value)
+
+    def embed_form(self, cog):
+        emojis = cog.emojis
+        ctgr = self.category
+
+        embed = discord.Embed(title=f"{emojis[ctgr]}{self.en_name}", url= WEAPON_URLS[ctgr], colour=discord.Colour.blue())
+        description = ""
+        most = self.rarity//3
+        for i in range(most):
+            emoji = emojis.get(f"star_{i}", None)
+            description = f"{description}{emoji}{emoji}{emoji}"
+        if self.rarity > most*3:
+            emoji = emojis.get(f"star_{most}", None)
+            for i in range(self.rarity - most*3):
+                description = f"{description}{emoji}"
+        if self.classes == "all_classes":
+            usable_classes = ''.join((str(emojis[cl]) for cl in CLASS_DICT.values()))
+        else:
+            usable_classes = ''.join((str(emojis[cl]) for cl in self.classes))
+        embed.description = f"{description}\n{usable_classes}"
+        if self.pic_url:
+            embed.set_thumbnail(url=self.pic_url)
+        rq = self.requirement
+        embed.add_field(name="Requirement", value=f"{emojis[rq['type']]}{rq['value']}")
+        max_atk = self.atk['max']
+        embed.add_field(name="ATK", value="\n".join([f"{emojis[e]}{max_atk[e]}" for e in ATK_EMOJI]))
+        for prp in self.properties:
+            emoji_name = "rear" if prp["type"] == "set_effect" else prp["type"]
+            embed.add_field(name=f"{emojis[emoji_name]}{prp['name']}", value=prp["description"], inline=False)
         return embed
 
 #==================================================================================================================================================
@@ -171,6 +221,7 @@ class PSO2:
         self.bot = bot
         self.chip_library = bot.db.chip_library
         self.weapon_list = bot.db.weapon_list
+        self.unit_list = bot.db.unit_list
         self.guild_data = bot.db.guild_data
         test_guild = self.bot.get_guild(config.TEST_GUILD_ID)
         test_guild_2 = self.bot.get_guild(config.TEST_GUILD_2_ID)
@@ -182,11 +233,13 @@ class PSO2:
             "pa", "saf", "star_0", "star_1", "star_2", "star_3", "star_4"
         ):
             self.emojis[emoji_name] = discord.utils.find(lambda e:e.name==emoji_name, test_guild.emojis)
-        for emoji_name in ("sdef", "rdef", "tdef", "dex"):
-            self.emojis[emoji_name] = discord.utils.find(lambda e:e.name==emoji_name, test_guild_2.emojis)
-        for emoji_name in CATEGORY_DICT:
+        for emoji_name in WEAPON_SORT:
             self.emojis[emoji_name] = discord.utils.find(lambda e:e.name==emoji_name, test_guild.emojis)
-
+        for emoji_name in (
+            "sdef", "rdef", "tdef", "dex", "rear", "arm", "leg", "sub_unit", "s_res", "r_res", "t_res",
+            "fire_res", "ice_res", "lightning_res", "wind_res", "light_res", "dark_res"
+        ):
+            self.emojis[emoji_name] = discord.utils.find(lambda e:e.name==emoji_name, test_guild_2.emojis)
         self.eq_alert_forever = bot.loop.create_task(self.eq_alert())
         self.last_eq_data = None
 
@@ -207,28 +260,25 @@ class PSO2:
             return
         await ctx.send(embed=chip.embed_form(self, "jp"))
 
-    @commands.group(aliases=["w",], invoke_without_command=True)
-    async def weapon(self, ctx, *, name):
-        weapon = await ctx.search(
-            name, self.weapon_list, cls=Weapon, atts=["en_name", "jp_name"],
-            name_att="en_name", emoji_att="category", sort={"category": SORT_ORDER}
-        )
+    @commands.group(name="weapon", aliases=["w",], invoke_without_command=True)
+    async def cmd_weapon(self, ctx, *, name):
+        weapon = await ctx.search(name, self.weapon_list, cls=Weapon, atts=["en_name", "jp_name"], name_att="en_name", emoji_att="category", sort={"category": WEAPON_SORT})
         if not weapon:
             return
         await ctx.send(embed=weapon.embed_form(self))
 
-    @weapon.command(name="update")
+    @cmd_weapon.command(name="update")
     @checks.owner_only()
     async def wupdate(self, ctx, *args):
         msg = await ctx.send("Fetching...")
         if not args:
-            urls = URLS
+            urls = WEAPON_URLS
         else:
-            urls = {key: value for key, value in URLS.items() if key in args}
+            urls = {key: value for key, value in WEAPON_URLS.items() if key in args}
         weapons = []
         for category, url in urls.items():
             bytes_ = await utils.fetch(self.bot.session, url)
-            category_weapons = await self.bot.loop.run_in_executor(None, self.bs_parse, category, bytes_)
+            category_weapons = await self.bot.loop.run_in_executor(None, self.weapon_parse, category, bytes_)
             weapons.extend(category_weapons)
             print(f"Done parsing {CATEGORY_DICT[category]}.")
         await self.weapon_list.delete_many({"category": {"$in": tuple(urls.keys())}})
@@ -236,7 +286,7 @@ class PSO2:
         print("Done everything.")
         await msg.edit(content = "Done.")
 
-    def bs_parse(self, category, bytes_):
+    def weapon_parse(self, category, bytes_):
         def to_int(any_string):
             try:
                 return int(any_string)
@@ -354,10 +404,11 @@ class PSO2:
                 elif 45 <= now_time.minute < 60:
                     delta = timedelta(hours=1)
                     next_minute = 0
-                next_time = now_time.replace(minute=next_minute, second=5) + delta
-                while now_time.minute != next_time.minute:
-                    await asyncio.sleep((next_time - now_time).total_seconds())
-                    now_time = utils.now_time()
+                next_time = now_time.replace(minute=next_minute, second=0) + delta
+                for i in range(2):
+                    if now_time.minute != next_time.minute:
+                        await asyncio.sleep((next_time - now_time).total_seconds())
+                        now_time = utils.now_time()
                 bytes_ = await utils.fetch(self.bot.session, initial_data["API"], headers=acf_headers)
                 data = json.loads(bytes_)[0]
                 self.last_eq_data = data
@@ -458,6 +509,18 @@ class PSO2:
         else:
             embed.description = "There's no EQ for the next 3 hours."
         await ctx.send(embed=embed)
+
+    @commands.group(name="unit", aliases=["u"], invoke_without_command=True)
+    async def cmd_unit(self, ctx, name):
+        unit = await ctx.search(name, self.unit_list, cls=Unit, atts=["en_name", "jp_name"], name_att="en_name", emoji_att="category")
+        if not unit:
+            return
+        await ctx.send(embed=unit.embed_form(self))
+
+    @cmd_unit.command(name="update")
+    @checks.owner_only()
+    async def uupdate(self, ctx, category=None):
+        pass
 
 #==================================================================================================================================================
 

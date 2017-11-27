@@ -282,6 +282,10 @@ class Music:
     def cleanup(self):
         for mp in self.music_players.values():
             mp.player.cancel()
+            try:
+                mp.voice_client.stop()
+            except:
+                pass
             self.bot.loop.create_task(mp.voice_client.disconnect(force=True))
 
     async def get_music_player(self, guild_id):
@@ -610,7 +614,7 @@ class Music:
         else:
             await ctx.send("No song is currently playing.")
 
-    @music.command()
+    @music.command(aliases=["channel"])
     async def setchannel(self, ctx):
         music_player = await self.get_music_player(ctx.guild.id)
         music_player.channel = ctx.channel

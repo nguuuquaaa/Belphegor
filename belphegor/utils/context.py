@@ -3,8 +3,11 @@ from discord.ext import commands
 import re
 import functools
 
-def _do_nothing(obj):
-    return obj
+class GeneralObject:
+    def __init__(self, data):
+        for key, value in data.items():
+            if key[0] != "_":
+                setattr(self, key, value)
 
 #==================================================================================================================================================
 
@@ -129,7 +132,7 @@ class BelphegorContext(commands.Context):
                 pass
         return result
 
-    async def search(self, name, pool, *, cls=_do_nothing, atts=["id"], name_att, emoji_att=None, prompt=None, sort={}):
+    async def search(self, name, pool, *, cls=GeneralObject, atts=["id"], name_att, emoji_att=None, prompt=None, sort={}):
         try:
             atts.remove("id")
             item_id = int(name)

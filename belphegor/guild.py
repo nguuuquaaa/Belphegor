@@ -231,19 +231,25 @@ class Guild:
 
     @cmd_set.command(name="prefix")
     async def cmd_prefix(self, ctx, prefix):
-        if prefix:
+        current = self.bot.guild_prefixes.get(ctx.guild.id, [])
+        if prefix in current:
+            await ctx.deny()
+        else:
+            current.append(prefix)
+            self.bot.guild_prefixes[ctx.guild.id] = current
             await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$addToSet": {"prefixes": prefix}}, upsert=True)
             await ctx.confirm()
-        else:
-            await ctx.deny()
 
     @cmd_unset.command(name="prefix")
     async def cmd_noprefix(self, ctx, prefix):
-        result = await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$pull": {"prefixes": prefix}})
-        if result.modified_count > 0:
-            await ctx.confirm()
-        else:
+        current = self.bot.guild_prefixes.get(ctx.guild.id, [])
+        try:
+            current.remove(prefix)
+        except:
             await ctx.deny()
+        else:
+            await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$pull": {"prefixes": prefix}})
+            await ctx.confirm()
 
     @cmd_set.command(name="eq")
     async def set_eq_channel(self, ctx, channel: discord.TextChannel=None):

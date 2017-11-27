@@ -391,7 +391,7 @@ class Otogi:
         all_values = await self.daemon_collection.distinct("id", {})
         while cur_index in all_values:
             cur_index += 1
-        data = [d.strip() for d in data.strip().splitlines() if d]
+        data = [d.strip() for d in data.splitlines() if d]
         try:
             new_daemon = Daemon.empty(cur_index)
             new_daemon.name = data[0]
@@ -420,7 +420,7 @@ class Otogi:
 
     @update.command()
     @checks.owner_only()
-    async def delete(self, ctx, *, name:str):
+    async def delete(self, ctx, *, name):
         daemon = await self._search(ctx, name, prompt=True)
         if not daemon:
             return
@@ -429,9 +429,9 @@ class Otogi:
 
     @update.command()
     @checks.owner_only()
-    async def edit(self, ctx, *, data:str):
+    async def edit(self, ctx, *, data):
         data = data.strip().splitlines()
-        daemon = await self._search(ctx, name, prompt=True)
+        daemon = await self._search(ctx, data[0], prompt=True)
         if not daemon:
             return
         field = data[1]
@@ -463,7 +463,7 @@ class Otogi:
 
     @update.command(name="summon")
     @checks.owner_only()
-    async def _summon(self, ctx, *, name:str):
+    async def _summon(self, ctx, *, name):
         daemon = await self._search(ctx, name, prompt=True)
         if not daemon:
             return
@@ -478,7 +478,7 @@ class Otogi:
 
     @update.command()
     @checks.owner_only()
-    async def nosummon(self, ctx, *, name:str):
+    async def nosummon(self, ctx, *, name):
         daemon = await self._search(ctx, name, prompt=True)
         if not daemon:
             return
@@ -490,7 +490,7 @@ class Otogi:
 
     @update.command()
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
-    async def wikia(self, ctx, *, name:str):
+    async def wikia(self, ctx, *, name):
         daemon = await self._search(ctx, name, prompt=True)
         if not daemon:
             return
@@ -590,20 +590,20 @@ class Otogi:
             ability_value = utils.unifix(str(tags[i].text))
             if len(ability_value) > 5:
                 new_daemon.abilities.append({"name": utils.unifix(tags[i-1].text), "effect": ability_value})
-        for i in (14, 15):
+        for i in (14, 15, 16):
             bond_data = tuple(tags[i].find_all("td"))
             bond_value = utils.unifix(str(bond_data[1].text))
             if len(bond_value) > 5:
                 new_daemon.bonds.append({"name": re.sub(' +', ' ', utils.unifix(bond_data[0].text)), "effect": bond_value})
 
         #additional info
-        add_keys = {16: "voice_actor", 18: "illustrator", 20: "description", 22: "how_to_acquire", 24: "notes_and_trivia"}
-        for i in (16, 18, 20, 22, 24):
-            setattr(new_daemon, add_keys[i], utils.unifix(tags[i+1].text))
-        quote_keys = {27: "main", 28: "skill", 29: "summon", 30: "limit_break"}
-        for i in (27, 28, 29, 30):
+        add_keys = {17: "voice_actor", 19: "illustrator", 21: "description", 23: "how_to_acquire", 25: "notes_and_trivia"}
+        for i, add_type in add_keys.items():
+            setattr(new_daemon, add_type, utils.unifix(tags[i+1].text))
+        quote_keys = {28: "main", 29: "skill", 30: "summon", 31: "limit_break"}
+        for i, quote_type in quote_keys.items():
             quote_data = tuple(tags[i].find_all("td"))
-            new_daemon.quotes[quote_keys[i]] = {
+            new_daemon.quotes[quote_type] = {
                 "value": utils.unifix(quote_data[1].text),
                 "url": quote_data[2].span.a["href"]
             }
@@ -954,13 +954,14 @@ class Otogi:
     async def nukers(self, ctx):
         data = await self.stat_sheet.find_one({})
         sheet = data["values"]
-        filter_sheet = [s for s in sheet if s[66]=="Damage"]
-        filter_sheet.sort(key=lambda x: -int(x[61].replace(",", "")))
+        filter_sheet = [s for s in sheet if s[64]=="Damage"]
+        filter_sheet.sort(key=lambda x: -int(x[59].replace(",", "")))
+        print(filter_sheet)
         embeds = []
         max_page = (len(filter_sheet) - 1) // 5 + 1
         for index in range(0, len(filter_sheet), 5):
             desc = "\n\n".join((
-                f"{index+i+1}. **{field[1]}**\n   MLB Effective Skill DMG: {field[61]}\n   MLB Auto ATK DMG: {field[59]}"
+                f"{index+i+1}. **{field[1]}**\n   MLB Effective Skill DMG: {field[59]}\n   MLB Auto ATK DMG: {field[57]}"
                 for i, field in enumerate(filter_sheet[index:index+5])
             ))
             embed = discord.Embed(
@@ -975,13 +976,13 @@ class Otogi:
     async def autoattack(self, ctx):
         data = await self.stat_sheet.find_one({})
         sheet = data["values"][1:]
-        filter_sheet = [s for s in sheet if s[21]!="Healer"]
-        filter_sheet.sort(key=lambda x: -int(x[59].replace(",", "")))
+        filter_sheet = [s for s in sheet if s[19]!="Healer"]
+        filter_sheet.sort(key=lambda x: -int(x[57].replace(",", "")))
         embeds = []
         max_page = (len(filter_sheet) - 1) // 5 + 1
         for index in range(0, len(filter_sheet), 5):
             desc = "\n\n".join((
-                f"{index+i+1}. **{field[1]}**\n   Class: {field[21]}\n   MLB Auto ATK DMG: {field[59]}"
+                f"{index+i+1}. **{field[1]}**\n   Class: {field[19]}\n   MLB Auto ATK DMG: {field[57]}"
                 for i, field in enumerate(filter_sheet[index:index+5])
             ))
             embed = discord.Embed(
@@ -1008,14 +1009,14 @@ class Otogi:
     async def debuffers(self, ctx):
         data = await self.stat_sheet.find_one({})
         sheet = data["values"]
-        filter_sheet = [s for s in sheet if self.list_get(s, 76)=="Increases DMG Rec'd" or s[66]=="Debuff"]
+        filter_sheet = [s for s in sheet if self.list_get(s, 74)=="Increases DMG Rec'd" or s[64]=="Debuff"]
         filter_sheet.sort(key=lambda x: x[0])
         embeds = []
         max_page = (len(filter_sheet) - 1) // 5 + 1
         for index in range(0, len(filter_sheet), 5):
             desc = "\n\n".join((
-                f"{index+i+1}. **{field[1]}**\n   MLB Debuff Value: {self.list_get(field, 78) or 'N/A'}\n"
-                f"   MLB Effective Skill DMG: {field[61]}\n   Skill Effect: {self.list_get(field, 76) or 'N/A'}"
+                f"{index+i+1}. **{field[1]}**\n   MLB Debuff Value: {self.list_get(field, 76) or 'N/A'}\n"
+                f"   MLB Effective Skill DMG: {field[59]}\n   Skill Effect: {self.list_get(field, 74) or 'N/A'}"
                 for i, field in enumerate(filter_sheet[index:index+5])
             ))
             embed = discord.Embed(
@@ -1030,13 +1031,13 @@ class Otogi:
     async def buffers(self, ctx):
         data = await self.stat_sheet.find_one({})
         sheet = data["values"]
-        filter_sheet = [s for s in sheet if s[66]=="Buff"]
+        filter_sheet = [s for s in sheet if s[64]=="Buff"]
         filter_sheet.sort(key=lambda x: x[0])
         embeds = []
         max_page = (len(filter_sheet) - 1) // 5 + 1
         for index in range(0, len(filter_sheet), 5):
             desc = "\n\n".join((
-                f"{index+i+1}. **{field[1]}**\n   MLB Buff Value: {self.list_get(field, 78) or 'N/A'}\n   Skill Effect: {self.list_get(field, 76) or 'N/A'}"
+                f"{index+i+1}. **{field[1]}**\n   MLB Buff Value: {self.list_get(field, 76) or 'N/A'}\n   Skill Effect: {self.list_get(field, 74) or 'N/A'}"
                 for i, field in enumerate(filter_sheet[index:index+5])
             ))
             embed = discord.Embed(
