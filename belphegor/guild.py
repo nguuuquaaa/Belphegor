@@ -16,7 +16,7 @@ class Guild:
     def __init__(self, bot):
         self.bot = bot
         self.guild_data = bot.db.guild_data
-        self.banned_emojis = []
+        self.banned_emojis = set()
 
     @commands.group(name="set")
     @checks.guild_only()
@@ -27,7 +27,7 @@ class Guild:
 
     @cmd_set.error
     async def set_error(self, ctx, error):
-        if not isinstance(error, commands.errors.CheckFailure):
+        if not isinstance(error, commands.CheckFailure):
             await ctx.deny()
 
     @commands.group(name="unset")
@@ -39,7 +39,7 @@ class Guild:
 
     @cmd_unset.error
     async def unset_error(self, ctx, error):
-        if not isinstance(error, commands.errors.CheckFailure):
+        if not isinstance(error, commands.CheckFailure):
             await ctx.deny()
 
     @commands.command()
@@ -405,6 +405,11 @@ class Guild:
             else:
                 await ctx.deny()
 
+    @selfrole.error
+    async def selfrole_error(self, ctx, error):
+        if isinstance(error, discord.Forbidden):
+            await ctx.send("I don't have permissions to do this.")
+
     @selfrole.command()
     @checks.guild_only()
     @checks.manager_only()
@@ -549,13 +554,13 @@ class Guild:
         for emoji in emojis:
             em = discord.utils.find(lambda e:emoji==str(e), self.bot.emojis)
             if em:
-                self.banned_emojis.append(em.id)
+                self.banned_emojis.add(em.id)
             else:
                 try:
                     em = int(em)
                 except:
                     pass
-                self.banned_emojis.append(emoji)
+                self.banned_emojis.add(emoji)
         await ctx.confirm()
 
     @commands.command(hidden=True)

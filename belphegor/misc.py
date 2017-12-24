@@ -263,7 +263,7 @@ class Misc:
                 break
 
         #unit convert
-        results = tuple(data.find_all("div", class_="_cif"))
+        results = data.find_all("div", class_="_cif")
         try:
             unit_in = results[0].find("select").find(selected=1)
             unit_out = results[1].find("select").find(selected=1)
@@ -278,7 +278,7 @@ class Misc:
         #timezone convert
         try:
             zone_data = data.find('div', class_="vk_c vk_gy vk_sh card-section _MZc")
-            text = "\n".join([t.get_text().strip() for t in zone_data.find_all(True, recursive=False)])
+            text = "\n".join((t.get_text().strip() for t in zone_data.find_all(True, recursive=False)))
             embed = discord.Embed(
                 title="Search result:",
                 description=f"**Timezone**\n{text}",
@@ -292,8 +292,8 @@ class Misc:
         #currency convert
         tag = data.find("div", class_="ccw_form_layout")
         try:
-            inp = tuple(tag.find_all("input"))
-            unit = tuple(tag.find_all("option", selected=1))
+            inp = tag.find_all("input")
+            unit = tag.find_all("option", selected=1)
             embed = discord.Embed(title="Search result:", description="**Currency**", colour=discord.Colour.dark_orange())
             embed.add_field(name=unit[0]['value'], value=inp[0]['value'])
             embed.add_field(name=unit[1]['value'], value=inp[1]['value'])
@@ -431,7 +431,7 @@ class Misc:
             inp = tag.find("a", id="tw-nosp")
             out = tag.find("pre", id="tw-target-text")
             link = tag.find("a", id="tw-gtlink")
-            langs = tuple(tag.find_all("option", selected="1"))
+            langs = tag.find_all("option", selected="1")
             embed = discord.Embed(title="Search result:", description=f"[Google Translate]({link['href']})", colour=discord.Colour.dark_orange())
             embed.add_field(name=langs[0].text, value=inp.text)
             embed.add_field(name=langs[1].text, value=out.text)
@@ -445,6 +445,7 @@ class Misc:
         return f"**Search result:**\n{search_results[0]['href']}\n**See also:**\n{other}"
 
     @commands.command(aliases=["g"])
+    @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     async def google(self, ctx, *, search):
         async with self.google_lock:
             async with ctx.typing():
@@ -466,7 +467,13 @@ class Misc:
                     pass
         await ctx.embed_page(result)
 
+    @google.error
+    async def google_error(self, ctx, error):
+        if isinstance(error, commands.CommandOnCooldown):
+            await ctx.send("Whoa slow down your Google search! You can only search once every 10 seconds.")
+
     @commands.command(aliases=["translate"])
+    @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     async def gtrans(self, ctx, *, search):
         async with self.google_lock:
             async with ctx.typing():
@@ -484,6 +491,11 @@ class Misc:
                 embed.add_field(name="Detect", value=search)
                 embed.add_field(name="English", value=tag.get_text())
                 await ctx.send(embed=embed)
+
+    @gtrans.error
+    async def gtrans_error(self, ctx, error):
+        if isinstance(error, commands.CommandOnCooldown):
+            await ctx.send("Whoa slow down your Google translate! You can only do it once every 10 seconds.")
 
     @commands.command()
     async def char(self, ctx, *, characters):
@@ -522,10 +534,6 @@ class Misc:
             if value == max_number:
                 max_result.append(items[emoji_to_int[key]-1])
         await ctx.send(f"Poll ended.\nHighest vote: {' and '.join(max_result)} with {max_number} votes.")
-
-    @commands.command()
-    async def shrug(self, ctx):
-        await ctx.send("¯\_(ツ)_/¯")
 
     @commands.group(invoke_without_command=True)
     async def glitch(self, ctx, *, text):

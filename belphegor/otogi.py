@@ -207,6 +207,7 @@ class Otogi:
         self.player_list = db.otogi_simulation_player_list
         self.google_sheets = build("sheets", "v4", developerKey=token.GOOGLE_CLIENT_API_KEY)
         self.stat_sheet = db.otogi_effective_stats_sheet
+        self.belphegor_config = db.belphegor_config
 
         creampie_guild = self.bot.get_guild(config.CREAMPIE_GUILD_ID)
         self.emojis = {}
@@ -502,7 +503,7 @@ class Otogi:
                     await ctx.send(f"The entry for {new_daemon.name} has been updated with latest information from wikia.")
                 else:
                     await ctx.send("No wikia page found.")
-            except Exception as e:
+            except:
                 print(traceback.format_exc())
                 await ctx.send("Something went wrong.")
 
@@ -556,7 +557,7 @@ class Otogi:
     def _bs_process(self, daemon, form, raw_data, pic_kind):
         bs_data = BS(raw_data.decode("utf-8"), "lxml")
         relevant_data = bs_data.find("div", attrs={"class": "tabbertab", "title": lambda x:x==form})
-        tags = tuple(relevant_data.find_all("tr"))
+        tags = relevant_data.find_all("tr")
 
         new_daemon = Daemon.empty(daemon.id)
 
@@ -565,17 +566,17 @@ class Otogi:
         new_daemon.alias = utils.unifix(daemon.alias)
 
         #type, class and rarity
-        rarity_and_class = tuple(tags[3].find_all("td"))
-        new_daemon.rarity = len(tuple(rarity_and_class[0].find_all("img", recursive=False)))
+        rarity_and_class = tags[3].find_all("td")
+        new_daemon.rarity = len(rarity_and_class[0].find_all("img", recursive=False))
         new_daemon.daemon_type = tags[0].find("img")["alt"].replace("icon", "").lower()
         new_daemon.daemon_class = rarity_and_class[1].find("img")["alt"].lower()
 
         #stats
-        raw_atk = tuple(tags[4].find_all("td"))
+        raw_atk = tags[4].find_all("td")
         new_daemon.max_atk = int(raw_atk[1].text.strip().partition("/")[2])
-        raw_hp = tuple(tags[5].find_all("td"))
+        raw_hp = tags[5].find_all("td")
         new_daemon.max_hp = int(raw_hp[1].text.strip().partition("/")[2])
-        raw_mlb = tuple(tags[6].find_all("td"))
+        raw_mlb = tags[6].find_all("td")
         try:
             stat_mlb = raw_mlb[1].text.strip().partition("/")
             new_daemon.mlb_atk = int(stat_mlb[0])
@@ -591,7 +592,7 @@ class Otogi:
             if len(ability_value) > 5:
                 new_daemon.abilities.append({"name": utils.unifix(tags[i-1].text), "effect": ability_value})
         for i in (14, 15, 16):
-            bond_data = tuple(tags[i].find_all("td"))
+            bond_data = tags[i].find_all("td")
             bond_value = utils.unifix(str(bond_data[1].text))
             if len(bond_value) > 5:
                 new_daemon.bonds.append({"name": re.sub(' +', ' ', utils.unifix(bond_data[0].text)), "effect": bond_value})
@@ -602,7 +603,7 @@ class Otogi:
             setattr(new_daemon, add_type, utils.unifix(tags[i+1].text))
         quote_keys = {28: "main", 29: "skill", 30: "summon", 31: "limit_break"}
         for i, quote_type in quote_keys.items():
-            quote_data = tuple(tags[i].find_all("td"))
+            quote_data = tags[i].find_all("td")
             new_daemon.quotes[quote_type] = {
                 "value": utils.unifix(quote_data[1].text),
                 "url": quote_data[2].span.a["href"]
@@ -622,6 +623,19 @@ class Otogi:
             new_daemon.faction = daemon.faction
 
         return new_daemon
+
+    @update.command(name="everything", aliases=["all"])
+    @checks.owner_only()
+    async def update_everything(self, ctx, start_from: int=0):
+        async for daemon_data in self.daemon_collection.find({"id": {"$gte": start_from}}):
+            try:
+                daemon = Daemon(daemon_data)
+                new_daemon = await self.search_wikia(daemon)
+                await self.daemon_collection.replace_one({"id": daemon.id}, new_daemon.__dict__)
+            except:
+                return print(traceback.format_exc())
+            else:
+                print(f"Done #{new_daemon.id} {new_daemon.name}")
 
     async def get_player(self, id):
         async with self.lock:
@@ -1109,6 +1123,101 @@ class Otogi:
     @exchange.command(name="get")
     async def exchange_get(self, ctx, *, name):
         pass
+
+    @commands.group(aliases=["leaks"])
+    async def leak(self, ctx):
+        if ctx.invoked_subcommand is None:
+            if ctx.guild:
+                return
+            data = await self.belphegor_config.find_one_and_update(
+                {"category": "leak"},
+                {"$push": {"access_log": {"user_id": ctx.author.id, "timestamp": utils.now_time()}}},
+                projection={"_id": False, "content": True, "policy": True, "last_update": True}
+            )
+            content = \
+                f"{data['content']}\n" \
+                "====================================================================================\n" \
+                f"{data['policy']}\n" \
+                "====================================================================================\n" \
+                f"Last update: {data['last_update']}".splitlines()
+            lines = []
+            total_length = 0
+            for l in content:
+                if total_length + len(l) + 1 > 1900:
+                    await ctx.send("\n".join(lines).strip())
+                    lines = []
+                    total_length = 0
+                else:
+                    lines.append(l)
+                    total_length = total_length + len(l) + 1
+            if lines:
+                await ctx.send("\n".join(lines).strip())
+
+    @leak.command(name="edit")
+    @commands.check(lambda ctx: ctx.channel.id==303247718514556928)
+    async def leak_edit(self, ctx, *, content):
+        await self.belphegor_config.update_one({"category": "leak"}, {"$set": {"content": content, "last_update": utils.now_time().strftime("%Y-%m-%d")}})
+        await ctx.confirm()
+
+    @leak.command(name="append")
+    @commands.check(lambda ctx: ctx.channel.id==303247718514556928)
+    async def leak_append(self, ctx, *, content):
+        cur = await self.belphegor_config.find_one({"category": "leak"}, projection={"_id": False, "content": True})
+        await self.belphegor_config.update_one({"category": "leak"}, {"$set": {"content": f"{cur['content']}\n{content}", "last_update": utils.now_time().strftime("%Y-%m-%d")}})
+        await ctx.confirm()
+
+    @leak.command(name="policy")
+    @commands.check(lambda ctx: ctx.channel.id==303247718514556928)
+    async def leak_policy(self, ctx, *, content):
+        await self.belphegor_config.update_one({"category": "leak"}, {"$set": {"policy": content, "last_update": utils.now_time().strftime("%Y-%m-%d")}})
+        await ctx.confirm()
+
+    @leak.command(name="test")
+    @commands.check(lambda ctx: ctx.channel.id==303247718514556928)
+    async def leak_test(self, ctx, *, content):
+        data = await self.belphegor_config.find_one(
+            {"category": "leak"},
+            projection={"_id": False, "content": True, "policy": True, "last_update": True}
+        )
+        content = \
+            f"{data['content']}\n" \
+            "====================================================================================\n" \
+            f"{data['policy']}\n" \
+            "====================================================================================\n" \
+            f"Last update: {data['last_update']}".splitlines()
+        lines = []
+        total_length = 0
+        for l in content:
+            if total_length + len(l) + 1 > 1900:
+                await ctx.send("\n".join(lines).strip())
+                lines = []
+                total_length = 0
+            else:
+                lines.append(l)
+                total_length = total_length + len(l) + 1
+        if lines:
+            await ctx.send("\n".join(lines).strip())
+
+    @leak.command(name="log")
+    @commands.check(lambda ctx: ctx.channel.id==303247718514556928)
+    async def leak_log(self, ctx):
+        data = await self.belphegor_config.find_one({"category": "leak"}, projection={"_id": False, "access_log": True})
+        log_data = data["access_log"][::-1]
+        embeds = []
+        number_of_results = min(len(log_data), 100)
+        max_page = (number_of_results - 1) // 5 + 1
+        for index in range(0, number_of_results, 5):
+            desc = "\n\n".join((
+                f"`{utils.format_time(l['timestamp'])}`\nUsername: {self.bot.get_user(l['user_id'])}\nUser ID: {l['user_id']}"
+                for i, l in enumerate(log_data[index:index+5])
+            ))
+            embed = discord.Embed(
+                title=f"Leak access log (last {number_of_results} command uses)",
+                description=f"{desc}\n\n(Page {index//5+1}/{max_page})"
+            )
+            embed.set_footer(text=utils.format_time(utils.now_time()))
+            embeds.append(embed)
+        await ctx.embed_page(embeds)
 
 #==================================================================================================================================================
 

@@ -49,6 +49,14 @@ class Sticker:
             await ctx.send(f"Sticker {name} edited.")
 
     @sticker.command()
+    async def delete(self, ctx, name):
+        result = await self.sticker_list.delete_one({"name": name, "author_id": ctx.author.id})
+        if result.deleted_count > 0:
+            await ctx.send(f"Sticker {name} deleted.")
+        else:
+            await ctx.send(f"Cannot delete sticker.\nEither sticker doesn't exist or you are not the creator of the sticker.")
+
+    @sticker.command()
     async def find(self, ctx, *, name):
         sticker_names = await self.sticker_list.distinct("name", {})
         relevant = process.extract(name, sticker_names, limit=10)

@@ -5,6 +5,8 @@ from .utils import checks, config
 from io import StringIO
 import traceback
 from contextlib import redirect_stdout
+import importlib
+from bs4 import BeautifulSoup as BS
 
 #==================================================================================================================================================
 
@@ -64,6 +66,21 @@ class Admin:
 
     @commands.command(hidden=True)
     @checks.owner_only()
+    async def reimport(self, ctx, module_name):
+        modules = module_name.split(".")
+        module = __import__("belphegor")
+        try:
+            for m in modules:
+                module = getattr(module, m)
+            importlib.reload(module)
+        except:
+            print(traceback.format_exc())
+            await ctx.deny()
+        else:
+            await ctx.confirm()
+
+    @commands.command(hidden=True)
+    @checks.owner_only()
     async def status(self, ctx, *, stuff):
         data = stuff.partition(" ")
         try:
@@ -76,7 +93,7 @@ class Admin:
     @commands.command(hidden=True)
     @checks.owner_only()
     async def logout(self, ctx):
-        await self.bot.close()
+        await self.bot.logout()
 
     @commands.command(name="eval", hidden=True)
     @checks.owner_only()
@@ -115,7 +132,7 @@ class Admin:
         else:
             await ctx.send(f'```\n{value}\n{result}\n```')
 
-    @commands.command()
+    @commands.command(hidden=True)
     @checks.owner_only()
     async def block(self, ctx, user: discord.User):
         if user.id in self.bot.blocked_users:
@@ -125,7 +142,7 @@ class Admin:
             await self.belphegor_config.update_one({"category": "blocked"}, {"$addToSet": {"user_ids": user.id}})
             await ctx.send(f"{user.name} has been blocked.")
 
-    @commands.command()
+    @commands.command(hidden=True)
     @checks.owner_only()
     async def unblock(self, ctx, user: discord.User):
         if user.id in self.bot.blocked_users:
@@ -135,7 +152,7 @@ class Admin:
         else:
             await ctx.deny()
 
-    @commands.command()
+    @commands.command(hidden=True)
     @checks.owner_only()
     async def hackblock(self, ctx, user_id: int):
         user = await self.bot.get_user_info(user_id)
@@ -145,6 +162,20 @@ class Admin:
             self.bot.blocked_users.add(user_id)
             await self.belphegor_config.update_one({"category": "blocked"}, {"$addToSet": {"user_ids": user_id}})
             await ctx.send(f"{user.name} has been blocked.")
+
+    @commands.command(hidden=True)
+    @checks.owner_only()
+    async def prettify(self, ctx, url, filename="data.html"):
+        try:
+            bytes_ = await utils.fetch(self.bot.session, url)
+            data = BS(bytes_.decode("utf-8"), "xml")
+            with open(filename, "w", encoding="utf-8") as file:
+                file.write(data.prettify())
+        except:
+            print(traceback.format_exc())
+            await ctx.deny()
+        else:
+            await ctx.confirm()
 
 #==================================================================================================================================================
 

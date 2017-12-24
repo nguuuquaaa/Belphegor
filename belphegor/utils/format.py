@@ -72,7 +72,7 @@ time_regex = re.compile(
     r"(?:[\s\b]*)"
     r"(?:for|in|and|,|;|&)?(?:\s*)"
     r"(\d+\.?\d*)(?:\s*)"
-    r"(w(?:(?:eek)?s?)?|d(?:(?:ay)s?)?|h(?:(?:our)s?)?|m(?:(?:in)(?:ute)?s?)?|s(?:(?:ec)(?:ond)?s?)?)"
+    r"(w(?:(?:eek)?s?)?|d(?:(?:ay)s?)?|h(?:(?:(?:ou)?r)s?)?|m(?:(?:in)(?:ute)?s?)?|s(?:(?:ec)(?:ond)?s?)?)"
     r"(?:[\s\b]*)",
     flags=re.I
 )
@@ -114,3 +114,28 @@ def discord_escape(any_string):
 
 def safe_url(any_url):
     return quote(any_url, safe=r":/&$+,;=@#~%")
+
+def to_int(any_obj, *, default=None):
+    try:
+        return int(any_obj)
+    except:
+        return default
+
+def get_element(iterable, predicate, *, default=None):
+    result = default
+    if isinstance(predicate, int):
+        try:
+            result = iterable[predicate]
+        except IndexError:
+            pass
+    elif callable(predicate):
+        for item in iterable:
+            try:
+                if predicate(item):
+                    result = item
+                    break
+            except:
+                pass
+    else:
+        raise TypeError
+    return result

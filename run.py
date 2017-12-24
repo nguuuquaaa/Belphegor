@@ -27,7 +27,10 @@ class Belphegor(commands.Bot):
 
     async def get_prefix(self, message):
         prefixes = {f"<@{self.user.id}> ", f"<@!{self.user.id}> "}
-        gp = self.guild_prefixes.get(message.guild.id)
+        if message.guild:
+            gp = self.guild_prefixes.get(message.guild.id)
+        else:
+            gp = None
         if gp:
             prefixes.update(gp)
         else:
@@ -59,9 +62,9 @@ class Belphegor(commands.Bot):
             pass
         super().remove_cog(name)
 
-    async def close(self):
+    async def logout(self):
         await self.session.close()
-        await super().close()
+        await super().logout()
 
     async def load(self):
         await self.wait_until_ready()

@@ -132,6 +132,7 @@ class Help:
                 "`>>c`, `>>chip` - Check a chip info, name given can be EN or JP\n"
                 "Note: Data taken from [swiki](http://pso2es.swiki.jp/)\n\n"
                 "`>>w`, `>>weapon` - Check a weapon info, name given can be EN or JP\n"
+                "`>>u`, `>>unit` - Check a unit info, name given can be EN or JP\n"
                 "Note: Data taken from [Arks-Visiphone](http://pso2.arks-visiphone.com/wiki/Main_Page)\n\n"
                 "`>>i`, `>>item` - Search for items\n"
                 "Note: Data taken from DB Kakia\n\n"
@@ -250,7 +251,13 @@ class Help:
             `>>help server`
             Display non-DM, server related commands.
         '''
-        embed = discord.Embed(title="\U0001f4d4 Server", colour=discord.Colour.teal())
+        embed = discord.Embed(
+            title="\U0001f4d4 Server",
+            description=
+                "Server specific commands.\n"
+                "Cannot be used in DM.",
+            colour=discord.Colour.teal()
+        )
         embed.add_field(
             name="Manage server permission only",
             value=
@@ -272,12 +279,12 @@ class Help:
         embed.add_field(
             name="Public commands",
             value=
-                "`>>selfrole <name>` - Set selfrole with given name\n"
+                "`>>selfrole <name>` - Set selfrole with given name, if applicable\n"
                 "`>>selfrole empty` - Unset selfrole\n"
                 "`>>selfrole list` - Display server selfrole pool\n"
                 "`>>selfrole distribution` - Pie chart showing selfrole distribution\n\n"
-                "`>>creampie` - Add NSFW role\n"
-                "`>>censored` - Remove NSFW role",
+                "`>>creampie` - Add NSFW role, if applicable\n"
+                "`>>censored` - Remove NSFW role, if applicable",
             inline=False
         )
         await ctx.send(embed=embed)
@@ -385,7 +392,8 @@ class Help:
             value=
                 "`>>sticker add` - Add a sticker\n"
                 "`>>sticker edit` - Edit a sticker\n"
-                "Add and edit follow format: `<sticker_name_no_space> <pic_url>`\n\n"
+                "Add and edit follow format: `<sticker_name_no_space> <pic_url>`\n"
+                "`>>sticker delete` - Delete a sticker\n\n"
                 "`>>sticker find <name>` - Find a sticker with given name",
             inline=False
         )

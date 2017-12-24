@@ -39,15 +39,15 @@ class Tag:
             await ctx.send(f"Tag {name} edited.")
 
     @tag_cmd.command()
-    async def alias(self, ctx, name, alias_of):
+    async def alias(self, ctx, name, *, alias_of):
         tag_alias_of = await self.tag_list.find_one({"name": alias_of})
         if tag_alias_of is not None:
-            alias_of_alias = tag_alias_of.get("alias_of")
-            if alias_of_alias is not None:
-                alias_of = alias_of_alias
+            alias_of = tag_alias_of.get("alias_of", alias_of)
+        else:
+            return await ctx.send(f"Tag {alias_of} doesn't exist.")
         value = {"name": name, "alias_of": alias_of, "author_id": ctx.author.id}
-        before = await self.tag_list.find_one_and_update({"name": name}, {"$set": value}, upsert=True)
-        if before is None:
+        before = await self.tag_list.find_one_and_update({"name": name}, {"$setOnInsert": value}, upsert=True)
+        if before is not None:
             await ctx.send(f"Cannot create already existed tag.")
         else:
             await self.tag_list.update_one({"name": alias_of, "aliases": {"$nin": [name]}}, {"$push": {"aliases": name}})

@@ -51,6 +51,7 @@ class FFmpegWithBuffer(discord.FFmpegPCMAudio):
         discord.FFmpegPCMAudio.__init__(self, *args, **kwargs)
         self._buffer = Buffer(config.BUFFER_SIZE)
         self.counter = 0
+        self._is_running = True
         thread = Thread(target=self.read_buffer, args=())
         thread.daemon = True
         thread.start()
@@ -62,16 +63,20 @@ class FFmpegWithBuffer(discord.FFmpegPCMAudio):
 
     def read_buffer(self):
         counter = 0
-        while True:
-            ret = self._stdout.read(OpusEncoder.FRAME_SIZE)
+        while self._is_running:
+            chunk = self._stdout.read(OpusEncoder.FRAME_SIZE)
             counter += 1
-            if len(ret) != OpusEncoder.FRAME_SIZE:
+            if len(chunk) != OpusEncoder.FRAME_SIZE:
                 self._buffer.put((b"", counter))
                 return
-            self._buffer.put((ret, counter))
+            self._buffer.put((chunk, counter))
 
     def fast_forward(self, number):
         return self._buffer._discard(number)
+
+    def cleanup(self):
+        self._is_running = False
+        super().cleanup()
 
 #==================================================================================================================================================
 
@@ -120,7 +125,7 @@ class Song:
 
 #==================================================================================================================================================
 
-class Playlist():
+class Playlist:
     def __init__(self, bot, guild_id, *, next_index):
         self.playlist_data = bot.db.music_playlist_data
         self.guild_id = guild_id
@@ -207,6 +212,7 @@ class Playlist():
 class MusicPlayer:
     def __init__(self, bot, guild_id, *, initial, next_index):
         self.bot = bot
+        self.in_voice_channel = False
         self.guild_id = guild_id
         self.queue = Playlist(bot, guild_id, next_index=next_index)
         self.voice_client = None
@@ -220,6 +226,7 @@ class MusicPlayer:
         self.queue.playlist.extend((Song(guild.get_member(s["requestor_id"]), s["title"], s["url"]) for s in initial))
 
     def ready_to_play(self, voice_client):
+        self.in_voice_channel = True
         self.voice_client = voice_client
         self.player = self.bot.loop.create_task(self.play_till_eternity())
 
@@ -228,41 +235,34 @@ class MusicPlayer:
             self.voice_client.stop()
             self.current_song = None
 
-    def _next_part(self, e=None):
-        if e:
-            print(e)
-        if not self.repeat:
-            self.current_song = None
-        self.bot.loop.call_soon_threadsafe(self.play_next_song.set)
-
     async def leave_voice(self):
-        self.player.cancel()
-        self.player = None
+        self.in_voice_channel = False
         self.repeat = False
+        self.player.cancel()
         await self.voice_client.disconnect(force=True)
-        self.voice_client = None
 
     async def play_till_eternity(self):
-        try:
-            while True:
-                self.play_next_song.clear()
-                if not self.current_song:
-                    try:
-                        self.current_song = await asyncio.wait_for(self.queue.get(), 120, loop=self.bot.loop)
-                    except asyncio.TimeoutError:
-                        try:
-                            self.bot.loop.create_task(self.leave_voice())
-                            self.bot.loop.create_task(self.channel.send("*\"No music? Time to sleep then. Yaaawwnnnn~~\"*"))
-                            return
-                        except:
-                            return
-                await self.bot.loop.run_in_executor(None, self.current_song.raw_update)
-                self.voice_client.play(self.current_song.music, after=self._next_part)
-                name = utils.discord_escape(self.current_song.requestor.display_name)
-                await self.channel.send(f"Playing **{self.current_song.title}** requested by {name}.")
-                await self.play_next_song.wait()
-        except asyncio.CancelledError:
-            return
+        def _next_part(e=None):
+            if e:
+                print(e)
+            if not self.repeat:
+                self.current_song = None
+            self.bot.loop.call_soon_threadsafe(self.play_next_song.set)
+
+        while self.in_voice_channel:
+            self.play_next_song.clear()
+            if not self.current_song:
+                try:
+                    self.current_song = await asyncio.wait_for(self.queue.get(), 120, loop=self.bot.loop)
+                except asyncio.TimeoutError:
+                    self.bot.loop.create_task(self.leave_voice())
+                    self.bot.loop.create_task(self.channel.send("*\"No music? Time to sleep then. Yaaawwnnnn~~\"*"))
+                    return
+            await self.bot.loop.run_in_executor(None, self.current_song.raw_update)
+            self.voice_client.play(self.current_song.music, after=_next_part)
+            name = utils.discord_escape(self.current_song.requestor.display_name)
+            await self.channel.send(f"Playing **{self.current_song.title}** requested by {name}.")
+            await self.play_next_song.wait()
 
 #==================================================================================================================================================
 
@@ -281,12 +281,7 @@ class Music:
 
     def cleanup(self):
         for mp in self.music_players.values():
-            mp.player.cancel()
-            try:
-                mp.voice_client.stop()
-            except:
-                pass
-            self.bot.loop.create_task(mp.voice_client.disconnect(force=True))
+            self.bot.loop.create_task(mp.leave_voice())
 
     async def get_music_player(self, guild_id):
         mp = self.music_players.get(guild_id)
@@ -316,9 +311,8 @@ class Music:
         music_player = await self.get_music_player(voice_channel.guild.id)
         async with music_player.lock:
             msg = await ctx.send("Connecting...")
-            current_voice = discord.utils.find(lambda vc: vc.guild.id==voice_channel.guild.id, self.bot.voice_clients)
-            if current_voice:
-                await current_voice.disconnect(force=True)
+            if ctx.voice_client:
+                await ctx.voice_client.disconnect(force=True)
             try:
                 voice_client = await voice_channel.connect(timeout=20, reconnect=False)
             except:
@@ -331,14 +325,14 @@ class Music:
     @music.command(aliases=["l"])
     async def leave(self, ctx):
         music_player = await self.get_music_player(ctx.guild.id)
-        await music_player.lock.acquire()
-        try:
-            name = music_player.voice_client.channel.name
-            await music_player.leave_voice()
-            await ctx.send(f"{self.bot.user.display_name} left {name}.")
-        except AttributeError:
-            await ctx.send(f"{self.bot.user.display_name} is not in any voice channel.")
-        music_player.lock.release()
+        async with music_player.lock:
+            try:
+                name = music_player.voice_client.channel.name
+            except AttributeError:
+                await ctx.send(f"{self.bot.user.display_name} is not in any voice channel.")
+            else:
+                await music_player.leave_voice()
+                await ctx.send(f"{self.bot.user.display_name} left {name}.")
 
     def youtube_search(self, name, type="video"):
         search_response = self.youtube.search().list(q=name, part="id,snippet", type=type, maxResults=10).execute()

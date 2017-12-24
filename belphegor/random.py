@@ -35,7 +35,7 @@ class Random:
                 try:
                     embed = await func(self, *args, **kwargs)
                     return await ctx.send(embed=embed)
-                except IndexError:
+                except (IndexError, KeyError):
                     return await ctx.send("No result found.")
                 except:
                     print(traceback.format_exc())
@@ -59,9 +59,10 @@ class Random:
         }
         bytes_ = await utils.fetch(self.bot.session, "https://danbooru.donmai.us/posts.json", params=params)
         pic = json.loads(bytes_)[0]
+        tag_str = utils.split_page(pic.get('tag_string', ''), 1800)
         embed = discord.Embed(
             title="Danbooru",
-            description=f"**Tags:** {utils.discord_escape(pic.get('tag_string', ''))}\n\n**Rating:** {RATING.get(pic.get('rating'), 'N/A')}",
+            description=f"**Tags:** {utils.discord_escape(tag_str[0])}\n\n**Rating:** {RATING.get(pic.get('rating'), 'N/A')}",
             url=f"https://danbooru.donmai.us/posts/{pic['id']}",
             colour=discord.Colour.red()
         )
@@ -78,13 +79,14 @@ class Random:
         domain = "net" if safe else "com"
         bytes_ = await utils.fetch(self.bot.session, f"http://konachan.{domain}/post.json", params=params)
         pic = json.loads(bytes_)[0]
+        tag_str = utils.split_page(pic.get('tags', ''), 1800)
         embed = discord.Embed(
             title="Konachan",
-            description=f"**Tags:** {utils.discord_escape(pic.get('tags', ''))}\n\n**Rating:** {RATING.get(pic.get('rating'), 'N/A')}",
+            description=f"**Tags:** {utils.discord_escape(tag_str[0])}\n\n**Rating:** {RATING.get(pic.get('rating'), 'N/A')}",
             url=f"http://konachan.{domain}/post/show/{pic['id']}",
             colour=discord.Colour.red()
         )
-        embed.set_image(url=f"http:{pic['sample_url']}")
+        embed.set_image(url=pic['sample_url'].strip("/"))
         return embed
 
     @retry_wrap
@@ -100,9 +102,10 @@ class Random:
         bytes_ = await utils.fetch(self.bot.session, "https://safebooru.org/index.php", params=params)
         data = xmltodict.parse(bytes_.decode("utf-8"))
         pic = random.choice(data['posts']['post'])
+        tag_str = utils.split_page(pic.get('@tags', '').strip(), 1800)
         embed = discord.Embed(
             title="Safebooru",
-            description=f"**Tags:** {utils.discord_escape(pic.get('@tags', '').strip())}\n\n**Rating:** {RATING.get(pic.get('@rating'), 'N/A')}",
+            description=f"**Tags:** {utils.discord_escape(tag_str[0])}\n\n**Rating:** {RATING.get(pic.get('@rating'), 'N/A')}",
             url=f"https://safebooru.org/index.php?page=post&s=view&id={pic['@id']}",
             colour=discord.Colour.red()
         )
@@ -119,9 +122,10 @@ class Random:
         bytes_ = await utils.fetch(self.bot.session, "https://yande.re/post.json", params=params)
         pics = json.loads(bytes_)
         pic = random.choice(pics)
+        tag_str = utils.split_page(pic.get('tags', ''), 1800)
         embed = discord.Embed(
             title="Yandere",
-            description=f"**Tags:** {utils.discord_escape(pic.get('tags', ''))}\n\n**Rating:** {RATING.get(pic.get('rating'), 'N/A')}",
+            description=f"**Tags:** {utils.discord_escape(tag_str[0])}\n\n**Rating:** {RATING.get(pic.get('rating'), 'N/A')}",
             url=f"https://yande.re/post/show/{pic['id']}",
             colour=discord.Colour.red()
         )
@@ -152,9 +156,10 @@ class Random:
         img_link = post_data.find("a", id="highres")
         relevant = post_data.find("ul", id="tag-sidebar")
         pic_tags = " ".join([t.find("a").text.strip().replace(" ", r"\_") for t in relevant.find_all(True, recursive=False)])
+        tag_str = utils.split_page(pic_tags, 1800)
         embed = discord.Embed(
             title="Sankaku Complex",
-            description=f"**Tags:** {pic_tags}\n\n**Rating:** {RATING.get(pic.get('rating'), 'N/A')}",
+            description=f"**Tags:** {tag_str[0]}\n\n**Rating:** {RATING.get(pic.get('rating'), 'N/A')}",
             url=post_url,
             colour=discord.Colour.red()
         )

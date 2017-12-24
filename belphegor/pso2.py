@@ -37,7 +37,7 @@ CATEGORY_DICT = {
     "leg":          "Leg",
     "sub_unit":     "Sub Unit"
 }
-ATK_EMOJI = ("satk", "ratk", "tatk")
+ATK_EMOJIS = ("satk", "ratk", "tatk")
 WEAPON_URLS = {
     "sword":        "https://pso2.arks-visiphone.com/wiki/Simple_Swords_List",
     "wl":           "https://pso2.arks-visiphone.com/wiki/Simple_Wired_Lances_List",
@@ -59,13 +59,16 @@ WEAPON_URLS = {
     "tact":         "https://pso2.arks-visiphone.com/wiki/Simple_Takts_List"
 }
 WEAPON_SORT = tuple(WEAPON_URLS.keys())
-UNIT_CATEGORY = {
+DEF_EMOJIS = ("sdef", "rdef", "tdef")
+RESIST_EMOJIS = ("s_res", "r_res", "t_res")
+ELEMENTAL_RESIST_EMOJIS = ("fire_res", "ice_res", "lightning_res", "wind_res", "light_res", "dark_res")
+UNIT_URLS = {
     "rear":     "https://pso2.arks-visiphone.com/wiki/Unit_List:_Rear",
-    "arm":      "https://pso2.arks-visiphone.com/wiki/Arm_Units_List",
+    "arm":      "https://pso2.arks-visiphone.com/wiki/Unit_List:_Arm",
     "leg":      "https://pso2.arks-visiphone.com/wiki/Unit_List:_Leg",
     "sub_unit": "https://pso2.arks-visiphone.com/wiki/Unit_List:_Sub"
 }
-UNIT_SORT = tuple(UNIT_CATEGORY.keys())
+UNIT_SORT = tuple(UNIT_URLS.keys())
 ICON_DICT = {
     "Ability.png":            "ability",
     "SpecialAbilityIcon.PNG": "saf",
@@ -146,7 +149,7 @@ class Weapon:
     def embed_form(self, cog):
         emojis = cog.emojis
         ctgr = self.category
-        embed = discord.Embed(title=f"{emojis[ctgr]}{self.en_name}", url= WEAPON_URLS[ctgr], colour=discord.Colour.blue())
+        embed = discord.Embed(title=f"{emojis[ctgr]}{self.en_name}", url=WEAPON_URLS[ctgr], colour=discord.Colour.blue())
         description = ""
         most = self.rarity//3
         for i in range(most):
@@ -166,7 +169,7 @@ class Weapon:
         rq = self.requirement
         embed.add_field(name="Requirement", value=f"{emojis[rq['type']]}{rq['value']}")
         max_atk = self.atk['max']
-        embed.add_field(name="ATK", value="\n".join([f"{emojis[e]}{max_atk[e]}" for e in ATK_EMOJI]))
+        embed.add_field(name="ATK", value="\n".join((f"{emojis[e]}{max_atk[e]}" for e in ATK_EMOJIS)))
         for prp in self.properties:
             emoji_name = "rear" if prp["type"] == "set_effect" else prp["type"]
             embed.add_field(name=f"{emojis[emoji_name]}{prp['name']}", value=prp["description"], inline=False)
@@ -183,8 +186,7 @@ class Unit:
     def embed_form(self, cog):
         emojis = cog.emojis
         ctgr = self.category
-
-        embed = discord.Embed(title=f"{emojis[ctgr]}{self.en_name}", url= WEAPON_URLS[ctgr], colour=discord.Colour.blue())
+        embed = discord.Embed(title=f"{emojis[ctgr]}{self.en_name}", url=UNIT_URLS[ctgr], colour=discord.Colour.blue())
         description = ""
         most = self.rarity//3
         for i in range(most):
@@ -194,20 +196,23 @@ class Unit:
             emoji = emojis.get(f"star_{most}", None)
             for i in range(self.rarity - most*3):
                 description = f"{description}{emoji}"
-        if self.classes == "all_classes":
-            usable_classes = ''.join((str(emojis[cl]) for cl in CLASS_DICT.values()))
-        else:
-            usable_classes = ''.join((str(emojis[cl]) for cl in self.classes))
-        embed.description = f"{description}\n{usable_classes}"
+        embed.description = description
         if self.pic_url:
             embed.set_thumbnail(url=self.pic_url)
         rq = self.requirement
         embed.add_field(name="Requirement", value=f"{emojis[rq['type']]}{rq['value']}")
-        max_atk = self.atk['max']
-        embed.add_field(name="ATK", value="\n".join([f"{emojis[e]}{max_atk[e]}" for e in ATK_EMOJI]))
-        for prp in self.properties:
-            emoji_name = "rear" if prp["type"] == "set_effect" else prp["type"]
-            embed.add_field(name=f"{emojis[emoji_name]}{prp['name']}", value=prp["description"], inline=False)
+        max_def = self.defs['max']
+        embed.add_field(name="DEF", value="\n".join((f"{emojis[e]}{max_def[e]}" for e in DEF_EMOJIS)))
+        stats = self.stats
+        stats_des = "\n".join((f"**{s.upper()}** + {stats[s]}" for s in ("hp", "pp") if stats[s]))
+        embed.add_field(name="Stats", value=f"\n".join((stats_des, "\n".join((f"{emojis[s]}+ {stats[s]}" for s in ("satk", "ratk", "tatk", "dex") if stats[s])))))
+        resist = self.resist
+        res_des = "\n".join((f"{emojis[e]}+ {resist[e]}%" for e in RESIST_EMOJIS if resist[e]))
+        if res_des:
+            embed.add_field(name="Resist", value=res_des)
+        ele_res_des = "\n".join((f"{emojis[e]}+ {resist[e]}%" for e in ELEMENTAL_RESIST_EMOJIS if resist[e]))
+        if ele_res_des:
+            embed.add_field(name="Elemental resist", value=ele_res_des)
         return embed
 
 #==================================================================================================================================================
@@ -287,14 +292,9 @@ class PSO2:
         await msg.edit(content = "Done.")
 
     def weapon_parse(self, category, bytes_):
-        def to_int(any_string):
-            try:
-                return int(any_string)
-            except:
-                return None
         category_weapons = []
         data = BS(bytes_.decode("utf-8"), "lxml")
-        table = tuple(data.find("table", class_="wikitable sortable").find_all(True, recursive=False))[1:]
+        table = data.find("table", class_="wikitable sortable").find_all(True, recursive=False)[1:]
         for item in table:
             weapon = {"category": category}
             relevant = item.find_all(True, recursive=False)
@@ -303,10 +303,7 @@ class PSO2:
                 weapon["jp_name"] = utils.unifix(relevant[2].find("p").get_text())
             except:
                 continue
-            try:
-                weapon["rarity"] = int(relevant[0].find("img")["alt"])
-            except:
-                weapon["rarity"] = None
+            weapon["rarity"] = utils.to_int(relevant[0].find("img")["alt"])
             try:
                 weapon["pic_url"] = f"https://pso2.arks-visiphone.com{relevant[1].find('img')['src'].replace('64px-', '96px-')}"
             except:
@@ -314,8 +311,8 @@ class PSO2:
             rq = utils.unifix(relevant[3].get_text()).partition(" ")
             weapon["requirement"] = {"type": rq[2].replace("-", "").lower(), "value": rq[0]}
             weapon["atk"] = {
-                "base": {ATK_EMOJI[i]: to_int(l.strip()) for i, l in enumerate(relevant[5].find_all(text=True))},
-                "max":  {ATK_EMOJI[i]: to_int(l.strip()) for i, l in enumerate(relevant[6].find_all(text=True))}
+                "base": {ATK_EMOJIS[i]: utils.to_int(l.strip()) for i, l in enumerate(relevant[5].find_all(text=True))},
+                "max":  {ATK_EMOJIS[i]: utils.to_int(l.strip()) for i, l in enumerate(relevant[6].find_all(text=True))}
             }
             weapon["properties"] = []
             for child in relevant[7].find_all(True, recursive=False):
@@ -373,7 +370,7 @@ class PSO2:
             self.bot.session,
             "https://pso2.acf.me.uk/PSO2Alert.json",
             headers={
-                "User-Agent": "PSO2Alert_3.0.5.1",
+                "User-Agent": "PSO2Alert_3.0.5.2",
                 "Connection": "Keep-Alive",
                 "Host": "pso2.acf.me.uk"
             }
@@ -389,26 +386,36 @@ class PSO2:
             "User-Agent": "PSO2Alert",
             "Host": "pso2.acf.me.uk"
         }
+        time_left_index = {
+            "Now":              0,
+            "HalfHour":         1,
+            "OneLater":         2,
+            "OneHalfLater":     3,
+            "TwoLater":         4,
+            "TwoHalfLater":     5,
+            "ThreeLater":       6,
+            "ThreeHalfLater":   7
+        }
+        async def alert_maintenance(channel):
+            await asyncio.sleep(6300)
+            embed = discord.Embed(title="EQ Alert", description=f"\U0001f527 **Now:**\n   `Maintenance:` PSO2 is offline.", colour=discord.Colour.red())
+            embed.set_footer(text=utils.jp_time(utils.now_time()))
+            await channel.send(embed=embed)
         try:
             while True:
+                send_later = False
                 now_time = utils.now_time()
-                if 0 <= now_time.minute < 15:
+                if now_time.minute < 45:
                     delta = timedelta()
-                    next_minute = 15
-                elif 15 <= now_time.minute < 30:
-                    delta = timedelta()
-                    next_minute = 30
-                elif 30 <= now_time.minute < 45:
-                    delta = timedelta()
-                    next_minute = 45
-                elif 45 <= now_time.minute < 60:
+                    next_minute = 15 * (now_time.minute // 15 + 1)
+                elif now_time.minute >= 45:
                     delta = timedelta(hours=1)
                     next_minute = 0
                 next_time = now_time.replace(minute=next_minute, second=0) + delta
-                for i in range(2):
-                    if now_time.minute != next_time.minute:
-                        await asyncio.sleep((next_time - now_time).total_seconds())
-                        now_time = utils.now_time()
+                await asyncio.sleep((next_time - now_time).total_seconds())
+                now_time = utils.now_time()
+                if now_time.minute != next_time.minute:
+                    await asyncio.sleep((next_time - now_time).total_seconds())
                 bytes_ = await utils.fetch(self.bot.session, initial_data["API"], headers=acf_headers)
                 data = json.loads(bytes_)[0]
                 self.last_eq_data = data
@@ -431,6 +438,8 @@ class PSO2:
                         elif random_eq:
                             desc.append(f"\u23f0 **In 45 minutes:**\n{random_eq}")
                         if data["TwoLater"]:
+                            if "Maintenance" in data["TwoLater"]:
+                                send_later = True
                             desc.append(f"\u23f0 **In 1 hour 45 minutes:**\n   `All ships:` {data['TwoLater']}")
                         if data["ThreeLater"]:
                             desc.append(f"\u23f0 **In 2 hours 45 minutes:**\n   `All ships:` {data['ThreeLater']}")
@@ -466,6 +475,8 @@ class PSO2:
                                 channel = self.bot.get_channel(cid)
                                 if channel:
                                     _loop.create_task(channel.send(embed=embed))
+                                    if send_later:
+                                        _loop.create_task(alert_maintenance(channel))
                             break
         except asyncio.CancelledError:
             return
@@ -511,7 +522,7 @@ class PSO2:
         await ctx.send(embed=embed)
 
     @commands.group(name="unit", aliases=["u"], invoke_without_command=True)
-    async def cmd_unit(self, ctx, name):
+    async def cmd_unit(self, ctx, *, name):
         unit = await ctx.search(name, self.unit_list, cls=Unit, atts=["en_name", "jp_name"], name_att="en_name", emoji_att="category")
         if not unit:
             return
@@ -519,8 +530,58 @@ class PSO2:
 
     @cmd_unit.command(name="update")
     @checks.owner_only()
-    async def uupdate(self, ctx, category=None):
-        pass
+    async def uupdate(self, ctx, *args):
+        msg = await ctx.send("Fetching...")
+        if not args:
+            urls = UNIT_URLS
+        else:
+            urls = {key: value for key, value in UNIT_URLS.items() if key in args}
+        units = []
+        for category, url in urls.items():
+            bytes_ = await utils.fetch(self.bot.session, url)
+            category_units = await self.bot.loop.run_in_executor(None, self.unit_parse, category, bytes_)
+            units.extend(category_units)
+            print(f"Done parsing {CATEGORY_DICT[category]}.")
+        await self.unit_list.delete_many({"category": {"$in": tuple(urls.keys())}})
+        await self.unit_list.insert_many(units)
+        print("Done everything.")
+        await msg.edit(content = "Done.")
+
+    def unit_parse(self, category, bytes_):
+        category_units = []
+        data = BS(bytes_.decode("utf-8"), "lxml")
+        table = data.find("table", class_="sortable").find_all(True, recursive=False)[3:]
+        for item in table:
+            unit = {"category": category}
+            relevant = item.find_all(True, recursive=False)
+            third_column = relevant[2]
+            try:
+                unit["en_name"] = utils.unifix(third_column.find("a").get_text())
+                unit["jp_name"] = utils.unifix("".join((t.get_text() for t in third_column.find_all("span"))))
+            except:
+                continue
+            unit["rarity"] = utils.to_int(relevant[0].find("img")["alt"])
+            try:
+                unit["pic_url"] = f"https://pso2.arks-visiphone.com{relevant[1].find('img')['src'].replace('64px-', '96px-')}"
+            except:
+                unit["pic_url"] = None
+            rq_img_tag = third_column.find("img")
+            unit["requirement"] = {"type": rq_img_tag["alt"].replace(" ", "").lower(), "value": int(rq_img_tag.next_sibling.strip())}
+            unit["defs"] = {
+                "base": {DEF_EMOJIS[i]: int(relevant[3+i].get_text().strip()) for i in range(3)},
+                "max":  {DEF_EMOJIS[i]: int(relevant[6+i].get_text().strip()) for i in range(3)}
+            }
+            unit["stats"] = {}
+            for i, s in enumerate(("hp", "pp", "satk", "ratk", "tatk", "dex")):
+                unit["stats"][s] = utils.to_int(relevant[9+i].get_text().strip(), default=0)
+            unit["resist"] = {}
+            for i, s in enumerate(RESIST_EMOJIS):
+                unit["resist"][s] = utils.to_int(relevant[15+i].get_text().replace("%", "").strip(), default=0)
+            ele_res_tag = relevant[18].find_all("td")
+            for i, s in enumerate(ELEMENTAL_RESIST_EMOJIS):
+                unit["resist"][s] = utils.to_int(ele_res_tag[i].get_text().replace("%", "").strip(), default=0)
+            category_units.append(unit)
+        return category_units
 
 #==================================================================================================================================================
 
