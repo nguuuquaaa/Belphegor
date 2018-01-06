@@ -46,6 +46,11 @@ class Belphegor(commands.Bot):
             return
         await self.process_commands(message)
 
+    async def on_command_error(self, ctx, error):
+        await super().on_command_error(ctx, error)
+        if not isinstance(error, (commands.CheckFailure, commands.CommandOnCooldown)):
+            await ctx.deny()
+
     async def on_ready(self):
         print('Logged in as')
         print(self.user.name)

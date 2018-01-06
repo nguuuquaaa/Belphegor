@@ -125,7 +125,7 @@ class BelphegorContext(commands.Context):
                 pass
         return result
 
-    async def search(self, name, pool, *, cls=GeneralObject, colour=None, atts=["id"], name_att, emoji_att=None, prompt=None, sort={}):
+    async def search(self, name, pool, *, cls=BaseObject, colour=None, atts=["id"], name_att, emoji_att=None, prompt=None, sort={}):
         try:
             atts.remove("id")
             item_id = int(name)

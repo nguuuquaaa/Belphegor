@@ -25,22 +25,12 @@ class Guild:
         if ctx.invoked_subcommand is None:
             pass
 
-    @cmd_set.error
-    async def set_error(self, ctx, error):
-        if not isinstance(error, commands.CheckFailure):
-            await ctx.deny()
-
     @commands.group(name="unset")
     @checks.guild_only()
     @checks.manager_only()
     async def cmd_unset(self, ctx):
         if ctx.invoked_subcommand is None:
             pass
-
-    @cmd_unset.error
-    async def unset_error(self, ctx, error):
-        if not isinstance(error, commands.CheckFailure):
-            await ctx.deny()
 
     @commands.command()
     @checks.guild_only()
@@ -65,11 +55,6 @@ class Guild:
             "If you think this action is unjustified, please contact the mod in question to unlift the ban."
         )
 
-    @ban.error
-    async def ban_error(self, ctx, error):
-        if not isinstance(error, commands.errors.CheckFailure):
-            await ctx.deny()
-
     @commands.command()
     @checks.guild_only()
     @checks.can_ban()
@@ -78,11 +63,6 @@ class Guild:
         await ctx.guild.unban(user, reason=reason)
         await ctx.send("{user.name} has been unbanned.")
 
-    @unban.error
-    async def unban_error(self, ctx, error):
-        if not isinstance(error, commands.errors.CheckFailure):
-            await ctx.deny()
-
     @commands.command()
     @checks.guild_only()
     @checks.can_ban()
@@ -90,11 +70,6 @@ class Guild:
         user = await self.bot.get_user_info(user_id)
         await ctx.guild.ban(user, reason=reason)
         await ctx.send("{user.name} has been banned.")
-
-    @hackban.error
-    async def hackban_error(self, ctx, error):
-        if not isinstance(error, commands.errors.CheckFailure):
-            await ctx.deny()
 
     @commands.command()
     @checks.guild_only()
@@ -123,11 +98,6 @@ class Guild:
             await ctx.channel.set_permissions(target=member, read_messages=None)
             await ctx.send(f"{member.mention} has been unbanned from this channel.")
 
-    @channelban.error
-    async def channelban_error(self, ctx, error):
-        if not isinstance(error, commands.errors.CheckFailure):
-            await ctx.deny()
-
     @commands.command(aliases=["shutup"])
     @checks.guild_only()
     @checks.manager_only()
@@ -153,11 +123,6 @@ class Guild:
         except:
             await ctx.channel.set_permissions(target=member, send_messages=None)
             await ctx.send(f"{member.mention} has been unmuted from this channel.")
-
-    @channelmute.error
-    async def channelmute_error(self, ctx, error):
-        if not isinstance(error, commands.errors.CheckFailure):
-            await ctx.deny()
 
     @cmd_set.command()
     async def nsfwrole(self, ctx, *, name):
@@ -500,11 +465,6 @@ class Guild:
         else:
             await ctx.send(f"{member.mention} has been muted.")
 
-    @mute.error
-    async def mute_error(self, ctx, error):
-        if not isinstance(error, commands.errors.CheckFailure):
-            await ctx.deny()
-
     @commands.command()
     @checks.guild_only()
     @checks.manager_only()
@@ -512,11 +472,6 @@ class Guild:
         muted_role = discord.utils.find(lambda r:r.name=="Muted", ctx.guild.roles)
         await member.remove_roles(muted_role)
         await ctx.send(f"{member.mention} has been unmute.")
-
-    @unmute.error
-    async def unmute_error(self, ctx, error):
-        if not isinstance(error, commands.errors.CheckFailure):
-            await ctx.deny()
 
     @commands.command()
     @checks.guild_only()
