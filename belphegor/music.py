@@ -238,8 +238,14 @@ class MusicPlayer:
     async def leave_voice(self):
         self.in_voice_channel = False
         self.repeat = False
-        self.player.cancel()
-        await self.voice_client.disconnect(force=True)
+        try:
+            self.player.cancel()
+        except:
+            pass
+        try:
+            await self.voice_client.disconnect(force=True)
+        except:
+            pass
 
     async def play_till_eternity(self):
         def _next_part(e=None):

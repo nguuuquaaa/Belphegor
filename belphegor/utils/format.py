@@ -181,7 +181,7 @@ def page_format(container, *args, **kwargs):
         if isinstance(container[0], (list, tuple)):
             book_amount = len(container)
             title = kwargs.pop("title", None)
-            if iscallable(title):
+            if callable(title):
                 return [_raw_page_format(items, *args, title=title(i), book=i, book_amount=book_amount, **kwargs) for i, items in enumerate(container)]
             else:
                 return [_raw_page_format(items, *args, title=title, book=i, book_amount=book_amount, **kwargs) for i, items in enumerate(container)]
