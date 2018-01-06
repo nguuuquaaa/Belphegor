@@ -1,14 +1,8 @@
 from discord import Embed
 from discord.ext import commands
 import re
-
-class GeneralObject:
-    def __init__(self, data):
-        for key, value in data.items():
-            if key[0] != "_":
-                setattr(self, key, value)
-
-#==================================================================================================================================================
+from .format import page_format
+from .data_type import BaseObject
 
 class BelphegorContext(commands.Context):
     async def confirm(self):
@@ -131,7 +125,7 @@ class BelphegorContext(commands.Context):
                 pass
         return result
 
-    async def search(self, name, pool, *, cls=GeneralObject, atts=["id"], name_att, emoji_att=None, prompt=None, sort={}):
+    async def search(self, name, pool, *, cls=GeneralObject, colour=None, atts=["id"], name_att, emoji_att=None, prompt=None, sort={}):
         try:
             atts.remove("id")
             item_id = int(name)
@@ -188,19 +182,13 @@ class BelphegorContext(commands.Context):
                 return None
             elif len(result) == 1 and not prompt:
                 return result[0]
-            embeds = []
-            max_page = (len(result) - 1) // 10 + 1
             emojis = self.cog.emojis
-            for index in range(0, len(result), 10):
-                desc = "\n".join((
-                    f"`{index+i+1}:` {emojis.get(getattr(item, emoji_att), '') if emoji_att else ''}{getattr(item, name_att)}"
-                    for i, item in enumerate(result[index:index+10])
-                ))
-                embed = Embed(
-                    title="Do you mean:",
-                    description=f"{desc}\n\n(Page {index//10+1}/{max_page})"
-                )
-                embeds.append(embed)
+            embeds = page_format(
+                result, 10,
+                title="Do you mean:",
+                description=lambda i, x: f"`{i+1}:` {emojis.get(getattr(x, emoji_att), '') if emoji_att else ''}{getattr(x, name_att)}",
+                colour=colour
+            )
             self.bot.loop.create_task(self.embed_page(embeds))
             index = await self.wait_for_choice(max=len(result))
             if index is None:

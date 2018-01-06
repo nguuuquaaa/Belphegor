@@ -343,40 +343,36 @@ class Music:
                 break
         return results
 
+    def current_queue_info(self, music_player):
+        try:
+            if music_player.voice_client.is_playing():
+                state = "Playing"
+            else:
+                state = "Paused"
+        except:
+            state = "Stopped"
+        playlist = music_player.queue.playlist
+        try:
+            current_song_info = music_player.current_song.info()
+        except:
+            current_song_info = ""
+        if playlist:
+            return utils.page_format(
+                playlist, 10, separator="\n\n",
+                title=f"({state}) {current_song_info}",
+                description=lambda i, x: f"`{i+1}.` [{x.title}]({x.url})",
+                colour=discord.Colour.green(),
+                thumbnail_url="http://i.imgur.com/HKIOv84.png"
+                )
+        else:
+            return [discord.Embed(title=f"({state}) {current_song_info}", colour=discord.Colour.green())]
+
     @music.command(aliases=["q"])
-    async def queue(self, ctx, *, name:str=""):
+    async def queue(self, ctx, *, name=None):
         music_player = await self.get_music_player(ctx.guild.id)
         if not name:
-            try:
-                if music_player.voice_client.is_playing():
-                    state = "Playing"
-                else:
-                    state = "Paused"
-            except:
-                state = "Stopped"
-            playlist = music_player.queue.playlist
-            try:
-                current_song_info = music_player.current_song.info()
-            except:
-                current_song_info = ""
-            if playlist:
-                embeds = []
-                max_page = (len(playlist) - 1) // 10 + 1
-                for index in range(0, len(playlist), 10):
-                    desc = "\n\n".join([
-                        f"{index+i+1}. [{song.title}]({song.url})"
-                        for i, song in enumerate(playlist[index:index+10])
-                    ])
-                    embed = discord.Embed(
-                        title=f"({state}) {current_song_info}",
-                        description=f"{desc}\n\n(Page {index//10+1}/{max_page})",
-                        colour=discord.Colour.green()
-                    )
-                    embed.set_thumbnail(url="http://i.imgur.com/HKIOv84.png")
-                    embeds.append(embed)
-                await ctx.embed_page(embeds)
-            else:
-                await ctx.send(embed=discord.Embed(title=f"({state}) {current_song_info}", colour=discord.Colour.green()))
+            embeds = self.current_queue_info(music_player)
+            return await ctx.embed_page(embeds)
         else:
             async with self.lock:
                 results = await self.bot.loop.run_in_executor(None, self.youtube_search, name)
@@ -463,19 +459,17 @@ class Music:
     async def music_import(self, ctx):
         music_player = await self.get_music_player(ctx.guild.id)
         msg = ctx.message
-        if not ctx.message.attachments:
+        if not msg.attachments:
             await msg.add_reaction("\U0001f504")
             try:
                 msg = await self.bot.wait_for("message", check=lambda m:m.author.id==ctx.author.id and m.attachments, timeout=120)
             except asyncio.TimeoutError:
-                try:
-                    return await msg.clear_reactions()
-                except:
-                    return
-            try:
-                await ctx.message.clear_reactions()
-            except:
                 return
+            finally:
+                try:
+                    await ctx.message.clear_reactions()
+                except:
+                    pass
         bytes_ = BytesIO()
         await msg.attachments[0].save(bytes_)
         playlist = json.loads(bytes_.getvalue().decode("utf-8"))
@@ -505,8 +499,11 @@ class Music:
         return results
 
     @music.command(aliases=["p"])
-    async def playlist(self, ctx, *, name):
+    async def playlist(self, ctx, *, name=None):
         music_player = await self.get_music_player(ctx.guild.id)
+        if not name:
+            embeds = self.current_queue_info(music_player)
+            return await ctx.embed_page(embeds)
         if name.startswith("-random "):
             shuffle = True
             name = name[8:]

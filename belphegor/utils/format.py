@@ -1,3 +1,4 @@
+import discord
 from unicodedata import normalize, category
 import re
 import asyncio
@@ -121,15 +122,15 @@ def to_int(any_obj, *, default=None):
     except:
         return default
 
-def get_element(iterable, predicate, *, default=None):
+def get_element(container, predicate, *, default=None):
     result = default
     if isinstance(predicate, int):
         try:
-            result = iterable[predicate]
+            result = container[predicate]
         except IndexError:
             pass
     elif callable(predicate):
-        for item in iterable:
+        for item in container:
             try:
                 if predicate(item):
                     result = item
@@ -139,3 +140,52 @@ def get_element(iterable, predicate, *, default=None):
     else:
         raise TypeError
     return result
+
+def _raw_page_format(container, per_page, *, separator="\n", book=None, book_amount=None, title=None, description=None, colour=None, author=None, footer=None, thumbnail_url=None):
+    embeds = []
+    page_amount = (len(container) - 1) // per_page + 1
+    if per_page:
+        for index in range(0, len(container), per_page):
+            if book is None:
+                desc = separator.join((description(i, item) for i, item in enumerate(container[index:index+per_page])))
+                paging = f"(Page {index//per_page+1}/{page_amount})"
+            else:
+                desc = separator.join((description(i, item, book) for i, item in enumerate(container[index:index+per_page])))
+                paging = f"(Page {index//per_page+1}/{page_amount} - Book {book+1}/{book_amount})"
+            embed = discord.Embed(
+                title=title,
+                description=f"{desc}\n\n{paging}",
+                colour=colour or discord.Embed.Empty
+            )
+            if author:
+                embed.set_author(name=author)
+            if thumbnail_url:
+                embed.set_thumbnail(url=thumbnail_url)
+            if footer:
+                embed.set_footer(text=footer)
+            embeds.append(embed)
+    else:
+        embed = discord.Embed(title=title, description=description, colour=colour)
+        if author:
+            embed.set_author(name=author)
+        if thumbnail_url:
+            embed.set_thumbnail(url=thumbnail_url)
+        if footer:
+            embed.set_footer(text=footer)
+        embeds.append(embed)
+    return embeds
+
+def page_format(container, *args, **kwargs):
+    embeds = []
+    if container:
+        if isinstance(container[0], (list, tuple)):
+            book_amount = len(container)
+            title = kwargs.pop("title", None)
+            if iscallable(title):
+                return [_raw_page_format(items, *args, title=title(i), book=i, book_amount=book_amount, **kwargs) for i, items in enumerate(container)]
+            else:
+                return [_raw_page_format(items, *args, title=title, book=i, book_amount=book_amount, **kwargs) for i, items in enumerate(container)]
+        else:
+            return _raw_page_format(container, *args, **kwargs)
+    else:
+        return None

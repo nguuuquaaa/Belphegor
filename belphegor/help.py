@@ -135,6 +135,7 @@ class Help:
                 "`>>u`, `>>unit` - Check a unit info, name given can be EN or JP\n"
                 "Note: Data taken from [Arks-Visiphone](http://pso2.arks-visiphone.com/wiki/Main_Page)\n\n"
                 "`>>i`, `>>item` - Search for items\n"
+                "`>>price` - Check item price, may be outdated\n"
                 "Note: Data taken from DB Kakia\n\n"
                 "`>>eq` - Display EQ schedule for the next 3 hours",
             inline=False
@@ -292,8 +293,8 @@ class Help:
     @help.command()
     async def remind(self, ctx):
         '''
-            `>>help tag`
-            Display tag commands.
+            `>>help remind`
+            Display remind commands.
         '''
         embed = discord.Embed(title="\u23f0 Reminder", description="Schedule to ping you after a certain time.", colour=discord.Colour.teal())
         embed.add_field(name="Command", value="`>>remind` - Display this message", inline=False)
@@ -335,7 +336,9 @@ class Help:
                 "`create <name> <content>` - Create a tag\n"
                 "`alias <name> <alias>` - Create an alias to another tag\n\n"
                 "`edit <name> <content>` - Edit a tag\n"
-                "`delete <name>` - Delete a tag",
+                "`delete <name>` - Delete a tag\n\n"
+                "The following subcommand can only be used by server managers\n"
+                "`ban <name>` - Ban a tag in current server",
             inline=False
         )
         embed.add_field(
@@ -394,7 +397,9 @@ class Help:
                 "`>>sticker edit` - Edit a sticker\n"
                 "Add and edit follow format: `<sticker_name_no_space> <pic_url>`\n"
                 "`>>sticker delete` - Delete a sticker\n\n"
-                "`>>sticker find <name>` - Find a sticker with given name",
+                "`>>sticker find <name>` - Find a sticker with given name\n\n"
+                "The following subcommand can only be used by server managers\n"
+                "`ban <name>` - Ban a sticker in current server",
             inline=False
         )
         await ctx.send(embed=embed)

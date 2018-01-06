@@ -3,7 +3,7 @@ from discord.ext import commands
 from PIL import Image
 from io import BytesIO
 from . import utils
-from .utils import config, checks
+from .utils import config, checks, data_type
 import aiohttp
 import asyncio
 import re
@@ -59,6 +59,10 @@ WEAPON_URLS = {
     "tact":         "https://pso2.arks-visiphone.com/wiki/Simple_Takts_List"
 }
 WEAPON_SORT = tuple(WEAPON_URLS.keys())
+SSA_SLOTS = {
+    "Tier 3":   ["s1", "s2", "s3"],
+    "Tier 4":   ["s1", "s2", "s3", "s4"]
+}
 DEF_EMOJIS = ("sdef", "rdef", "tdef")
 RESIST_EMOJIS = ("s_res", "r_res", "t_res")
 ELEMENTAL_RESIST_EMOJIS = ("fire_res", "ice_res", "lightning_res", "wind_res", "light_res", "dark_res")
@@ -70,12 +74,13 @@ UNIT_URLS = {
 }
 UNIT_SORT = tuple(UNIT_URLS.keys())
 ICON_DICT = {
-    "Ability.png":            "ability",
-    "SpecialAbilityIcon.PNG": "saf",
-    "Special Ability":        "saf",
-    "Potential.png":          "potential",
-    "PA":                     "pa",
-    "Set Effect":             "set_effect"
+    "Ability.png":              "ability",
+    "SpecialAbilityIcon.PNG":   "saf",
+    "Special Ability":          "saf",
+    "Potential.png":            "potential",
+    "PA":                       "pa",
+    "Set Effect":               "set_effect",
+    "SClassAbilityIcon.png":    "s_class"
 }
 for ele in ("Fire", "Ice", "Lightning", "Wind", "Light", "Dark"):
     ICON_DICT[ele] = ele.lower()
@@ -108,12 +113,7 @@ def _match_this(match):
 
 #==================================================================================================================================================
 
-class Chip:
-    def __init__(self, data):
-        for key, value in data.items():
-            if key[0] != "_":
-                setattr(self, key, value)
-
+class Chip(data_type.BaseObject):
     def embed_form(self, cog, la_form="en"):
         form = getattr(self, f"{la_form}_data")
         emojis = cog.emojis
@@ -140,12 +140,7 @@ class Chip:
 
 #==================================================================================================================================================
 
-class Weapon:
-    def __init__(self, data):
-        for key, value in data.items():
-            if key[0] != "_":
-                setattr(self, key, value)
-
+class Weapon(data_type.BaseObject):
     def embed_form(self, cog):
         emojis = cog.emojis
         ctgr = self.category
@@ -163,7 +158,10 @@ class Weapon:
             usable_classes = ''.join((str(emojis[cl]) for cl in CLASS_DICT.values()))
         else:
             usable_classes = ''.join((str(emojis[cl]) for cl in self.classes))
-        embed.description = f"{description}\n{usable_classes}"
+        description = f"{description}\n{usable_classes}"
+        if self.ssa_slots:
+            slots = "".join((str(emojis[s]) for s in self.ssa_slots))
+            embed.description = f"{description}\n**Slots:** {slots}"
         if self.pic_url:
             embed.set_thumbnail(url=self.pic_url)
         rq = self.requirement
@@ -177,12 +175,7 @@ class Weapon:
 
 #==================================================================================================================================================
 
-class Unit:
-    def __init__(self, data):
-        for key, value in data.items():
-            if key[0] != "_":
-                setattr(self, key, value)
-
+class Unit(data_type.BaseObject):
     def embed_form(self, cog):
         emojis = cog.emojis
         ctgr = self.category
@@ -242,7 +235,8 @@ class PSO2:
             self.emojis[emoji_name] = discord.utils.find(lambda e:e.name==emoji_name, test_guild.emojis)
         for emoji_name in (
             "sdef", "rdef", "tdef", "dex", "rear", "arm", "leg", "sub_unit", "s_res", "r_res", "t_res",
-            "fire_res", "ice_res", "lightning_res", "wind_res", "light_res", "dark_res"
+            "fire_res", "ice_res", "lightning_res", "wind_res", "light_res", "dark_res",
+            "s_class", "s1", "s2", "s3", "s4"
         ):
             self.emojis[emoji_name] = discord.utils.find(lambda e:e.name==emoji_name, test_guild_2.emojis)
         self.eq_alert_forever = bot.loop.create_task(self.eq_alert())
@@ -253,21 +247,33 @@ class PSO2:
 
     @commands.command(aliases=["c", "chip"])
     async def chipen(self, ctx, *, name):
-        chip = await ctx.search(name, self.chip_library, cls=Chip, atts=["en_name", "jp_name"], name_att="en_name", emoji_att="element")
+        chip = await ctx.search(
+            name, self.chip_library,
+            cls=Chip, colour=discord.Colour.blue(),
+            atts=["en_name", "jp_name"], name_att="en_name", emoji_att="element"
+        )
         if not chip:
             return
         await ctx.send(embed=chip.embed_form(self))
 
     @commands.command(aliases=["cjp",])
     async def chipjp(self, ctx, *, name):
-        chip = await ctx.search(name, self.chip_library, cls=Chip, atts=["en_name", "jp_name"], name_att="jp_name", emoji_att="element")
+        chip = await ctx.search(
+            name, self.chip_library,
+            cls=Chip, colour=discord.Colour.blue(),
+            atts=["en_name", "jp_name"], name_att="jp_name", emoji_att="element"
+        )
         if not chip:
             return
         await ctx.send(embed=chip.embed_form(self, "jp"))
 
     @commands.group(name="weapon", aliases=["w",], invoke_without_command=True)
     async def cmd_weapon(self, ctx, *, name):
-        weapon = await ctx.search(name, self.weapon_list, cls=Weapon, atts=["en_name", "jp_name"], name_att="en_name", emoji_att="category", sort={"category": WEAPON_SORT})
+        weapon = await ctx.search(
+            name, self.weapon_list,
+            cls=Weapon, colour=discord.Colour.blue(),
+            atts=["en_name", "jp_name"], name_att="en_name", emoji_att="category", sort={"category": WEAPON_SORT}
+        )
         if not weapon:
             return
         await ctx.send(embed=weapon.embed_form(self))
@@ -290,6 +296,104 @@ class PSO2:
         await self.weapon_list.insert_many(weapons)
         print("Done everything.")
         await msg.edit(content = "Done.")
+
+    async def _search_att(self, attrs):
+        result = []
+        query = {}
+        check_type = None
+        projection = {"_id": False, "category": True, "en_name": True, "jp_name": True}
+        for attr in attrs:
+            orig_att = attr[0]
+            value = attr[1]
+            try:
+                re_value = int(value)
+                if orig_att == "atk":
+                    att = "atk.max"
+                else:
+                    att = orig_att
+                q = {att: re_value}
+                p = {att: True}
+            except:
+                re_value = ".*?".join(map(re.escape, value.split()))
+                p = None
+                if orig_att in ("properties", "affix", "abi", "ability", "potential", "pot", "latent", "saf"):
+                    att = "properties"
+                    p = {"properties.$": True}
+                else:
+                    att = orig_att
+                if p:
+                    q = {
+                        att: {
+                            "$elemMatch": {
+                                "$or": [
+                                    {
+                                        "name": {
+                                            "$regex": re_value,
+                                            "$options": "i"
+                                        }
+                                    },
+                                    {
+                                        "description": {
+                                            "$regex": re_value,
+                                            "$options": "i"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                else:
+                    q = {att: {"$regex": re_value, "$options": "i"}}
+                    p = {att: True}
+            query.update(q)
+            projection.update(p)
+
+        async for weapon in self.weapon_list.find(query, projection=projection):
+            new_weapon = {}
+            new_weapon["category"] = weapon.pop("category")
+            new_weapon["en_name"] = weapon.pop("en_name")
+            new_weapon["jp_name"] = weapon.pop("jp_name")
+            r = ""
+            for key, value in weapon.items():
+                while value:
+                    if isinstance(value, list):
+                        value = value[0]
+                    else:
+                        break
+                if isinstance(value, dict):
+                    desc = f"{value['name']} - {value['description']}"
+                else:
+                    desc = value
+                try:
+                    if len(desc) > 200:
+                        desc = f"{value[:200]}..."
+                except:
+                    pass
+                if key == "properties":
+                    r = f"{r}\n   {self.emojis[value['type']]}{desc}"
+                else:
+                    r = f"{r}\n   {key}: {desc}"
+            new_weapon["value"] = r
+            result.append(new_weapon)
+        return result
+
+    @cmd_weapon.command(name="filter")
+    async def w_filter(self, ctx, *, data):
+        data = data.strip().splitlines()
+        attrs = []
+        for d in data:
+            stuff = d.partition(" ")
+            attrs.append((stuff[0].lower(), stuff[2].lower()))
+        result = await self._search_att(attrs)
+        if not result:
+            return await ctx.send("No result found.")
+        embeds = utils.page_format(
+            result, 5, separator="\n\n",
+            title=f"Search result: {len(result)} results",
+            description=lambda i, x: f"{self.emojis[x['category']]}**{x['en_name']}**{x['value']}",
+            colour=discord.Colour.blue()
+        )
+        await ctx.embed_page(embeds)
 
     def weapon_parse(self, category, bytes_):
         category_weapons = []
@@ -315,9 +419,15 @@ class PSO2:
                 "max":  {ATK_EMOJIS[i]: utils.to_int(l.strip()) for i, l in enumerate(relevant[6].find_all(text=True))}
             }
             weapon["properties"] = []
+            weapon["ssa_slots"] = []
             for child in relevant[7].find_all(True, recursive=False):
                 if child.name == "img":
-                    cur = {"type": ICON_DICT[child["alt"]]}
+                    a = child["alt"]
+                    t = ICON_DICT.get(a)
+                    if t:
+                        cur = {"type": t}
+                    else:
+                        weapon["ssa_slots"] = SSA_SLOTS[a]
                 elif child.name == "span":
                     cur["name"] = utils.unifix(child.get_text())
                     cur["description"] = utils.unifix(no_html_regex.sub(_match_this, html.unescape(child["data-simple-tooltip"])))
@@ -360,6 +470,26 @@ class PSO2:
             if not embeds:
                 return await ctx.send("Can't find any item with that name.")
         await ctx.embed_page(embeds)
+
+    @commands.command(name="price")
+    async def cmd_price(self, ctx, *, name):
+        async with ctx.typing():
+            params = {"name": name}
+            bytes_ = await utils.fetch(self.bot.session, "http://db.kakia.org/item/search", params=params)
+            result = json.loads(bytes_)
+            if result:
+                item = result[0]
+                ship_data = [utils.get_element(item["PriceInfo"], lambda i: i["Ship"]==ship+1) for ship in range(10)]
+                embed = discord.Embed(
+                    title="Price info",
+                    colour=discord.Colour.blue()
+                )
+                embed.add_field(name="Ship", value="\n".join((str(i) for i in range(1, 11))))
+                embed.add_field(name="Price", value="\n".join((f"{s['Price']:n}" for s in ship_data)))
+                embed.add_field(name="Last updated", value="\n".join((s['LastUpdated'] for s in ship_data)))
+                await ctx.send(embed=embed)
+            else:
+                await ctx.send("Can't find any item with that name.")
 
     @commands.command()
     async def jptime(self, ctx):
@@ -424,7 +554,7 @@ class PSO2:
                 if now_time.hour == (jst - 1) % 24 or (now_time.hour == jst and now_time.minute == 0):
                     desc = []
                     ship_gen = (f"Ship{ship_number}" for ship_number in range(1, 11))
-                    random_eq = "\n".join((f"   `Ship {ship[4]}:` {data[ship]}" for ship in ship_gen if data[ship]))
+                    random_eq = "\n".join((f"   `Ship {ship[4:]}:` {data[ship]}" for ship in ship_gen if data[ship]))
                     if now_time.minute == 0:
                         if data["OneLater"]:
                             desc.append(f"\u2694 **Now:**\n   `All ships:` {data['OneLater']}")
@@ -523,7 +653,11 @@ class PSO2:
 
     @commands.group(name="unit", aliases=["u"], invoke_without_command=True)
     async def cmd_unit(self, ctx, *, name):
-        unit = await ctx.search(name, self.unit_list, cls=Unit, atts=["en_name", "jp_name"], name_att="en_name", emoji_att="category")
+        unit = await ctx.search(
+            name, self.unit_list,
+            cls=Unit, colour=discord.Colour.blue(),
+            atts=["en_name", "jp_name"], name_att="en_name", emoji_att="category"
+        )
         if not unit:
             return
         await ctx.send(embed=unit.embed_form(self))

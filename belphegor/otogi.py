@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from urllib.parse import quote
 from . import utils
-from .utils import config, checks, token
+from .utils import config, checks, token, data_type
 import random
 import re
 import traceback
@@ -14,12 +14,7 @@ import json
 
 #==================================================================================================================================================
 
-class Daemon:
-    def __init__(self, data):
-        for key, value in data.items():
-            if key[0] != "_":
-                setattr(self, key, value)
-
+class Daemon(data_type.BaseObject):
     @classmethod
     def empty(cls, id):
         return cls({
@@ -217,7 +212,10 @@ class Otogi:
         self.lock = asyncio.Lock()
 
     async def _search(self, ctx, name, *, prompt=None):
-        return await ctx.search(name, self.daemon_collection, cls=Daemon, atts=["id", "name", "alias"], name_att="name", emoji_att="daemon_class", prompt=prompt, sort={"id": 1})
+        return await ctx.search(
+            name, self.daemon_collection,
+            cls=Daemon, colour=discord.Colour.orange(), atts=["id", "name", "alias"], name_att="name", emoji_att="daemon_class", prompt=prompt, sort={"id": 1}
+        )
 
     @commands.command(name="daemon", aliases=["d"])
     async def cmd_daemon(self, ctx, *, name: str):
@@ -314,11 +312,11 @@ class Otogi:
             query.update(q)
             projection.update(p)
 
-        async for daemon in self.daemon_collection.find(query, projection=projection):
-            new_daemon = []
-            new_daemon.append(daemon.pop("id"))
-            new_daemon.append(daemon.pop("name"))
-            new_daemon.append("")
+        async for daemon in self.daemon_collection.find(query, projection=projection, sort=[("id", 1)]):
+            new_daemon = {}
+            new_daemon["id"] = daemon.pop("id")
+            new_daemon["name"] = daemon.pop("name")
+            r = ""
             for key, value in daemon.items():
                 while value:
                     if isinstance(value, list):
@@ -332,7 +330,8 @@ class Otogi:
                         value = f"{value[:200]}..."
                 except:
                     pass
-                new_daemon[2] = f"{new_daemon[2]}\n   {key}: {value}"
+                r = f"{r}\n   {key}: {value}"
+            new_daemon["value"] = r
             result.append(new_daemon)
         return result
 
@@ -346,20 +345,12 @@ class Otogi:
         result = await self._search_att(attrs)
         if not result:
             return await ctx.send("No result found.")
-        result.sort(key=lambda x: x[0])
-        embeds = []
-        max_page = (len(result) - 1) // 5 + 1
-        for index in range(0, len(result), 5):
-            desc = "\n\n".join([
-                f"*#{r[0]}* **{r[1]}**{r[2]}"
-                for i, r in enumerate(result[index:index+5])
-            ])
-            embed = discord.Embed(
-                title=f"Search result: {len(result)} results",
-                description=f"{desc}\n\n(Page {index//5+1}/{max_page})",
-                colour=discord.Colour.orange()
-            )
-            embeds.append(embed)
+        embeds = utils.page_format(
+            result, 5, separator="\n\n",
+            title=f"Search result: {len(result)} results",
+            description=lambda i, x: f"`#{x['id']}` **{x['name']}**{x['value']}",
+            colour=discord.Colour.orange()
+        )
         await ctx.embed_page(embeds)
 
     @commands.command(name="trivia", aliases=["t"])
@@ -374,7 +365,7 @@ class Otogi:
     @commands.group()
     async def update(self, ctx):
         if ctx.invoked_subcommand is None:
-            embed = discord.Embed(title=":cd: Update database", colour=discord.Colour.orange())
+            embed = discord.Embed(title="\U0001f4bf Update database", colour=discord.Colour.orange())
             embed.add_field(
                 name="Otogi SSA server only command",
                 value="`>>update create <data>` - Add an entry to database."
@@ -970,7 +961,6 @@ class Otogi:
         sheet = data["values"]
         filter_sheet = [s for s in sheet if s[64]=="Damage"]
         filter_sheet.sort(key=lambda x: -int(x[59].replace(",", "")))
-        print(filter_sheet)
         embeds = []
         max_page = (len(filter_sheet) - 1) // 5 + 1
         for index in range(0, len(filter_sheet), 5):

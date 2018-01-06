@@ -10,6 +10,8 @@ import re
 from pymongo import ReturnDocument
 import json
 from urllib.parse import quote
+from io import BytesIO
+import aiohttp
 
 FANCY_CHARS = {
     "A": "\U0001F1E6", "B": "\U0001F1E7", "C": "\U0001F1E8", "D": "\U0001F1E9", "E": "\U0001F1EA",
@@ -508,25 +510,32 @@ class Misc:
     @commands.command()
     async def poll(self, ctx, *, data):
         stuff = data.strip().splitlines()
+        question, duration = utils.extract_time(stuff[0])
+        duration = duration.total_seconds()
+        if duration < 60:
+            duration = 60
         items = stuff[1:10]
+        if not items:
+            return await ctx.send("You must specify options.")
         int_to_emoji = {}
         emoji_to_int = {}
         for i in range(len(items)):
             e = FANCY_CHARS[str(i+1)]
             int_to_emoji[i+1] = e
             emoji_to_int[e] = i+1
-        embed = discord.Embed(title=f"Polling: {stuff[0]}", description="\n".join((f"{int_to_emoji[i+1]} {s}" for i, s in enumerate(items))), colour=discord.Colour.dark_green())
+        embed = discord.Embed(title=f"Polling: {question}", description="\n".join((f"{int_to_emoji[i+1]} {s}" for i, s in enumerate(items))), colour=discord.Colour.dark_green())
+        embed.set_footer(text=f"Poll will close in {utils.seconds_to_text(duration)}.")
         message = await ctx.send(embed=embed)
         for i in range(len(items)):
-            await message.add_reaction(int_to_emoji[i+1])
-        embed.set_footer(text="Poll will close in 1 minute.")
-        await message.edit(embed=embed)
-        await asyncio.sleep(60)
+            self.bot.loop.create_task(message.add_reaction(int_to_emoji[i+1]))
+        await asyncio.sleep(duration)
         message = await ctx.get_message(message.id)
         result = {}
         for r in message.reactions:
             if r.emoji in emoji_to_int.keys():
                 result[r.emoji] = r.count
+        embed.set_footer(text="Poll ended.")
+        await message.edit(embed=embed)
         await message.clear_reactions()
         max_result = []
         max_number = max(result.values())
@@ -585,6 +594,53 @@ class Misc:
             )
         else:
             await ctx.send("Wha hold your horse with the length.")
+
+    @commands.command()
+    async def saucenao(self, ctx, url=None):
+        if not url:
+            msg = ctx.message
+            if not msg.attachments:
+                await msg.add_reaction("\U0001f504")
+                try:
+                    msg = await self.bot.wait_for("message", check=lambda m:m.author.id==ctx.author.id and m.attachments, timeout=120)
+                except asyncio.TimeoutError:
+                    pass
+                finally:
+                    try:
+                        await ctx.message.clear_reactions()
+                    except:
+                        pass
+            url = msg.attachments[0].url
+        async with ctx.typing():
+            payload = aiohttp.FormData()
+            payload.add_field("file", b"", filename="", content_type="application/octet-stream")
+            payload.add_field("url", url)
+            payload.add_field("frame", "1")
+            payload.add_field("hide", "0")
+            payload.add_field("database", "999")
+            async with self.bot.session.post("https://saucenao.com/search.php", data=payload) as response:
+                bytes_ = await response.read()
+            data = BS(bytes_.decode("utf-8"), "lxml")
+            result = []
+            for tag in data.find_all(lambda x: x.name=="div" and x.get("class")==["result"] and not x.get("id")):
+                content = tag.find("td", class_="resulttablecontent")
+                title = content.find("div", class_="resulttitle").find("strong").text
+                similarity = content.find("div", class_="resultsimilarityinfo").text
+                content_url = content.find("a", class_="linkify")
+                if not content_url:
+                    content_url = content.find("div", class_="resultmiscinfo").find("a")
+                if content_url:
+                    r = {"title": title, "similarity": similarity, "url": content_url["href"], "annotation": content_url.text}
+                else:
+                    r = {"title": title, "similarity": similarity, "url": ""}
+                result.append(r)
+            if result:
+                await ctx.send(embed=discord.Embed(
+                    title="Sauce found?",
+                    description="\n".join((f"[{r['title']} ({r['similarity']})]({r['url']} \"{r.get('annotation', '')}\")" for r in result)))
+                )
+            else:
+                await ctx.send("Cannot find anything.")
 
 #==================================================================================================================================================
 

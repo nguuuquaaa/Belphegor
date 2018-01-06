@@ -7,6 +7,7 @@ import traceback
 from contextlib import redirect_stdout
 import importlib
 from bs4 import BeautifulSoup as BS
+import json
 
 #==================================================================================================================================================
 
@@ -176,6 +177,16 @@ class Admin:
             await ctx.deny()
         else:
             await ctx.confirm()
+
+    @commands.command(hidden=True)
+    @checks.owner_only()
+    async def mongoitem(self, ctx, col, *, query="{}"):
+        data = await self.bot.db[col].find_one(eval(query))
+        if data:
+            data.pop("_id")
+            await ctx.send(file=discord.File(json.dumps(data, indent=4, ensure_ascii=False).encode("utf-8"), filename="data.json"))
+        else:
+            await ctx.send("Nothing found.")
 
 #==================================================================================================================================================
 

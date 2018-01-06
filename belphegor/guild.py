@@ -168,8 +168,11 @@ class Guild:
     @cmd_unset.command(name="nsfwrole")
     async def nonsfwrole(self, ctx, *, name):
         role = discord.utils.find(lambda r: name.lower() in r.name.lower(), ctx.guild.roles)
-        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$unset": {"nsfw_role_id": role.id}})
-        await ctx.confirm()
+        result = await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$unset": {"nsfw_role_id": role.id}})
+        if result.modified_count > 0:
+            await ctx.confirm()
+        else:
+            await ctx.deny()
 
     @commands.command()
     @checks.guild_only()
@@ -214,6 +217,8 @@ class Guild:
         result = await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$unset": {"welcome_channel_id": ""}})
         if result.modified_count > 0:
             await ctx.confirm()
+        else:
+            await ctx.deny()
 
     @cmd_set.command(name="log")
     async def logchannel(self, ctx, channel: discord.TextChannel=None):
@@ -232,13 +237,10 @@ class Guild:
     @cmd_set.command(name="prefix")
     async def cmd_prefix(self, ctx, prefix):
         current = self.bot.guild_prefixes.get(ctx.guild.id, [])
-        if prefix in current:
-            await ctx.deny()
-        else:
-            current.append(prefix)
-            self.bot.guild_prefixes[ctx.guild.id] = current
-            await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$addToSet": {"prefixes": prefix}}, upsert=True)
-            await ctx.confirm()
+        current.append(prefix)
+        self.bot.guild_prefixes[ctx.guild.id] = current
+        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$addToSet": {"prefixes": prefix}}, upsert=True)
+        await ctx.confirm()
 
     @cmd_unset.command(name="prefix")
     async def cmd_noprefix(self, ctx, prefix):

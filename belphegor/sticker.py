@@ -2,6 +2,8 @@ import discord
 from discord.ext import commands
 import re
 from fuzzywuzzy import process
+from . import utils
+from .utils import checks
 
 #==================================================================================================================================================
 
@@ -15,7 +17,10 @@ class Sticker:
         if message.author.bot:
             return
         result = self.sticker_regex.findall(message.content)
-        st = await self.sticker_list.find_one({"name": {"$in": result}})
+        query = {"name": {"$in": result}}
+        if message.guild:
+            query["banned_guilds"] = {"$ne": message.guild.id}
+        st = await self.sticker_list.find_one(query)
         if st:
             embed = discord.Embed()
             embed.set_image(url=st["url"])
@@ -57,11 +62,37 @@ class Sticker:
             await ctx.send(f"Cannot delete sticker.\nEither sticker doesn't exist or you are not the creator of the sticker.")
 
     @sticker.command()
-    async def find(self, ctx, *, name):
+    async def find(self, ctx, name):
         sticker_names = await self.sticker_list.distinct("name", {})
         relevant = process.extract(name, sticker_names, limit=10)
         text = "\n".join((f"{r[0]} ({r[1]}%)" for r in relevant if r[1]>50))
         await ctx.send(f"Result:\n```\n{text}\n```")
+
+    @sticker.command()
+    @checks.guild_only()
+    @checks.manager_only()
+    async def ban(self, ctx, name):
+        await self.sticker_list.update_one({"name": name}, {"$addToSet": {"banned_guilds": ctx.guild.id}})
+        await ctx.confirm()
+
+    @sticker.command()
+    @checks.guild_only()
+    @checks.manager_only()
+    async def unban(self, ctx, name):
+        result = await self.sticker_list.update_one({"name": name}, {"$pull": {"banned_guilds": ctx.guild.id}})
+        if result.modified_count > 0:
+            await ctx.confirm()
+        else:
+            await ctx.deny()
+
+    @sticker.command()
+    async def banlist(self, ctx):
+        banned_stickers = await self.sticker_list.distinct("name", {"banned_guilds": {"$eq": ctx.guild.id}})
+        if banned_stickers:
+            embeds = utils.page_format(banned_stickers, 10, title="Banned stickers for this server", description=lambda i, x: f"`{i+1}.` {x}")
+            await ctx.embed_page(embeds)
+        else:
+            await ctx.send("There's no banned sticker.")
 
 #==================================================================================================================================================
 

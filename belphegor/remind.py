@@ -87,19 +87,12 @@ class Remind:
             self_events.append(ev)
         description = []
         cur_time = utils.now_time()
-        embeds = []
-        max_page = (len(self_events) - 1) // 5 + 1
-        for index in range(0, len(self_events), 5):
-            desc = "\n\n".join((
-                f"`{i+1}.` \"{e['text']}\"\n  In {utils.seconds_to_text((e['event_time']-cur_time).total_seconds())}"
-                for i, e in enumerate(self_events[index:index+5])
-            ))
-            embed = discord.Embed(
-                title=f"All reminders for {ctx.author.display_name}",
-                description=f"{desc}\n\n(Page {index//5+1}/{max_page})"
-            )
-            embed.set_footer(text=utils.format_time(cur_time))
-            embeds.append(embed)
+        embeds = utils.page_format(
+            self_events, 5,
+            title=f"All reminders for {ctx.author.display_name}",
+            description=lambda i, x: f"`{i+1}.` \"{x['text']}\"\n  In {utils.seconds_to_text((x['event_time']-cur_time).total_seconds())}",
+            footer=utils.format_time(cur_time)
+        )
         if embeds:
             await ctx.embed_page(embeds)
         else:
