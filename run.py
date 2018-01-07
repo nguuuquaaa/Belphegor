@@ -8,6 +8,8 @@ import psutil
 import os
 import time
 from motor import motor_asyncio
+import sys
+import traceback
 
 #==================================================================================================================================================
 
@@ -47,9 +49,26 @@ class Belphegor(commands.Bot):
         await self.process_commands(message)
 
     async def on_command_error(self, ctx, error):
-        await super().on_command_error(ctx, error)
-        if not isinstance(error, (commands.CheckFailure, commands.CommandOnCooldown)):
-            await ctx.deny()
+        if self.extra_events.get('on_command_error', None):
+            return
+        if hasattr(ctx.command, 'on_error'):
+            return
+        cog = ctx.cog
+        if cog:
+            attr = f"_{cog.__class__.__name__}__error"
+            if hasattr(cog, attr):
+                return
+
+        print(f"Ignoring exception in command {ctx.command}:", file=sys.stderr)
+        if isinstance(error, (commands.CheckFailure, commands.CommandOnCooldown, commands.BadArgument, commands.MissingRequiredArgument, commands.BotMissingPermissions)):
+            print(f"{type(error).__module__}.{type(error).__name__}: {error}", file=sys.stderr)
+        else:
+            traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
+        if not isinstance(error, (commands.CheckFailure, commands.CommandOnCooldown, commands.CommandNotFound)):
+            try:
+                await ctx.deny()
+            except:
+                pass
 
     async def on_ready(self):
         print('Logged in as')
@@ -70,6 +89,7 @@ class Belphegor(commands.Bot):
     async def logout(self):
         await self.session.close()
         await super().logout()
+        await asyncio.sleep(3)
 
     async def load(self):
         await self.wait_until_ready()
@@ -78,7 +98,15 @@ class Belphegor(commands.Bot):
                 self.guild_prefixes[guild_data["guild_id"]] = guild_data["prefixes"]
         blocked_data = await self.db.belphegor_config.find_one({"category": "blocked"}, projection={"_id": -1, "user_ids": 1})
         self.blocked_users = set(blocked_data["user_ids"])
-        self.add_check(self.block_or_not)
+
+        async def block_or_not(ctx):
+            if ctx.author.id in self.blocked_users:
+                if ctx.author.id != self.owner_id:
+                    await ctx.send("You are already blocked.")
+                    return False
+            return True
+        self.add_check(block_or_not)
+
         for extension in config.all_extensions:
             try:
                 self.load_extension(extension)
@@ -87,13 +115,6 @@ class Belphegor(commands.Bot):
                 print(f"Failed loading {extension}: {e}")
                 return await self.logout()
         print("Done")
-
-    async def block_or_not(self, ctx):
-        if ctx.author.id in self.blocked_users:
-            if ctx.author.id != self.owner_id:
-                await ctx.send("You are already blocked.")
-                return False
-        return True
 
 #==================================================================================================================================================
 

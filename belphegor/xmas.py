@@ -18,9 +18,8 @@ class XmasSpecial:
     async def santahat(self, ctx, direction="r", member: discord.Member=None):
         if not member:
             member = ctx.author
-        d = direction[0].lower()
-        if d in ("l", "r"):
-            direction = d
+        if direction[0].lower() in ("l", "r"):
+            direction = direction[0]
         else:
             return
         async with ctx.typing():

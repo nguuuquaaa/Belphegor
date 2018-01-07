@@ -182,9 +182,9 @@ def page_format(container, *args, **kwargs):
             book_amount = len(container)
             title = kwargs.pop("title", None)
             if callable(title):
-                return [_raw_page_format(items, *args, title=title(i), book=i, book_amount=book_amount, **kwargs) for i, items in enumerate(container)]
+                return [_raw_page_format(items, *args, title=title(n), book=n, book_amount=book_amount, **kwargs) for n, items in enumerate(container)]
             else:
-                return [_raw_page_format(items, *args, title=title, book=i, book_amount=book_amount, **kwargs) for i, items in enumerate(container)]
+                return [_raw_page_format(items, *args, title=title, book=n, book_amount=book_amount, **kwargs) for n, items in enumerate(container)]
         else:
             return _raw_page_format(container, *args, **kwargs)
     else:

@@ -519,13 +519,11 @@ class Otogi:
         else:
             bytes_ = await utils.fetch(self.bot.session, f"http://otogi.wikia.com/api/v1/Search/List?query={quote(name)}&limit=5&batch=1&namespaces=0%2C14")
             search_query = json.loads(bytes_)
-            check = False
             for item in search_query.get("items"):
                 if "/" not in item["title"]:
                     base_name = item["title"]
-                    check = True
                     break
-            if not check:
+            else:
                 return None
 
         url = f"http://otogi.wikia.com/wiki/{quote(base_name)}"

@@ -465,7 +465,7 @@ class Misc:
                     return await ctx.send(embed=result)
                 elif isinstance(result, str):
                     return await ctx.send(result)
-                elif isinstance(result, list):
+                else:
                     pass
         await ctx.embed_page(result)
 
