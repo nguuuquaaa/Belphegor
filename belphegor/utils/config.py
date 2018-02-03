@@ -14,7 +14,7 @@ NO_IMG = "http://i.imgur.com/62di8EB.jpg"
 
 BUFFER_SIZE = 3000
 CHUNK_SIZE = 512 * 1024
-USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36"
+USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36"
 
 all_extensions = [
     "belphegor.admin",

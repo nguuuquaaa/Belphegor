@@ -143,15 +143,16 @@ def get_element(container, predicate, *, default=None):
 
 def _raw_page_format(container, per_page, *, separator="\n", book=None, book_amount=None, title=None, description=None, colour=None, author=None, footer=None, thumbnail_url=None):
     embeds = []
-    page_amount = (len(container) - 1) // per_page + 1
+    item_amount = len(container)
+    page_amount = (item_amount - 1) // per_page + 1
     if per_page:
-        for index in range(0, len(container), per_page):
+        for i in range(0, item_amount, per_page):
             if book is None:
-                desc = separator.join((description(i, item) for i, item in enumerate(container[index:index+per_page])))
-                paging = f"(Page {index//per_page+1}/{page_amount})"
+                desc = separator.join((description(index, container[index]) for index in range(i, min(i+per_page, item_amount))))
+                paging = f"(Page {i//per_page+1}/{page_amount})"
             else:
-                desc = separator.join((description(i, item, book) for i, item in enumerate(container[index:index+per_page])))
-                paging = f"(Page {index//per_page+1}/{page_amount} - Book {book+1}/{book_amount})"
+                desc = separator.join((description(index, container[index], book) for index in range(i, min(i+per_page, item_amount))))
+                paging = f"(Page {i//per_page+1}/{page_amount} - Book {book+1}/{book_amount})"
             embed = discord.Embed(
                 title=title,
                 description=f"{desc}\n\n{paging}",

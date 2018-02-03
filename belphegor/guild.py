@@ -363,12 +363,12 @@ class Guild:
             role = discord.utils.find(lambda r:r.name.lower()==name.lower(), ctx.guild.roles)
             roles = await self.get_selfroles(ctx.guild)
             if role in roles:
-                for r in roles:
-                    if r in ctx.author.roles:
-                        await ctx.author.remove_roles(r)
-                        break
-                await ctx.author.add_roles(role)
-                await ctx.confirm()
+                if role in ctx.author.roles:
+                    await ctx.author.remove_roles(role)
+                    await ctx.send(f"Role {role.name} removed.")
+                else:
+                    await ctx.author.add_roles(role)
+                    await ctx.confirm()
             else:
                 await ctx.deny()
 

@@ -287,7 +287,7 @@ class Music:
 
     def cleanup(self):
         for mp in self.music_players.values():
-            self.bot.loop.create_task(mp.leave_voice())
+            self.bot.create_task_and_count(mp.leave_voice())
 
     async def get_music_player(self, guild_id):
         mp = self.music_players.get(guild_id)

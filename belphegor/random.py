@@ -149,17 +149,19 @@ class Random:
             )
         )
         item = random.choice(items)
-        a = item.find("a")
-        post_url = f"https://chan.sankakucomplex.com{a['href']}"
+        post_url = f"https://chan.sankakucomplex.com{item.find('a')['href']}"
         bytes_ = await utils.fetch(self.bot.session, post_url)
         post_data = BS(bytes_.decode("utf-8"), "lxml")
         img_link = post_data.find("a", id="highres")
         relevant = post_data.find("ul", id="tag-sidebar")
         pic_tags = " ".join([t.find("a").text.strip().replace(" ", r"\_") for t in relevant.find_all(True, recursive=False)])
         tag_str = utils.split_page(pic_tags, 1800)
+        stats = post_data.find("div", id="stats")
+        rating = stats.find("ul").find_all(True, recursive=False)[-1].get_text().strip()
+        rating = rating.partition(" ")[2]
         embed = discord.Embed(
             title="Sankaku Complex",
-            description=f"**Tags:** {tag_str[0]}\n\n**Rating:** {RATING.get(pic.get('rating'), 'N/A')}",
+            description=f"**Tags:** {tag_str[0]}\n\n**Rating:** {rating}",
             url=post_url,
             colour=discord.Colour.red()
         )
@@ -201,7 +203,7 @@ class Random:
     @r.command(aliases=["sc",])
     @checks.nsfw()
     async def sancom(self, ctx, *, tags=""):
-        async with sc_lock:
+        async with self.sc_lock:
             async with ctx.typing():
                 await self.get_image_sancom(ctx, tags)
 

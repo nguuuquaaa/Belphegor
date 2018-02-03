@@ -371,6 +371,7 @@ class Help:
                 "`>>avatar` - Get your or a user avatar\n"
                 "`>>g`, `>>google` - Google search\n"
                 "`>>gtrans`, `>>translate` - Google, but translate\n"
+                "`>>saucenao` - Find the sauce of a pic url/attachment\n"
                 "`>>stats` - Bot info",
             inline=False
          )

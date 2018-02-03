@@ -162,6 +162,8 @@ class Weapon(data_type.BaseObject):
         if self.ssa_slots:
             slots = "".join((str(emojis[s]) for s in self.ssa_slots))
             embed.description = f"{description}\n**Slots:** {slots}"
+        else:
+            embed.description = description
         if self.pic_url:
             embed.set_thumbnail(url=self.pic_url)
         rq = self.requirement
@@ -169,8 +171,7 @@ class Weapon(data_type.BaseObject):
         max_atk = self.atk['max']
         embed.add_field(name="ATK", value="\n".join((f"{emojis[e]}{max_atk[e]}" for e in ATK_EMOJIS)))
         for prp in self.properties:
-            emoji_name = "rear" if prp["type"] == "set_effect" else prp["type"]
-            embed.add_field(name=f"{emojis[emoji_name]}{prp['name']}", value=prp["description"], inline=False)
+            embed.add_field(name=f"{emojis[prp['type']]}{prp['name']}", value=prp["description"], inline=False)
         return embed
 
 #==================================================================================================================================================
@@ -227,7 +228,7 @@ class PSO2:
         for emoji_name in (
             "fire", "ice", "lightning", "wind", "light", "dark",
             "hu", "fi", "ra", "gu", "fo", "te", "br", "bo", "su", "hr",
-            "satk", "ratk", "tatk", "ability", "potential", "set_effect",
+            "satk", "ratk", "tatk", "ability", "potential",
             "pa", "saf", "star_0", "star_1", "star_2", "star_3", "star_4"
         ):
             self.emojis[emoji_name] = discord.utils.find(lambda e:e.name==emoji_name, test_guild.emojis)
@@ -239,6 +240,7 @@ class PSO2:
             "s_class", "s1", "s2", "s3", "s4"
         ):
             self.emojis[emoji_name] = discord.utils.find(lambda e:e.name==emoji_name, test_guild_2.emojis)
+        self.emojis["set_effect"] = self.emojis["rear"]
         self.eq_alert_forever = bot.loop.create_task(self.eq_alert())
         self.last_eq_data = None
 
@@ -366,7 +368,7 @@ class PSO2:
                     desc = value
                 try:
                     if len(desc) > 200:
-                        desc = f"{value[:200]}..."
+                        desc = f"{desc[:200]}..."
                 except:
                     pass
                 if key == "properties":
@@ -479,14 +481,25 @@ class PSO2:
             result = json.loads(bytes_)
             if result:
                 item = result[0]
-                ship_data = [utils.get_element(item["PriceInfo"], lambda i: i["Ship"]==ship+1) for ship in range(10)]
+                ship_field = []
+                price_field = []
+                last_updated_field = []
+                for ship in range(1, 11):
+                    ship_data = utils.get_element(item["PriceInfo"], lambda i: i["Ship"]==ship)
+                    ship_field.append(str(ship))
+                    if ship_data:
+                        price_field.append(f"{ship_data['Price']:n}")
+                        last_updated_field.append(ship_data["LastUpdated"])
+                    else:
+                        price_field.append("N/A")
+                        last_updated_field.append("N/A")
                 embed = discord.Embed(
                     title="Price info",
                     colour=discord.Colour.blue()
                 )
-                embed.add_field(name="Ship", value="\n".join((str(i) for i in range(1, 11))))
-                embed.add_field(name="Price", value="\n".join((f"{s['Price']:n}" for s in ship_data)))
-                embed.add_field(name="Last updated", value="\n".join((s['LastUpdated'] for s in ship_data)))
+                embed.add_field(name="Ship", value="\n".join(ship_field))
+                embed.add_field(name="Price", value="\n".join(price_field))
+                embed.add_field(name="Last updated", value="\n".join(last_updated_field))
                 await ctx.send(embed=embed)
             else:
                 await ctx.send("Can't find any item with that name.")

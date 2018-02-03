@@ -516,6 +516,8 @@ class Otogi:
         elif base_name in ("Tsukuyomi", "Tsukiyomi"):
             base_name = "Tsukuyomi"
             form = "Original Form"
+        if base_name == "Date Masamune":
+            form = "Dragon Form"
         else:
             bytes_ = await utils.fetch(self.bot.session, f"http://otogi.wikia.com/api/v1/Search/List?query={quote(name)}&limit=5&batch=1&namespaces=0%2C14")
             search_query = json.loads(bytes_)
