@@ -27,7 +27,7 @@ class Tag:
                 await ctx.send(f"Cannot find tag {name} in database.")
             else:
                 if ctx.guild:
-                    if ctx.guild.id in tag["banned_guilds"]:
+                    if ctx.guild.id in tag.get("banned_guilds", []):
                         return await ctx.send("This tag is banned in this server.")
                 await ctx.send(tag["content"])
 

@@ -26,6 +26,7 @@ class Belphegor(commands.Bot):
         self.loop.create_task(self.load())
         self.mongo_client = motor_asyncio.AsyncIOMotorClient()
         self.db = self.mongo_client.belphydb
+        self.counter = 0
 
     async def get_prefix(self, message):
         prefixes = {f"<@{self.user.id}> ", f"<@!{self.user.id}> "}
@@ -86,10 +87,19 @@ class Belphegor(commands.Bot):
             pass
         super().remove_cog(name)
 
+    def create_task_and_count(self, coro):
+        async def do_stuff():
+            self.counter += 1
+            await coro
+            self.counter -= 1
+        self.loop.create_task(do_stuff())
+
     async def logout(self):
         await self.session.close()
         await super().logout()
-        await asyncio.sleep(3)
+        print("Logging out...")
+        while self.counter > 0:
+            await asyncio.sleep(0.1)
 
     async def load(self):
         await self.wait_until_ready()

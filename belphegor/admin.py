@@ -8,6 +8,10 @@ from contextlib import redirect_stdout
 import importlib
 from bs4 import BeautifulSoup as BS
 import json
+import os
+from shutil import copyfile
+from distutils.dir_util import copy_tree
+import subprocess
 
 #==================================================================================================================================================
 
@@ -187,6 +191,29 @@ class Admin:
             await ctx.send(file=discord.File(json.dumps(data, indent=4, ensure_ascii=False).encode("utf-8"), filename="data.json"))
         else:
             await ctx.send("Nothing found.")
+
+    @commands.command(hidden=True)
+    @checks.owner_only()
+    async def fuckgit(self, ctx):
+        current_dir = os.getcwd().replace("\\", "/")
+        with open("git_dir.txt", encoding="utf-8") as f:
+            data = filter(None, f.read().splitlines())
+        r = current_dir.rpartition("/")
+        target_dir = f"{r[0]}/Belphegor.git"
+        for item in data:
+            c = f"{current_dir}{item}"
+            t = f"{target_dir}{item}"
+            if "." in item:
+                copyfile(c, t)
+            else:
+                copy_tree(c, t)
+            print(f"Done copying {item}")
+        proc = subprocess.Popen(["cd", "/d", "%~dp0"], cwd=r[0])
+        proc.stdin.write("cd Belphegor.git")
+        proc.stdin.flush()
+        proc.stdin.write("git add .")
+        proc.stdin.flush()
+        await ctx.confirm()
 
 #==================================================================================================================================================
 

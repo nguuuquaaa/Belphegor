@@ -116,32 +116,7 @@ def discord_escape(any_string):
 def safe_url(any_url):
     return quote(any_url, safe=r":/&$+,;=@#~%")
 
-def to_int(any_obj, *, default=None):
-    try:
-        return int(any_obj)
-    except:
-        return default
-
-def get_element(container, predicate, *, default=None):
-    result = default
-    if isinstance(predicate, int):
-        try:
-            result = container[predicate]
-        except IndexError:
-            pass
-    elif callable(predicate):
-        for item in container:
-            try:
-                if predicate(item):
-                    result = item
-                    break
-            except:
-                pass
-    else:
-        raise TypeError
-    return result
-
-def _raw_page_format(container, per_page, *, separator="\n", book=None, book_amount=None, title=None, description=None, colour=None, author=None, footer=None, thumbnail_url=None):
+def _raw_page_format(container, per_page, *, separator="\n", book=None, book_amount=None, title=None, pretext=None, description=None, colour=None, author=None, author_icon=None, footer=None, thumbnail_url=None):
     embeds = []
     item_amount = len(container)
     page_amount = (item_amount - 1) // per_page + 1
@@ -153,13 +128,21 @@ def _raw_page_format(container, per_page, *, separator="\n", book=None, book_amo
             else:
                 desc = separator.join((description(index, container[index], book) for index in range(i, min(i+per_page, item_amount))))
                 paging = f"(Page {i//per_page+1}/{page_amount} - Book {book+1}/{book_amount})"
+            if pretext:
+                if callable(pretext):
+                    t = pretext(book)
+                else:
+                    t = pretext
+                desc = f"{t}\n{desc}\n\n{paging}"
+            else:
+                desc = f"{desc}\n\n{paging}"
             embed = discord.Embed(
                 title=title,
-                description=f"{desc}\n\n{paging}",
+                description=desc,
                 colour=colour or discord.Embed.Empty
             )
             if author:
-                embed.set_author(name=author)
+                embed.set_author(name=author, icon_url=author_icon or discord.Embed.Empty)
             if thumbnail_url:
                 embed.set_thumbnail(url=thumbnail_url)
             if footer:
@@ -176,10 +159,10 @@ def _raw_page_format(container, per_page, *, separator="\n", book=None, book_amo
         embeds.append(embed)
     return embeds
 
-def page_format(container, *args, **kwargs):
+def page_format(container, *args, book=False, **kwargs):
     embeds = []
     if container:
-        if isinstance(container[0], (list, tuple)):
+        if book:
             book_amount = len(container)
             title = kwargs.pop("title", None)
             if callable(title):

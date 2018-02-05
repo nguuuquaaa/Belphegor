@@ -9,7 +9,7 @@ import traceback
 from bs4 import BeautifulSoup as BS
 from apiclient.discovery import build
 import asyncio
-from pymongo import ReturnDocument, UpdateOne
+from pymongo import ReturnDocument, UpdateOne, ASCENDING
 import json
 
 #==================================================================================================================================================
@@ -698,22 +698,18 @@ class Otogi:
 
     @lunchsummon.command(name="pool")
     async def show_summon_pool(self, ctx):
-        summon_pool = {p["rarity"]: p["pool"] async for p in self.summon_pool.find({})}
-        embeds = []
-        for rarity, pool in summon_pool.items():
-            max_page = (len(pool)-1)//10+1
-            embed_pool = []
-            daemons = [d async for d in self.daemon_collection.find({"id": {"$in": pool}}, projection={"_id": False, "id": True, "name": True})]
-            daemons.sort(key=lambda x: x["id"])
-            for index in range(0, len(daemons), 10):
-                desc = "\n".join((daemon['name'] for daemon in daemons[index:index+10]))
-                embed = discord.Embed(
-                    title="Current summon pool:",
-                    description=f"{str(self.emojis['star'])*rarity}\n{desc}\n\n(Page {index//10+1}/{max_page} - Book {rarity-2}/3)",
-                    colour=discord.Colour.orange()
-                )
-                embed_pool.append(embed)
-            embeds.append(embed_pool)
+        summon_pool = [p["pool"] async for p in self.summon_pool.find({}, sort=[("rarity", ASCENDING)])]
+        daemons = []
+        for pool in summon_pool:
+            dp = [d async for d in self.daemon_collection.find({"id": {"$in": pool}}, projection={"_id": False, "id": True, "name": True})]
+            daemons.append(dp)
+        embeds = utils.page_format(
+            daemons, 10, book=True,
+            title="Current summon pool:",
+            pretext=lambda n: str(self.emojis["star"])*(n+3),
+            description=lambda i, x, n: x["name"],
+            colour=discord.Colour.orange()
+        )
         await ctx.embed_page(embeds)
 
     @commands.command()
@@ -721,8 +717,7 @@ class Otogi:
         target = member or ctx.author
         player = await self.get_player(target.id)
         lbs = {d["id"]: d["lb"] for d in player["daemons"]}
-        embeds = []
-        async for pool in self.daemon_collection.aggregate([
+        cur = self.daemon_collection.aggregate([
             {
                 "$match": {
                     "id": {
@@ -744,25 +739,18 @@ class Otogi:
                     }
                 }
             }
-        ]):
-            daemons = pool["daemons"]
-            max_page = (len(daemons)-1)//10+1
-            embed_pool = []
-            for index in range(0, len(daemons), 10):
-                desc = "\n".join((f"{daemon['name']} lb{lbs[daemon['id']]}" for daemon in daemons[index:index+10]))
-                embed = discord.Embed(
-                    title=f"Mochi: {player['mochi']}{self.emojis['mochi']}",
-                    description=f"{str(self.emojis['star'])*pool['_id']}\n{desc}\n\n(Page {index//10+1}/{max_page}",
-                    colour=discord.Colour.orange()
-                )
-                embed.set_author(name=f"{target.display_name}'s box", icon_url=target.avatar_url)
-                embed_pool.append(embed)
-            embeds.append(embed_pool)
+        ])
+        daemons = [pool["daemons"] async for pool in cur]
+        embeds = utils.page_format(
+            daemons, 10, book=True,
+            author=f"{target.display_name}'s box:",
+            author_icon=target.avatar_url,
+            title=f"Mochi: {player['mochi']}{self.emojis['mochi']}",
+            pretext=lambda n: str(self.emojis["star"])*(n+3),
+            description=lambda i, x, n: f"{x['name']} lb{lbs[x['id']]}",
+            colour=discord.Colour.orange()
+        )
         if embeds:
-            max_vertical = len(embeds)
-            for i, embed_pool in enumerate(embeds):
-                for embed in embed_pool:
-                    embed.description = f"{embed.description} - Book {i+1}/{max_vertical})"
             await ctx.embed_page(embeds)
         else:
             embed = discord.Embed(f"Mochi: {player['mochi']}{self.emojis['mochi']}", description="Empty", colour=discord.Colour.orange())
@@ -959,97 +947,90 @@ class Otogi:
     async def nukers(self, ctx):
         data = await self.stat_sheet.find_one({})
         sheet = data["values"]
-        filter_sheet = [s for s in sheet if s[64]=="Damage"]
-        filter_sheet.sort(key=lambda x: -int(x[59].replace(",", "")))
-        embeds = []
-        max_page = (len(filter_sheet) - 1) // 5 + 1
-        for index in range(0, len(filter_sheet), 5):
-            desc = "\n\n".join((
-                f"{index+i+1}. **{field[1]}**\n   MLB Effective Skill DMG: {field[59]}\n   MLB Auto ATK DMG: {field[57]}"
-                for i, field in enumerate(filter_sheet[index:index+5])
-            ))
-            embed = discord.Embed(
-                title="Nuker rank",
-                description = f"{desc}\n\n(Page {index//5+1}/{max_page})",
-                colour=discord.Colour.orange()
-            )
-            embeds.append(embed)
+
+        headers = sheet[0]
+        name_index = headers.index("Name")
+        skill_type_index = headers.index("Skill Type")
+        skill_dmg_index = headers.index("MLB Effective Skill DMG With Bonds")
+        auto_dmg_index = headers.index("MLB True Auto ATK DMG")
+
+        filter_sheet = [s for s in sheet if s[skill_type_index]=="Damage"]
+        filter_sheet.sort(key=lambda x: -int(x[skill_dmg_index].replace(",", "")))
+        embeds = utils.page_format(
+            filter_sheet, 5, separator="\n\n",
+            title="Nuker rank",
+            description=lambda i, x: f"{i+1}. **{x[name_index]}**\n   MLB Effective Skill DMG: {x[skill_dmg_index]}\n   MLB Auto ATK DMG: {x[auto_dmg_index]}",
+            colour=discord.Colour.orange()
+        )
         await ctx.embed_page(embeds)
 
     @commands.command(aliases=["auto"])
     async def autoattack(self, ctx):
         data = await self.stat_sheet.find_one({})
         sheet = data["values"][1:]
-        filter_sheet = [s for s in sheet if s[19]!="Healer"]
-        filter_sheet.sort(key=lambda x: -int(x[57].replace(",", "")))
-        embeds = []
-        max_page = (len(filter_sheet) - 1) // 5 + 1
-        for index in range(0, len(filter_sheet), 5):
-            desc = "\n\n".join((
-                f"{index+i+1}. **{field[1]}**\n   Class: {field[19]}\n   MLB Auto ATK DMG: {field[57]}"
-                for i, field in enumerate(filter_sheet[index:index+5])
-            ))
-            embed = discord.Embed(
-                title="Auto attack rank",
-                description = f"{desc}\n\n(Page {index//5+1}/{max_page})",
-                colour=discord.Colour.orange()
-            )
-            embeds.append(embed)
+
+        headers = data["values"][0]
+        name_index = headers.index("Name")
+        class_index = headers.index("Class")
+        auto_dmg_index = headers.index("MLB True Auto ATK DMG")
+
+        filter_sheet = [s for s in sheet if s[class_index]!="Healer"]
+        filter_sheet.sort(key=lambda x: -int(x[auto_dmg_index].replace(",", "")))
+        embeds = utils.page_format(
+            filter_sheet, 5, separator="\n\n",
+            title="Auto attack rank",
+            description=lambda i, x: f"{i+1}. **{x[name_index]}**\n   Class: {x[class_index]}\n   MLB Auto ATK DMG: {x[auto_dmg_index]}",
+            colour=discord.Colour.orange()
+        )
         await ctx.embed_page(embeds)
-
-    def list_get(self, iterable, index, default=None):
-        try:
-            return iterable[index]
-        except:
-            return default
-
-    def int_get(self, any_obj):
-        try:
-            return int(any_obj)
-        except:
-            return 0
 
     @commands.command(aliases=["debuffer"])
     async def debuffers(self, ctx):
         data = await self.stat_sheet.find_one({})
         sheet = data["values"]
-        filter_sheet = [s for s in sheet if self.list_get(s, 74)=="Increases DMG Rec'd" or s[64]=="Debuff"]
+
+        headers = sheet[0]
+        name_index = headers.index("Name")
+        skill_type_index = headers.index("Skill Type")
+        skill_effect_index = headers.index("Skill Effect")
+        skill_dmg_index = headers.index("MLB Effective Skill DMG With Bonds")
+        debuff_value_index = len(headers) - 1 - headers[::-1].index("MLB Value")
+
+        filter_sheet = [s for s in sheet if utils.get_element(s, skill_effect_index)=="Increases DMG Rec'd" or s[skill_type_index]=="Debuff"]
         filter_sheet.sort(key=lambda x: x[0])
-        embeds = []
-        max_page = (len(filter_sheet) - 1) // 5 + 1
-        for index in range(0, len(filter_sheet), 5):
-            desc = "\n\n".join((
-                f"{index+i+1}. **{field[1]}**\n   MLB Debuff Value: {self.list_get(field, 76) or 'N/A'}\n"
-                f"   MLB Effective Skill DMG: {field[59]}\n   Skill Effect: {self.list_get(field, 74) or 'N/A'}"
-                for i, field in enumerate(filter_sheet[index:index+5])
-            ))
-            embed = discord.Embed(
-                title="Debuffer list",
-                description = f"{desc}\n\n(Page {index//5+1}/{max_page})",
-                colour=discord.Colour.orange()
-            )
-            embeds.append(embed)
+        embeds = utils.page_format(
+            filter_sheet, 5, separator="\n\n",
+            title="Debuffer list",
+            description=
+                lambda i, x:
+                    f"{i+1}. **{x[name_index]}**\n   MLB Debuff Value: {utils.get_element(x, debuff_value_index) or 'N/A'}\n"
+                    f"   MLB Effective Skill DMG: {x[skill_dmg_index]}\n   Skill Effect: {utils.get_element(x, skill_effect_index) or 'N/A'}",
+            colour=discord.Colour.orange()
+        )
         await ctx.embed_page(embeds)
 
     @commands.command(aliases=["buffer"])
     async def buffers(self, ctx):
         data = await self.stat_sheet.find_one({})
         sheet = data["values"]
-        filter_sheet = [s for s in sheet if s[64]=="Buff"]
+
+        headers = sheet[0]
+        name_index = headers.index("Name")
+        skill_type_index = headers.index("Skill Type")
+        skill_effect_index = headers.index("Skill Effect")
+        buff_value_index = len(headers) - 1 - headers[::-1].index("MLB Value")
+
+        filter_sheet = [s for s in sheet if s[skill_type_index]=="Buff"]
         filter_sheet.sort(key=lambda x: x[0])
-        embeds = []
-        max_page = (len(filter_sheet) - 1) // 5 + 1
-        for index in range(0, len(filter_sheet), 5):
-            desc = "\n\n".join((
-                f"{index+i+1}. **{field[1]}**\n   MLB Buff Value: {self.list_get(field, 76) or 'N/A'}\n   Skill Effect: {self.list_get(field, 74) or 'N/A'}"
-                for i, field in enumerate(filter_sheet[index:index+5])
-            ))
-            embed = discord.Embed(
-                title="Buffer list",
-                description = f"{desc}\n\n(Page {index//5+1}/{max_page})",
-                colour=discord.Colour.orange()
-            )
-            embeds.append(embed)
+        embeds = utils.page_format(
+            filter_sheet, 5, separator="\n\n",
+            title="Buffer list",
+            description=
+                lambda i, x:
+                    f"{i+1}. **{x[name_index]}**\n   MLB Buff Value: {utils.get_element(x, buff_value_index) or 'N/A'}\n"
+                    f"   Skill Effect: {utils.get_element(x, skill_effect_index) or 'N/A'}",
+            colour=discord.Colour.orange()
+        )
         await ctx.embed_page(embeds)
 
     @commands.command()
@@ -1078,19 +1059,12 @@ class Otogi:
             }
         ])
         daemons = [d async for d in cur]
-        embeds = []
-        max_page = (len(daemons) - 1) // 5 + 1
-        for index in range(0, len(daemons), 5):
-            desc = "\n\n".join((
-                f"{index+i+1}. **{daemon['name']}**\n   Max ATK: {daemon['atk']}\n   Max HP: {daemon['hp']}\n   GCQ STR: {daemon['total_stat']}"
-                for i, daemon in enumerate(daemons[index:index+5])
-            ))
-            embed = discord.Embed(
-                title="GCQ STR rank",
-                description = f"{desc}\n\n(Page {index//5+1}/{max_page})",
-                colour=discord.Colour.orange()
-            )
-            embeds.append(embed)
+        embeds = utils.page_format(
+            daemons, 5, separator="\n\n",
+            title="GCQ STR rank",
+            description=lambda i, x: f"{i+1}. **{x['name']}**\n   Max ATK: {x['atk']}\n   Max HP: {x['hp']}\n   GCQ STR: {x['total_stat']}",
+            colour=discord.Colour.orange()
+        )
         await ctx.embed_page(embeds)
 
     @commands.command()
@@ -1104,6 +1078,15 @@ class Otogi:
         with open(f"data/otogi/jewel_summon.json", "w", encoding="utf-8") as file:
             json.dump(sum, file, indent=4, ensure_ascii=False)
         await ctx.confirm()
+
+    @commands.command()
+    @checks.owner_only()
+    async def lastindex(self, ctx):
+        cur_index = 1
+        all_values = await self.daemon_collection.distinct("id", {})
+        while cur_index in all_values:
+            cur_index += 1
+        await ctx.send(cur_index-1)
 
     @commands.group()
     async def exchange(self, ctx):
