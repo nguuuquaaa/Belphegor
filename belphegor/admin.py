@@ -223,7 +223,6 @@ class Admin:
             proc.stdin.write("exit\n".encode("utf-8"))
             proc.stdin.flush()
             print(proc.stdout.readline().decode("utf-8"))
-            print("Done")
 
         try:
             await self.bot.loop.run_in_executor(None, git_push)
@@ -231,7 +230,7 @@ class Admin:
             print(traceback.format_exc())
             await ctx.deny()
         else:
-            return_code = await self.bot.loop.run_in_executor(None, proc.wait(60))
+            return_code = await self.bot.loop.run_in_executor(None, proc.wait, 60)
             if return_code is None:
                 proc.terminate()
                 await ctx.deny()
