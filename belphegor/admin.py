@@ -208,20 +208,24 @@ class Admin:
             else:
                 copy_tree(c, t)
             print(f"Done copying {item}")
-        proc = subprocess.Popen("cmd.exe", cwd=target_dir, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         def git_push():
+            proc = subprocess.Popen("cmd.exe", cwd=target_dir, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
             proc.stdin.write("git add .\n".encode("utf-8"))
             proc.stdin.flush()
-            print(proc.stdout.readline())
+            t = proc.stdout.readline()
+            print(t.decode("utf-8"))
             proc.stdin.write(f"git commit -am \"{cmt}\"\n".encode("utf-8"))
             proc.stdin.flush()
-            print(proc.stdout.readline())
+            t = proc.stdout.readline()
+            print(t.decode("utf-8"))
             proc.stdin.write("git push belphegor master\n".encode("utf-8"))
             proc.stdin.flush()
-            print(proc.stdout.readline())
+            t = proc.stdout.readline()
+            print(t.decode("utf-8"))
             proc.stdin.write("exit\n".encode("utf-8"))
             proc.stdin.flush()
-            print(proc.stdout.readline())
+            t = proc.stdout.readline()
+            print(t.decode("utf-8"))
             print("Done")
         try:
             await self.bot.loop.run_in_executor(None, git_push)
@@ -230,9 +234,6 @@ class Admin:
             await ctx.deny()
         else:
             await ctx.confirm()
-        finally:
-            if not proc.poll():
-                proc.terminate()
 
 #==================================================================================================================================================
 
