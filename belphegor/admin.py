@@ -200,40 +200,43 @@ class Admin:
             data = filter(None, f.read().splitlines())
         r = current_dir.rpartition("/")
         target_dir = f"{r[0]}/Belphegor.git"
-        for item in data:
-            c = f"{current_dir}{item}"
-            t = f"{target_dir}{item}"
-            if "." in item:
-                copyfile(c, t)
-            else:
-                copy_tree(c, t)
-            print(f"Done copying {item}")
+        proc = subprocess.Popen("cmd.exe", cwd=target_dir, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+
         def git_push():
-            proc = subprocess.Popen("cmd.exe", cwd=target_dir, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+            for item in data:
+                c = f"{current_dir}{item}"
+                t = f"{target_dir}{item}"
+                if "." in item:
+                    copyfile(c, t)
+                else:
+                    copy_tree(c, t)
+                print(f"Done copying {item}")
             proc.stdin.write("git add .\n".encode("utf-8"))
             proc.stdin.flush()
-            t = proc.stdout.readline()
-            print(t.decode("utf-8"))
+            print(proc.stdout.readline().decode("utf-8"))
             proc.stdin.write(f"git commit -am \"{cmt}\"\n".encode("utf-8"))
             proc.stdin.flush()
-            t = proc.stdout.readline()
-            print(t.decode("utf-8"))
+            print(proc.stdout.readline().decode("utf-8"))
             proc.stdin.write("git push belphegor master\n".encode("utf-8"))
             proc.stdin.flush()
-            t = proc.stdout.readline()
-            print(t.decode("utf-8"))
+            print(proc.stdout.readline().decode("utf-8"))
             proc.stdin.write("exit\n".encode("utf-8"))
             proc.stdin.flush()
-            t = proc.stdout.readline()
-            print(t.decode("utf-8"))
+            print(proc.stdout.readline().decode("utf-8"))
             print("Done")
+
         try:
             await self.bot.loop.run_in_executor(None, git_push)
         except:
             print(traceback.format_exc())
             await ctx.deny()
         else:
-            await ctx.confirm()
+            return_code = await self.bot.loop.run_in_executor(None, proc.wait(60))
+            if return_code is None:
+                proc.terminate()
+                await ctx.deny()
+            else:
+                await ctx.confirm()
 
 #==================================================================================================================================================
 
