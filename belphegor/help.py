@@ -260,7 +260,7 @@ class Help:
             colour=discord.Colour.teal()
         )
         embed.add_field(
-            name="Manage server permission only",
+            name="Manager only",
             value=
                 "`>>set`\n"
                 "`>>unset`\n"
@@ -406,7 +406,7 @@ class Help:
         await ctx.send(embed=embed)
 
     @commands.command()
-    async def detail(self, ctx, *args):
+    async def detail(self, ctx, *, name):
         '''
             `>>detail <command name>`
             Get the detail command usage.
@@ -416,23 +416,17 @@ class Help:
             *Example:*
             `>>detail help pso2`
         '''
-        if args:
-            command = self.bot
-            try:
-                for cmd_name in args:
-                    command = command.get_command(cmd_name)
-            except:
-                pass
-            else:
-                if command:
-                    if not command.hidden:
-                        embed = discord.Embed(colour=discord.Colour.teal())
-                        embed.add_field(name="Parent command", value=command.full_parent_name or "None")
-                        embed.add_field(name="Base command", value=f"`{command.name}`")
-                        embed.add_field(name="Aliases", value=f"`{', '.join(command.aliases)}`" if command.aliases else "None")
-                        embed.add_field(name="Usage", value=command.help or "Not yet documented.", inline=False)
-                        return await ctx.send(embed=embed)
-            await ctx.send(f"Command `{' '.join(args)}` doesn't exist.")
+        if name:
+            command = self.bot.get_command(name)
+            if command:
+                if not command.hidden:
+                    embed = discord.Embed(colour=discord.Colour.teal())
+                    embed.add_field(name="Parent command", value=command.full_parent_name or "None")
+                    embed.add_field(name="Base command", value=f"`{command.name}`")
+                    embed.add_field(name="Aliases", value=f"`{', '.join(command.aliases)}`" if command.aliases else "None")
+                    embed.add_field(name="Usage", value=command.help or "Not yet documented.", inline=False)
+                    return await ctx.send(embed=embed)
+            await ctx.send(f"Command `{name}` doesn't exist.")
         else:
             cmd = self.bot.get_command("detail")
             await ctx.invoke(cmd, "detail")

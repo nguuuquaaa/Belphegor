@@ -29,7 +29,7 @@ class Sticker:
     @commands.group()
     async def sticker(self, ctx):
         if ctx.invoked_subcommand is None:
-            cmd = self.bot.get_command("help").get_command("sticker")
+            cmd = self.bot.get_command("help sticker")
             await ctx.invoke(cmd)
 
     @sticker.command()

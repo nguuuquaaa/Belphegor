@@ -12,6 +12,9 @@ import json
 from urllib.parse import quote
 from io import BytesIO
 import aiohttp
+from PIL import Image
+
+#==================================================================================================================================================
 
 FANCY_CHARS = {
     "A": "\U0001F1E6", "B": "\U0001F1E7", "C": "\U0001F1E8", "D": "\U0001F1E9", "E": "\U0001F1EA",
@@ -641,6 +644,32 @@ class Misc:
                 )
             else:
                 await ctx.send("Cannot find anything.")
+
+    @commands.command(aliases=["colour"])
+    async def color(self, ctx, *args):
+        if len(args) == 3:
+            try:
+                rgb = (int(args[0]), int(args[1]), int(args[2]))
+            except:
+                return await ctx.send("Oi, that's not RGB format at all.")
+        elif len(args) == 1:
+            i = args[0]
+            if i.startswith("0x"):
+                i = i[2:]
+            elif i.startswith("#"):
+                i = i[1:]
+            try:
+                c = discord.Colour(int(i, 16))
+            except:
+                return await ctx.send("Oi, that's not hex format at all.")
+            else:
+                rgb = c.to_rgb()
+        else:
+            return await ctx.send("Do you even try?")
+        pic = Image.new("RGB", (50, 50), rgb)
+        bytes_ = BytesIO()
+        pic.save(bytes_, "png")
+        await ctx.send(file=discord.File(bytes_.getvalue(), filename="colour.png"))
 
 #==================================================================================================================================================
 

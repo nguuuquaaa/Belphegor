@@ -5,6 +5,11 @@ from .utils import checks, config
 import asyncio
 import unicodedata
 from io import BytesIO
+import random
+
+#==================================================================================================================================================
+
+DEFAULT_WELCOME = "*\"Eeeeehhhhhh, go away {mention}, I don't want any more work...\"*"
 
 #==================================================================================================================================================
 
@@ -16,6 +21,7 @@ class Guild:
     def __init__(self, bot):
         self.bot = bot
         self.guild_data = bot.db.guild_data
+        self.command_data = bot.db.command_data
         self.banned_emojis = set()
 
     @commands.group(name="set")
@@ -69,7 +75,7 @@ class Guild:
     async def hackban(self, ctx, user_id: int, *, reason=None):
         user = await self.bot.get_user_info(user_id)
         await ctx.guild.ban(user, reason=reason)
-        await ctx.send("{user.name} has been banned.")
+        await ctx.send("{user.name} has been hackbanned.")
 
     @commands.command()
     @checks.guild_only()
@@ -133,11 +139,8 @@ class Guild:
     @cmd_unset.command(name="nsfwrole")
     async def nonsfwrole(self, ctx, *, name):
         role = discord.utils.find(lambda r: name.lower() in r.name.lower(), ctx.guild.roles)
-        result = await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$unset": {"nsfw_role_id": role.id}})
-        if result.modified_count > 0:
-            await ctx.confirm()
-        else:
-            await ctx.deny()
+        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$unset": {"nsfw_role_id": role.id}})
+        await ctx.confirm()
 
     @commands.command()
     @checks.guild_only()
@@ -171,19 +174,46 @@ class Guild:
                     return await ctx.confirm()
         await ctx.deny()
 
-    @cmd_set.command()
-    async def welcome(self, ctx, channel: discord.TextChannel=None):
+    @cmd_set.command(name="welcome")
+    async def set_welcome(self, ctx, channel: discord.TextChannel=None):
         target = channel or ctx.channel
         await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$set": {"welcome_channel_id": target.id}}, upsert=True)
         await ctx.confirm()
 
     @cmd_unset.command(name="welcome")
-    async def nowelcome(self, ctx):
-        result = await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$unset": {"welcome_channel_id": ""}})
-        if result.modified_count > 0:
-            await ctx.confirm()
+    async def unset_welcome(self, ctx):
+        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$unset": {"welcome_channel_id": ""}})
+        await ctx.confirm()
+
+    @cmd_set.command(name="welcomemessage")
+    async def set_welcome_message(self, ctx, *, text):
+        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$set": {"welcome_message": text}}, upsert=True)
+        try:
+            content = f"Welcome message will be displayed as:\n{text}".format(name=ctx.author.display_name, mention=ctx.author.mention, server=ctx.guild.name)
+        except:
+            await ctx.send("Format error. You sure read the instruction?")
         else:
-            await ctx.deny()
+            await ctx.send(content)
+
+    @cmd_unset.command(name="welcomemessage")
+    async def unset_welcome_message(self, ctx):
+        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$unset": {"welcome_message": None}})
+        await ctx.send(f"Welcome message will be displayed as:\n{DEFAULT_WELCOME}".format(name=ctx.author.display_name, mention=ctx.author.mention, server=ctx.guild.name))
+
+    @cmd_set.command(name="welcomerule")
+    async def set_welcome_rule(self, ctx, *, text):
+        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$set": {"welcome_rule": text}}, upsert=True)
+        try:
+            content = f"Newcomer will be messaged:\n{text}".format(server=ctx.guild.name)
+        except:
+            await ctx.send("Format error. You sure read the instruction?")
+        else:
+            await ctx.send(content)
+
+    @cmd_unset.command(name="welcomerule")
+    async def unset_welcome_rule(self, ctx):
+        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$unset": {"welcome_rule": None}})
+        await ctx.confirm()
 
     @cmd_set.command(name="log")
     async def logchannel(self, ctx, channel: discord.TextChannel=None):
@@ -193,11 +223,8 @@ class Guild:
 
     @cmd_unset.command(name="log")
     async def nolog(self, ctx):
-        result = await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$unset": {"log_channel_id": ""}})
-        if result.modified_count > 0:
-            await ctx.confirm()
-        else:
-            await ctx.deny()
+        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$unset": {"log_channel_id": ""}})
+        await ctx.confirm()
 
     @cmd_set.command(name="prefix")
     async def cmd_prefix(self, ctx, prefix):
@@ -236,21 +263,18 @@ class Guild:
         if member.bot:
             return
         guild = member.guild
-        guild_data = await self.guild_data.find_one({"guild_id": guild.id})
+        guild_data = await self.guild_data.find_one(
+            {"guild_id": guild.id},
+            projection={"welcome_channel_id": True, "welcome_message": True, "welcome_rule": True, "log_channel_id": True})
         if guild_data:
             welcome_channel = guild.get_channel(guild_data.get("welcome_channel_id"))
             if welcome_channel:
-                await welcome_channel.send(f"*\"Eeeeehhhhhh, go away {member.mention}, I don't want any more work...\"*")
-                if guild.id == config.OTOGI_GUILD_ID:
-                    await asyncio.sleep(5)
-                    otogi_guild = self.bot.get_guild(config.OTOGI_GUILD_ID)
-                    ch = discord.utils.find(lambda c: c.name=="server-rules", otogi_guild.channels)
-                    await member.send(
-                        f"Welcome to {otogi_guild.name}.\n"
-                        "Please read the rules in {ch.mention} before doing anything.\n"
-                        "You can use `>>help` to get a list of available commands.\n\n"
-                        "Have a nice day!"
-                    )
+                welcome_message = guild_data.get("welcome_message", DEFAULT_WELCOME)
+                await welcome_channel.send(welcome_message.format(name=member.display_name, mention=member.mention, server=member.guild.name, guild=member.guild.name))
+            welcome_rule = guild_data.get("welcome_rule")
+            if welcome_rule:
+                await asyncio.sleep(5)
+                await member.send(welcome_rule.format(server=member.guild.name))
             log_channel = guild.get_channel(guild_data.get("log_channel_id"))
             if log_channel:
                 embed = discord.Embed(colour=discord.Colour.dark_orange())
@@ -425,14 +449,15 @@ class Guild:
             roles = await self.get_selfroles(ctx.guild)
             if not roles:
                 return await ctx.send("Server has no selfrole.")
-            check_roles = [
-                {
-                    "name": role.name,
-                    "count": len(role.members),
-                    "color": role.colour.to_rgb()
-                } for role in roles
-            ]
-            bytes_ = await utils.pie_chart(check_roles, unit="members")
+            colors = {(0, 0, 0)}
+            check_roles = []
+            for role in roles:
+                rgb = role.colour.to_rgb()
+                while rgb in colors:
+                    rgb = (random.randrange(256), random.randrange(256), random.randrange(256))
+                colors.add(rgb)
+                check_roles.append({"name": role.name, "count": len(role.members), "color": rgb})
+            bytes_ = await utils.pie_chart(check_roles)
             if bytes_:
                 await ctx.send(file=discord.File(bytes_, filename="distribution.png"))
             else:
@@ -476,7 +501,7 @@ class Guild:
     @commands.command()
     @checks.guild_only()
     @checks.manager_only()
-    async def purge(self, ctx, number: int=100, *members: discord.Member):
+    async def purge(self, ctx, number: int=10, *members: discord.Member):
         if number > 0:
             if members:
                 await ctx.channel.purge(limit=number, check=lambda m:m.author in members)
@@ -558,6 +583,138 @@ class Guild:
         embed = discord.Embed(title=f"{ctx.guild.name}'s icon")
         embed.set_image(url=ctx.guild.icon_url_as(format='png'))
         await ctx.send(embed=embed)
+
+    @commands.group(name="disable")
+    async def cmd_disable(self, ctx):
+        pass
+
+    @cmd_disable.command(name="guild", aliases=["server"])
+    @checks.guild_only()
+    @checks.manager_only()
+    async def cmd_disable_guild(self, ctx, *, cmd_name):
+        cmd = self.bot.get_command(cmd_name)
+        if not cmd:
+            return await ctx.send(f"{cmd_name} is not a valid command.")
+        if cmd.hidden or getattr(cmd.root_parent, "name", None) == "command":
+            return ctx.send("You can't disable this command.")
+        name = cmd.qualified_name
+        cmd_data = self.bot.disabled_data.get(name, {})
+        disabled_guild = cmd_data.get("guilds", set())
+        disabled_guild.add(ctx.guild.id)
+        cmd_data["guilds"] = disabled_guild
+        self.bot.disabled_data[name] = cmd_data
+        await self.command_data.update_one({"name": name}, {"$addToSet": {"disabled_guild_ids": ctx.guild.id}}, upsert=True)
+        await ctx.send(f"Command `{name}` has been disabled in this server.")
+
+    @cmd_disable.command(name="channel")
+    @checks.guild_only()
+    @checks.manager_only()
+    async def cmd_disable_channel(self, ctx, channel: discord.TextChannel, *, cmd_name):
+        cmd = self.bot.get_command(cmd_name)
+        if not cmd:
+            return await ctx.send(f"{cmd_name} is not a valid command.")
+        if cmd.hidden or getattr(cmd.root_parent, "name", None) == "command":
+            return ctx.send("You can't disable this command.")
+        name = cmd.qualified_name
+        cmd_data = self.bot.disabled_data.get(name, {})
+        disabled_channel = cmd_data.get("channels", set())
+        disabled_channel.add(channel.id)
+        cmd_data["channels"] = disabled_channel
+        self.bot.disabled_data[name] = cmd_data
+        await self.command_data.update_one({"name": name}, {"$addToSet": {"disabled_channel_ids": channel.id}}, upsert=True)
+        await ctx.send(f"Command `{name}` has been disabled in {channel.mention}.")
+
+    @cmd_disable.command(name="member")
+    @checks.guild_only()
+    @checks.manager_only()
+    async def cmd_disable_member(self, ctx, member: discord.Member, *, cmd_name):
+        cmd = self.bot.get_command(cmd_name)
+        if not cmd:
+            return await ctx.send(f"{cmd_name} is not a valid command.")
+        if cmd.hidden or getattr(cmd.root_parent, "name", None) == "command":
+            return ctx.send("You can't disable this command.")
+        name = cmd.qualified_name
+        cmd_data = self.bot.disabled_data.get(name, {})
+        disabled_member = cmd_data.get("members", set())
+        disabled_member.add((member.id, ctx.guild.id))
+        cmd_data["members"] = disabled_member
+        self.bot.disabled_data[name] = cmd_data
+        await self.command_data.update_one({"name": name}, {"$addToSet": {"disabled_member_ids": member.id}}, upsert=True)
+        await ctx.send(f"{member} is banned from using command `{name}` in this server.")
+
+    @cmd_disable.command(name="botchannel")
+    @checks.guild_only()
+    @checks.manager_only()
+    async def cmd_disable_botchannel(self, ctx, channel: discord.TextChannel):
+        cmd_data = self.bot.disabled_data[None]["channels"].add(channel.id)
+        result = await self.command_data.update_one({"name": None}, {"$addToSet": {"disabled_channel_ids": channel.id}})
+        await ctx.send(f"Command usage has been disabled in {channel.mention}.")
+
+    @commands.group(name="enable")
+    async def cmd_enable(self, ctx):
+        pass
+
+    @cmd_enable.command(name="guild", aliases=["server"])
+    @checks.guild_only()
+    @checks.manager_only()
+    async def cmd_enable_guild(self, ctx, *, cmd_name):
+        cmd = self.bot.get_command(cmd_name)
+        if not cmd:
+            return await ctx.send(f"{cmd_name} is not a valid command.")
+        if cmd.hidden or getattr(cmd.root_parent, "name", None) == "command":
+            return ctx.send("You can't enable this command.")
+        name = cmd.qualified_name
+        cmd_data = self.bot.disabled_data.get(name, {})
+        disabled_guild = cmd_data.get("guilds", set())
+        disabled_guild.discard(ctx.guild.id)
+        cmd_data["guilds"] = disabled_guild
+        self.bot.disabled_data[name] = cmd_data
+        await self.command_data.update_one({"name": name}, {"$pull": {"disabled_guild_ids": ctx.guild.id}})
+        await ctx.send(f"Command `{name}` has been enabled in this server.")
+
+    @cmd_enable.command(name="channel")
+    @checks.guild_only()
+    @checks.manager_only()
+    async def cmd_enable_channel(self, ctx, channel: discord.TextChannel, *, cmd_name):
+        cmd = self.bot.get_command(cmd_name)
+        if not cmd:
+            return await ctx.send(f"{cmd_name} is not a valid command.")
+        if cmd.hidden or getattr(cmd.root_parent, "name", None) == "command":
+            return ctx.send("You can't enable this command.")
+        name = cmd.qualified_name
+        cmd_data = self.bot.disabled_data.get(name, {})
+        disabled_channel = cmd_data.get("channels", set())
+        disabled_channel.discard(channel.id)
+        cmd_data["channels"] = disabled_channel
+        self.bot.disabled_data[name] = cmd_data
+        await self.command_data.update_one({"name": name}, {"$pull": {"disabled_channel_ids": channel.id}})
+        await ctx.send(f"Command `{name}` has been enabled in {channel.mention}.")
+
+    @cmd_enable.command(name="member")
+    @checks.guild_only()
+    @checks.manager_only()
+    async def cmd_enable_member(self, ctx, member: discord.Member, *, cmd_name):
+        cmd = self.bot.get_command(cmd_name)
+        if not cmd:
+            return await ctx.send(f"{cmd_name} is not a valid command.")
+        if cmd.hidden or getattr(cmd.root_parent, "name", None) == "command":
+            return ctx.send("You can't enable this command.")
+        name = cmd.qualified_name
+        cmd_data = self.bot.disabled_data.get(name, {})
+        disabled_member = cmd_data.get("members", set())
+        disabled_member.discard((member.id, ctx.guild.id))
+        cmd_data["members"] = disabled_member
+        self.bot.disabled_data[name] = cmd_data
+        await self.command_data.update_one({"name": name}, {"$pull": {"disabled_member_ids": member.id}})
+        await ctx.send(f"{member} is unbanned from using command `{name}` in this server.")
+
+    @cmd_enable.command(name="botchannel")
+    @checks.guild_only()
+    @checks.manager_only()
+    async def cmd_enable_botchannel(self, ctx, channel: discord.TextChannel):
+        cmd_data = self.bot.disabled_data[None]["channels"].discard(channel.id)
+        result = await self.command_data.update_one({"name": None}, {"$pull": {"disabled_channel_ids": channel.id}})
+        await ctx.send(f"Command usage has been enabled in {channel.mention}.")
 
 #==================================================================================================================================================
 

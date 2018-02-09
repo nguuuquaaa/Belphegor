@@ -13,6 +13,8 @@ import json
 from datetime import datetime, timedelta
 import traceback
 
+#==================================================================================================================================================
+
 CATEGORY_DICT = {
     "sword":        "Sword",
     "wl":           "Wired Lance",

@@ -15,6 +15,8 @@ import random
 import re
 from pymongo import ReturnDocument
 
+#==================================================================================================================================================
+
 BELPHY_VOICE_URL = {
     "https://vignette4.wikia.nocookie.net/mira-miracle/images/4/4d/Belphegor_Main.ogg/revision/latest?cb=20170201022200",
     "https://vignette4.wikia.nocookie.net/mira-miracle/images/0/04/Belphegor_Skill.ogg/revision/latest?cb=20170201022201",
@@ -305,7 +307,7 @@ class Music:
     @commands.group(aliases=["m"])
     async def music(self, ctx):
         if ctx.invoked_subcommand is None:
-            cmd = self.bot.get_command("help").get_command("music")
+            cmd = self.bot.get_command("help music")
             await ctx.invoke(cmd)
 
     @music.command(aliases=["j"])

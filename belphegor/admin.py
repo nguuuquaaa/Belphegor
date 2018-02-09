@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from . import utils
-from .utils import checks, config
+from .utils import checks, config, context
 from io import StringIO
 import traceback
 from contextlib import redirect_stdout
@@ -12,6 +12,7 @@ import os
 from shutil import copyfile
 from distutils.dir_util import copy_tree
 import subprocess
+import copy
 
 #==================================================================================================================================================
 
@@ -22,7 +23,7 @@ class Admin:
 
     def __init__(self, bot):
         self.bot = bot
-        self.belphegor_config = bot.db.belphegor_config
+        self.command_data = bot.db.command_data
 
     async def reload_extension(self, ctx, extension):
         try:
@@ -139,34 +140,30 @@ class Admin:
 
     @commands.command(hidden=True)
     @checks.owner_only()
-    async def block(self, ctx, user: discord.User):
-        if user.id in self.bot.blocked_users:
-            await ctx.deny()
-        else:
-            self.bot.blocked_users.add(user.id)
-            await self.belphegor_config.update_one({"category": "blocked"}, {"$addToSet": {"user_ids": user.id}})
+    async def botban(self, ctx, user: discord.User):
+        self.bot.banned_data[None]["users"].add(user.id)
+        result = await self.command_data.update_one({"name": {"$eq": None}}, {"$addToSet": {"banned_user_ids": user.id}})
+        if result.modified_count > 0:
             await ctx.send(f"{user.name} has been blocked.")
+        else:
+            await ctx.send(f"{user.name} is already blocked.")
 
     @commands.command(hidden=True)
     @checks.owner_only()
-    async def unblock(self, ctx, user: discord.User):
-        if user.id in self.bot.blocked_users:
-            self.bot.blocked_users.remove(user.id)
-            await self.belphegor_config.update_one({"category": "blocked"}, {"$pull": {"user_ids": user.id}})
+    async def botunban(self, ctx, user: discord.User):
+        self.bot.banned_data[None]["users"].discard(user.id)
+        result = await self.command_data.update_one({"name": {"$eq": None}}, {"$pull": {"banned_user_ids": user.id}})
+        if result.modified_count > 0:
             await ctx.send(f"{user.name} has been unblocked.")
         else:
-            await ctx.deny()
+            await ctx.send(f"{user.name} is not blocked.")
 
     @commands.command(hidden=True)
     @checks.owner_only()
-    async def hackblock(self, ctx, user_id: int):
+    async def bothackban(self, ctx, user_id: int):
         user = await self.bot.get_user_info(user_id)
-        if user.id in self.bot.blocked_users:
-            await ctx.deny()
-        else:
-            self.bot.blocked_users.add(user_id)
-            await self.belphegor_config.update_one({"category": "blocked"}, {"$addToSet": {"user_ids": user_id}})
-            await ctx.send(f"{user.name} has been blocked.")
+        cmd = self.bot.get_command("botban")
+        await ctx.invoke(cmd, user)
 
     @commands.command(hidden=True)
     @checks.owner_only()
@@ -236,6 +233,15 @@ class Admin:
                 await ctx.deny()
             else:
                 await ctx.confirm()
+
+    @commands.command(hidden=True, aliases=["force", "invoke"])
+    @checks.owner_only()
+    async def forceinvoke(self, ctx, *, cmd):
+        msg = copy.copy(ctx.message)
+        msg.content = f"{ctx.me.mention} {cmd}"
+        print(msg.content)
+        new_ctx = await self.bot.get_context(msg, cls=context.BelphegorContext)
+        await new_ctx.reinvoke()
 
 #==================================================================================================================================================
 
