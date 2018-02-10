@@ -23,6 +23,7 @@ class Guild:
         self.guild_data = bot.db.guild_data
         self.command_data = bot.db.command_data
         self.banned_emojis = set()
+        self.autorole_data = {}
 
     @commands.group(name="set")
     @checks.guild_only()
@@ -182,7 +183,7 @@ class Guild:
 
     @cmd_unset.command(name="welcome")
     async def unset_welcome(self, ctx):
-        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$unset": {"welcome_channel_id": ""}})
+        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$unset": {"welcome_channel_id": None}})
         await ctx.confirm()
 
     @cmd_set.command(name="welcomemessage")
@@ -213,6 +214,53 @@ class Guild:
     @cmd_unset.command(name="welcomerule")
     async def unset_welcome_rule(self, ctx):
         await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$unset": {"welcome_rule": None}})
+        await ctx.confirm()
+
+    @cmd_set.command(name="autorole")
+    async def set_autorole(self, ctx):
+        msg = await ctx.send("Input the role name:")
+        try:
+            message = await self.bot.wait_for("message", check=lambda m: m.author.id==ctx.author.id and m.channel.id==ctx.channel.id, timeout=600)
+        except asyncio.TimeoutError:
+            return await ctx.send("You took too long, so I'll just sleep then.")
+        role = discord.utils.find(lambda r: r.name.lower()==message.content.lower(), ctx.guild.roles)
+        if not role:
+            return await ctx.send("Role not found. You sure type in correctly?")
+        msg = await ctx.send(
+            "What autorole type do you want?\n"
+            "`1:` Newcomer will get a role upon registration.\n"
+            "`2:` Newcomer will get a role on join, and it will be removed upon registration."
+        )
+        artype = await ctx.wait_for_choice(max=2)
+        if artype is None:
+            return await ctx.send("Okay, no autorole, right.")
+        msg = await ctx.send("Input the registration phrase:")
+        try:
+            message = await self.bot.wait_for("message", check=lambda m: m.author.id==ctx.author.id and m.channel.id==ctx.channel.id, timeout=600)
+        except asyncio.TimeoutError:
+            return await ctx("You took too long, so I'll just sleep then.")
+        phrase = message.content
+        msg = await ctx.send("Do you want to set a custom response? Type `no` to skip.")
+        try:
+            message = await self.bot.wait_for("message", check=lambda m: m.author.id==ctx.author.id and m.channel.id==ctx.channel.id, timeout=600)
+        except asyncio.TimeoutError:
+            return await ctx("You took too long, so I'll just sleep then.")
+        if message.content.lower() == "no":
+            response = None
+        else:
+            response = message.content
+        await self.guild_data.update_one(
+            {"guild_id": ctx.guild.id},
+            {"$set": {"autorole_id": role.id, "autorole_type": artype, "autorole_phrase": phrase, "autorole_response": response}}
+        )
+        await ctx.send("\U0001f44c Autorole is ready to go.")
+
+    @cmd_unset.command(name="autorole")
+    async def unset_autorole(self, ctx):
+        await self.guild_data.update_one(
+            {"guild_id": ctx.guild.id},
+            {"$unset": {"autorole_id": None, "autorole_type": None, "autorole_phrase": None, "autorole_response": None}}
+        )
         await ctx.confirm()
 
     @cmd_set.command(name="log")
@@ -259,22 +307,33 @@ class Guild:
         else:
             await ctx.deny()
 
+    async def on_message(self, message):
+        if message.author.bot:
+            return
+        guild_data = await self.guild_data.find_one(
+            {"guild_id": message.guild.id, "autorole_phrase": message.content},
+            projection={"_id": False, "autorole_id": True, "autorole_type": True, "autorole_phrase": True, "autorole_response": True}
+        )
+        if guild_data:
+            role = discord.utils.find(lambda r: r.id==guild_data["autorole_id"], message.guild.roles)
+            if not role:
+                return
+            artype = guild_data["autorole_type"]
+            if artype == 0:
+                await message.author.add_roles(role)
+            elif artype == 1:
+                await message.author.remove_roles(role)
+            response = guild_data["autorole_response"]
+            if response:
+                await message.channel.send(response, delete_after=30)
+            await utils.do_after(message.delete(), 30)
+
     async def on_member_join(self, member):
         if member.bot:
             return
         guild = member.guild
-        guild_data = await self.guild_data.find_one(
-            {"guild_id": guild.id},
-            projection={"welcome_channel_id": True, "welcome_message": True, "welcome_rule": True, "log_channel_id": True})
+        guild_data = await self.guild_data.find_one({"guild_id": guild.id})
         if guild_data:
-            welcome_channel = guild.get_channel(guild_data.get("welcome_channel_id"))
-            if welcome_channel:
-                welcome_message = guild_data.get("welcome_message", DEFAULT_WELCOME)
-                await welcome_channel.send(welcome_message.format(name=member.display_name, mention=member.mention, server=member.guild.name, guild=member.guild.name))
-            welcome_rule = guild_data.get("welcome_rule")
-            if welcome_rule:
-                await asyncio.sleep(5)
-                await member.send(welcome_rule.format(server=member.guild.name))
             log_channel = guild.get_channel(guild_data.get("log_channel_id"))
             if log_channel:
                 embed = discord.Embed(colour=discord.Colour.dark_orange())
@@ -283,6 +342,17 @@ class Guild:
                 embed.add_field(name="Name", value=str(member))
                 embed.set_footer(text=utils.format_time(utils.now_time()))
                 await log_channel.send(embed=embed)
+            welcome_channel = guild.get_channel(guild_data.get("welcome_channel_id"))
+            if welcome_channel:
+                welcome_message = guild_data.get("welcome_message", DEFAULT_WELCOME)
+                await welcome_channel.send(welcome_message.format(name=member.display_name, mention=member.mention, server=member.guild.name, guild=member.guild.name))
+            welcome_rule = guild_data.get("welcome_rule")
+            if welcome_rule:
+                await utils.do_after(member.send(welcome_rule.format(server=member.guild.name)), 5)
+            autorole_type = guild_data.get("autorole_type", None)
+            if autorole_type == 1:
+                role = discord.utils.find(lambda r: r.id==guild_data["autorole_id"], guild.roles)
+                await member.add_roles(role)
 
     async def on_member_remove(self, member):
         if member.bot:

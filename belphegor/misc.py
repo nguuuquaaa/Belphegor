@@ -671,6 +671,27 @@ class Misc:
         pic.save(bytes_, "png")
         await ctx.send(file=discord.File(bytes_.getvalue(), filename="colour.png"))
 
+    @commands.command()
+    async def pyfuck(self, ctx, *, data):
+        data = data.strip()
+        char_group = ["e", "x", "c", "%", "+", "=", "(", ")"]
+        if data.startswith("```"):
+            data = data.splitlines()[1:]
+        else:
+            data = data.splitlines()
+        data = "\n".join(data).strip("` \n")
+        pf = []
+        for char in data:
+            if char in char_group:
+                pf.append(f"\"{char}\"")
+            else:
+                l = ord(char)
+                i = "+".join(["(()==())"]*l)
+                pf.append(f"\"%c\"%({i})")
+        code = "+".join(pf)
+        code = f"exec({code})"
+        await ctx.send(file=discord.File(code.encode("utf-8"), filename="fuckthis.py"))
+
 #==================================================================================================================================================
 
 def setup(bot):

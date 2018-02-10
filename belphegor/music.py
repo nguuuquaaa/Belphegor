@@ -384,8 +384,11 @@ class Music:
         else:
             async with self.lock:
                 results = await self.bot.loop.run_in_executor(None, self.youtube_search, name)
-            stuff = '\n\n'.join([f"{i+1}: [{utils.discord_escape(v['snippet']['title'])}](https://youtu.be/{v['id']['videoId']})" for i,v in enumerate(results)])
-            embed = discord.Embed(title="\U0001f3b5 Video search result: ", description=f"{stuff}\n\n<>: cancel", colour=discord.Colour.green())
+            stuff = "\n\n".join([
+                f"`{i+1}:` **[{utils.discord_escape(v['snippet']['title'])}](https://youtu.be/{v['id']['videoId']})**\n      By: {v['snippet']['channelTitle']}"
+                for i,v in enumerate(results)
+            ])
+            embed = discord.Embed(title="\U0001f3b5 Video search result: ", description=f"{stuff}\n\n`<>:` cancel", colour=discord.Colour.green())
             embed.set_thumbnail(url="http://i.imgur.com/HKIOv84.png")
             await ctx.send(embed=embed)
             index = await ctx.wait_for_choice(max=len(results))
@@ -522,8 +525,11 @@ class Music:
             shuffle = False
         async with self.lock:
             results = await self.bot.loop.run_in_executor(None, self.youtube_search, name, "playlist")
-        stuff = '\n\n'.join([f"{i+1}: [{utils.discord_escape(p['snippet']['title'])}](https://www.youtube.com/playlist?list={p['id']['playlistId']})\nBy: {p['snippet']['channelTitle']}" for i,p in enumerate(results)])
-        embed = discord.Embed(title="\U0001f3b5 Playlist search result: ", description=f"{stuff}\n\n<>: cancel", colour=discord.Colour.green())
+        stuff = "\n\n".join([
+            f"`{i+1}:` **[{utils.discord_escape(p['snippet']['title'])}](https://www.youtube.com/playlist?list={p['id']['playlistId']})**\n      By: {p['snippet']['channelTitle']}"
+            for i,p in enumerate(results)
+        ])
+        embed = discord.Embed(title="\U0001f3b5 Playlist search result: ", description=f"{stuff}\n\n`<>:` cancel", colour=discord.Colour.green())
         embed.set_thumbnail(url="http://i.imgur.com/HKIOv84.png")
         await ctx.send(embed=embed)
         index = await ctx.wait_for_choice(max=len(results))

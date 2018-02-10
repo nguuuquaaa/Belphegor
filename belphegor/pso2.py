@@ -62,8 +62,9 @@ WEAPON_URLS = {
 }
 WEAPON_SORT = tuple(WEAPON_URLS.keys())
 SSA_SLOTS = {
-    "Tier 3":   ["s1", "s2", "s3"],
-    "Tier 4":   ["s1", "s2", "s3", "s4"]
+    "Tier 3":               ["s1", "s2", "s3"],
+    "Tier 4":               ["s1", "s2", "s3", "s4"],
+    "S Class Ability 2":    ["s2"]
 }
 DEF_EMOJIS = ("sdef", "rdef", "tdef")
 RESIST_EMOJIS = ("s_res", "r_res", "t_res")

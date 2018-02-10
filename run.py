@@ -98,13 +98,6 @@ class Belphegor(commands.Bot):
             self.counter -= 1
         self.loop.create_task(do_stuff())
 
-    async def do_after(self, coro, wait_time):
-        await asyncio.sleep(wait_time)
-        try:
-            await coro
-        except:
-            pass
-
     async def logout(self):
         await self.session.close()
         await super().logout()
@@ -120,25 +113,25 @@ class Belphegor(commands.Bot):
         bot_usage = self.disabled_data.get(None)
         if author_id in bot_usage.get("users", EMPTY_SET):
             await ctx.send("Omae wa mou banned.", delete_after=30)
-            await self.do_after(ctx.message.delete(), 30)
+            await utils.do_after(ctx.message.delete(), 30)
             return False
         if channel_id in bot_usage.get("channels", EMPTY_SET):
             await ctx.send("Command usage is disabled in this channel.", delete_after=30)
-            await self.do_after(ctx.message.delete(), 30)
+            await utils.do_after(ctx.message.delete(), 30)
             return False
 
         cmd_usage = self.disabled_data.get(ctx.command.qualified_name, {})
         if guild_id in cmd_usage.get("guilds", EMPTY_SET):
             await ctx.send("This command is disabled in this server.", delete_after=30)
-            await self.do_after(ctx.message.delete(), 30)
+            await utils.do_after(ctx.message.delete(), 30)
             return False
         if channel_id in cmd_usage.get("channels", EMPTY_SET):
             await ctx.send("You can't use this command in this channel.", delete_after=30)
-            await self.do_after(ctx.message.delete(), 30)
+            await utils.do_after(ctx.message.delete(), 30)
             return False
         if (author_id, guild_id) in cmd_usage.get("members", EMPTY_SET):
             await ctx.send("You are banned from using this command in this server.", delete_after=30)
-            await self.do_after(ctx.message.delete(), 30)
+            await utils.do_after(ctx.message.delete(), 30)
             return False
         return True
 

@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from . import utils
-from .utils import config, token
+from .utils import config
 from PIL import Image, ImageDraw
 from io import BytesIO
 import random
