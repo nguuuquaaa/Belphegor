@@ -86,7 +86,7 @@ class Random:
             url=f"http://konachan.{domain}/post/show/{pic['id']}",
             colour=discord.Colour.red()
         )
-        embed.set_image(url=pic['sample_url'].strip("/"))
+        embed.set_image(url=f"http:{pic['file_url']}")
         return embed
 
     @retry_wrap

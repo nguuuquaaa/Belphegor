@@ -23,7 +23,6 @@ class Guild:
         self.guild_data = bot.db.guild_data
         self.command_data = bot.db.command_data
         self.banned_emojis = set()
-        self.autorole_data = {}
 
     @commands.group(name="set")
     @checks.guild_only()
@@ -309,6 +308,8 @@ class Guild:
 
     async def on_message(self, message):
         if message.author.bot:
+            return
+        if not message.guild:
             return
         guild_data = await self.guild_data.find_one(
             {"guild_id": message.guild.id, "autorole_phrase": message.content},

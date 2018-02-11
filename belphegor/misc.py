@@ -259,11 +259,8 @@ class Misc:
             script.decompose()
 
         search_results = []
-        for tag in data.find_all("a"):
-            attributes = tag.attrs
-            if "onmousedown" in attributes.keys() and len(attributes) == 2:
-                tag['href'] = utils.safe_url(tag['href'])
-                search_results.append(tag)
+        for tag in data.find_all("div", class_="g"):
+            search_results.append(tag.find("a"))
             if len(search_results) > 4:
                 break
 
@@ -456,7 +453,7 @@ class Misc:
             async with ctx.typing():
                 params = {
                     "q": quote(search),
-                    "safe": "on",
+                    "safe": "active",
                     "lr": "lang_en",
                     "hl": "en"
                 }

@@ -170,11 +170,11 @@ class Admin:
     async def prettify(self, ctx, url, filename="data.html"):
         try:
             bytes_ = await utils.fetch(self.bot.session, url)
-            data = BS(bytes_.decode("utf-8"), "xml")
+            data = BS(bytes_.decode("utf-8"), "lxml")
             with open(filename, "w", encoding="utf-8") as file:
                 file.write(data.prettify())
-        except:
-            print(traceback.format_exc())
+        except Exception as e:
+            print(e)
             await ctx.deny()
         else:
             await ctx.confirm()

@@ -198,9 +198,9 @@ class BelphegorContext(commands.Context):
             else:
                 return result[index]
 
-    async def wait_for_choice(self, *, max, target=None, timeout=60):
+    async def wait_for_choice(self, *, max, target=None, timeout=600):
         target = target or self.author
-        msg = await self.bot.wait_for("message", check=lambda m: m.author.id==target.id and m.channel.id==self.channel.id, timeout=60)
+        msg = await self.bot.wait_for("message", check=lambda m: m.author.id==target.id and m.channel.id==self.channel.id, timeout=600)
         try:
             result = int(msg.content) - 1
         except:
