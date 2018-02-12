@@ -260,7 +260,9 @@ class Misc:
 
         search_results = []
         for tag in data.find_all("div", class_="g"):
-            search_results.append(tag.find("a"))
+            a = tag.find("a")
+            a["href"] = utils.safe_url(a["href"])
+            search_results.append(a)
             if len(search_results) > 4:
                 break
 
@@ -458,15 +460,19 @@ class Misc:
                     "hl": "en"
                 }
                 if ctx.channel.nsfw:
-                    params["safe"] = "off"
+                    params.pop("safe")
                 bytes_ = await utils.fetch(self.bot.session, "https://www.google.com/search", params=params)
                 result = await self.bot.loop.run_in_executor(None, self.parse_google, bytes_)
                 if isinstance(result, discord.Embed):
                     return await ctx.send(embed=result)
                 elif isinstance(result, str):
                     return await ctx.send(result)
-                else:
+                elif not result:
+                    return await ctx.send("No result found.")
+                elif isinstance(result, list):
                     pass
+                else:
+                    return await ctx.send("I-it's not an error I tell ya! It's a feature!")
         await ctx.embed_page(result)
 
     @google.error

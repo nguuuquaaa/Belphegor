@@ -3,6 +3,7 @@ from discord.ext import commands
 import re
 from .format import page_format
 from .data_type import BaseObject
+import asyncio
 
 #==================================================================================================================================================
 
@@ -200,7 +201,10 @@ class BelphegorContext(commands.Context):
 
     async def wait_for_choice(self, *, max, target=None, timeout=600):
         target = target or self.author
-        msg = await self.bot.wait_for("message", check=lambda m: m.author.id==target.id and m.channel.id==self.channel.id, timeout=600)
+        try:
+            msg = await self.bot.wait_for("message", check=lambda m: m.author.id==target.id and m.channel.id==self.channel.id, timeout=timeout)
+        except asyncio.TimeoutError:
+            return None
         try:
             result = int(msg.content) - 1
         except:
