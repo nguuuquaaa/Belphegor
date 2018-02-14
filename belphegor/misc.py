@@ -259,7 +259,7 @@ class Misc:
             script.decompose()
 
         search_results = []
-        for tag in data.find_all("div", class_="g"):
+        for tag in data.find_all(lambda x: x.name=="div" and x.get("class")==["g"]):
             a = tag.find("a")
             a["href"] = utils.safe_url(a["href"])
             search_results.append(a)
@@ -274,7 +274,7 @@ class Misc:
             embed = discord.Embed(title="Search result:", description="**Unit convert**", colour=discord.Colour.dark_orange())
             embed.add_field(name=unit_in.text, value=results[0].input['value'])
             embed.add_field(name=unit_out.text, value=results[1].input['value'])
-            embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[0:4])), inline=False)
+            embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[:4])), inline=False)
             return embed
         except:
             pass
@@ -288,7 +288,7 @@ class Misc:
                 description=f"**Timezone**\n{text}",
                 colour=discord.Colour.dark_orange()
             )
-            embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[0:4])), inline=False)
+            embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[:4])), inline=False)
             return embed
         except:
             pass
@@ -301,7 +301,7 @@ class Misc:
             embed = discord.Embed(title="Search result:", description="**Currency**", colour=discord.Colour.dark_orange())
             embed.add_field(name=unit[0]['value'], value=inp[0]['value'])
             embed.add_field(name=unit[1]['value'], value=inp[1]['value'])
-            embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[0:4])), inline=False)
+            embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[:4])), inline=False)
             return embed
         except:
             pass
@@ -311,7 +311,7 @@ class Misc:
             inp = data.find("span", class_="cwclet").text
             out = data.find("span", class_="cwcot").text
             embed = discord.Embed(title="Search result:", description=f"**Calculator**\n{inp}\n\n {out}", colour=discord.Colour.dark_orange())
-            embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[0:4])), inline=False)
+            embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[:4])), inline=False)
             return embed
         except:
             pass
@@ -333,7 +333,7 @@ class Misc:
                 url = ""
             description = f"**{title}**\n{tag.find('div', class_='_cgc').find('span').text.replace('MORE', '').replace('…', '')}{url}"
             embed = discord.Embed(title="Search result:", description=description, colour=discord.Colour.dark_orange())
-            embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[0:4])), inline=True)
+            embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[:4])), inline=True)
             return embed
         except:
             pass
@@ -461,7 +461,7 @@ class Misc:
                 }
                 if ctx.channel.nsfw:
                     params.pop("safe")
-                bytes_ = await utils.fetch(self.bot.session, "https://www.google.com/search", params=params)
+                bytes_ = await self.bot.fetch("https://www.google.com/search", params=params)
                 result = await self.bot.loop.run_in_executor(None, self.parse_google, bytes_)
                 if isinstance(result, discord.Embed):
                     return await ctx.send(embed=result)
@@ -492,7 +492,7 @@ class Misc:
                     "ie": "UTF-8",
                     "q": quote(search)
                 }
-                bytes_ = await utils.fetch(self.bot.session, "http://translate.google.com/m", params=params)
+                bytes_ = await self.bot.fetch("http://translate.google.com/m", params=params)
                 data = BS(bytes_.decode("utf-8"), "lxml")
                 tag = data.find("div", class_="t0")
                 embed = discord.Embed(colour=discord.Colour.dark_orange())

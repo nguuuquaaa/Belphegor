@@ -169,7 +169,7 @@ class Admin:
     @checks.owner_only()
     async def prettify(self, ctx, url, filename="data.html"):
         try:
-            bytes_ = await utils.fetch(self.bot.session, url)
+            bytes_ = await self.bot.fetch(url)
             data = BS(bytes_.decode("utf-8"), "lxml")
             with open(filename, "w", encoding="utf-8") as file:
                 file.write(data.prettify())
@@ -243,7 +243,6 @@ class Admin:
     async def forceinvoke(self, ctx, *, cmd):
         msg = copy.copy(ctx.message)
         msg.content = f"{ctx.me.mention} {cmd}"
-        print(msg.content)
         new_ctx = await self.bot.get_context(msg, cls=context.BelphegorContext)
         await new_ctx.reinvoke()
 

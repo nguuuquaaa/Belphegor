@@ -134,14 +134,15 @@ class Playlist:
         self.playlist = []
         self._wait = asyncio.Event()
         self._lock = asyncio.Lock()
+        self._not_empty = asyncio.Condition(self._lock)
+        self._not_full = asyncio.Condition(self._lock)
         self.next_index = next_index
 
     async def put(self, song):
-        async with self._lock:
+        async with self._not_full:
             song.index = self.next_index
             self.next_index += 1
             self.playlist.append(song)
-            self._wait.set()
             await self.playlist_data.update_one(
                 {
                     "guild_id": self.guild_id
@@ -155,15 +156,15 @@ class Playlist:
                     }
                 }
             )
+            self._not_empty.notify()
 
     async def put_many(self, songs):
         if songs:
-            async with self._lock:
+            async with self._not_full:
                 for s in songs:
                     s.index = self.next_index
                     self.next_index += 1
                 self.playlist.extend(songs)
-                self._wait.set()
                 await self.playlist_data.update_one(
                     {
                         "guild_id": self.guild_id
@@ -179,24 +180,24 @@ class Playlist:
                         }
                     }
                 )
+                self._not_empty.notify()
 
     async def get(self):
-        if not self.playlist:
-            self._wait.clear()
-            await self._wait.wait()
-        async with self._lock:
+        async with self._not_empty:
+            if not self.size():
+                await self._not_empty.wait()
             song = self.playlist.pop(0)
             await self.playlist_data.update_one({"guild_id": self.guild_id}, {"$pop": {"playlist": -1}})
             return song
 
     async def delete(self, position):
-        async with self._lock:
+        async with self._not_empty:
             song = self.playlist.pop(position)
             await self.playlist_data.update_one({"guild_id": self.guild_id}, {"$pull": {"playlist": {"index": song.index}}})
             return song
 
     async def purge(self):
-        async with self._lock:
+        async with self._not_empty:
             self.playlist.clear()
             await self.playlist_data.update_one({"guild_id": self.guild_id}, {"$set": {"playlist": []}})
 
@@ -382,8 +383,7 @@ class Music:
             embeds = self.current_queue_info(music_player)
             return await ctx.embed_page(embeds)
         else:
-            async with self.lock:
-                results = await self.bot.loop.run_in_executor(None, self.youtube_search, name)
+            results = await self.bot.run_in_lock(self.lock, self.youtube_search, name)
             stuff = "\n\n".join([
                 f"`{i+1}:` **[{utils.discord_escape(v['snippet']['title'])}](https://youtu.be/{v['id']['videoId']})**\n      By: {v['snippet']['channelTitle']}"
                 for i,v in enumerate(results)
@@ -523,8 +523,7 @@ class Music:
             name = name[3:]
         else:
             shuffle = False
-        async with self.lock:
-            results = await self.bot.loop.run_in_executor(None, self.youtube_search, name, "playlist")
+        results = await self.bot.run_in_lock(self.lock, self.youtube_search, name, "playlist")
         stuff = "\n\n".join([
             f"`{i+1}:` **[{utils.discord_escape(p['snippet']['title'])}](https://www.youtube.com/playlist?list={p['id']['playlistId']})**\n      By: {p['snippet']['channelTitle']}"
             for i,p in enumerate(results)
@@ -538,8 +537,7 @@ class Music:
         else:
             result = results[index]
         async with ctx.typing():
-            async with self.lock:
-                items = await self.bot.loop.run_in_executor(None, self.youtube_playlist_items, ctx.message, result["id"]["playlistId"])
+            items = await self.bot.run_in_lock(self.lock, self.youtube_playlist_items, ctx.message, result["id"]["playlistId"])
             if shuffle:
                 random.shuffle(items)
                 add_text = " in random position"
@@ -568,8 +566,7 @@ class Music:
         else:
             return await ctx.send("Position out of range.")
         url = song.url
-        async with self.lock:
-            video = await self.bot.loop.run_in_executor(None, self.youtube_video_info, url)
+        video = await self.bot.run_in_lock(self.lock, self.youtube_video_info, url)
         snippet = video["snippet"]
         description = utils.unifix(snippet.get("description", "None")).strip()
         description_page = utils.split_page(description, 500)

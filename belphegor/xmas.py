@@ -25,7 +25,7 @@ class XmasSpecial:
         else:
             return
         async with ctx.typing():
-            bytes_ = await utils.fetch(self.bot.session, member.avatar_url_as(static_format="png"))
+            bytes_ = await self.bot.fetch(member.avatar_url_as(static_format="png"))
 
             def image_process():
                 base_img = Image.open(BytesIO(bytes_))

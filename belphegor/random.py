@@ -57,7 +57,7 @@ class Random:
             "limit":  1,
             "random": "true"
         }
-        bytes_ = await utils.fetch(self.bot.session, "https://danbooru.donmai.us/posts.json", params=params)
+        bytes_ = await self.bot.fetch("https://danbooru.donmai.us/posts.json", params=params)
         pic = json.loads(bytes_)[0]
         tag_str = utils.split_page(pic.get('tag_string', ''), 1800)
         embed = discord.Embed(
@@ -77,7 +77,7 @@ class Random:
             "page":   page
         }
         domain = "net" if safe else "com"
-        bytes_ = await utils.fetch(self.bot.session, f"http://konachan.{domain}/post.json", params=params)
+        bytes_ = await self.bot.fetch(f"http://konachan.{domain}/post.json", params=params)
         pic = json.loads(bytes_)[0]
         tag_str = utils.split_page(pic.get('tags', ''), 1800)
         embed = discord.Embed(
@@ -99,7 +99,7 @@ class Random:
             "limit":  100,
             "pid":   page
         }
-        bytes_ = await utils.fetch(self.bot.session, "https://safebooru.org/index.php", params=params)
+        bytes_ = await self.bot.fetch("https://safebooru.org/index.php", params=params)
         data = xmltodict.parse(bytes_.decode("utf-8"))
         pic = random.choice(data['posts']['post'])
         tag_str = utils.split_page(pic.get('@tags', '').strip(), 1800)
@@ -119,7 +119,7 @@ class Random:
             "limit":  100,
             "page":   page
         }
-        bytes_ = await utils.fetch(self.bot.session, "https://yande.re/post.json", params=params)
+        bytes_ = await self.bot.fetch("https://yande.re/post.json", params=params)
         pics = json.loads(bytes_)
         pic = random.choice(pics)
         tag_str = utils.split_page(pic.get('tags', ''), 1800)
@@ -138,7 +138,7 @@ class Random:
             "tags":   f"-rating:s order:random {tags}",
             "commit": "Search"
         }
-        bytes_ = await utils.fetch(self.bot.session, "https://chan.sankakucomplex.com/", params=params)
+        bytes_ = await self.bot.fetch("https://chan.sankakucomplex.com/", params=params)
         data = BS(bytes_.decode("utf-8"), "lxml")
         items = tuple(
             data.find_all(
@@ -150,7 +150,7 @@ class Random:
         )
         item = random.choice(items)
         post_url = f"https://chan.sankakucomplex.com{item.find('a')['href']}"
-        bytes_ = await utils.fetch(self.bot.session, post_url)
+        bytes_ = await self.bot.fetch(post_url)
         post_data = BS(bytes_.decode("utf-8"), "lxml")
         img_link = post_data.find("a", id="highres")
         relevant = post_data.find("ul", id="tag-sidebar")

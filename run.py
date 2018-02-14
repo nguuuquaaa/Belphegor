@@ -10,6 +10,7 @@ import time
 from motor import motor_asyncio
 import sys
 import traceback
+import functools
 
 #==================================================================================================================================================
 
@@ -31,6 +32,7 @@ class Belphegor(commands.Bot):
         self.mongo_client = motor_asyncio.AsyncIOMotorClient()
         self.db = self.mongo_client.belphydb
         self.counter = 0
+        self.bot_lock = asyncio.Lock()
 
     async def get_prefix(self, message):
         prefixes = {f"<@{self.user.id}> ", f"<@!{self.user.id}> "}
@@ -98,6 +100,20 @@ class Belphegor(commands.Bot):
             self.counter -= 1
         self.loop.create_task(do_stuff())
 
+    async def run_in_lock(self, *args, **kwargs):
+        args = list(args)
+        item = args.pop(0)
+        lock = self.bot_lock
+        if isinstance(item, (asyncio.Lock, asyncio.Condition)):
+            lock = item
+            item = args.pop(0)
+        if callable(item):
+            async with lock:
+                run_func = functools.partial(item, *args, **kwargs)
+                return await self.loop.run_in_executor(None, run_func)
+        else:
+            raise Exception("Wat. You serious?")
+
     async def logout(self):
         await self.session.close()
         await super().logout()
@@ -164,6 +180,12 @@ class Belphegor(commands.Bot):
                 print(f"Failed loading {extension}: {e}")
                 return await self.logout()
         print("Done")
+
+    async def fetch(self, url, **kwargs):
+        return await utils.fetch(self.session, url, **kwargs)
+
+    async def download(self, url, path, **kwargs):
+        return await utils.download(self.session, url, path, **kwargs)
 
 #==================================================================================================================================================
 

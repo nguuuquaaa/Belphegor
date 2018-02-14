@@ -295,12 +295,18 @@ class Guild:
     @cmd_set.command(name="eq")
     async def set_eq_channel(self, ctx, channel: discord.TextChannel=None):
         target = channel or ctx.channel
-        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$set": {"eq_channel_id": target.id}}, upsert=True)
+        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$set": {"eq_channel_id": target.id, "eq_alert_minimal": False}}, upsert=True)
+        await ctx.confirm()
+
+    @cmd_set.command(name="minimaleq", aliases=["eqmini"])
+    async def set_minimal_eq_channel(self, ctx, channel: discord.TextChannel=None):
+        target = channel or ctx.channel
+        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$set": {"eq_channel_id": target.id, "eq_alert_minimal": True}}, upsert=True)
         await ctx.confirm()
 
     @cmd_unset.command(name="eq")
     async def unset_eq_channel(self, ctx):
-        result = await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$unset": {"eq_channel_id": ""}})
+        result = await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$unset": {"eq_channel_id": "", "eq_alert_minimal": ""}})
         if result.modified_count > 0:
             await ctx.confirm()
         else:

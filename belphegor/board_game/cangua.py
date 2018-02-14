@@ -105,6 +105,7 @@ class CaNgua:
         self.rng = dices.Dices(6, 2)
         self.player_list = self.bot.db.board_game_player_list
         self.game_list = self.bot.db.board_game_list
+        self.lock = asyncio.Lock()
 
     @classmethod
     async def new_game(cls, ctx, members):
@@ -401,7 +402,7 @@ class CaNgua:
                 msg = await self.channel.send(f"Do you want to end the game?\n{' '.join([p.member.mention for p in self.players])}")
                 for r in possible_reactions:
                     self.bot.loop.create_task(msg.add_reaction(r))
-                await asyncio.sleep(20)
+                await asyncio.sleep(30)
                 msg = await self.bot.get_message(msg.id)
                 yay = 0
                 nay = 0
@@ -466,7 +467,7 @@ class CaNgua:
             new_map.save(pic, format="png")
             return pic
 
-        current_map = await self.bot.loop.run_in_executor(None, image_process)
+        current_map = await self.bot.run_in_lock(self.lock, image_process)
         await self.channel.send(file=discord.File(current_map.getvalue(), filename="current_map.png"))
 
     async def cmd_info_turn(self):

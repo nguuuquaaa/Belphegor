@@ -105,6 +105,8 @@ CLASS_DICT = {
     "Summoner": "su",
     "Hero":     "hr"
 }
+TIME_LEFT = ("Now", "HalfHour", "OneLater", "OneHalfLater", "TwoLater", "TwoHalfLater", "ThreeLater", "ThreeHalfLater")
+
 no_html_regex = re.compile("\<\/?\w+?\>")
 def _match_this(match):
     if match.group(0) in ("<br>", "</br>"):
@@ -532,21 +534,7 @@ class PSO2:
             "User-Agent": "PSO2Alert",
             "Host": "pso2.acf.me.uk"
         }
-        time_left_index = {
-            "Now":              0,
-            "HalfHour":         1,
-            "OneLater":         2,
-            "OneHalfLater":     3,
-            "TwoLater":         4,
-            "TwoHalfLater":     5,
-            "ThreeLater":       6,
-            "ThreeHalfLater":   7
-        }
-        async def alert_maintenance(channel):
-            await asyncio.sleep(6300)
-            embed = discord.Embed(title="EQ Alert", description=f"\U0001f527 **Now:**\n   `Maintenance:` PSO2 is offline.", colour=discord.Colour.red())
-            embed.set_footer(text=utils.jp_time(utils.now_time()))
-            await channel.send(embed=embed)
+        time_left_index = {time_left: index for index, time_left in enumerate(TIME_LEFT)}
         try:
             while True:
                 send_later = False
@@ -565,69 +553,56 @@ class PSO2:
                 bytes_ = await utils.fetch(self.bot.session, initial_data["API"], headers=acf_headers)
                 data = json.loads(bytes_)[0]
                 self.last_eq_data = data
-                jst = int(data["JST"])
                 now_time = utils.now_time(utils.jp_timezone)
+                jst = int(data["JST"])
+                start_time = now_time.replace(minute=0, second=0) + timedelta(hours=jst-1-now_time.hour)
+
                 if now_time.hour == (jst - 1) % 24 or (now_time.hour == jst and now_time.minute == 0):
-                    desc = []
+                    full_desc = []
+                    simple_desc = []
                     ship_gen = (f"Ship{ship_number}" for ship_number in range(1, 11))
                     random_eq = "\n".join((f"   `Ship {ship[4:]}:` {data[ship]}" for ship in ship_gen if data[ship]))
-                    if now_time.minute == 0:
-                        if data["OneLater"]:
-                            desc.append(f"\u2694 **Now:**\n   `All ships:` {data['OneLater']}")
-                        elif random_eq:
-                            desc.append(f"\u2694 **Now:**\n{random_eq}")
-                    elif now_time.minute == 15:
-                        if data["HalfHour"]:
-                            desc.append(f"\u23f0 **In 15 minutes:**\n   `All ships:` {data['HalfHour']}")
-                        if data["OneLater"]:
-                            desc.append(f"\u23f0 **In 45 minutes:**\n   `All ships:` {data['OneLater']}")
-                        elif random_eq:
-                            desc.append(f"\u23f0 **In 45 minutes:**\n{random_eq}")
-                        if data["TwoLater"]:
-                            if "Maintenance" in data["TwoLater"]:
-                                send_later = True
-                            desc.append(f"\u23f0 **In 1 hour 45 minutes:**\n   `All ships:` {data['TwoLater']}")
-                        if data["ThreeLater"]:
-                            desc.append(f"\u23f0 **In 2 hours 45 minutes:**\n   `All ships:` {data['ThreeLater']}")
-                    elif now_time.minute == 30:
-                        if data["HalfHour"]:
-                            desc.append(f"\u2694 **Now:**\n   `All ships:` {data['HalfHour']}")
-                    elif now_time.minute == 45:
-                        if data["OneLater"]:
-                            desc.append(f"\u23f0 **In 15 minutes:**\n   `All ships:` {data['OneLater']}")
-                        elif random_eq:
-                            desc.append(f"\u23f0 **In 15 minutes:**\n{random_eq}")
-                        if data["OneHalfLater"]:
-                            desc.append(f"\u23f0 **In 45 minutes:**\n   `All ships:` {data['OneHalfLater']}")
-                        if data["TwoHalfLater"]:
-                            desc.append(f"\u23f0 **In 1 hour 45 minutes:**\n   `All ships:` {data['TwoHalfLater']}")
-                        if data["ThreeHalfLater"]:
-                            desc.append(f"\u23f0 **In 2 hours 45 minutes:**\n   `All ships:` {data['ThreeHalfLater']}")
-                    if desc:
-                        embed = discord.Embed(title="EQ Alert", description="\n\n".join(desc), colour=discord.Colour.red())
-                        embed.set_footer(text=utils.jp_time(now_time))
-                        cursor = self.guild_data.aggregate([
-                            {
-                                "$group": {
-                                    "_id": None,
-                                    "eq_channel_ids": {
-                                        "$addToSet": "$eq_channel_id"
-                                    }
-                                }
-                            }
-                        ])
-                        async for d in cursor:
-                            for cid in d["eq_channel_ids"]:
-                                channel = self.bot.get_channel(cid)
-                                if channel:
-                                    _loop.create_task(channel.send(embed=embed))
-                                    if send_later:
-                                        _loop.create_task(alert_maintenance(channel))
+
+                    for index, key in enumerate(TIME_LEFT):
+                        if data[key]:
+                            sched_time = start_time + timedelta(minutes=30*index)
+                            time_left = int((sched_time - next_time).total_seconds())
+                            if time_left == 0:
+                                full_desc.append(f"\u2694 **Now**\n   {data[key]}")
+                                if random_eq and index == 2:
+                                    full_desc.append(f"\u2694 **Now:**\n{random_eq}")
+                            elif time_left > 0:
+                                text = f"\u23f0 **In {utils.seconds_to_text(time_left)}:**\n   `All ships:` {data[key]}"
+                                if random_eq and index == 2:
+                                    req_text = f"\u23f0 **In {utils.seconds_to_text(time_left)} minutes:**\n{random_eq}"
+                                if time_left % 3600 == 2700:
+                                    full_desc.append(text)
+                                    simple_desc.append(text)
+                                    if random_eq and index == 2:
+                                        full_desc.append(req_text)
+                                        simple_desc.append(req_text)
+                                elif time_left == 900:
+                                    full_desc.append(text)
+                                    if random_eq and index == 2:
+                                        full_desc.append(req_text)
+                    if full_desc:
+                        full_embed = discord.Embed(title="EQ Alert", description="\n\n".join(full_desc), colour=discord.Colour.red())
+                        full_embed.set_footer(text=utils.jp_time(now_time))
+                        if simple_desc:
+                            simple_embed = discord.Embed(title="EQ Alert", description="\n\n".join(simple_desc), colour=discord.Colour.red())
+                            simple_embed.set_footer(text=utils.jp_time(now_time))
+                        async for gd in self.guild_data.find({"eq_channel_id": {"$exists": True}}, projection={"_id": False, "eq_channel_id": True, "eq_alert_minimal": True}):
+                            channel = self.bot.get_channel(gd["eq_channel_id"])
+                            if channel:
+                                if gd.get("eq_alert_minimal"):
+                                    if simple_desc:
+                                        _loop.create_task(channel.send(embed=simple_embed))
+                                else:
+                                    _loop.create_task(channel.send(embed=full_embed))
+
                             break
         except asyncio.CancelledError:
             return
-        except:
-            print(traceback.format_exc())
 
     def get_emoji(self, dt_obj):
         if dt_obj.minute == 0:
@@ -651,7 +626,7 @@ class PSO2:
         ship_gen = (f"Ship{ship_number}" for ship_number in range(1, 11))
         random_eq = "\n".join((f"`   Ship {ship[4]}:` {data[ship]}" for ship in ship_gen if data[ship]))
         sched_eq = []
-        for index, key in enumerate(("Now", "HalfHour", "OneLater", "OneHalfLater", "TwoLater", "TwoHalfLater", "ThreeLater", "ThreeHalfLater")):
+        for index, key in enumerate(TIME_LEFT):
             if data[key]:
                 sched_time = start_time + timedelta(minutes=30*index)
                 sched_eq.append(f"{self.get_emoji(sched_time)} **At {sched_time.strftime('%I:%M %p')}**\n   {data[key]}")

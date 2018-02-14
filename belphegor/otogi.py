@@ -519,7 +519,7 @@ class Otogi:
         if base_name == "Date Masamune":
             form = "Dragon Form"
         else:
-            bytes_ = await utils.fetch(self.bot.session, f"http://otogi.wikia.com/api/v1/Search/List?query={quote(name)}&limit=5&batch=1&namespaces=0%2C14")
+            bytes_ = await self.bot.fetch(f"http://otogi.wikia.com/api/v1/Search/List?query={quote(name)}&limit=5&batch=1&namespaces=0%2C14")
             search_query = json.loads(bytes_)
             for item in search_query.get("items"):
                 if "/" not in item["title"]:
@@ -529,7 +529,7 @@ class Otogi:
                 return None
 
         url = f"http://otogi.wikia.com/wiki/{quote(base_name)}"
-        raw_data = await utils.fetch(self.bot.session, url)
+        raw_data = await self.bot.fetch(url)
 
         delimiters = (' [', ']', ' ')
         regexPattern = '|'.join(map(re.escape, delimiters))
@@ -538,7 +538,7 @@ class Otogi:
         for kind, trailing in pic_kind.items():
             try:
                 wiki_pic_url = f"http://otogi.wikia.com/wiki/File:{quote(name_pattern)}{quote(trailing)}.png"
-                pic_kind[kind] = await utils.fetch(self.bot.session, wiki_pic_url)
+                pic_kind[kind] = await self.bot.fetch(wiki_pic_url)
             except:
                 pic_kind[kind] = None
 
