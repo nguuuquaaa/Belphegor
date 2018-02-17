@@ -518,7 +518,7 @@ class PSO2:
             self.bot.session,
             "https://pso2.acf.me.uk/PSO2Alert.json",
             headers={
-                "User-Agent": "PSO2Alert_3.0.5.2",
+                "User-Agent": "PSO2Alert_3.0.5.3",
                 "Connection": "Keep-Alive",
                 "Host": "pso2.acf.me.uk"
             }
@@ -534,7 +534,6 @@ class PSO2:
             "User-Agent": "PSO2Alert",
             "Host": "pso2.acf.me.uk"
         }
-        time_left_index = {time_left: index for index, time_left in enumerate(TIME_LEFT)}
         try:
             while True:
                 send_later = False
@@ -556,53 +555,57 @@ class PSO2:
                 now_time = utils.now_time(utils.jp_timezone)
                 jst = int(data["JST"])
                 start_time = now_time.replace(minute=0, second=0) + timedelta(hours=jst-1-now_time.hour)
+                full_desc = []
+                simple_desc = []
+                ship_gen = (f"Ship{ship_number}" for ship_number in range(1, 11))
+                random_eq = "\n".join((f"   `Ship {ship[4:]}:` {data[ship]}" for ship in ship_gen if data[ship]))
 
-                if now_time.hour == (jst - 1) % 24 or (now_time.hour == jst and now_time.minute == 0):
-                    full_desc = []
-                    simple_desc = []
-                    ship_gen = (f"Ship{ship_number}" for ship_number in range(1, 11))
-                    random_eq = "\n".join((f"   `Ship {ship[4:]}:` {data[ship]}" for ship in ship_gen if data[ship]))
-
-                    for index, key in enumerate(TIME_LEFT):
-                        if data[key]:
-                            sched_time = start_time + timedelta(minutes=30*index)
-                            time_left = int((sched_time - next_time).total_seconds())
-                            if time_left == 0:
-                                full_desc.append(f"\u2694 **Now**\n   {data[key]}")
+                for index, key in enumerate(TIME_LEFT):
+                    if data[key]:
+                        sched_time = start_time + timedelta(minutes=30*index)
+                        time_left = int(round((sched_time - next_time).total_seconds(), -1))
+                        if time_left == 0:
+                            full_desc.append(f"\u2694 **Now**\n   {data[key]}")
+                            if random_eq and index == 2:
+                                full_desc.append(f"\u2694 **Now:**\n{random_eq}")
+                        elif time_left > 0:
+                            text = f"\u23f0 **In {utils.seconds_to_text(time_left)}:**\n   `All ships:` {data[key]}"
+                            if random_eq and index == 2:
+                                req_text = f"\u23f0 **In {utils.seconds_to_text(time_left)} minutes:**\n{random_eq}"
+                            if time_left % 3600 == 2700 or time_left == 900:
+                                full_desc.append(text)
                                 if random_eq and index == 2:
-                                    full_desc.append(f"\u2694 **Now:**\n{random_eq}")
-                            elif time_left > 0:
-                                text = f"\u23f0 **In {utils.seconds_to_text(time_left)}:**\n   `All ships:` {data[key]}"
+                                    full_desc.append(req_text)
+                            if time_left % 3600 == 0:
+                                simple_desc.append(text)
                                 if random_eq and index == 2:
-                                    req_text = f"\u23f0 **In {utils.seconds_to_text(time_left)} minutes:**\n{random_eq}"
-                                if time_left % 3600 == 2700:
-                                    full_desc.append(text)
-                                    simple_desc.append(text)
-                                    if random_eq and index == 2:
-                                        full_desc.append(req_text)
-                                        simple_desc.append(req_text)
-                                elif time_left == 900:
-                                    full_desc.append(text)
-                                    if random_eq and index == 2:
-                                        full_desc.append(req_text)
-                    if full_desc:
-                        full_embed = discord.Embed(title="EQ Alert", description="\n\n".join(full_desc), colour=discord.Colour.red())
-                        full_embed.set_footer(text=utils.jp_time(now_time))
-                        if simple_desc:
-                            simple_embed = discord.Embed(title="EQ Alert", description="\n\n".join(simple_desc), colour=discord.Colour.red())
-                            simple_embed.set_footer(text=utils.jp_time(now_time))
-                        async for gd in self.guild_data.find({"eq_channel_id": {"$exists": True}}, projection={"_id": False, "eq_channel_id": True, "eq_alert_minimal": True}):
-                            channel = self.bot.get_channel(gd["eq_channel_id"])
-                            if channel:
-                                if gd.get("eq_alert_minimal"):
-                                    if simple_desc:
-                                        _loop.create_task(channel.send(embed=simple_embed))
-                                else:
-                                    _loop.create_task(channel.send(embed=full_embed))
+                                    simple_desc.append(req_text)
 
-                            break
+                if full_desc:
+                    full_embed = discord.Embed(title="EQ Alert", description="\n\n".join(full_desc), colour=discord.Colour.red())
+                    full_embed.set_footer(text=utils.jp_time(now_time))
+                    async for gd in self.guild_data.find(
+                        {"eq_channel_id": {"$exists": True}, "eq_alert_minimal": {"$ne": True}},
+                        projection={"_id": False, "eq_channel_id": True}
+                    ):
+                        channel = self.bot.get_channel(gd["eq_channel_id"])
+                        if channel:
+                            _loop.create_task(channel.send(embed=full_embed))
+                if simple_desc:
+                    simple_embed = discord.Embed(title="EQ Alert", description="\n\n".join(simple_desc), colour=discord.Colour.red())
+                    simple_embed.set_footer(text=utils.jp_time(now_time))
+                    async for gd in self.guild_data.find(
+                        {"eq_channel_id": {"$exists": True}, "eq_alert_minimal": {"$eq": True}},
+                        projection={"_id": False, "eq_channel_id": True}
+                    ):
+                        channel = self.bot.get_channel(gd["eq_channel_id"])
+                        if channel:
+                            _loop.create_task(channel.send(embed=simple_embed))
         except asyncio.CancelledError:
             return
+        except ConnectionError:
+            await asyncio.sleep(10)
+            self.eq_alert_forever = _loop.create_task(self.eq_alert())
 
     def get_emoji(self, dt_obj):
         if dt_obj.minute == 0:

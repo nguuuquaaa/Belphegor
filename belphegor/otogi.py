@@ -516,8 +516,8 @@ class Otogi:
         elif base_name in ("Tsukuyomi", "Tsukiyomi"):
             base_name = "Tsukuyomi"
             form = "Original Form"
-        if base_name == "Date Masamune":
-            form = "Dragon Form"
+        while form.count(" Form") > 1:
+            form = form[:-5]
         else:
             bytes_ = await self.bot.fetch(f"http://otogi.wikia.com/api/v1/Search/List?query={quote(name)}&limit=5&batch=1&namespaces=0%2C14")
             search_query = json.loads(bytes_)
@@ -547,7 +547,7 @@ class Otogi:
 
     def _bs_process(self, daemon, form, raw_data, pic_kind):
         bs_data = BS(raw_data.decode("utf-8"), "lxml")
-        relevant_data = bs_data.find("div", attrs={"class": "tabbertab", "title": lambda x:x==form})
+        relevant_data = bs_data.find("div", attrs={"class": "tabbertab", "title": lambda x: x==form})
         tags = relevant_data.find_all("tr")
 
         new_daemon = Daemon.empty(daemon.id)
