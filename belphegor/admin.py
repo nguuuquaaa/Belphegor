@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from . import utils
-from .utils import checks, config, context
+from .utils import checks, data_type
 from io import StringIO
 import traceback
 from contextlib import redirect_stdout
@@ -39,7 +39,7 @@ class Admin:
         for extension in tuple(self.bot.extensions.keys()):
             self.bot.unload_extension(extension)
         check = True
-        for extension in config.all_extensions:
+        for extension in self.bot.initial_extensions:
             try:
                 self.bot.load_extension(extension)
                 print(f"Reloaded {extension}")
@@ -127,16 +127,15 @@ class Admin:
         func = env["func"]
         try:
             with redirect_stdout(stdout):
-                result = await func()
+                await func()
         except:
-            value = stdout.getvalue()
-            return await ctx.send(f'```\n{value}\n{traceback.format_exc()}\n```')
-        value = stdout.getvalue()
-        if result is None:
-            if value:
-                await ctx.send(f'```\n{value}\n```')
+            add_text = f"\n{traceback.format_exc()}"
         else:
-            await ctx.send(f'```\n{value}\n{result}\n```')
+            add_text = ""
+        finally:
+            value = stdout.getvalue()
+            if value or add_text:
+                await ctx.send(f'```\n{value}{add_text}\n```')
 
     @commands.command(hidden=True)
     @checks.owner_only()
@@ -208,22 +207,15 @@ class Admin:
                 else:
                     copy_tree(c, t)
                 print(f"Done copying {item}")
-            proc.stdin.write("git add .\n".encode("utf-8"))
-            proc.stdin.flush()
-            print(proc.stdout.readline().decode("utf-8"))
-            proc.stdout.flush()
-            proc.stdin.write(f"git commit -am \"{cmt}\"\n".encode("utf-8"))
-            proc.stdin.flush()
-            print(proc.stdout.readline().decode("utf-8"))
-            proc.stdout.flush()
-            proc.stdin.write("git push belphegor master\n".encode("utf-8"))
-            proc.stdin.flush()
-            print(proc.stdout.readline().decode("utf-8"))
-            proc.stdout.flush()
-            proc.stdin.write("exit\n".encode("utf-8"))
-            proc.stdin.flush()
-            print(proc.stdout.readline().decode("utf-8"))
-            proc.stdout.flush()
+            for cmd in (
+                "git add .\n",
+                f"git commit -am \"{cmt}\"\n",
+                "git push belphegor master\n",
+                "exit\n"
+            ):
+                proc.stdin.write(cmd.encode("utf-8"))
+                proc.stdin.flush()
+                print(proc.stdout.readline().decode("utf-8"))
 
         try:
             await self.bot.loop.run_in_executor(None, git_push)
@@ -243,7 +235,7 @@ class Admin:
     async def forceinvoke(self, ctx, *, cmd):
         msg = copy.copy(ctx.message)
         msg.content = f"{ctx.me.mention} {cmd}"
-        new_ctx = await self.bot.get_context(msg, cls=context.BelphegorContext)
+        new_ctx = await self.bot.get_context(msg, cls=data_type.BelphegorContext)
         await new_ctx.reinvoke()
 
 #==================================================================================================================================================

@@ -11,7 +11,7 @@ import asyncio
 
 START_POINT = {"green": 1, "red": 13, "blue": 25, "yellow": 37}
 TOWER_POINT = {"green": 101, "red": 111, "blue": 121, "yellow": 131}
-HORSE_IMAGE = {color: {number: Image.open(f"{config.DATA_PATH}/game/cangua/{color}{number}.png") for number in (1, 2, 3, 4)} for color in START_POINT.keys()}
+HORSE_IMAGE_PATH = {color: {number: f"{config.DATA_PATH}/game/cangua/{color}{number}.png" for number in (1, 2, 3, 4)} for color in START_POINT.keys()}
 
 MAP_LOCATION = {}
 for i in range(140):
@@ -63,7 +63,7 @@ class Horse:
         self.color = color
         self.number = number
         self.current_position = current_position
-        self.image_data = HORSE_IMAGE[color][number]
+        self.image_path = HORSE_IMAGE_PATH[color][number]
 
     def location(self):
         return MAP_LOCATION.get(
@@ -275,124 +275,128 @@ class CaNgua:
         await self.channel.send(f"{self.get_player(color=horse.color).member.display_name}'s horse #{horse.number} was kicked.")
 
     async def cmd_roll(self):
-        if self.one_more:
-            self.steps = self.rng.roll()
-            if self.steps[0] == self.steps[1] or (1 in self.steps and 6 in self.steps):
-                self.one_more = True
-            else:
-                self.one_more = False
-            await self.game_list.update_one(
-                {
-                    "game_id": self.game_id
-                },
-                {
-                    "$set": {
-                        "one_more": self.one_more,
-                        "steps": self.steps
+        async with self.lock:
+            if self.one_more:
+                self.steps = self.rng.roll()
+                if self.steps[0] == self.steps[1] or (1 in self.steps and 6 in self.steps):
+                    self.one_more = True
+                else:
+                    self.one_more = False
+                await self.game_list.update_one(
+                    {
+                        "game_id": self.game_id
+                    },
+                    {
+                        "$set": {
+                            "one_more": self.one_more,
+                            "steps": self.steps
+                        }
                     }
-                }
-            )
-            await self.channel.send(f"You rolled {self.steps[0]} and {self.steps[1]}.")
-        else:
-            await self.channel.send("You can't roll at the moment.")
+                )
+                await self.channel.send(f"You rolled {self.steps[0]} and {self.steps[1]}.")
+            else:
+                await self.channel.send("You can't roll at the moment.")
 
     async def cmd_move(self, ctx, number, step):
-        if self.steps:
-            current_horse = self.current_player.horses[number-1]
-            if 0 <= current_horse.current_position < 48:
-                other_players = [p for p in self.players if p.member.id!=self.current_player.member.id]
-                if step in self.steps:
-                    new_steps = [s for s in self.steps if s!=step]
-                elif step == sum(self.steps):
-                    new_steps = []
-                else:
-                    return await self.channel.send(f"You can't only move {' or '.join([str(s) for s in set(self.steps)|set([sum(self.steps)])])} step(s).")
-                for player in self.players:
-                    for horse in player.horses:
-                        if 0 <= horse.current_position < 48:
-                            if 0 < (horse.current_position - current_horse.current_position) % 48 < step:
-                                return await self.channel.send("Something blocks the road.")
-                if (START_POINT[current_horse.color] - 1 - current_horse.current_position) % 48 < 12:
-                    if (current_horse.current_position + step - START_POINT[current_horse.color]) % 48 < 12:
-                        sentences = {
-                            "initial":  "You are about to overstep starting point. Process?"
-                        }
-                        check = await ctx.yes_no_prompt(sentences=sentences, delete_mode=True)
-                        if not check:
-                            return
-                current_horse.current_position = (current_horse.current_position + step) % 48
-                self.steps = new_steps
-                await self.game_list.update_one(
-                    {
-                        "game_id": self.game_id,
-                        "players": {
-                            "$elemMatch": {
-                                "member_id": self.current_player.member.id
+        async with self.lock:
+            if self.steps:
+                current_horse = self.current_player.horses[number-1]
+                if 0 <= current_horse.current_position < 48:
+                    other_players = [p for p in self.players if p.member.id!=self.current_player.member.id]
+                    if step in self.steps:
+                        new_steps = [s for s in self.steps if s!=step]
+                    elif step == sum(self.steps):
+                        new_steps = []
+                    else:
+                        return await self.channel.send(f"You can't only move {' or '.join([str(s) for s in set(self.steps)|set([sum(self.steps)])])} step(s).")
+                    for player in self.players:
+                        for horse in player.horses:
+                            if 0 <= horse.current_position < 48:
+                                if 0 < (horse.current_position - current_horse.current_position) % 48 < step:
+                                    return await self.channel.send("Something blocks the road.")
+                    if (START_POINT[current_horse.color] - 1 - current_horse.current_position) % 48 < 12:
+                        if (current_horse.current_position + step - START_POINT[current_horse.color]) % 48 < 12:
+                            sentences = {
+                                "initial":  "You are about to overstep starting point. Process?"
+                            }
+                            check = await ctx.yes_no_prompt(sentences=sentences, delete_mode=True)
+                            if not check:
+                                return
+                    current_horse.current_position = (current_horse.current_position + step) % 48
+                    self.steps = new_steps
+                    await self.game_list.update_one(
+                        {
+                            "game_id": self.game_id,
+                            "players": {
+                                "$elemMatch": {
+                                    "member_id": self.current_player.member.id
+                                }
+                            }
+                        },
+                        {
+                            "$set": {
+                                "steps": self.steps,
+                                "players.$": self.current_player.to_dict()
                             }
                         }
-                    },
-                    {
-                        "$set": {
-                            "steps": self.steps,
-                            "players.$": self.current_player.to_dict()
-                        }
-                    }
-                )
-                await self.channel.send(f"{self.current_player.member.display_name}'s horse #{number} moved {step} step(s) forward.")
-                for player in other_players:
-                    for horse in player.horses:
-                        if horse.current_position == self.current_player.horses[number-1].current_position:
-                            await self.kick(horse)
-                            break
-            else:
-                await self.channel.send(f"You can't move horse #{number}.")
-        else:
-            await self.channel.send("You are out of move.")
-
-    async def cmd_skip(self):
-        await self.next_turn()
-
-    async def cmd_go(self):
-        go = 0
-        for horse in self.current_player.horses:
-            if horse.current_position == -1:
-                go = horse.number
-                break
-        if go > 0:
-            current_horse = self.current_player.horses[go-1]
-            if self.one_more and len(self.steps)==2:
-                for player in self.players:
-                    for horse in player.horses:
-                        if horse.current_position == START_POINT[current_horse.color]:
-                            if horse.color == current_horse.color:
-                                await self.channel.send("Another horse of you is on the starting point.")
-                                return
-                            else:
+                    )
+                    await self.channel.send(f"{self.current_player.member.display_name}'s horse #{number} moved {step} step(s) forward.")
+                    for player in other_players:
+                        for horse in player.horses:
+                            if horse.current_position == self.current_player.horses[number-1].current_position:
                                 await self.kick(horse)
                                 break
-                current_horse.current_position = START_POINT[current_horse.color]
-                self.steps = []
-                await self.game_list.update_one(
-                    {
-                        "game_id": self.game_id,
-                        "players": {
-                            "$elemMatch": {
-                                "member_id": self.current_player.member.id
+                else:
+                    await self.channel.send(f"You can't move horse #{number}.")
+            else:
+                await self.channel.send("You are out of move.")
+
+    async def cmd_skip(self):
+        async with self.lock:
+            await self.next_turn()
+
+    async def cmd_go(self):
+        async with self.lock:
+            go = 0
+            for horse in self.current_player.horses:
+                if horse.current_position == -1:
+                    go = horse.number
+                    break
+            if go > 0:
+                current_horse = self.current_player.horses[go-1]
+                if self.one_more and len(self.steps)==2:
+                    for player in self.players:
+                        for horse in player.horses:
+                            if horse.current_position == START_POINT[current_horse.color]:
+                                if horse.color == current_horse.color:
+                                    await self.channel.send("Another horse of you is on the starting point.")
+                                    return
+                                else:
+                                    await self.kick(horse)
+                                    break
+                    current_horse.current_position = START_POINT[current_horse.color]
+                    self.steps = []
+                    await self.game_list.update_one(
+                        {
+                            "game_id": self.game_id,
+                            "players": {
+                                "$elemMatch": {
+                                    "member_id": self.current_player.member.id
+                                }
+                            }
+                        },
+                        {
+                            "$set": {
+                                "steps": self.steps,
+                                "players.$": self.current_player.to_dict()
                             }
                         }
-                    },
-                    {
-                        "$set": {
-                            "steps": self.steps,
-                            "players.$": self.current_player.to_dict()
-                        }
-                    }
-                )
-                await self.channel.send(f"Horse #{go} go!")
+                    )
+                    await self.channel.send(f"Horse #{go} go!")
+                else:
+                    await self.channel.send("You are out of go.")
             else:
-                await self.channel.send("You are out of go.")
-        else:
-            await self.channel.send("All your horses are out.")
+                await self.channel.send("All your horses are out.")
 
     async def cmd_game_over(self):
         if self.check_winner() is None:
@@ -412,7 +416,7 @@ class CaNgua:
                     elif r.emoji == "\u274c":
                         nay = r.count
                 if yay <= nay:
-                    await self.channel.send("Poll ended.\nThe game won't end for now.")
+                    return await self.channel.send("Poll ended.\nThe game won't end for now.")
         else:
             await self.channel.send(embed=discord.Embed(title=f"Winner: {self.winner.member.display_name}"))
         self.players.clear()
@@ -421,48 +425,50 @@ class CaNgua:
         await self.channel.send(f"This round of co ca ngua is over.")
 
     async def cmd_climb(self, number, step):
-        if step in self.steps:
-            current_horse = self.current_player.horses[number-1]
-            if current_horse.current_position == START_POINT[self.current_player.color] - 1:
-                pass
-            elif TOWER_POINT[current_horse.color] + 5 > current_horse.current_position >= TOWER_POINT[current_horse.color]:
-                if current_horse.current_position != TOWER_POINT[current_horse.color] + step - 2:
-                    return await self.channel.send("You must climb step by step.")
-            elif current_horse.current_position == TOWER_POINT[current_horse.color] + 5:
-                return await self.channel.send(f"Horse #{number} cannot climb anymore.")
-            else:
-                return await self.channel.send(f"Horse #{number} is not at the base of the tower.")
-            for horse in self.current_player.horses:
-                if horse.current_position - current_horse.current_position == 1:
-                    return await self.channel.send("One of your horses blocks the way up.")
-            current_horse.current_position = TOWER_POINT[current_horse.color] + step - 1
-            self.steps.remove(step)
-            await self.game_list.update_one(
-                {
-                    "game_id": self.game_id,
-                    "players": {
-                        "$elemMatch": {
-                            "member_id": self.current_player.member.id
+        async with self.lock:
+            if step in self.steps:
+                current_horse = self.current_player.horses[number-1]
+                if current_horse.current_position == START_POINT[self.current_player.color] - 1:
+                    pass
+                elif TOWER_POINT[current_horse.color] + 5 > current_horse.current_position >= TOWER_POINT[current_horse.color]:
+                    if current_horse.current_position != TOWER_POINT[current_horse.color] + step - 2:
+                        return await self.channel.send("You must climb step by step.")
+                elif current_horse.current_position == TOWER_POINT[current_horse.color] + 5:
+                    return await self.channel.send(f"Horse #{number} cannot climb anymore.")
+                else:
+                    return await self.channel.send(f"Horse #{number} is not at the base of the tower.")
+                for horse in self.current_player.horses:
+                    if horse.current_position - current_horse.current_position == 1:
+                        return await self.channel.send("One of your horses blocks the way up.")
+                current_horse.current_position = TOWER_POINT[current_horse.color] + step - 1
+                self.steps.remove(step)
+                await self.game_list.update_one(
+                    {
+                        "game_id": self.game_id,
+                        "players": {
+                            "$elemMatch": {
+                                "member_id": self.current_player.member.id
+                            }
+                        }
+                    },
+                    {
+                        "$set": {
+                            "steps": self.steps,
+                            "players.$": self.current_player.to_dict()
                         }
                     }
-                },
-                {
-                    "$set": {
-                        "steps": self.steps,
-                        "players.$": self.current_player.to_dict()
-                    }
-                }
-            )
-            await self.channel.send(f"Horse #{current_horse.number} climbed to {step}.")
-        else:
-            await self.channel.send(f"Horse #{number} can't climb to {step}.")
+                )
+                await self.channel.send(f"Horse #{current_horse.number} climbed to {step}.")
+            else:
+                await self.channel.send(f"Horse #{number} can't climb to {step}.")
 
     async def cmd_map(self):
         def image_process():
             new_map = Image.open(f"{config.DATA_PATH}/game/cangua/map.png")
             for player in self.players:
                 for horse in player.horses:
-                    new_map.paste(horse.image_data, horse.location(), mask=horse.image_data)
+                    with Image.open(horse.image_path) as image_data:
+                        new_map.paste(image_data, horse.location(), mask=image_data)
             pic = BytesIO()
             new_map.save(pic, format="png")
             return pic
@@ -471,11 +477,13 @@ class CaNgua:
         await self.channel.send(file=discord.File(current_map.getvalue(), filename="current_map.png"))
 
     async def cmd_info_turn(self):
-        await self.channel.send(f"It's currently {self.current_player.member.mention}'s turn.")
+        async with self.lock:
+            await self.channel.send(f"It's currently {self.current_player.member.mention}'s turn.")
 
     async def cmd_abandon(self, author_id):
-        player = self.get_player(member_id=author_id)
-        if len(self.players) > 2:
-            if player == self.current_player:
-                await self.next_turn()
-        await self.knock_out(player)
+        async with self.lock:
+            player = self.get_player(member_id=author_id)
+            if len(self.players) > 2:
+                if player == self.current_player:
+                    await self.next_turn()
+            await self.knock_out(player)

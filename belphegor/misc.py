@@ -259,7 +259,7 @@ class Misc:
             script.decompose()
 
         search_results = []
-        for tag in data.find_all(lambda x: x.name=="div" and x.get("class")==["g"]):
+        for tag in data.find_all(lambda x: x.name=="div" and x.get("class")==["g"] and len(x.attrs)==1):
             a = tag.find("a")
             a["href"] = utils.safe_url(a["href"])
             search_results.append(a)
@@ -643,8 +643,8 @@ class Misc:
             if result:
                 await ctx.send(embed=discord.Embed(
                     title="Sauce found?",
-                    description="\n".join((f"[{r['title']} ({r['similarity']})]({r['url']} \"{r.get('annotation', '')}\")" for r in result)))
-                )
+                    description="\n".join((f"[{r['title']} ({r['similarity']})]({r['url']} \"{r.get('annotation', '')}\")" for r in result))
+                ))
             else:
                 await ctx.send("Cannot find anything.")
 

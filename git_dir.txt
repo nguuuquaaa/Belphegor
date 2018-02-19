@@ -22,7 +22,6 @@
 /belphegor/utils/__init__.py
 /belphegor/utils/checks.py
 /belphegor/utils/config.py
-/belphegor/utils/context.py
 /belphegor/utils/data_type.py
 /belphegor/utils/format.py
 /belphegor/utils/pillow.py

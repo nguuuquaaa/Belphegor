@@ -528,15 +528,14 @@ class PSO2:
 
     async def eq_alert(self):
         _loop = self.bot.loop
-        initial_data = await self.check_for_updates()
-        print(f"Latest PSO2 Alert version: {initial_data['Version']}")
         acf_headers = {
             "User-Agent": "PSO2Alert",
             "Host": "pso2.acf.me.uk"
         }
         try:
+            initial_data = await self.check_for_updates()
+            print(f"Latest PSO2 Alert version: {initial_data['Version']}")
             while True:
-                send_later = False
                 now_time = utils.now_time()
                 if now_time.minute < 45:
                     delta = timedelta()
@@ -572,11 +571,11 @@ class PSO2:
                             text = f"\u23f0 **In {utils.seconds_to_text(time_left)}:**\n   `All ships:` {data[key]}"
                             if random_eq and index == 2:
                                 req_text = f"\u23f0 **In {utils.seconds_to_text(time_left)} minutes:**\n{random_eq}"
-                            if time_left % 3600 == 2700 or time_left == 900:
+                            if time_left in (900, 2700, 6300, 9900):
                                 full_desc.append(text)
                                 if random_eq and index == 2:
                                     full_desc.append(req_text)
-                            if time_left % 3600 == 0:
+                            if time_left  in (2700, 6300):
                                 simple_desc.append(text)
                                 if random_eq and index == 2:
                                     simple_desc.append(req_text)

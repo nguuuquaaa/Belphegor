@@ -28,6 +28,7 @@ class Game:
                 game_data = await self.game_list.find_one({"game_id": simple_player_data["game_id"]})
                 if game_data:
                     game = getattr(board_game, game_data["game_class"]).load(self.bot, game_data)
+                    self.games[game_data["game_id"]] = game
         return game
 
     @commands.command()
@@ -47,7 +48,7 @@ class Game:
             all_members.update((m for m in members if not m.bot))
             new_game = await board_game.CaNgua.new_game(ctx, all_members)
             self.games[new_game.game_id] = new_game
-            await ctx.send("Co ca ngua starts now~")
+            await ctx.send("Co ca ngua starts now~\nGame ID: {new_game.game_id}")
             embed = discord.Embed()
             embed.add_field(name="This round players", value="\n".join((f"{i+1}. {p.member.display_name} ({p.color})" for i, p in enumerate(new_game.players))))
             await ctx.send(embed=embed)
@@ -143,6 +144,7 @@ class Game:
         current_game = await self.get_game(ctx.author)
         if current_game:
             await current_game.cmd_game_over()
+            self.games.pop(current_game.game_id)
 
     @commands.command()
     async def skip(self, ctx):
@@ -164,9 +166,9 @@ class Game:
             Display current game map.
             Part of board game commands.
         '''
-        async with ctx.message.channel.typing():
-            current_game = await self.get_game(ctx.author)
-            if current_game:
+        current_game = await self.get_game(ctx.author)
+        if current_game:
+            async with ctx.message.channel.typing():
                 await current_game.cmd_map()
 
     @commands.command()

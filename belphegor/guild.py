@@ -187,12 +187,12 @@ class Guild:
 
     @cmd_set.command(name="welcomemessage")
     async def set_welcome_message(self, ctx, *, text):
-        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$set": {"welcome_message": text}}, upsert=True)
         try:
             content = f"Welcome message will be displayed as:\n{text}".format(name=ctx.author.display_name, mention=ctx.author.mention, server=ctx.guild.name)
         except:
             await ctx.send("Format error. You sure read the instruction?")
         else:
+            await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$set": {"welcome_message": text}}, upsert=True)
             await ctx.send(content)
 
     @cmd_unset.command(name="welcomemessage")
@@ -202,12 +202,12 @@ class Guild:
 
     @cmd_set.command(name="welcomerule")
     async def set_welcome_rule(self, ctx, *, text):
-        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$set": {"welcome_rule": text}}, upsert=True)
         try:
             content = f"Newcomer will be messaged:\n{text}".format(server=ctx.guild.name)
         except:
             await ctx.send("Format error. You sure read the instruction?")
         else:
+            await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$set": {"welcome_rule": text}}, upsert=True)
             await ctx.send(content)
 
     @cmd_unset.command(name="welcomerule")
@@ -237,13 +237,13 @@ class Guild:
         try:
             message = await self.bot.wait_for("message", check=lambda m: m.author.id==ctx.author.id and m.channel.id==ctx.channel.id, timeout=600)
         except asyncio.TimeoutError:
-            return await ctx("You took too long, so I'll just sleep then.")
+            return await ctx.send("You took too long, so I'll just sleep then.")
         phrase = message.content
         msg = await ctx.send("Do you want to set a custom response? Type `no` to skip.")
         try:
             message = await self.bot.wait_for("message", check=lambda m: m.author.id==ctx.author.id and m.channel.id==ctx.channel.id, timeout=600)
         except asyncio.TimeoutError:
-            return await ctx("You took too long, so I'll just sleep then.")
+            return await ctx.send("You took too long, so I'll just sleep then.")
         if message.content.lower() == "no":
             response = None
         else:
