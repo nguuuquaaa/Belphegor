@@ -23,7 +23,6 @@ class Admin:
 
     def __init__(self, bot):
         self.bot = bot
-        self.command_data = bot.db.command_data
         self.belphegor_config = bot.db.belphegor_config
 
     async def reload_extension(self, ctx, extension):
@@ -168,7 +167,7 @@ class Admin:
     @checks.owner_only()
     async def hackblock(self, ctx, user_id: int):
         user = await self.bot.get_user_info(user_id)
-        cmd = self.bot.get_command("botban")
+        cmd = self.bot.get_command("block")
         await ctx.invoke(cmd, user)
 
     @commands.command(hidden=True)
