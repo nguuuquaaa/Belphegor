@@ -624,29 +624,49 @@ class Misc:
             payload.add_field("frame", "1")
             payload.add_field("hide", "0")
             payload.add_field("database", "999")
-            async with self.bot.session.post("https://saucenao.com/search.php", data=payload) as response:
+            async with self.bot.session.post("https://saucenao.com/search.php", headers={"User-Agent": config.USER_AGENT}, data=payload) as response:
                 bytes_ = await response.read()
             data = BS(bytes_.decode("utf-8"), "lxml")
             result = []
-            for tag in data.find_all(lambda x: x.name=="div" and x.get("class")==["result"] and not x.get("id")):
+            hidden_result = []
+            for tag in data.find_all(lambda x: x.name=="div" and x.get("class") in [["result"], ["result", "hidden"]] and not x.get("id")):
                 content = tag.find("td", class_="resulttablecontent")
-                title = content.find("div", class_="resulttitle").find("strong").text
+                title_tag = content.find("div", class_="resulttitle")
+                for br in title_tag.find_all("br"):
+                    br.replace_with("\n")
+                title = title_tag.get_text().strip().splitlines()[0]
                 similarity = content.find("div", class_="resultsimilarityinfo").text
                 content_url = content.find("a", class_="linkify")
                 if not content_url:
                     content_url = content.find("div", class_="resultmiscinfo").find("a")
                 if content_url:
-                    r = {"title": title, "similarity": similarity, "url": content_url["href"], "annotation": content_url.text}
+                    r = {"title": title, "similarity": similarity, "url": content_url["href"]}
                 else:
                     r = {"title": title, "similarity": similarity, "url": ""}
-                result.append(r)
+                if "hidden" in tag["class"]:
+                    hidden_result.append(r)
+                else:
+                    result.append(r)
             if result:
-                await ctx.send(embed=discord.Embed(
+                embed = discord.Embed(
                     title="Sauce found?",
-                    description="\n".join((f"[{r['title']} ({r['similarity']})]({r['url']} \"{r.get('annotation', '')}\")" for r in result))
-                ))
+                    description="\n".join((f"[{r['title']} ({r['similarity']})]({r['url']})" for r in result))
+                )
+                embed.set_footer(text="Powered by https://saucenao.com")
+                await ctx.send(embed=embed)
             else:
-                await ctx.send("Cannot find anything.")
+                msg = await ctx.send("No result found.")
+                if hidden_result:
+                    sentences = {"initial":  "Do you want to show low similarity results?"}
+                    result = await ctx.yes_no_prompt(sentences, delete_mode=True)
+                    if result:
+                        await msg.delete()
+                        embed = discord.Embed(
+                            title="Low similarity results:",
+                            description="\n".join((f"[{r['title']} ({r['similarity']})]({r['url']})" for r in hidden_result))
+                        )
+                        embed.set_footer(text="Powered by https://saucenao.com")
+                        await ctx.send(embed=embed)
 
     @commands.command(aliases=["colour"])
     async def color(self, ctx, *args):
