@@ -3,7 +3,7 @@ from discord.ext import commands
 import asyncio
 import pafy
 from . import utils
-from .utils import config, token
+from .utils import config, token, data_type
 from apiclient.discovery import build
 from discord.opus import Encoder as OpusEncoder
 import queue
@@ -14,6 +14,7 @@ import locale
 import random
 import re
 from pymongo import ReturnDocument
+import copy
 
 #==================================================================================================================================================
 
@@ -227,6 +228,7 @@ class MusicPlayer:
         self.lock = asyncio.Lock()
         guild = bot.get_guild(guild_id)
         self.queue.playlist.extend((Song(guild.get_member(s["requestor_id"]), s["title"], s["url"]) for s in initial))
+        self.auto_info = {}
 
     def ready_to_play(self, voice_client):
         self.in_voice_channel = True
@@ -257,6 +259,7 @@ class MusicPlayer:
             if not self.repeat:
                 self.current_song = None
             self.bot.loop.call_soon_threadsafe(self.play_next_song.set)
+        cmd = self.bot.get_command("music info")
 
         while self.in_voice_channel:
             self.play_next_song.clear()
@@ -271,6 +274,11 @@ class MusicPlayer:
             self.voice_client.play(self.current_song.music, after=_next_part)
             name = utils.discord_escape(self.current_song.requestor.display_name)
             await self.channel.send(f"Playing **{self.current_song.title}** requested by {name}.")
+            for ctx in self.auto_info.values():
+                try:
+                    await ctx.invoke(cmd)
+                except Exception as e:
+                    print(e)
             await self.play_next_song.wait()
 
 #==================================================================================================================================================
@@ -369,7 +377,7 @@ class Music:
             return utils.page_format(
                 playlist, 10, separator="\n\n",
                 title=f"({state}) {current_song_info}",
-                description=lambda i, x: f"`{i+1}.` [{x.title}]({x.url})",
+                description=lambda i, x: f"`{i+1}.` **[{x.title}]({x.url})**",
                 colour=discord.Colour.green(),
                 thumbnail_url="http://i.imgur.com/HKIOv84.png"
                 )
@@ -620,6 +628,18 @@ class Music:
     async def setchannel(self, ctx):
         music_player = await self.get_music_player(ctx.guild.id)
         music_player.channel = ctx.channel
+        await ctx.confirm()
+
+    @music.command(aliases=["ai"])
+    async def autoinfo(self, ctx):
+        music_player = await self.get_music_player(ctx.guild.id)
+        music_player.auto_info[ctx.author.id] = ctx
+        await ctx.confirm()
+
+    @music.command(aliases=["mi"])
+    async def manualinfo(self, ctx):
+        music_player = await self.get_music_player(ctx.guild.id)
+        music_player.auto_info.pop(ctx.author.id, None)
         await ctx.confirm()
 
 #==================================================================================================================================================

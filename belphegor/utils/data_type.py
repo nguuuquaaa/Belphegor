@@ -279,6 +279,7 @@ class Belphegor(commands.Bot):
         self.counter = 0
         self.bot_lock = asyncio.Lock()
         self.initial_extensions = kwargs.get("initial_extensions", config.all_extensions)
+        self.restart_flag = False
 
     async def get_prefix(self, message):
         prefixes = {f"<@{self.user.id}> ", f"<@!{self.user.id}> "}
@@ -372,49 +373,103 @@ class Belphegor(commands.Bot):
         channel_id = getattr(ctx.channel, "id", None)
         guild_id = getattr(ctx.guild, "id", None)
 
-        bot_usage = self.disabled_data.get(None)
-        if author_id in bot_usage.get("users", EMPTY_SET):
-            self.loop.create_task(ctx.send("Omae wa mou banned.", delete_after=30))
-            do_after(ctx.message.delete(), 30)
-            return False
-        if channel_id in bot_usage.get("channels", EMPTY_SET):
-            self.loop.create_task(ctx.send("Command usage is disabled in this channel.", delete_after=30))
+        if author_id in self.blocked_user_ids:
+            self.loop.create_task(ctx.send("Omae wa mou blocked.", delete_after=30))
             do_after(ctx.message.delete(), 30)
             return False
 
-        cmd_usage = self.disabled_data.get(ctx.command.qualified_name, {})
-        if guild_id in cmd_usage.get("guilds", EMPTY_SET):
-            self.loop.create_task(ctx.send("This command is disabled in this server.", delete_after=30))
-            do_after(ctx.message.delete(), 30)
-            return False
-        if channel_id in cmd_usage.get("channels", EMPTY_SET):
-            self.loop.create_task(ctx.send("You can't use this command in this channel.", delete_after=30))
-            do_after(ctx.message.delete(), 30)
-            return False
-        if (author_id, guild_id) in cmd_usage.get("members", EMPTY_SET):
-            self.loop.create_task(ctx.send("You are banned from using this command in this server.", delete_after=30))
-            do_after(ctx.message.delete(), 30)
-            return False
+        blocked_data = self.disabled_data.get(guild_id)
+        if blocked_data:
+            if blocked_data.get("disabled_bot_guild", False):
+                self.loop.create_task(ctx.send("Command usage is disabled in this server.", delete_after=30))
+                do_after(ctx.message.delete(), 30)
+                return False
+            if channel_id in blocked_data.get("disabled_bot_channel", EMPTY_SET):
+                self.loop.create_task(ctx.send("Command usage is disabled in this channel.", delete_after=30))
+                do_after(ctx.message.delete(), 30)
+                return False
+            if author_id in blocked_data.get("disabled_bot_member", EMPTY_SET):
+                self.loop.create_task(ctx.send("You are forbidden from using bot commands in this server.", delete_after=30))
+                do_after(ctx.message.delete(), 30)
+                return False
+
+            cmd_name = ctx.command.qualified_name
+            if cmd_name in blocked_data.get("disabled_command_guild", EMPTY_SET):
+                self.loop.create_task(ctx.send("This command is disabled in this server.", delete_after=30))
+                do_after(ctx.message.delete(), 30)
+                return False
+            if (cmd_name, channel_id) in blocked_data.get("disabled_command_channel", EMPTY_SET):
+                self.loop.create_task(ctx.send("This command is disabled in this channel.", delete_after=30))
+                do_after(ctx.message.delete(), 30)
+                return False
+            if (cmd_name, author_id) in blocked_data.get("disabled_command_member", EMPTY_SET):
+                self.loop.create_task(ctx.send("You are forbidden from using this command in this server.", delete_after=30))
+                do_after(ctx.message.delete(), 30)
+                return False
         return True
 
     async def load(self):
-        async for guild_data in self.db.guild_data.find({"prefixes": {"$exists": True}}, projection={"_id": -1, "guild_id": 1, "prefixes": 1}):
+        async for guild_data in self.db.guild_data.find({"prefixes": {"$exists": True, "$ne": []}}, projection={"_id": -1, "guild_id": 1, "prefixes": 1}):
             if guild_data["prefixes"]:
                 self.guild_prefixes[guild_data["guild_id"]] = guild_data["prefixes"]
 
-        bot_data = await self.db.command_data.find_one({"name": {"$eq": None}})
-        self.disabled_data = {
-            None: {
-                "users":    set(bot_data.get("banned_user_ids", [])),
-                "channels": set(bot_data.get("disabled_channel_ids", []))
+        bot_data = await self.db.belphegor_config.find_one({"category": "block"})
+        self.blocked_user_ids = set(bot_data.get("blocked_user_ids", []))
+
+        self.disabled_data = {}
+        async for guild_data in self.db.guild_data.find(
+            {
+                "$or": [
+                    {
+                        "disabled_bot_guild": {
+                            "$eq": True
+                        }
+                    },
+                    {
+                        "disabled_bot_channel": {
+                            "$exists": True,
+                            "$ne": []
+                        }
+                    },
+                    {
+                        "disabled_bot_member": {
+                            "$exists": True,
+                            "$ne": []
+                        }
+                    },
+                    {
+                        "disabled_command_guild": {
+                            "$exists": True,
+                            "$ne": []
+                        }
+                    },
+                    {
+                        "disabled_command_channel": {
+                            "$exists": True,
+                            "$ne": []
+                        }
+                    },
+                    {
+                        "disabled_bot_member": {
+                            "$exists": True,
+                            "$ne": []
+                        }
+                    }
+                ]
+            },
+            projection={
+                "_id": False,
+                "guild_id": True,
+                "disabled_bot_guild": True,
+                "disabled_bot_channel": True,
+                "disabled_bot_member": True,
+                "disabled_command_guild": True,
+                "disabled_command_channel": True,
+                "disabled_command_member": True
             }
-        }
-        async for command_data in self.db.command_data.find({"name": {"$ne": None}}):
-            self.disabled_data[command_data["name"]] = {
-                "guilds":   set(command_data.get("disabled_guild_ids", [])),
-                "channels": set(command_data.get("disabled_channel_ids", [])),
-                "members":  set(command_data.get("disabled_member_ids", []))
-            }
+        ):
+            guild_id = guild_data.pop("guild_id")
+            self.disabled_data[guild_id] = {key: (value if isinstance(value, bool) else set(tuple(v) if isinstance(v, list) else v for v in value)) for key, value in guild_data.items()}
         self.add_check(self.block_or_not)
 
         await self.wait_until_ready()

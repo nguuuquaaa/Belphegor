@@ -24,6 +24,7 @@ class Admin:
     def __init__(self, bot):
         self.bot = bot
         self.command_data = bot.db.command_data
+        self.belphegor_config = bot.db.belphegor_config
 
     async def reload_extension(self, ctx, extension):
         try:
@@ -98,6 +99,12 @@ class Admin:
 
     @commands.command(hidden=True)
     @checks.owner_only()
+    async def restart(self, ctx):
+        self.bot.restart_flag = True
+        await self.bot.logout()
+
+    @commands.command(hidden=True)
+    @checks.owner_only()
     async def logout(self, ctx):
         await self.bot.logout()
 
@@ -139,27 +146,27 @@ class Admin:
 
     @commands.command(hidden=True)
     @checks.owner_only()
-    async def botban(self, ctx, user: discord.User):
-        self.bot.banned_data[None]["users"].add(user.id)
-        result = await self.command_data.update_one({"name": {"$eq": None}}, {"$addToSet": {"banned_user_ids": user.id}})
+    async def block(self, ctx, user: discord.User):
+        self.bot.blocked_user_ids.add(user.id)
+        result = await self.belphegor_config.update_one({"category": "block"}, {"$addToSet": {"blocked_user_ids": user.id}})
         if result.modified_count > 0:
-            await ctx.send(f"{user.name} has been blocked.")
+            await ctx.send(f"{user} has been blocked.")
         else:
-            await ctx.send(f"{user.name} is already blocked.")
+            await ctx.send(f"{user} is already blocked.")
 
     @commands.command(hidden=True)
     @checks.owner_only()
-    async def botunban(self, ctx, user: discord.User):
-        self.bot.banned_data[None]["users"].discard(user.id)
-        result = await self.command_data.update_one({"name": {"$eq": None}}, {"$pull": {"banned_user_ids": user.id}})
+    async def unblock(self, ctx, user: discord.User):
+        self.bot.blocked_user_ids.discard(user.id)
+        result = await self.belphegor_config.update_one({"category": "block"}, {"$pull": {"blocked_user_ids": user.id}})
         if result.modified_count > 0:
-            await ctx.send(f"{user.name} has been unblocked.")
+            await ctx.send(f"{user} has been unblocked.")
         else:
-            await ctx.send(f"{user.name} is not blocked.")
+            await ctx.send(f"{user} is not blocked.")
 
     @commands.command(hidden=True)
     @checks.owner_only()
-    async def bothackban(self, ctx, user_id: int):
+    async def hackblock(self, ctx, user_id: int):
         user = await self.bot.get_user_info(user_id)
         cmd = self.bot.get_command("botban")
         await ctx.invoke(cmd, user)

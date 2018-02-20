@@ -21,7 +21,6 @@ class Guild:
     def __init__(self, bot):
         self.bot = bot
         self.guild_data = bot.db.guild_data
-        self.command_data = bot.db.command_data
         self.banned_emojis = set()
 
     @commands.group(name="set")
@@ -661,137 +660,180 @@ class Guild:
         embed.set_image(url=ctx.guild.icon_url_as(format='png'))
         await ctx.send(embed=embed)
 
+    async def get_command_name(self, ctx, cmd_name):
+        cmd = self.bot.get_command(cmd_name)
+        if not cmd:
+            await ctx.send(f"{cmd_name} is not a valid command.")
+            return None
+        elif cmd.hidden or cmd.qualified_name.partition(" ")[0] in ("enable", "disable"):
+            await ctx.send("This command cannot be disabled or enabled.")
+            return None
+        else:
+            return cmd.qualified_name
+
     @commands.group(name="disable")
+    @checks.guild_only()
+    @checks.manager_only()
     async def cmd_disable(self, ctx):
         pass
 
-    @cmd_disable.command(name="guild", aliases=["server"])
-    @checks.guild_only()
-    @checks.manager_only()
-    async def cmd_disable_guild(self, ctx, *, cmd_name):
-        cmd = self.bot.get_command(cmd_name)
-        if not cmd:
-            return await ctx.send(f"{cmd_name} is not a valid command.")
-        if cmd.hidden or getattr(cmd.root_parent, "name", None) == "command":
-            return ctx.send("You can't disable this command.")
-        name = cmd.qualified_name
-        cmd_data = self.bot.disabled_data.get(name, {})
-        disabled_guild = cmd_data.get("guilds", set())
-        disabled_guild.add(ctx.guild.id)
-        cmd_data["guilds"] = disabled_guild
-        self.bot.disabled_data[name] = cmd_data
-        await self.command_data.update_one({"name": name}, {"$addToSet": {"disabled_guild_ids": ctx.guild.id}}, upsert=True)
-        await ctx.send(f"Command `{name}` has been disabled in this server.")
-
-    @cmd_disable.command(name="channel")
-    @checks.guild_only()
-    @checks.manager_only()
-    async def cmd_disable_channel(self, ctx, channel: discord.TextChannel, *, cmd_name):
-        cmd = self.bot.get_command(cmd_name)
-        if not cmd:
-            return await ctx.send(f"{cmd_name} is not a valid command.")
-        if cmd.hidden or getattr(cmd.root_parent, "name", None) == "command":
-            return ctx.send("You can't disable this command.")
-        name = cmd.qualified_name
-        cmd_data = self.bot.disabled_data.get(name, {})
-        disabled_channel = cmd_data.get("channels", set())
-        disabled_channel.add(channel.id)
-        cmd_data["channels"] = disabled_channel
-        self.bot.disabled_data[name] = cmd_data
-        await self.command_data.update_one({"name": name}, {"$addToSet": {"disabled_channel_ids": channel.id}}, upsert=True)
-        await ctx.send(f"Command `{name}` has been disabled in {channel.mention}.")
-
-    @cmd_disable.command(name="member")
-    @checks.guild_only()
-    @checks.manager_only()
-    async def cmd_disable_member(self, ctx, member: discord.Member, *, cmd_name):
-        cmd = self.bot.get_command(cmd_name)
-        if not cmd:
-            return await ctx.send(f"{cmd_name} is not a valid command.")
-        if cmd.hidden or getattr(cmd.root_parent, "name", None) == "command":
-            return ctx.send("You can't disable this command.")
-        name = cmd.qualified_name
-        cmd_data = self.bot.disabled_data.get(name, {})
-        disabled_member = cmd_data.get("members", set())
-        disabled_member.add((member.id, ctx.guild.id))
-        cmd_data["members"] = disabled_member
-        self.bot.disabled_data[name] = cmd_data
-        await self.command_data.update_one({"name": name}, {"$addToSet": {"disabled_member_ids": member.id}}, upsert=True)
-        await ctx.send(f"{member} is banned from using command `{name}` in this server.")
-
-    @cmd_disable.command(name="botchannel")
-    @checks.guild_only()
-    @checks.manager_only()
-    async def cmd_disable_botchannel(self, ctx, channel: discord.TextChannel):
-        cmd_data = self.bot.disabled_data[None]["channels"].add(channel.id)
-        result = await self.command_data.update_one({"name": None}, {"$addToSet": {"disabled_channel_ids": channel.id}})
-        await ctx.send(f"Command usage has been disabled in {channel.mention}.")
-
     @commands.group(name="enable")
+    @checks.guild_only()
+    @checks.manager_only()
     async def cmd_enable(self, ctx):
         pass
 
+    #enable and disable bot usage for guild
+    @cmd_disable.command(name="guild", aliases=["server"])
+    async def cmd_disable_guild(self, ctx):
+        guild_data = self.bot.disabled_data.get(ctx.guild.id, {})
+        guild_data["disabled_bot_guild"] = True
+        self.bot.disabled_data[ctx.guild.id] = guild_data
+        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$set": {"disabled_bot_guild": True}}, upsert=True)
+        await ctx.send(f"Bot usage has been disabled in this server.")
+
     @cmd_enable.command(name="guild", aliases=["server"])
-    @checks.guild_only()
-    @checks.manager_only()
-    async def cmd_enable_guild(self, ctx, *, cmd_name):
-        cmd = self.bot.get_command(cmd_name)
-        if not cmd:
-            return await ctx.send(f"{cmd_name} is not a valid command.")
-        if cmd.hidden or getattr(cmd.root_parent, "name", None) == "command":
-            return ctx.send("You can't enable this command.")
-        name = cmd.qualified_name
-        cmd_data = self.bot.disabled_data.get(name, {})
-        disabled_guild = cmd_data.get("guilds", set())
-        disabled_guild.discard(ctx.guild.id)
-        cmd_data["guilds"] = disabled_guild
-        self.bot.disabled_data[name] = cmd_data
-        await self.command_data.update_one({"name": name}, {"$pull": {"disabled_guild_ids": ctx.guild.id}})
-        await ctx.send(f"Command `{name}` has been enabled in this server.")
+    async def cmd_enable_guild(self, ctx):
+        guild_data = self.bot.disabled_data.get(ctx.guild.id, {})
+        guild_data["disabled_bot_guild"] = False
+        self.bot.disabled_data[ctx.guild.id] = guild_data
+        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$set": {"disabled_bot_guild": False}})
+        await ctx.send(f"Bot usage has been enabled in this server.")
+
+    #enable and disable bot usage for channel
+    @cmd_disable.command(name="channel")
+    async def cmd_disable_channel(self, ctx, channel: discord.TextChannel):
+        guild_data = self.bot.disabled_data.get(ctx.guild.id, {})
+        disabled_channel = guild_data.get("disabled_bot_channel", set())
+        disabled_channel.add(channel.id)
+        guild_data["disabled_bot_channel"] = disabled_channel
+        self.bot.disabled_data[ctx.guild.id] = guild_data
+        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$addToSet": {"disabled_bot_channel": channel.id}}, upsert=True)
+        await ctx.send(f"Bot usage has been disabled in {channel.mention}.")
 
     @cmd_enable.command(name="channel")
-    @checks.guild_only()
-    @checks.manager_only()
-    async def cmd_enable_channel(self, ctx, channel: discord.TextChannel, *, cmd_name):
-        cmd = self.bot.get_command(cmd_name)
-        if not cmd:
-            return await ctx.send(f"{cmd_name} is not a valid command.")
-        if cmd.hidden or getattr(cmd.root_parent, "name", None) == "command":
-            return ctx.send("You can't enable this command.")
-        name = cmd.qualified_name
-        cmd_data = self.bot.disabled_data.get(name, {})
-        disabled_channel = cmd_data.get("channels", set())
+    async def cmd_enable_channel(self, ctx, channel: discord.TextChannel):
+        guild_data = self.bot.disabled_data.get(ctx.guild.id, {})
+        disabled_channel = guild_data.get("disabled_bot_channel", set())
         disabled_channel.discard(channel.id)
-        cmd_data["channels"] = disabled_channel
-        self.bot.disabled_data[name] = cmd_data
-        await self.command_data.update_one({"name": name}, {"$pull": {"disabled_channel_ids": channel.id}})
-        await ctx.send(f"Command `{name}` has been enabled in {channel.mention}.")
+        guild_data["disabled_bot_channel"] = disabled_channel
+        self.bot.disabled_data[ctx.guild.id] = guild_data
+        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$pull": {"disabled_bot_channel": channel.id}})
+        await ctx.send(f"Bot usage has been enabled in {channel.mention}.")
+
+    #enable and disable bot usage for member
+    @cmd_disable.command(name="member")
+    async def cmd_disable_member(self, ctx, member: discord.Member):
+        guild_data = self.bot.disabled_data.get(ctx.guild.id, {})
+        disabled_member = guild_data.get("disabled_bot_member", set())
+        disabled_member.add(member.id)
+        guild_data["disabled_bot_member"] = disabled_member
+        self.bot.disabled_data[ctx.guild.id] = guild_data
+        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$addToSet": {"disabled_bot_member": channel.id}}, upsert=True)
+        await ctx.send(f"Bot usage has been disabled for {member} in this server.")
 
     @cmd_enable.command(name="member")
-    @checks.guild_only()
-    @checks.manager_only()
-    async def cmd_enable_member(self, ctx, member: discord.Member, *, cmd_name):
-        cmd = self.bot.get_command(cmd_name)
-        if not cmd:
-            return await ctx.send(f"{cmd_name} is not a valid command.")
-        if cmd.hidden or getattr(cmd.root_parent, "name", None) == "command":
-            return ctx.send("You can't enable this command.")
-        name = cmd.qualified_name
-        cmd_data = self.bot.disabled_data.get(name, {})
-        disabled_member = cmd_data.get("members", set())
-        disabled_member.discard((member.id, ctx.guild.id))
-        cmd_data["members"] = disabled_member
-        self.bot.disabled_data[name] = cmd_data
-        await self.command_data.update_one({"name": name}, {"$pull": {"disabled_member_ids": member.id}})
-        await ctx.send(f"{member} is unbanned from using command `{name}` in this server.")
+    async def cmd_enable_member(self, ctx, member: discord.Member):
+        guild_data = self.bot.disabled_data.get(ctx.guild.id, {})
+        disabled_member = guild_data.get("disabled_bot_member", set())
+        disabled_member.discard(member.id)
+        guild_data["disabled_bot_member"] = disabled_member
+        self.bot.disabled_data[ctx.guild.id] = guild_data
+        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$pull": {"disabled_bot_member": channel.id}})
+        await ctx.send(f"Bot usage has been enabled for {member} in this server.")
 
-    @cmd_enable.command(name="botchannel")
-    @checks.guild_only()
-    @checks.manager_only()
-    async def cmd_enable_botchannel(self, ctx, channel: discord.TextChannel):
-        cmd_data = self.bot.disabled_data[None]["channels"].discard(channel.id)
-        result = await self.command_data.update_one({"name": None}, {"$pull": {"disabled_channel_ids": channel.id}})
-        await ctx.send(f"Command usage has been enabled in {channel.mention}.")
+    @cmd_disable.group(name="command", aliases=["cmd"])
+    async def cmd_disable_command(self, ctx):
+        pass
+
+    @cmd_enable.group(name="command", aliases=["cmd"])
+    async def cmd_enable_command(self, ctx):
+        pass
+
+    #enable and disable command usage for guild
+    @cmd_disable_command.command(name="guild", aliases=["server"])
+    async def cmd_disable_command_guild(self, ctx, *, cmd_name):
+        cmd = await self.get_command_name(ctx, cmd_name)
+        if not cmd:
+            return
+        guild_data = self.bot.disabled_data.get(ctx.guild.id, {})
+        disabled_guild = guild_data.get("disabled_command_guild", set())
+        disabled_guild.add(cmd)
+        guild_data["disabled_command_guild"] = disabled_guild
+        self.bot.disabled_data[ctx.guild.id] = guild_data
+        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$addToSet": {"disabled_command_guild": cmd}}, upsert=True)
+        await ctx.send(f"Command `{cmd}` has been disabled in this server.")
+
+    @cmd_enable_command.command(name="guild", aliases=["server"])
+    async def cmd_enable_command_guild(self, ctx, *, cmd_name):
+        cmd = await self.get_command_name(ctx, cmd_name)
+        if not cmd:
+            return
+        guild_data = self.bot.disabled_data.get(ctx.guild.id, {})
+        disabled_guild = guild_data.get("disabled_command_guild", set())
+        disabled_guild.discard(cmd)
+        guild_data["disabled_command_guild"] = disabled_guild
+        self.bot.disabled_data[ctx.guild.id] = guild_data
+        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$pull": {"disabled_command_guild": cmd}})
+        await ctx.send(f"Command `{cmd}` has been enabled in this server.")
+
+    #enable and disable command usage for channel
+    @cmd_disable_command.command(name="channel")
+    async def cmd_disable_command_channel(self, ctx, channel: discord.TextChannel, *, cmd_name):
+        cmd = await self.get_command_name(ctx, cmd_name)
+        if not cmd:
+            return
+        guild_data = self.bot.disabled_data.get(ctx.guild.id, {})
+        disabled_channel = guild_data.get("disabled_command_channel", set())
+        disabled_channel.add((cmd, channel.id))
+        guild_data["disabled_command_channel"] = disabled_channel
+        self.bot.disabled_data[ctx.guild.id] = guild_data
+        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$addToSet": {"disabled_command_channel": (cmd, channel.id)}}, upsert=True)
+        await ctx.send(f"Command `{cmd}` has been disabled in {channel.mention}.")
+
+    @cmd_enable_command.command(name="channel")
+    async def cmd_enable_command_channel(self, ctx, channel: discord.TextChannel, *, cmd_name):
+        cmd = await self.get_command_name(ctx, cmd_name)
+        if not cmd:
+            return
+        guild_data = self.bot.disabled_data.get(ctx.guild.id, {})
+        disabled_channel = guild_data.get("disabled_command_channel", set())
+        disabled_channel.discard((cmd, channel.id))
+        guild_data["disabled_command_channel"] = disabled_channel
+        self.bot.disabled_data[ctx.guild.id] = guild_data
+        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$pull": {"disabled_command_channel": (cmd, channel.id)}})
+        await ctx.send(f"Command `{cmd}` has been enabled in {channel.mention}.")
+
+    #enable and disable command usage for member
+    @cmd_disable_command.command(name="member")
+    async def cmd_disable_command_member(self, ctx, member: discord.Member, *, cmd_name):
+        cmd = await self.get_command_name(ctx, cmd_name)
+        if not cmd:
+            return
+        guild_data = self.bot.disabled_data.get(ctx.guild.id, {})
+        disabled_member = guild_data.get("disabled_command_member", set())
+        disabled_member.add((cmd, member.id))
+        guild_data["disabled_command_member"] = disabled_member
+        self.bot.disabled_data[ctx.guild.id] = guild_data
+        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$addToSet": {"disabled_command_member": (cmd, member.id)}}, upsert=True)
+        await ctx.send(f"Command `{cmd}` has been disabled for {member}'s use.")
+
+    @cmd_enable_command.command(name="member")
+    async def cmd_enable_command_member(self, ctx, member: discord.Member, *, cmd_name):
+        cmd = await self.get_command_name(ctx, cmd_name)
+        if not cmd:
+            return
+        guild_data = self.bot.disabled_data.get(ctx.guild.id, {})
+        disabled_member = guild_data.get("disabled_command_member", set())
+        disabled_member.discard((cmd, member.id))
+        guild_data["disabled_command_member"] = disabled_member
+        self.bot.disabled_data[ctx.guild.id] = guild_data
+        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$pull": {"disabled_command_member": (cmd, member.id)}})
+        await ctx.send(f"Command `{cmd}` has been enabled for {member}'s use.")
+
+    @cmd_disable.command()
+    async def info(self, ctx):
+        pass
 
 #==================================================================================================================================================
 
