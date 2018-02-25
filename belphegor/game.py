@@ -1,8 +1,8 @@
 import discord
 from discord.ext import commands
 from . import board_game
+from .utils import config, checks
 import random
-from .utils import config
 import asyncio
 import json
 
@@ -32,16 +32,14 @@ class Game:
         return game
 
     @commands.command()
+    @checks.guild_only()
     async def cangua(self, ctx, *members: discord.Member):
         '''
-            `>>cangua <optional: list of member mentions>`
+            `>>cangua <optional: list of members>`
             Play ca ngua with the members in question.
             Each user can only play one board game across all servers at a time.
             Bots and those who are already playing are excluded.
             If command is invoked without argument then the rules is displayed instead.
-
-            *Example:*
-            `>>cangua @nguuuquaaa @nguuutheee @nguuuvaaai`
         '''
         if members:
             all_members = set([ctx.author])
@@ -58,7 +56,7 @@ class Game:
                 title="Co Ca Ngua",
                 description=
                     "Simple Vietnamese board game, 2~4 players.\n"
-                    "Each player has their own color, and possesses 4 horses.\n"
+                    "Each player is affiliated with a color, and possesses 4 horses.\n"
                     "Horses start at the big bold spot of their color, and move counter-clockwise.\n"
                     "You can't pass other horses, and horses can't be in the same spot, but your can kick other players' horses back to their stable.\n"
                     "The goal is to have all the horses climb to the highest possible spot on your tower.\n"
@@ -85,15 +83,13 @@ class Game:
             await ctx.send(embed=embed)
 
     @commands.command()
+    @checks.guild_only()
     async def whatgame(self, ctx, member: discord.Member=None):
         '''
             `>>whatgame <optional: member mention>`
             Check if target is playing a game or not.
             If you invoke command without member mention then the target is yourself.
             Just don't try to add @everyone or @here since it's not a member mention at all.
-
-            *Example:*
-            `>>whatgame @nguuuquaaa`
         '''
         target = member or ctx.author
         current_game = await self.get_game(target)
@@ -103,6 +99,7 @@ class Game:
             await ctx.send(f"{member.display_name} is not participating in any game.")
 
     @commands.command()
+    @checks.guild_only()
     async def roll(self, ctx):
         '''
             `>>roll`
@@ -115,6 +112,7 @@ class Game:
                 await current_game.cmd_roll()
 
     @commands.command()
+    @checks.guild_only()
     async def abandon(self, ctx):
         '''
             `>>abandon`
@@ -135,6 +133,7 @@ class Game:
             await current_game.cmd_abandon(ctx.author.id)
 
     @commands.command()
+    @checks.guild_only()
     async def gameover(self, ctx):
         '''
             `>>gameover`
@@ -147,6 +146,7 @@ class Game:
             self.games.pop(current_game.game_id)
 
     @commands.command()
+    @checks.guild_only()
     async def skip(self, ctx):
         '''
             `>>skip`
@@ -160,6 +160,7 @@ class Game:
                 await current_game.cmd_skip()
 
     @commands.command(name="map")
+    @checks.guild_only()
     async def _map(self, ctx):
         '''
             `>>map`
@@ -172,6 +173,7 @@ class Game:
                 await current_game.cmd_map()
 
     @commands.command()
+    @checks.guild_only()
     async def move(self, ctx, number: int, step: int):
         '''
             `>>move <number> <step>`
@@ -185,14 +187,12 @@ class Game:
                 await current_game.cmd_move(ctx, number, step)
 
     @commands.command()
+    @checks.guild_only()
     async def go(self, ctx):
         '''
-            `>>move <number> <step>`
-            Move horse number <number> by <step> steps.
+            `>>go <number>`
+            Put horse number <number> at the start point.
             Part of cangua commands.
-
-            *Example:*
-            `>>move 1 10`
         '''
         current_game = await self.get_game(ctx.author)
         if current_game:
@@ -201,14 +201,12 @@ class Game:
                 await current_game.cmd_go()
 
     @commands.command()
+    @checks.guild_only()
     async def climb(self, ctx, number: int, step: int):
         '''
             `>>climb <number> <floor>`
             Have horse number <number> climb the tower to floor <floor>.
             Part of cangua commands.
-
-            *Example:*
-            `>>climb 1 6`
         '''
         current_game = await self.get_game(ctx.author)
         if current_game:
@@ -217,16 +215,14 @@ class Game:
                 await current_game.cmd_climb(number, step)
 
     @commands.group(invoke_without_command=True)
-    async def info(self, ctx):
+    @checks.guild_only()
+    async def info(self, ctx, member: discord.Member=None):
         '''
             `>>info <optional: member mention>`
             Check for info on a player.
             Member should be playing the same game as you.
             If you invoke command without member mention then the target is yourself.
             Part of board game commands.
-
-            *Example:*
-            `>>info @nguuuquaaa`
         '''
         if ctx.invoked_subcommand is None:
             pass
@@ -241,8 +237,11 @@ class Game:
         current_game = await self.get_game(ctx.author)
         if current_game:
             await ctx.send(f"It's currently {current_game.current_player.member.mention} 's turn.")
+        else:
+            await ctx.send("You are not participating in any game.")
 
     @commands.command()
+    @checks.guild_only()
     async def gamestate(self, ctx):
         '''
             `>>gamestate`

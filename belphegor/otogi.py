@@ -217,7 +217,7 @@ class Otogi:
             cls=Daemon, colour=discord.Colour.orange(), atts=["id", "name", "alias"], name_att="name", emoji_att="daemon_class", prompt=prompt, sort={"id": 1}
         )
 
-    @commands.command(name="daemon", aliases=["d"])
+    @commands.group(name="daemon", aliases=["d"], invoke_without_command=True)
     async def cmd_daemon(self, ctx, *, name: str):
         daemon = await self._search(ctx, name)
         if not daemon:
@@ -335,8 +335,12 @@ class Otogi:
             result.append(new_daemon)
         return result
 
-    @commands.command(name="daemonsearch", aliases=["ds"])
-    async def cmd_ds(self, ctx, *, data):
+    @cmd_daemon.command(name="filter")
+    async def cmd_daemon_filter(self, ctx, *, data):
+        '''
+            Command takes multiple lines with format `<attribute> <value>`
+            Attributes include: name, alias, type, class, max_atk, max_hp, mlb_atk, mlb_hp, rarity, skill, ability, bond, faction, voice_actor, illustrator, how_to_acquire, notes_and_trivia and description
+        '''
         data = data.strip().splitlines()
         attrs = []
         for d in data:

@@ -47,8 +47,7 @@ class Random:
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     async def r(self, ctx):
         if ctx.invoked_subcommand is None:
-            cmd = self.bot.get_command("help").get_command("random")
-            await ctx.invoke(cmd)
+            pass
 
     @retry_wrap
     async def get_image_danbooru(self, tag, *, safe):

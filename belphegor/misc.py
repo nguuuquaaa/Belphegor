@@ -232,7 +232,7 @@ class Misc:
             await ctx.send(embed=embed)
 
     @commands.command()
-    async def fancy(self, ctx, *, textin:str):
+    async def fancy(self, ctx, *, textin: str):
         textin = textin.upper()
         await ctx.send(" ".join((FANCY_CHARS.get(charin, charin) for charin in textin)))
 
@@ -632,9 +632,15 @@ class Misc:
             for tag in data.find_all(lambda x: x.name=="div" and x.get("class") in [["result"], ["result", "hidden"]] and not x.get("id")):
                 content = tag.find("td", class_="resulttablecontent")
                 title_tag = content.find("div", class_="resulttitle")
-                for br in title_tag.find_all("br"):
-                    br.replace_with("\n")
-                title = title_tag.get_text().strip().splitlines()[0]
+                if title_tag:
+                    for br in title_tag.find_all("br"):
+                        br.replace_with("\n")
+                    title = title_tag.get_text().strip().splitlines()[0]
+                else:
+                    result_content = tag.find("div", class_="resultcontent")
+                    for br in result_content.find_all("br"):
+                        br.replace_with("\n")
+                    title = result_content.get_text().strip().splitlines()[0]
                 similarity = content.find("div", class_="resultsimilarityinfo").text
                 content_url = content.find("a", class_="linkify")
                 if not content_url:

@@ -587,11 +587,11 @@ class Guild:
     @commands.command()
     @checks.guild_only()
     @checks.manager_only()
-    async def purgereact(self, ctx, *msg_ids):
+    async def purgereact(self, ctx, *msg_ids: int):
         for msg_id in msg_ids:
             msg = await ctx.get_message(msg_id)
             await msg.clear_reactions()
-            await ctx.confirm()
+        await ctx.confirm()
 
     @commands.command()
     @checks.guild_only()

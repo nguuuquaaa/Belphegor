@@ -316,8 +316,7 @@ class Music:
     @commands.group(aliases=["m"])
     async def music(self, ctx):
         if ctx.invoked_subcommand is None:
-            cmd = self.bot.get_command("help music")
-            await ctx.invoke(cmd)
+            pass
 
     @music.command(aliases=["j"])
     async def join(self, ctx):
