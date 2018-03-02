@@ -532,6 +532,11 @@ class PSO2:
             "User-Agent": "PSO2Alert",
             "Host": "pso2.acf.me.uk"
         }
+        async def try_it(coro):
+            try:
+                await coro
+            except:
+                pass
         try:
             initial_data = await self.check_for_updates()
             print(f"Latest PSO2 Alert version: {initial_data['Version']}")
@@ -589,7 +594,7 @@ class PSO2:
                     ):
                         channel = self.bot.get_channel(gd["eq_channel_id"])
                         if channel:
-                            _loop.create_task(channel.send(embed=full_embed))
+                            _loop.create_task(try_it(channel.send(embed=full_embed)))
                 if simple_desc:
                     simple_embed = discord.Embed(title="EQ Alert", description="\n\n".join(simple_desc), colour=discord.Colour.red())
                     simple_embed.set_footer(text=utils.jp_time(now_time))
@@ -599,11 +604,12 @@ class PSO2:
                     ):
                         channel = self.bot.get_channel(gd["eq_channel_id"])
                         if channel:
-                            _loop.create_task(channel.send(embed=simple_embed))
+                            _loop.create_task(try_it(channel.send(embed=simple_embed)))
         except asyncio.CancelledError:
             return
-        except ConnectionError:
+        except Exception as e:
             await asyncio.sleep(10)
+            print(e)
             self.eq_alert_forever = _loop.create_task(self.eq_alert())
 
     def get_emoji(self, dt_obj):

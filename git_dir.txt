@@ -11,7 +11,7 @@
 /belphegor/music.py
 /belphegor/otogi.py
 /belphegor/pso2.py
-/belphegor/random.py
+/belphegor/image.py
 /belphegor/remind.py
 /belphegor/sticker.py
 /belphegor/tag.py

@@ -116,9 +116,10 @@ def discord_escape(any_string):
     return discord_regex.sub(lambda m: f"\\{m.group(0)}", any_string)
 
 def safe_url(any_url):
-    return quote(any_url, safe=r":/&$+,;=@#~%")
+    return quote(any_url, safe=r":/&$+,;=@#~%?")
 
-def _raw_page_format(container, per_page, *, separator="\n", book=None, book_amount=None, title=None, pretext=None, description=None, colour=None, author=None, author_icon=None, footer=None, thumbnail_url=None):
+def _raw_page_format(container, per_page, *, separator="\n", book=None, book_amount=None, title=None, pretext=None, description=None, posttext=None,
+                    colour=None, author=None, author_icon=None, footer=None, thumbnail_url=None):
     embeds = []
     item_amount = len(container)
     page_amount = (item_amount - 1) // per_page + 1
@@ -132,12 +133,19 @@ def _raw_page_format(container, per_page, *, separator="\n", book=None, book_amo
                 paging = f"(Page {i//per_page+1}/{page_amount} - Book {book+1}/{book_amount})"
             if pretext:
                 if callable(pretext):
-                    t = pretext(book)
+                    pt = pretext(book)
                 else:
-                    t = pretext
-                desc = f"{t}\n{desc}\n\n{paging}"
+                    pt = pretext
             else:
-                desc = f"{desc}\n\n{paging}"
+                pt = ""
+            if posttext:
+                if callable(posttext):
+                    ptt = posttext(book)
+                elif ptt:
+                    ptt = posttext
+            else:
+                ptt = ""
+            desc = f"{pt}\n{desc}\n\n{paging}\n{ptt}"
             embed = discord.Embed(
                 title=title,
                 description=desc,

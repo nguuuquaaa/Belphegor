@@ -27,7 +27,7 @@ FANCY_CHARS = {
     "5": "\u0035\u20E3", "6": "\u0036\u20E3", "7": "\u0037\u20E3", "8": "\u0038\u20E3", "9": "\u0039\u20E3"
 }
 
-GLITCH_TEXT = "¡¢£¤¥¦§¨©ª«¬®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿĀāĂăĄąĆćĈĉĊċČčĎďĐđĒēĔĕĖėĘęĚěĜĝĞğĠġĢģĤĥĦħĨĩĪīĬĭĮįİıĲĳĴĵĶķĸĹĺĻļĽľĿŀŁłŃńŅņŇňŉŊŋŌōŎŏŐőŒœŔŕŖŗŘřŚśŜŝŞşŠšŢţŤťŦŧŨũŪūŬŭŮůŰűŲųŴŵŶŷŸŹźŻżŽž"
+GLITCH_TEXT = "¡¢£¤¥¦§¨©ª«¬®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿĀāĂăĄąĆćĈĉĊċČčĎďĐđĒēĔĕĖėĘęĚěĜĝĞğĠġĢģĤĥĦħĨĩĪīĬĭĮįİıĲĳĴĵĶķĸĹĺĻļĽľĿŀŁłŃńŅņŇňŉŊŋŌōŎŏŐőŒœŔŕŖŗŘřŚśŜŝŞşŠšŢţŤťŦŧŨũŪūŬŭŮůŰűŲųŴŵŶŷŸŹźŻżŽž                    "
 
 GLITCH_UP = tuple("̍	̎	̄	̅	̿	̑	̆	̐	͒	͗͑	̇	̈	̊	͂	̓	̈́	͊	͋	͌̃	̂	̌	͐	̀	́	̋	̏	̒	̓̔	̽	̉	ͣ	ͤ	ͥ	ͦ	ͧ	ͨ	ͩͪ	ͫ	ͬ	ͭ	ͮ	ͯ	̾	͛	͆	̚".split())
 
@@ -103,6 +103,10 @@ class Misc:
 
     @commands.command(aliases=["jkp",])
     async def jankenpon(self, ctx):
+        '''
+            `>>jankenpon`
+            Play rock-paper-scissor.
+        '''
         embed = discord.Embed(description="What will you use? Rock, paper or scissor?")
         message = await ctx.send(embed=embed)
         possible_reactions = ("\u270a", "\u270b", "\u270c", "\u274c")
@@ -166,22 +170,25 @@ class Misc:
             return
         inp = message.content
         if inp[:3] in ("/o/", "\\o\\"):
-            reply = ""
+            r = []
             for index, ch in enumerate(inp):
                 current = inp[index:index+3]
                 if current == "\\o\\":
-                    reply = f"{reply} /o/"
+                    r.append("/o/")
                 elif current == "/o/":
-                    reply = f"{reply} \\o\\"
-                else:
-                    pass
-            await message.channel.send(reply)
+                    r.append("\\o\\")
+            await message.channel.send(" ".join(r))
         elif inp == "ping":
             msg = await message.channel.send("pong")
             await msg.edit(content=f"pong (ws: {int(1000*self.bot.latency)}ms, edit: {int(1000*(msg.created_at-message.created_at).total_seconds())}ms)")
 
     @commands.command()
-    async def avatar(self, ctx, *, member:discord.Member=None):
+    async def avatar(self, ctx, *, member: discord.Member=None):
+        '''
+            `>>avatar <optional: member>`
+            Show <member>'s avatar.
+            If <member> is not specified, show command invoker's instead.
+        '''
         if not member:
             member = ctx.author
         embed = discord.Embed(title=f"{member.display_name}'s avatar", url=member.avatar_url)
@@ -190,6 +197,11 @@ class Misc:
 
     @commands.command()
     async def dice(self, ctx, max_side: int, number_of_dices: int):
+        '''
+            `>>dice <max_side> <number_of_dices>`
+            Roll dices.
+            <max_side> must be between 4 and 120 and <number_of_dices> must be between 1 and 100.
+        '''
         if 120 >= max_side > 3 and 0 < number_of_dices <= 100:
             rng = board_game.Dices(max_side, number_of_dices)
             roll_result = rng.roll()
@@ -201,56 +213,45 @@ class Misc:
             await ctx.send("Max side must be between 4 and 120 and number of dices must be between 1 and 100")
 
     @commands.command()
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
-    async def stats(self, ctx):
-        async with ctx.typing():
-            bytes_ = await utils.fetch(
-                self.bot.session,
-                "https://api.github.com/repos/nguuuquaaa/Belphegor/commits",
-                headers={"User-Agent": "nguuuquaaa"}
-            )
-            commits = json.loads(bytes_)
-            desc = "\n".join((f"[`{c['sha'][:7]}`]({c['html_url']}) {c['commit']['message']}" for c in commits[:3]))
-            process = self.bot.process
-            embed = discord.Embed(description=f"**Lastest changes:**\n{desc}", colour=discord.Colour.blue())
-            embed.set_author(name="{}".format(self.bot.user), icon_url=self.bot.user.avatar_url)
-            owner = self.bot.get_user(config.OWNER_ID)
-            embed.add_field(name="Owner", value=f"{owner.name}#{owner.discriminator}")
-            embed.add_field(name="Library", value="[discord.py\\[rewrite\\]](https://github.com/Rapptz/discord.py/tree/rewrite)")
-            embed.add_field(name="Created at", value=str(self.bot.user.created_at)[:10])
-            embed.add_field(name="Guilds", value=f"{len(self.bot.guilds)} guilds")
-            cpu_percentage = process.cpu_percent(None)
-            embed.add_field(name="Process", value=f"CPU: {(cpu_percentage/self.bot.cpu_count):.2f}%\nRAM: {(process.memory_info().rss/1024/1024):.2f} MBs")
-            now_time = utils.now_time()
-            uptime = int((now_time - self.bot.start_time).total_seconds())
-            d = uptime // 86400
-            h = (uptime % 86400) // 3600
-            m = (uptime % 3600) // 60
-            s = uptime % 60
-            embed.add_field(name="Uptime", value=f"{d}d {h}h{m}m{s}s")
-            embed.set_footer(text=utils.format_time(now_time.astimezone()))
-            await ctx.send(embed=embed)
-
-    @commands.command()
     async def fancy(self, ctx, *, textin: str):
+        '''
+            `>>fancy <text goes here>`
+            Emojified text.
+        '''
         textin = textin.upper()
         await ctx.send(" ".join((FANCY_CHARS.get(charin, charin) for charin in textin)))
 
     @commands.command(aliases=["hello",])
     async def hi(self, ctx):
+        '''
+            `>>hi`
+            No.
+        '''
         await ctx.send("*\"Go away...\"*")
 
     @commands.group(invoke_without_command=True)
     async def say(self, ctx, *, something):
+        '''
+            `>>say <text goes here>
+            Echo text.
+        '''
         if ctx.invoked_subcommand is None:
-            await ctx.send(f"*\"{something}\"*")
+            await ctx.send(something)
 
     @say.command(aliases=["hello",], name="hi")
     async def say_hi(self, ctx):
+        '''
+            `>>say hi`
+            Go away.
+        '''
         await ctx.send("*\"No. Go away, I just want to sleep...\"*")
 
     @say.command(name="welcome")
     async def say_welcome(self, ctx):
+        '''
+            `>>say welcome`
+            Leave me alone.
+        '''
         await ctx.send("*\"You are welcome to leave me alone...\"*")
 
     def parse_google(self, bytes_):
@@ -451,6 +452,11 @@ class Misc:
     @commands.command(aliases=["g"])
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     async def google(self, ctx, *, search):
+        '''
+            `>>google <query>`
+            Google search.
+            There's a 10-second cooldown per user.
+        '''
         async with self.google_lock:
             async with ctx.typing():
                 params = {
@@ -483,6 +489,12 @@ class Misc:
     @commands.command(aliases=["translate"])
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     async def gtrans(self, ctx, *, search):
+        '''
+            `>>gtrans <text>`
+            Google translate.
+            Input is automatically detected, output is English.
+            There's a 10-second cooldown per user.
+        '''
         async with self.google_lock:
             async with ctx.typing():
                 params = {
@@ -507,6 +519,10 @@ class Misc:
 
     @commands.command()
     async def char(self, ctx, *, characters):
+        '''
+            `>>char <characters>`
+            Check unicode codepoint and name of characters.
+        '''
         characters = re.sub(r"\s", "", characters)
         if len(characters) > 20:
             await ctx.send("Too many characters.")
@@ -515,6 +531,12 @@ class Misc:
 
     @commands.command()
     async def poll(self, ctx, *, data):
+        '''
+            `>>poll <question and choices>`
+            Make a poll.
+            Question and choices are separated by newline.
+            The default (and shortest) duration is 60 seconds. You can specify more in question, i.e. `in 60 minutes` and such.
+        '''
         stuff = data.strip().splitlines()
         question, duration = utils.extract_time(stuff[0])
         duration = duration.total_seconds()
@@ -522,7 +544,7 @@ class Misc:
             duration = 60
         items = stuff[1:10]
         if not items:
-            return await ctx.send("You must specify options.")
+            return await ctx.send("You must specify choices.")
         int_to_emoji = {}
         emoji_to_int = {}
         for i in range(len(items)):
@@ -552,6 +574,12 @@ class Misc:
 
     @commands.group(invoke_without_command=True)
     async def glitch(self, ctx, *, text):
+        '''
+            `>>glitch <optional: weight> <text>`
+            Generate Zalgo text.
+            More weight, more weird.
+            Default weight is 20.
+        '''
         if ctx.invoked_subcommand is None:
             data = text.partition(" ")
             try:
@@ -561,28 +589,17 @@ class Misc:
             else:
                 text = data[2]
             if 0 < weight <= 50:
-                try:
-                    await ctx.message.delete()
-                except:
-                    pass
-                await ctx.send(
-                    embed=discord.Embed(
-                        title=f"{ctx.author.display_name} said:",
-                        description=
-                            "".join((
-                                "".join((
-                                    c,
-                                    "".join((random.choice(GLITCH_ALL) for i in range(weight)))
-                                )) for c in text
-                            )),
-                        colour=discord.Colour.red()
-                    )
-                )
+                await ctx.send("".join(("".join((c, "".join((random.choice(GLITCH_ALL) for i in range(weight))))) for c in text)))
             else:
                 await ctx.send("Weight value can only be between 1 and 50.")
 
     @glitch.command(aliases=["m"])
     async def meaningless(self, ctx, length: int=0):
+        '''
+            `>>glitch meaningless <optional: length>`
+            Generate meaningless text. ~~Monika is that you~~
+            Default length is a random number between 20 and 50.
+        '''
         if 0 <= length <= 500:
             if length == 0:
                 length = random.randrange(20, 50)
@@ -591,91 +608,16 @@ class Misc:
             except:
                 pass
             text_body = "".join((random.choice(GLITCH_TEXT) for i in range(length)))
-            await ctx.send(
-                embed=discord.Embed(
-                    title=f"{ctx.author.display_name} said:",
-                    description="\n".join((text_body[i:i+50] for i in range(0, len(text_body), 50))),
-                    colour=discord.Colour.red()
-                )
-            )
+            await ctx.send("\n".join((text_body[i:i+50] for i in range(0, len(text_body), 50))))
         else:
             await ctx.send("Wha hold your horse with the length.")
 
-    @commands.command()
-    async def saucenao(self, ctx, url=None):
-        if not url:
-            msg = ctx.message
-            if not msg.attachments:
-                await msg.add_reaction("\U0001f504")
-                try:
-                    msg = await self.bot.wait_for("message", check=lambda m:m.author.id==ctx.author.id and m.attachments, timeout=120)
-                except asyncio.TimeoutError:
-                    pass
-                finally:
-                    try:
-                        await ctx.message.clear_reactions()
-                    except:
-                        pass
-            url = msg.attachments[0].url
-        async with ctx.typing():
-            payload = aiohttp.FormData()
-            payload.add_field("file", b"", filename="", content_type="application/octet-stream")
-            payload.add_field("url", url)
-            payload.add_field("frame", "1")
-            payload.add_field("hide", "0")
-            payload.add_field("database", "999")
-            async with self.bot.session.post("https://saucenao.com/search.php", headers={"User-Agent": config.USER_AGENT}, data=payload) as response:
-                bytes_ = await response.read()
-            data = BS(bytes_.decode("utf-8"), "lxml")
-            result = []
-            hidden_result = []
-            for tag in data.find_all(lambda x: x.name=="div" and x.get("class") in [["result"], ["result", "hidden"]] and not x.get("id")):
-                content = tag.find("td", class_="resulttablecontent")
-                title_tag = content.find("div", class_="resulttitle")
-                if title_tag:
-                    for br in title_tag.find_all("br"):
-                        br.replace_with("\n")
-                    title = title_tag.get_text().strip().splitlines()[0]
-                else:
-                    result_content = tag.find("div", class_="resultcontent")
-                    for br in result_content.find_all("br"):
-                        br.replace_with("\n")
-                    title = result_content.get_text().strip().splitlines()[0]
-                similarity = content.find("div", class_="resultsimilarityinfo").text
-                content_url = content.find("a", class_="linkify")
-                if not content_url:
-                    content_url = content.find("div", class_="resultmiscinfo").find("a")
-                if content_url:
-                    r = {"title": title, "similarity": similarity, "url": content_url["href"]}
-                else:
-                    r = {"title": title, "similarity": similarity, "url": ""}
-                if "hidden" in tag["class"]:
-                    hidden_result.append(r)
-                else:
-                    result.append(r)
-            if result:
-                embed = discord.Embed(
-                    title="Sauce found?",
-                    description="\n".join((f"[{r['title']} ({r['similarity']})]({r['url']})" for r in result))
-                )
-                embed.set_footer(text="Powered by https://saucenao.com")
-                await ctx.send(embed=embed)
-            else:
-                msg = await ctx.send("No result found.")
-                if hidden_result:
-                    sentences = {"initial":  "Do you want to show low similarity results?"}
-                    result = await ctx.yes_no_prompt(sentences, delete_mode=True)
-                    if result:
-                        await msg.delete()
-                        embed = discord.Embed(
-                            title="Low similarity results:",
-                            description="\n".join((f"[{r['title']} ({r['similarity']})]({r['url']})" for r in hidden_result))
-                        )
-                        embed.set_footer(text="Powered by https://saucenao.com")
-                        await ctx.send(embed=embed)
-
     @commands.command(aliases=["colour"])
     async def color(self, ctx, *args):
+        '''
+            `>>color <int or hex code>`
+            Send an image filled with the color in question.
+        '''
         if len(args) == 3:
             try:
                 rgb = (int(args[0]), int(args[1]), int(args[2]))
@@ -690,18 +632,25 @@ class Misc:
             try:
                 c = discord.Colour(int(i, 16))
             except:
-                return await ctx.send("Oi, that's not hex format at all.")
-            else:
-                rgb = c.to_rgb()
+                return await ctx.send("Oi, that's not color code at all.")
         else:
             return await ctx.send("Do you even try?")
-        pic = Image.new("RGB", (50, 50), rgb)
+        pic = Image.new("RGB", (50, 50), c.to_rgb())
         bytes_ = BytesIO()
         pic.save(bytes_, "png")
-        await ctx.send(file=discord.File(bytes_.getvalue(), filename="colour.png"))
+        f = discord.File(bytes_.getvalue(), filename="color.png")
+        e = discord.Embed(title=f"#{c.value:06X}", colour=c)
+        e.set_image(url="attachment://color.png")
+        await ctx.send(file=f, embed=e)
 
     @commands.command()
     async def pyfuck(self, ctx, *, data):
+        '''
+            `>>pyfuck <code>`
+            Oh look, that fuckery is actually runable python code!
+            Return a python program written with only 9 characters `e x c ( ) " % + =` that is equivalent to <code>.
+            And yep, no newline.
+        '''
         data = data.strip()
         char_group = ["e", "x", "c", "%", "+", "=", "(", ")"]
         if data.startswith("```"):

@@ -1,12 +1,12 @@
 import aiohttp
-import asyncio
 import os
 from . import config
 
 #==================================================================================================================================================
 
 _lock = asyncio.Lock()
-_loop = asyncio.get_event_loop()
+
+#==================================================================================================================================================
 
 async def fetch(session, url, **options):
     headers = options.pop("headers", {"User-Agent": config.USER_AGENT})

@@ -1,6 +1,15 @@
 import discord
 from discord.ext import commands
+from . import utils
 from .utils import config
+import json
+import re
+import datetime
+import pytz
+
+#==================================================================================================================================================
+
+ISO_DATE = re.compile(r"([0-9]{4})\-([0-9]{2})\-([0-9]{2})T([0-9]{2})\:([0-9]{2})\:([0-9]{2})Z")
 
 #==================================================================================================================================================
 
@@ -19,7 +28,7 @@ class Help:
         for emoji_name in ("mochi", "ranged"):
             self.emoji[emoji_name] = discord.utils.find(lambda e: e.name==emoji_name, creampie_guild.emojis)
         self.emoji["hu"] = discord.utils.find(lambda e:e.name=="hu", test_guild.emojis)
-        self.suggest_channel = self.bot.get_channel(config.SUGGEST_CHANNEL_ID)
+        self.feedback_channel = self.bot.get_channel(config.FEEDBACK_CHANNEL_ID)
 
     @commands.group()
     async def help(self, ctx):
@@ -55,7 +64,8 @@ class Help:
                 value=
                     "`>>detail` - Get detailed command info\n"
                     "This is not completed yet since I'm lazy.\n\n"
-                    "`>>suggest` - Suggest anything\n",
+                    "`>>stats` - Bot info\n"
+                    "`>>feedback` - feedback anything\n",
                 inline=False
             )
             embed.add_field(
@@ -341,14 +351,13 @@ class Help:
                 "`>>dice <maxside> <amount>` - Roll dices\n"
                 "`>>poll <question and choices>` - Make a poll\n\n"
                 "`>>fancy` - Fancilize a sentence\n"
-                "`>>glitch` - Zalgo text\n"
-                "`>>glitch m` - Generate a meaningless sentence\n\n"
+                "`>>glitch` - Z̜͍̊ă̤̥ḷ̐́ģͮ͛ò̡͞ ͥ̉͞ť͔͢e̸̷̅x̠ͯͧt̰̱̾\n"
+                "      `m` - ĜþŞ¶ōÙđĔł ĝĖĘ Ùľ© ¼Ħâ Ŗėēů®³ĸ¤²\n\n"
                 "`>>avatar` - Get your or a user avatar\n"
                 "`>>g`, `>>google` - Google search\n"
                 "`>>gtrans`, `>>translate` - Google, but translate\n\n"
                 "`>>char` - Get unicode character info.\n"
-                "`>>color`, `>>colour` - Visualize color's code\n"
-                "`>>stats` - Bot info",
+                "`>>color`, `>>colour` - Visualize color's code",
             inline=False
          )
         await ctx.send(embed=embed)
@@ -382,14 +391,14 @@ class Help:
         await ctx.send(embed=embed)
 
     @commands.command()
-    async def detail(self, ctx, *, name):
+    async def detail(self, ctx, *, name=None):
         '''
             `>>detail <command name>`
-            Get the detail command usage.
-            Command name, no prefix, obviously.
-            Note: The symbol `<` and `>` are there to separate arguments, it's not included in the actual command.
+            Get detailed command usage.
+            Full command name, no prefix, obviously.
+            The symbol `<` and `>` are there to separate arguments, it's not included in the actual command.
 
-            *Example:*
+            __Example:__
             `>>detail help pso2`
         '''
         if name:
@@ -398,25 +407,77 @@ class Help:
                 if not command.hidden:
                     embed = discord.Embed(colour=discord.Colour.teal())
                     embed.add_field(name="Parent command", value=command.full_parent_name or "None")
-                    embed.add_field(name="Base command", value=f"`{command.name}`")
-                    embed.add_field(name="Aliases", value=f"`{', '.join(command.aliases)}`" if command.aliases else "None")
+                    embed.add_field(name="Name", value=f"`{command.name}`")
+                    embed.add_field(name="Aliases", value=", ".join((f"`{a}`" for a in command.aliases)) if command.aliases else "None")
                     embed.add_field(name="Usage", value=command.help or "Not yet documented.", inline=False)
                     return await ctx.send(embed=embed)
             await ctx.send(f"Command `{name}` doesn't exist.")
         else:
             cmd = self.bot.get_command("detail")
-            await ctx.invoke(cmd, "detail")
+            await ctx.invoke(cmd, name="detail")
 
     @commands.command()
-    async def suggest(self, ctx, *, content):
+    async def feedback(self, ctx, *, content):
         '''
-            `>>suggest <anything goes here>`
-            Pretty much self-explanatory.
+            `>>feedback <anything goes here>`
+            Feedback.
+            Bugs, inconvenience or suggestion, all welcomed.
         '''
         embed = discord.Embed(description=content)
         embed.set_author(name=str(ctx.author), icon_url=ctx.author.avatar_url)
-        await self.suggest_channel.send(embed=embed)
+        await self.feedback_channel.send(embed=embed)
         await ctx.confirm()
+
+    @commands.command()
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+    async def stats(self, ctx):
+        '''
+            `>>stats`
+            Bot stats.
+        '''
+        async with ctx.typing():
+            bytes_ = await utils.fetch(
+                self.bot.session,
+                "https://api.github.com/repos/nguuuquaaa/Belphegor/commits",
+                headers={"User-Agent": "nguuuquaaa"}
+            )
+            now_time = utils.now_time()
+            commits = json.loads(bytes_)
+            desc = []
+            for c in commits[:3]:
+                m = ISO_DATE.fullmatch(c["commit"]["committer"]["date"])
+                dt = ""
+                if m:
+                    committed_time = datetime.datetime(int(m.group(1)), int(m.group(2)), int(m.group(3)), int(m.group(4)), int(m.group(5)), int(m.group(6)), 0, pytz.utc)
+                    delta = int((now_time - committed_time).total_seconds())
+                    if delta >= 86400:
+                        dt = f" ({delta//86400}d ago)"
+                    elif delta % 86400 >= 3600:
+                        dt = f" ({delta//3600}h ago)"
+                    elif delta % 3600 >= 60:
+                        dt = f" ({delta//60}m ago)"
+                    else:
+                        dt = f" ({delta%60}s ago)"
+                desc.append(f"[`{c['sha'][:7]}`]({c['html_url']}) {c['commit']['message']}{dt}")
+            process = self.bot.process
+            embed = discord.Embed(colour=discord.Colour.blue())
+            embed.add_field(name="Lastest changes", value="\n".join(desc), inline=False)
+            embed.set_author(name="{}".format(self.bot.user), icon_url=self.bot.user.avatar_url)
+            owner = self.bot.get_user(config.OWNER_ID)
+            embed.add_field(name="Owner", value=f"{owner.name}#{owner.discriminator}")
+            embed.add_field(name="Library", value="[discord.py\\[rewrite\\]](https://github.com/Rapptz/discord.py/tree/rewrite)")
+            embed.add_field(name="Created at", value=str(self.bot.user.created_at)[:10])
+            embed.add_field(name="Guilds", value=f"{len(self.bot.guilds)} guilds")
+            cpu_percentage = process.cpu_percent(None)
+            embed.add_field(name="Process", value=f"CPU: {(cpu_percentage/self.bot.cpu_count):.2f}%\nRAM: {(process.memory_info().rss/1024/1024):.2f} MBs")
+            uptime = int((now_time - self.bot.start_time).total_seconds())
+            d = uptime // 86400
+            h = (uptime % 86400) // 3600
+            m = (uptime % 3600) // 60
+            s = uptime % 60
+            embed.add_field(name="Uptime", value=f"{d}d {h}h{m}m{s}s")
+            embed.set_footer(text=utils.format_time(now_time.astimezone()))
+            await ctx.send(embed=embed)
 
 #==================================================================================================================================================
 

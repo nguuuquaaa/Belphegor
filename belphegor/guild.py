@@ -27,6 +27,21 @@ class Guild:
     @checks.guild_only()
     @checks.manager_only()
     async def cmd_set(self, ctx):
+        '''
+            `>>set`
+            Base command. Does nothing by itself, but with subcommands can be used to set up several bot functions in server.
+            Subcommands include:
+                  `welcome` - Welcome channel
+                  `welcomemessage` - Welcome message
+                  `welcomerule` - Message that will be DM'ed to newly joined member
+                  `nsfwrole` - NSFW role, for use with `>>creampie` and `>>censored` command
+                  `muterole` - Mute role, for use with `>>mute` and `>>unmute` command
+                  `autorole` - Auto assign/remove role for new member
+                  `prefix` - Server custom prefix
+                  `log` - Log channel that records things not in Audit Logs
+                  `eq` - PSO2 EQ Alert
+                  `eqmini` - EQ Alert, but less spammy
+        '''
         if ctx.invoked_subcommand is None:
             pass
 
@@ -34,6 +49,20 @@ class Guild:
     @checks.guild_only()
     @checks.manager_only()
     async def cmd_unset(self, ctx):
+        '''
+            `>>unset`
+            Base command. Does nothing by itself, but with subcommands can be used to unset bot functions in server.
+            Subcommands include:
+                  `welcome` - Welcome channel
+                  `welcomemessage` - Welcome message
+                  `welcomerule` - Message that will be DM'ed to newly joined member
+                  `nsfwrole` - NSFW role, for use with `>>creampie` and `>>censored` command
+                  `muterole` - Mute role, for use with `>>mute` and `>>unmute` command
+                  `autorole` - Auto assign/remove role for new member
+                  `prefix` - Server custom prefix
+                  `log` - Log channel that records things not in Audit Logs
+                  `eq` - PSO2 EQ Alert (both normal and minimal)
+        '''
         if ctx.invoked_subcommand is None:
             pass
 
@@ -129,16 +158,28 @@ class Guild:
             await ctx.channel.set_permissions(target=member, send_messages=None)
             await ctx.send(f"{member.mention} has been unmuted from this channel.")
 
-    @cmd_set.command()
-    async def nsfwrole(self, ctx, *, name):
+    @cmd_set.command(name="nsfwrole")
+    async def cmd_set_nsfwrole(self, ctx, *, name):
         role = discord.utils.find(lambda r: name.lower() in r.name.lower(), ctx.guild.roles)
         await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$set": {"nsfw_role_id": role.id}}, upsert=True)
         await ctx.confirm()
 
     @cmd_unset.command(name="nsfwrole")
-    async def nonsfwrole(self, ctx, *, name):
+    async def cmd_unset_nsfwrole(self, ctx, *, name):
         role = discord.utils.find(lambda r: name.lower() in r.name.lower(), ctx.guild.roles)
         await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$unset": {"nsfw_role_id": role.id}})
+        await ctx.confirm()
+
+    @cmd_set.command(name="muterole")
+    async def cmd_set_muterole(self, ctx, *, name):
+        role = discord.utils.find(lambda r: name.lower() in r.name.lower(), ctx.guild.roles)
+        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$set": {"mute_role_id": role.id}}, upsert=True)
+        await ctx.confirm()
+
+    @cmd_unset.command(name="muterole")
+    async def cmd_unset_muterole(self, ctx, *, name):
+        role = discord.utils.find(lambda r: name.lower() in r.name.lower(), ctx.guild.roles)
+        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$unset": {"mute_role_id": role.id}})
         await ctx.confirm()
 
     @commands.command()
@@ -147,15 +188,14 @@ class Guild:
         '''
             Add nsfw role. The role is determined by server managers.
         '''
-        role_data = await self.guild_data.find_one({"guild_id": ctx.guild.id}, projection={"_id": -1, "nsfw_role_id": 1})
+        role_data = await self.guild_data.find_one({"guild_id": ctx.guild.id, "nsfw_role_id": {"$ne": None}}, projection={"_id": -1, "nsfw_role_id": 1})
         if role_data:
-            nsfw_role_id = role_data.get("nsfw_role_id")
-            if nsfw_role_id:
-                role = discord.utils.find(lambda r: r.id==nsfw_role_id, ctx.guild.roles)
-                if role:
-                    await ctx.author.add_roles(role)
-                    return await ctx.confirm()
-        await ctx.deny()
+            role = discord.utils.find(lambda r: r.id==role_data["nsfw_role_id"], ctx.guild.roles)
+            if role:
+                await ctx.author.add_roles(role)
+                return await ctx.confirm()
+        else:
+            await ctx.send("NSFW role is not set up in this server.")
 
     @commands.command()
     @checks.guild_only()
@@ -163,15 +203,14 @@ class Guild:
         '''
             Remove nsfw role.
         '''
-        role_data = await self.guild_data.find_one({"guild_id": ctx.guild.id}, projection={"_id": -1, "nsfw_role_id": 1})
+        role_data = await self.guild_data.find_one({"guild_id": ctx.guild.id, "nsfw_role_id": {"$ne": None}}, projection={"_id": -1, "nsfw_role_id": 1})
         if role_data:
-            nsfw_role_id = role_data.get("nsfw_role_id")
-            if nsfw_role_id:
-                role = discord.utils.find(lambda r: r.id==nsfw_role_id, ctx.guild.roles)
-                if role in ctx.author.roles:
-                    await ctx.author.remove_roles(role)
-                    return await ctx.confirm()
-        await ctx.deny()
+            role = discord.utils.find(lambda r: r.id==role_data["nsfw_role_id"], ctx.guild.roles)
+            if role in ctx.author.roles:
+                await ctx.author.remove_roles(role)
+                return await ctx.confirm()
+        else:
+            await ctx.send("NSFW role is not set up in this server.")
 
     @cmd_set.command(name="welcome")
     async def set_welcome(self, ctx, channel: discord.TextChannel=None):
@@ -543,36 +582,42 @@ class Guild:
     @checks.guild_only()
     @checks.manager_only()
     async def mute(self, ctx, member: discord.Member, *, reason=""):
-        muted_role = discord.utils.find(lambda r:r.name=="Muted", ctx.guild.roles)
-        if muted_role is None:
-            return await ctx.deny()
-        await member.add_roles(muted_role)
-        try:
-            reason, duration = utils.extract_time(reason)
-            duration = duration.total_seconds()
-        except:
-            return await ctx.send("Time too large.")
-        if duration > 0:
-            await ctx.send(f"{member.mention} has been muted for {utils.seconds_to_text(duration)}.\nReason: {reason}")
+        role_data = await self.guild_data.find_one({"guild_id": guild.id, "mute_role_id": {"$ne": None}}, projection={"_id": -1, "mute_role_id": 1})
+        if role_data:
+            muted_role = discord.utils.find(lambda r: r.id==role_data["mute_role_id"], ctx.guild.roles)
+            await member.add_roles(muted_role)
             try:
-                before, after = await self.bot.wait_for(
-                    "member_update",
-                    check=lambda b,a: a.id==member.id and a.guild.id==member.guild.id and "Muted" not in [r.name for r in a.roles],
-                    timeout=duration
-                )
-            except asyncio.TimeoutError:
-                await member.remove_roles(muted_role)
-                await ctx.send(f"{member.mention} has been unmuted.")
+                reason, duration = utils.extract_time(reason)
+                duration = duration.total_seconds()
+            except:
+                return await ctx.send("Time too large.")
+            if duration > 0:
+                await ctx.send(f"{member.mention} has been muted for {utils.seconds_to_text(duration)}.\nReason: {reason}")
+                try:
+                    before, after = await self.bot.wait_for(
+                        "member_update",
+                        check=lambda b,a: a.id==member.id and a.guild.id==member.guild.id and "Muted" not in [r.name for r in a.roles],
+                        timeout=duration
+                    )
+                except asyncio.TimeoutError:
+                    await member.remove_roles(muted_role)
+                    await ctx.send(f"{member.mention} has been unmuted.")
+            else:
+                await ctx.send(f"{member.mention} has been muted.")
         else:
-            await ctx.send(f"{member.mention} has been muted.")
+            await ctx.send("Muted role is not set up in this server.")
 
     @commands.command()
     @checks.guild_only()
     @checks.manager_only()
     async def unmute(self, ctx, member: discord.Member):
-        muted_role = discord.utils.find(lambda r:r.name=="Muted", ctx.guild.roles)
-        await member.remove_roles(muted_role)
-        await ctx.send(f"{member.mention} has been unmute.")
+        role_data = await self.guild_data.find_one({"guild_id": guild.id, "mute_role_id": {"$ne": None}}, projection={"_id": -1, "mute_role_id": 1})
+        if role_data:
+            muted_role = discord.utils.find(lambda r: r.id==role_data["mute_role_id"], ctx.guild.roles)
+            await member.remove_roles(muted_role)
+            await ctx.send(f"{member.mention} has been unmute.")
+        else:
+            await ctx.send("Muted role is not set up in this server.")
 
     @commands.command()
     @checks.guild_only()

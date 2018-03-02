@@ -24,6 +24,7 @@ BELPHY_VOICE_URL = {
     "https://vignette3.wikia.nocookie.net/mira-miracle/images/d/d9/Belphegor_Summon.ogg/revision/latest?cb=20170201022203",
     "https://vignette4.wikia.nocookie.net/mira-miracle/images/5/58/Belphegor_Limit_Break.ogg/revision/latest?cb=20170201022206"
 }
+youtube_match = re.compile(r"(?:https?\:\/\/)?(?:www\.)?(?:youtube(?:-nocookie)?\.com\/\S*[^\w\s-]|youtu\.be\/)([\w-]{11})(?:[^\w\s-]|$)")
 
 #==================================================================================================================================================
 
@@ -554,25 +555,30 @@ class Music:
             await ctx.send(f"Added {len(items)} songs to queue{add_text}.")
 
     def youtube_video_info(self, url):
-        video_id = url[17:]
+        video_id = youtube_match.match(url).group(1)
         result = self.youtube.videos().list(part='snippet,contentDetails,statistics', id=video_id).execute()
         video = result["items"][0]
         return video
 
     @music.command(aliases=["i"])
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
-    async def info(self, ctx, position: int=0):
+    async def info(self, ctx, stuff="0"):
         music_player = await self.get_music_player(ctx.guild.id)
-        position -= 1
-        if position < 0:
-            song = music_player.current_song
-            if not song:
-                return await ctx.send("No song is currently playing.")
-        elif position < music_player.queue.size():
-            song = music_player.queue(position)
+        try:
+            position = int(stuff)
+        except:
+            url = stuff.strip("<>")
         else:
-            return await ctx.send("Position out of range.")
-        url = song.url
+            position -= 1
+            if position < 0:
+                song = music_player.current_song
+                if not song:
+                    return await ctx.send("No song is currently playing.")
+            elif position < music_player.queue.size():
+                song = music_player.queue(position)
+            else:
+                return await ctx.send("Position out of range.")
+            url = song.url
         video = await self.bot.run_in_lock(self.lock, self.youtube_video_info, url)
         snippet = video["snippet"]
         description = utils.unifix(snippet.get("description", "None")).strip()

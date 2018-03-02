@@ -3,7 +3,7 @@ OWNER_ID = 247360205086654464
 
 TEST_GUILD_ID = 306527473997316097
 TEST_GUILD_2_ID = 376585779536723970
-SUGGEST_CHANNEL_ID = 375418376492810252
+FEEDBACK_CHANNEL_ID = 375418376492810252
 
 OTOGI_GUILD_ID = 231283203095134208
 CREAMPIE_GUILD_ID = 301713435635482624
@@ -24,7 +24,7 @@ all_extensions = [
     "belphegor.misc",
     "belphegor.help",
     "belphegor.music",
-    "belphegor.random",
+    "belphegor.image",
     "belphegor.remind",
     "belphegor.tag",
     "belphegor.sticker",
