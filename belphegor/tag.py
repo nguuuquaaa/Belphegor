@@ -104,7 +104,7 @@ class Tag:
     async def banlist(self, ctx):
         banned_tags = [tag async for tag in self.tag_list.find({"banned_guilds": {"$eq": ctx.guild.id}})]
         if banned_tags:
-            embeds = utils.page_format(banned_tags, 10, title="Banned tags for this server", description=lambda i, x: f"`{i+1}.` {', '.join([x['name']]+x.get('aliases', []))}")
+            embeds = utils.embed_page_format(banned_tags, 10, title="Banned tags for this server", description=lambda i, x: f"`{i+1}.` {', '.join([x['name']]+x.get('aliases', []))}")
             await ctx.embed_page(embeds)
         else:
             await ctx.send("There's no banned tag.")

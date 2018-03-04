@@ -236,9 +236,9 @@ class Admin:
             else:
                 await ctx.confirm()
 
-    @commands.command(hidden=True, aliases=["force", "invoke"])
+    @commands.command(hidden=True, aliases=["invoke"])
     @checks.owner_only()
-    async def forceinvoke(self, ctx, *, cmd):
+    async def force(self, ctx, *, cmd):
         msg = copy.copy(ctx.message)
         msg.content = f"{ctx.me.mention} {cmd}"
         new_ctx = await self.bot.get_context(msg, cls=data_type.BelphegorContext)

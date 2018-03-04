@@ -88,7 +88,7 @@ class Sticker:
     async def banlist(self, ctx):
         banned_stickers = await self.sticker_list.distinct("name", {"banned_guilds": {"$eq": ctx.guild.id}})
         if banned_stickers:
-            embeds = utils.page_format(banned_stickers, 10, title="Banned stickers for this server", description=lambda i, x: f"`{i+1}.` {x}")
+            embeds = utils.embed_page_format(banned_stickers, 10, title="Banned stickers for this server", description=lambda i, x: f"`{i+1}.` {x}")
             await ctx.embed_page(embeds)
         else:
             await ctx.send("There's no banned sticker.")

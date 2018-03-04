@@ -252,8 +252,8 @@ class PSO2:
     def cleanup(self):
         self.eq_alert_forever.cancel()
 
-    @commands.command(aliases=["c", "chip"])
-    async def chipen(self, ctx, *, name):
+    @commands.command(aliases=["c"])
+    async def chip(self, ctx, *, name):
         chip = await ctx.search(
             name, self.chip_library,
             cls=Chip, colour=discord.Colour.blue(),
@@ -262,17 +262,6 @@ class PSO2:
         if not chip:
             return
         await ctx.send(embed=chip.embed_form(self))
-
-    @commands.command(aliases=["cjp",])
-    async def chipjp(self, ctx, *, name):
-        chip = await ctx.search(
-            name, self.chip_library,
-            cls=Chip, colour=discord.Colour.blue(),
-            atts=["en_name", "jp_name"], name_att="jp_name", emoji_att="element"
-        )
-        if not chip:
-            return
-        await ctx.send(embed=chip.embed_form(self, "jp"))
 
     @commands.group(name="weapon", aliases=["w",], invoke_without_command=True)
     async def cmd_weapon(self, ctx, *, name):
@@ -285,7 +274,7 @@ class PSO2:
             return
         await ctx.send(embed=weapon.embed_form(self))
 
-    @cmd_weapon.command(name="update")
+    @cmd_weapon.command(hidden=True, name="update")
     @checks.owner_only()
     async def wupdate(self, ctx, *args):
         msg = await ctx.send("Fetching...")
@@ -394,7 +383,7 @@ class PSO2:
         result = await self._search_att(attrs)
         if not result:
             return await ctx.send("No result found.")
-        embeds = utils.page_format(
+        embeds = utils.embed_page_format(
             result, 5, separator="\n\n",
             title=f"Search result: {len(result)} results",
             description=lambda i, x: f"{self.emojis[x['category']]}**{x['en_name']}**{x['value']}",

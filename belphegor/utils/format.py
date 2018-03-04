@@ -169,7 +169,7 @@ def _raw_page_format(container, per_page, *, separator="\n", book=None, book_amo
         embeds.append(embed)
     return embeds
 
-def page_format(container, *args, book=False, **kwargs):
+def embed_page_format(container, *args, book=False, **kwargs):
     embeds = []
     if container:
         if book:

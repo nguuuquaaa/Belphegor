@@ -24,5 +24,5 @@
 /belphegor/utils/config.py
 /belphegor/utils/data_type.py
 /belphegor/utils/format.py
-/belphegor/utils/pillow.py
+/belphegor/utils/image_processing.py
 /belphegor/utils/request.py

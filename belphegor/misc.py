@@ -232,7 +232,7 @@ class Misc:
     @commands.group(invoke_without_command=True)
     async def say(self, ctx, *, something):
         '''
-            `>>say <text goes here>
+            `>>say <text goes here>`
             Echo text.
         '''
         if ctx.invoked_subcommand is None:
@@ -535,7 +535,7 @@ class Misc:
             `>>poll <question and choices>`
             Make a poll.
             Question and choices are separated by newline.
-            The default (and shortest) duration is 60 seconds. You can specify more in question, i.e. `in 60 minutes` and such.
+            The default (and shortest) duration is 60 seconds. You can specify more in question, i.e. `in 60 minutes`.
         '''
         stuff = data.strip().splitlines()
         question, duration = utils.extract_time(stuff[0])

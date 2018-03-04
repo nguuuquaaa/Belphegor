@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from .format import page_format, now_time
+from .format import embed_page_format, now_time
 from .checks import do_after
 from .request import *
 import asyncio
@@ -233,7 +233,7 @@ class BelphegorContext(commands.Context):
             elif len(result) == 1 and not prompt:
                 return result[0]
             emojis = self.cog.emojis
-            embeds = page_format(
+            embeds = embed_page_format(
                 result, 10,
                 title="Do you mean:",
                 description=lambda i, x: f"`{i+1}:` {emojis.get(getattr(x, emoji_att), '') if emoji_att else ''}{getattr(x, name_att)}",
@@ -381,6 +381,8 @@ class Belphegor(commands.Bot):
         blocked_data = self.disabled_data.get(guild_id)
         if blocked_data:
             if blocked_data.get("disabled_bot_guild", False):
+                if getattr(ctx.command, "hidden", None) or getattr(ctx.command, "qualified_name", "").partition(" ")[0] in ("enable", "disable"):
+                    return True
                 self.loop.create_task(ctx.send("Command usage is disabled in this server.", delete_after=30))
                 do_after(ctx.message.delete(), 30)
                 return False

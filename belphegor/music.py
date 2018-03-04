@@ -374,7 +374,7 @@ class Music:
         except:
             current_song_info = ""
         if playlist:
-            return utils.page_format(
+            return utils.embed_page_format(
                 playlist, 10, separator="\n\n",
                 title=f"({state}) {current_song_info}",
                 description=lambda i, x: f"`{i+1}.` **[{x.title}]({x.url})**",

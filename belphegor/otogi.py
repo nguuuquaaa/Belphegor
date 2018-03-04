@@ -349,7 +349,7 @@ class Otogi:
         result = await self._search_att(attrs)
         if not result:
             return await ctx.send("No result found.")
-        embeds = utils.page_format(
+        embeds = utils.embed_page_format(
             result, 5, separator="\n\n",
             title=f"Search result: {len(result)} results",
             description=lambda i, x: f"`#{x['id']}` **{x['name']}**{x['value']}",
@@ -707,7 +707,7 @@ class Otogi:
         for pool in summon_pool:
             dp = [d async for d in self.daemon_collection.find({"id": {"$in": pool}}, projection={"_id": False, "id": True, "name": True})]
             daemons.append(dp)
-        embeds = utils.page_format(
+        embeds = utils.embed_page_format(
             daemons, 10, book=True,
             title="Current summon pool:",
             pretext=lambda n: str(self.emojis["star"])*(n+3),
@@ -745,7 +745,7 @@ class Otogi:
             }
         ])
         daemons = [pool["daemons"] async for pool in cur]
-        embeds = utils.page_format(
+        embeds = utils.embed_page_format(
             daemons, 10, book=True,
             author=f"{target.display_name}'s box:",
             author_icon=target.avatar_url,
@@ -960,7 +960,7 @@ class Otogi:
 
         filter_sheet = [s for s in sheet if s[skill_type_index]=="Damage"]
         filter_sheet.sort(key=lambda x: -int(x[skill_dmg_index].replace(",", "")))
-        embeds = utils.page_format(
+        embeds = utils.embed_page_format(
             filter_sheet, 5, separator="\n\n",
             title="Nuker rank",
             description=lambda i, x: f"{i+1}. **{x[name_index]}**\n   MLB Effective Skill DMG: {x[skill_dmg_index]}\n   MLB Auto ATK DMG: {x[auto_dmg_index]}",
@@ -980,7 +980,7 @@ class Otogi:
 
         filter_sheet = [s for s in sheet if s[class_index]!="Healer"]
         filter_sheet.sort(key=lambda x: -int(x[auto_dmg_index].replace(",", "")))
-        embeds = utils.page_format(
+        embeds = utils.embed_page_format(
             filter_sheet, 5, separator="\n\n",
             title="Auto attack rank",
             description=lambda i, x: f"{i+1}. **{x[name_index]}**\n   Class: {x[class_index]}\n   MLB Auto ATK DMG: {x[auto_dmg_index]}",
@@ -1002,7 +1002,7 @@ class Otogi:
 
         filter_sheet = [s for s in sheet if utils.get_element(s, skill_effect_index)=="Increases DMG Rec'd" or s[skill_type_index]=="Debuff"]
         filter_sheet.sort(key=lambda x: x[0])
-        embeds = utils.page_format(
+        embeds = utils.embed_page_format(
             filter_sheet, 5, separator="\n\n",
             title="Debuffer list",
             description=
@@ -1026,7 +1026,7 @@ class Otogi:
 
         filter_sheet = [s for s in sheet if s[skill_type_index]=="Buff"]
         filter_sheet.sort(key=lambda x: x[0])
-        embeds = utils.page_format(
+        embeds = utils.embed_page_format(
             filter_sheet, 5, separator="\n\n",
             title="Buffer list",
             description=
@@ -1063,7 +1063,7 @@ class Otogi:
             }
         ])
         daemons = [d async for d in cur]
-        embeds = utils.page_format(
+        embeds = utils.embed_page_format(
             daemons, 5, separator="\n\n",
             title="GCQ STR rank",
             description=lambda i, x: f"{i+1}. **{x['name']}**\n   Max ATK: {x['atk']}\n   Max HP: {x['hp']}\n   GCQ STR: {x['total_stat']}",

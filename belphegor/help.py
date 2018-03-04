@@ -402,13 +402,30 @@ class Help:
             `>>detail help pso2`
         '''
         if name:
+
             command = self.bot.get_command(name)
             if command:
                 if not command.hidden:
                     embed = discord.Embed(colour=discord.Colour.teal())
-                    embed.add_field(name="Parent command", value=command.full_parent_name or "None")
+                    embed.add_field(name="Parent command", value=f"`{command.full_parent_name}`" if command.full_parent_name else "None")
                     embed.add_field(name="Name", value=f"`{command.name}`")
                     embed.add_field(name="Aliases", value=", ".join((f"`{a}`" for a in command.aliases)) if command.aliases else "None")
+                    embed.add_field(
+                        name="Subcommands",
+                        value=", ".join((f"`{s.name}`" for s in getattr(command, "commands", ()))) if hasattr(command, "commands") else "None",
+                        inline=False
+                    )
+                    all_checks = set(command.checks)
+                    cmd = command
+                    while cmd.parent:
+                        cmd = cmd.parent
+                        if not getattr(cmd, "invoke_without_command", False):
+                            all_checks.update(cmd.checks)
+                    embed.add_field(
+                        name="Restriction",
+                        value=", ".join((f"`{c.__name__[6:].replace('guild', 'server')}`" for c in all_checks)) if all_checks else "None",
+                        inline=False
+                    )
                     embed.add_field(name="Usage", value=command.help or "Not yet documented.", inline=False)
                     return await ctx.send(embed=embed)
             await ctx.send(f"Command `{name}` doesn't exist.")
@@ -428,7 +445,7 @@ class Help:
         await self.feedback_channel.send(embed=embed)
         await ctx.confirm()
 
-    @commands.command()
+    @commands.command(aliases=["stat"])
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     async def stats(self, ctx):
         '''

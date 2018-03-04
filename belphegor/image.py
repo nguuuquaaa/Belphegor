@@ -47,6 +47,10 @@ class RImage:
     @commands.group(aliases=["random"])
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     async def r(self, ctx):
+        '''
+            `>>random`
+            Base command. Does nothing by itself.
+        '''
         if ctx.invoked_subcommand is None:
             pass
 
@@ -170,39 +174,70 @@ class RImage:
 
     @r.command(aliases=["d",])
     async def danbooru(self, ctx, tag=""):
+        '''
+            `>>random danbooru <optional: tag>`
+            Get a random safe-rating image from danbooru.
+        '''
         async with ctx.typing():
             await self.get_image_danbooru(ctx, tag, safe=True)
 
     @r.command(aliases=["dh"])
     @checks.nsfw()
     async def danbooru_h(self, ctx, tag=""):
+        '''
+            `>>random danbooru_h <optional: tag>`
+            Get a random questionable/explicit-rating image from danbooru.
+            Only usable in nsfw channel.
+        '''
         async with ctx.typing():
             await self.get_image_danbooru(ctx, tag, safe=False)
 
     @r.command(aliases=["k",])
     async def konachan(self, ctx, *, tags=""):
+        '''
+            `>>random konachan <optional: tag>`
+            Get a random safe-rating image from konachan.
+        '''
         async with ctx.typing():
             await self.get_image_konachan(ctx, tags, safe=True)
 
     @r.command(aliases=["kh",])
     @checks.nsfw()
     async def konachan_h(self, ctx, *, tags=""):
+        '''
+            `>>random konachan_h <optional: tag>`
+            Get a random questionable/explicit-rating image from konachan.
+            Only usable in nsfw channel.
+        '''
         async with ctx.typing():
             await self.get_image_konachan(ctx, tags, safe=False)
 
     @r.command(aliases=["s",])
     async def safebooru(self, ctx, *, tags=""):
+        '''
+            `>>random safebooru <optional: list of tags>`
+            Get a random safe-rating image from safebooru.
+        '''
         async with ctx.typing():
             await self.get_image_safebooru(ctx, tags, safe=True)
 
     @r.command(aliases=["y",])
     async def yandere(self, ctx, *, tags=""):
+        '''
+            `>>random yandere <optional: list of tags>`
+            Get a random questionable/explicit-rating image from yandere.
+        '''
         async with ctx.typing():
             await self.get_image_yandere(ctx, tags, safe=True)
 
     @r.command(aliases=["sc",])
     @checks.nsfw()
     async def sancom(self, ctx, *, tags=""):
+        '''
+            `>>random sancom <optional: 1 or 2 tags>`
+            Get a random questionable/explicit-rating image from Sankaku Complex.
+            Only usable in nsfw channel.
+        '''
         async with self.sc_lock:
             async with ctx.typing():
                 await self.get_image_sancom(ctx, tags)
@@ -220,6 +255,11 @@ class RImage:
 
     @commands.command()
     async def saucenao(self, ctx, url=None):
+        '''
+            `>>saucenao <optional: either uploaded image or url>`
+            Find the sauce of the image.
+            If no argument is provided, wait 2 minutes for uploaded image.
+        '''
         if not url:
             msg = ctx.message
             if not msg.attachments:
