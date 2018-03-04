@@ -12,6 +12,7 @@ from bs4 import BeautifulSoup as BS
 import json
 from datetime import datetime, timedelta
 import traceback
+from textwrap import indent
 
 #==================================================================================================================================================
 
@@ -254,6 +255,11 @@ class PSO2:
 
     @commands.command(aliases=["c"])
     async def chip(self, ctx, *, name):
+        '''
+            `>>chip <name>`
+            Check a PSO2es chip info.
+            Chip name is case-insensitive and can be either EN or JP.
+        '''
         chip = await ctx.search(
             name, self.chip_library,
             cls=Chip, colour=discord.Colour.blue(),
@@ -265,6 +271,11 @@ class PSO2:
 
     @commands.group(name="weapon", aliases=["w",], invoke_without_command=True)
     async def cmd_weapon(self, ctx, *, name):
+        '''
+            `>>weapon <name>`
+            Check a PSO2 weapon info.
+            Weapon name is case-insensitive and can be either EN or JP.
+        '''
         weapon = await ctx.search(
             name, self.weapon_list,
             cls=Weapon, colour=discord.Colour.blue(),
@@ -304,22 +315,39 @@ class PSO2:
             try:
                 re_value = int(value)
                 if orig_att == "atk":
-                    att = "atk.max"
+                    q = {
+                            "$or": [
+                                {
+                                    "atk.max.satk": re_value
+                                },
+                                {
+                                    "atk.max.ratk": re_value
+                                },
+                                {
+                                    "atk.max.tatk": re_value
+                                }
+                            ]
+                        }
                 else:
-                    att = orig_att
-                q = {att: re_value}
-                p = {att: True}
+                    q = {orig_att: re_value}
+                p = {orig_att: True}
             except:
                 re_value = ".*?".join(map(re.escape, value.split()))
                 p = None
-                if orig_att in ("properties", "affix", "abi", "ability", "potential", "pot", "latent", "saf"):
-                    att = "properties"
+                if orig_att in ("properties", "affix", "abi", "ability", "potential", "pot", "latent", "saf", "s_class"):
                     p = {"properties.$": True}
-                else:
-                    att = orig_att
-                if p:
+                    if orig_att == "properties":
+                        t = {"$exists": True}
+                    elif orig_att in ("affix", "abi", "ability"):
+                        t = "ability"
+                    elif orig_att in ("potential", "pot", "latent"):
+                        t = "potential"
+                    elif orig_att == "saf":
+                        t = "saf"
+                    elif orig_att == "s_class":
+                        t = "s_class"
                     q = {
-                        att: {
+                        "properties": {
                             "$elemMatch": {
                                 "$or": [
                                     {
@@ -334,13 +362,17 @@ class PSO2:
                                             "$options": "i"
                                         }
                                     }
-                                ]
+                                ],
+                                "type": t
                             }
                         }
                     }
+                elif orig_att in ("ssa_slots", "classes"):
+                    q = {"$or": [{orig_att: {"$all": value.split()}}, {orig_att: "all_classes"}]}
+                    p = {orig_att: True}
                 else:
-                    q = {att: {"$regex": re_value, "$options": "i"}}
-                    p = {att: True}
+                    q = {orig_att: {"$regex": re_value, "$options": "i"}}
+                    p = {orig_att: True}
             query.update(q)
             projection.update(p)
 
@@ -351,22 +383,26 @@ class PSO2:
             new_weapon["jp_name"] = weapon.pop("jp_name")
             r = ""
             for key, value in weapon.items():
-                while value:
-                    if isinstance(value, list):
-                        value = value[0]
+                if key == "properties":
+                    desc = f"{value['name']}\n{indent(value['description'], '     ')}"
+                elif key == "atk":
+                    desc = f"{self.emojis['satk']}{value['max']['satk']} {self.emojis['ratk']}{value['max']['ratk']} {self.emojis['tatk']}{value['max']['tatk']}"
+                elif key in ("ssa_slots", "classes"):
+                    if value == "all_classes":
+                        desc = "".join((str(self.emojis[c]) for c in CLASS_DICT.values()))
                     else:
-                        break
-                if isinstance(value, dict):
-                    desc = f"{value['name']} - {value['description']}"
+                        desc = "".join((str(self.emojis[s]) for s in value))
                 else:
                     desc = value
                 try:
-                    if len(desc) > 200:
+                    if len(desc) > 200 and key not in ("ssa_slots", "classes"):
                         desc = f"{desc[:200]}..."
                 except:
                     pass
                 if key == "properties":
                     r = f"{r}\n   {self.emojis[value['type']]}{desc}"
+                elif key == "atk":
+                    r = f"{r}\n   {desc}"
                 else:
                     r = f"{r}\n   {key}: {desc}"
             new_weapon["value"] = r
@@ -375,6 +411,20 @@ class PSO2:
 
     @cmd_weapon.command(name="filter")
     async def w_filter(self, ctx, *, data):
+        '''
+            `>>w filter <criteria>`
+            Find all weapons with <criteria>.
+            Criteria can contain multiple lines, each with format `<attribute> <value>`.
+            Available attributes:
+            - en_name
+            - jp_name
+            - category
+            - rarity
+            - atk
+            - properties/potential/ability/saf/s_class
+            - classes
+            - ssa_slots
+        '''
         data = data.strip().splitlines()
         attrs = []
         for d in data:
@@ -444,6 +494,11 @@ class PSO2:
 
     @commands.command(name="item", aliases=["i"])
     async def cmd_item(self, ctx, *, name):
+        '''
+            `>>item <name>`
+            Find PSO2 items.
+            Name given is case-insensitive, and can be either EN or JP.
+        '''
         async with ctx.typing():
             params = {"name": name}
             bytes_ = await utils.fetch(self.bot.session, "http://db.kakia.org/item/search", params=params)
@@ -469,6 +524,10 @@ class PSO2:
 
     @commands.command(name="price")
     async def cmd_price(self, ctx, *, name):
+        '''
+            `>>price <name>`
+            Check the price of item.
+        '''
         async with ctx.typing():
             params = {"name": name}
             bytes_ = await utils.fetch(self.bot.session, "http://db.kakia.org/item/search", params=params)
@@ -500,6 +559,10 @@ class PSO2:
 
     @commands.command()
     async def jptime(self, ctx):
+        '''
+            `>>jptime`
+            Current time in JP.
+        '''
         await ctx.send(utils.jp_time(utils.now_time()))
 
     async def check_for_updates(self):
@@ -613,6 +676,10 @@ class PSO2:
 
     @commands.command(name="eq")
     async def nexteq(self, ctx):
+        '''
+            `>>eq`
+            Display eq schedule for the next 3 hours.
+        '''
         if not self.last_eq_data:
             bytes_ = await utils.fetch(self.bot.session, "https://pso2.acf.me.uk/api/eq.json", headers={"User-Agent": "PSO2Alert", "Host": "pso2.acf.me.uk"})
             self.last_eq_data = json.loads(bytes_)[0]
@@ -641,6 +708,11 @@ class PSO2:
 
     @commands.group(name="unit", aliases=["u"], invoke_without_command=True)
     async def cmd_unit(self, ctx, *, name):
+        '''
+            `>>unit <name>`
+            Check a PSO2 unit info.
+            Name given is case-insensitive, and can be either EN or JP.
+        '''
         unit = await ctx.search(
             name, self.unit_list,
             cls=Unit, colour=discord.Colour.blue(),
@@ -650,7 +722,7 @@ class PSO2:
             return
         await ctx.send(embed=unit.embed_form(self))
 
-    @cmd_unit.command(name="update")
+    @cmd_unit.command(hidden=True, name="update")
     @checks.owner_only()
     async def uupdate(self, ctx, *args):
         msg = await ctx.send("Fetching...")

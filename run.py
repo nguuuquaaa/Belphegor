@@ -13,5 +13,7 @@ if __name__ == "__main__":
         if not belphybot.restart_flag:
             break
         else:
-            importlib.reload(data_type)
             asyncio.set_event_loop(asyncio.new_event_loop())
+            importlib.reload(data_type)
+            importlib.reload(utils.checks)
+            importlib.reload(utils.image_processing)

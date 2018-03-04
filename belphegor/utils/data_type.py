@@ -380,9 +380,10 @@ class Belphegor(commands.Bot):
 
         blocked_data = self.disabled_data.get(guild_id)
         if blocked_data:
+            if getattr(ctx.command, "hidden", None) or getattr(ctx.command, "qualified_name", "").partition(" ")[0] in ("enable", "disable"):
+                return True
+
             if blocked_data.get("disabled_bot_guild", False):
-                if getattr(ctx.command, "hidden", None) or getattr(ctx.command, "qualified_name", "").partition(" ")[0] in ("enable", "disable"):
-                    return True
                 self.loop.create_task(ctx.send("Command usage is disabled in this server.", delete_after=30))
                 do_after(ctx.message.delete(), 30)
                 return False

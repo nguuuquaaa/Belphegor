@@ -412,7 +412,7 @@ class Help:
                     embed.add_field(name="Aliases", value=", ".join((f"`{a}`" for a in command.aliases)) if command.aliases else "None")
                     embed.add_field(
                         name="Subcommands",
-                        value=", ".join((f"`{s.name}`" for s in getattr(command, "commands", ()))) if hasattr(command, "commands") else "None",
+                        value=", ".join((f"`{s.name}`" for s in getattr(command, "commands", ()) if not s.hidden)) if hasattr(command, "commands") else "None",
                         inline=False
                     )
                     all_checks = set(command.checks)
