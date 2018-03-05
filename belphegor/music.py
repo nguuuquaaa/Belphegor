@@ -316,11 +316,20 @@ class Music:
 
     @commands.group(aliases=["m"])
     async def music(self, ctx):
+        '''
+            `>>music`
+            Base command. Does nothing by itself, but with subcommands can be used to play music.
+        '''
         if ctx.invoked_subcommand is None:
             pass
 
     @music.command(aliases=["j"])
     async def join(self, ctx):
+        '''
+            `>>music join`
+            Have {0} join the current voice channel you are in and play everything in queue.
+            May or may not bug out when the connection is unstable. If that happens, try move her to another channel.
+        '''
         try:
             voice_channel = ctx.author.voice.channel
         except AttributeError:
@@ -341,6 +350,10 @@ class Music:
 
     @music.command(aliases=["l"])
     async def leave(self, ctx):
+        '''
+            `>>music leave`
+            Have {0} leave voice channel.
+        '''
         music_player = await self.get_music_player(ctx.guild.id)
         async with music_player.lock:
             try:
@@ -386,6 +399,11 @@ class Music:
 
     @music.command(aliases=["q"])
     async def queue(self, ctx, *, name=None):
+        '''
+            `>>music queue <optional: name>`
+            Search Youtube for a song and put it in queue.
+            If no name is provided, the current queue is displayed instead.
+        '''
         music_player = await self.get_music_player(ctx.guild.id)
         if not name:
             embeds = self.current_queue_info(music_player)
@@ -410,11 +428,20 @@ class Music:
 
     @music.command(aliases=["s"])
     async def skip(self, ctx):
+        '''
+            `>>music skip`
+            Skip current song.
+        '''
         music_player = await self.get_music_player(ctx.guild.id)
         music_player.skip()
 
     @music.command(aliases=["v"])
-    async def volume(self, ctx, vol:int):
+    async def volume(self, ctx, vol: int):
+        '''
+            `>>music volume <value>`
+            Set volume. Volume must be an integer between 0 and 200.
+            Default volume is 100.
+        '''
         music_player = await self.get_music_player(ctx.guild.id)
         if 0 <= vol <= 200:
             music_player.current_song.default_volume = vol / 100
@@ -425,6 +452,11 @@ class Music:
 
     @music.command(aliases=["r"])
     async def repeat(self, ctx):
+        '''
+            `>>music repeat`
+            Turn on repeat mode. The current song will be repeated indefinitely.
+            Use again to switch it off.
+        '''
         music_player = await self.get_music_player(ctx.guild.id)
         if music_player.repeat:
             music_player.repeat = False
@@ -434,7 +466,11 @@ class Music:
             await ctx.send("Repeat mode has been turned on.")
 
     @music.command(aliases=["d"])
-    async def delete(self, ctx, position:int):
+    async def delete(self, ctx, position: int):
+        '''
+            `>>music delete <position>`
+            Delete a song from queue.
+        '''
         music_player = await self.get_music_player(ctx.guild.id)
         if 0 < position <= music_player.queue.size():
             title = music_player.queue(position).title
@@ -452,6 +488,10 @@ class Music:
 
     @music.command()
     async def purge(self, ctx):
+        '''
+            `>>music purge`
+            Purge all songs from queue.
+        '''
         music_player = await self.get_music_player(ctx.guild.id)
         sentences = {
             "initial":  f"Purge queue?",
@@ -465,6 +505,11 @@ class Music:
 
     @music.command()
     async def export(self, ctx, *, name="playlist"):
+        '''
+            `>>music export <optional: name>`
+            Export current queue to a JSON file.
+            If no name is provided, default name `playlist` is used instead.
+        '''
         music_player = await self.get_music_player(ctx.guild.id)
         jsonable = []
         if music_player.current_song:
@@ -476,6 +521,10 @@ class Music:
 
     @music.command(name="import")
     async def music_import(self, ctx):
+        '''
+            `>>music import`
+            Import JSON playlist file to queue.
+        '''
         music_player = await self.get_music_player(ctx.guild.id)
         msg = ctx.message
         if not msg.attachments:
@@ -519,6 +568,12 @@ class Music:
 
     @music.command(aliases=["p"])
     async def playlist(self, ctx, *, name=None):
+        '''
+            `>>music playlist <optional: name>`
+            Search Youtube for a playlist and put it in queue.
+            If <name> starts with `-r` or `-random` flag then the playlist is put in in random order.
+            If no name is provided, the current queue is displayed instead.
+        '''
         music_player = await self.get_music_player(ctx.guild.id)
         if not name:
             embeds = self.current_queue_info(music_player)
@@ -563,6 +618,11 @@ class Music:
     @music.command(aliases=["i"])
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     async def info(self, ctx, stuff="0"):
+        '''
+            `>>music info <optional: either queue position or youtube link>`
+            Display video info.
+            If no argument is provided, the currently playing song is used instead.
+        '''
         music_player = await self.get_music_player(ctx.guild.id)
         try:
             position = int(stuff)
@@ -605,6 +665,10 @@ class Music:
 
     @music.command(aliases=["t"])
     async def toggle(self, ctx):
+        '''
+            `>>music toggle`
+            Toggle play/pause.
+        '''
         music_player = await self.get_music_player(ctx.guild.id)
         vc = music_player.voice_client
         if vc.is_paused():
@@ -616,6 +680,11 @@ class Music:
 
     @music.command(aliases=["f"])
     async def forward(self, ctx, seconds: int=10):
+        '''
+            `>>music forward <optional: seconds>`
+            Fast forward. The limit is 59 seconds.
+            If no argument is provided, fast forward by 10 seconds.
+        '''
         music_player = await self.get_music_player(ctx.guild.id)
         song = music_player.current_song
         if song:
@@ -631,18 +700,30 @@ class Music:
 
     @music.command(aliases=["channel"])
     async def setchannel(self, ctx):
+        '''
+            `>>music setchannel`
+            Set the current channel as announcement channel.
+        '''
         music_player = await self.get_music_player(ctx.guild.id)
         music_player.channel = ctx.channel
         await ctx.confirm()
 
     @music.command(aliases=["ai"])
     async def autoinfo(self, ctx):
+        '''
+            `>>music autoinfo`
+            Automatic info display.
+        '''
         music_player = await self.get_music_player(ctx.guild.id)
         music_player.auto_info[ctx.author.id] = ctx
         await ctx.confirm()
 
     @music.command(aliases=["mi"])
     async def manualinfo(self, ctx):
+        '''
+            `>>music autoinfo`
+            Manual info display.
+        '''
         music_player = await self.get_music_player(ctx.guild.id)
         music_player.auto_info.pop(ctx.author.id, None)
         await ctx.confirm()

@@ -161,7 +161,7 @@ class Help:
     async def game(self, ctx):
         '''
             `>>help game`
-            Display board game related commands.
+            Display board game commands.
         '''
         embed = discord.Embed(
             title="\U0001f3b2 Board game",
@@ -190,8 +190,8 @@ class Help:
     @help.command()
     async def image(self, ctx):
         '''
-            `>>help random`
-            Dislay image board random commands.
+            `>>help image`
+            Dislay image commands.
         '''
         embed = discord.Embed(
             title="\U0001f5bc Random",
@@ -219,7 +219,6 @@ class Help:
         '''
             `>>help music`
             Display music commands.
-            The same as `>>music`
         '''
         embed = discord.Embed(title="\U0001f3b5 Music", description="So many music bots out there but I want to have my own, so here it is.", colour=discord.Colour.teal())
         embed.set_thumbnail(url="http://i.imgur.com/HKIOv84.png")
@@ -251,7 +250,7 @@ class Help:
     async def server(self, ctx):
         '''
             `>>help server`
-            Display non-DM, server related commands.
+            Display non-DM, server-specific commands.
         '''
         embed = discord.Embed(
             title="\U0001f4d4 Server",
@@ -295,7 +294,7 @@ class Help:
     async def remind(self, ctx):
         '''
             `>>help remind`
-            Display remind commands.
+            Display reminder commands.
         '''
         embed = discord.Embed(title="\u23f0 Reminder", description="Schedule to ping you after a certain time.", colour=discord.Colour.teal())
         embed.add_field(
@@ -412,7 +411,7 @@ class Help:
                     embed.add_field(name="Aliases", value=", ".join((f"`{a}`" for a in command.aliases)) if command.aliases else "None")
                     embed.add_field(
                         name="Subcommands",
-                        value=", ".join((f"`{s.name}`" for s in getattr(command, "commands", ()) if not s.hidden)) if hasattr(command, "commands") else "None",
+                        value=", ".join((f"`{s.name}`" for s in getattr(command, "commands", ()) if not s.hidden)) or "None",
                         inline=False
                     )
                     all_checks = set(command.checks)
