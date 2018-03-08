@@ -257,7 +257,7 @@ class PSO2:
     async def chip(self, ctx, *, name):
         '''
             `>>chip <name>`
-            Check a PSO2es chip info.
+            Display a PSO2es chip info.
             Chip name is case-insensitive and can be either EN or JP.
         '''
         chip = await ctx.search(
@@ -273,7 +273,7 @@ class PSO2:
     async def cmd_weapon(self, ctx, *, name):
         '''
             `>>weapon <name>`
-            Check a PSO2 weapon info.
+            Display a PSO2 weapon info.
             Weapon name is case-insensitive and can be either EN or JP.
         '''
         weapon = await ctx.search(
@@ -526,7 +526,7 @@ class PSO2:
     async def cmd_price(self, ctx, *, name):
         '''
             `>>price <name>`
-            Check the price of item.
+            Check the price of an item.
         '''
         async with ctx.typing():
             params = {"name": name}

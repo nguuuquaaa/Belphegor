@@ -330,7 +330,7 @@ class Belphegor(commands.Bot):
         print(self.user.id)
         print('------')
         await asyncio.sleep(5)
-        await self.change_presence(game=discord.Game(name='with Chronos-senpai'))
+        await self.change_presence(activity=discord.Game(name='with Chronos-senpai'))
 
     def remove_cog(self, name):
         cog = self.get_cog(name)

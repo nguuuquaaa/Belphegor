@@ -28,11 +28,20 @@ class Sticker:
 
     @commands.group()
     async def sticker(self, ctx):
+        '''
+            `>>sticker`
+            Base command. Does nothing, but with subcommands can be used to set and view stickers.
+        '''
         if ctx.invoked_subcommand is None:
             pass
 
     @sticker.command()
     async def add(self, ctx, name, url):
+        '''
+            `>>sticker add <name> <url>`
+            Add a sticker.
+            Name can't contain spaces.
+        '''
         name = re.sub(r"\W+", "", name)
         if url[:8] == "https://" or url[:7] == "http://":
             value = {"name": name, "url": url, "author_id": ctx.author.id}
@@ -46,6 +55,10 @@ class Sticker:
 
     @sticker.command()
     async def edit(self, ctx, name, url):
+        '''
+            `>>sticker edit <name> <url>`
+            Edit a sticker you own.
+        '''
         before = await self.sticker_list.find_one_and_update({"name": name, "author_id": ctx.author.id}, {"$set": {"url": url}})
         if before is None:
             await ctx.send(f"Cannot edit sticker.\nEither sticker doesn't exist or you are not the creator of the sticker.")
@@ -54,6 +67,10 @@ class Sticker:
 
     @sticker.command()
     async def delete(self, ctx, name):
+        '''
+            `>>sticker delete <name>`
+            Delete a sticker you own.
+        '''
         result = await self.sticker_list.delete_one({"name": name, "author_id": ctx.author.id})
         if result.deleted_count > 0:
             await ctx.send(f"Sticker {name} deleted.")
@@ -62,6 +79,10 @@ class Sticker:
 
     @sticker.command()
     async def find(self, ctx, name):
+        '''
+            `>>sticker find <name>`
+            Find stickers.
+        '''
         sticker_names = await self.sticker_list.distinct("name", {})
         relevant = process.extract(name, sticker_names, limit=10)
         text = "\n".join((f"{r[0]} ({r[1]}%)" for r in relevant if r[1]>50))
@@ -71,6 +92,10 @@ class Sticker:
     @checks.guild_only()
     @checks.manager_only()
     async def ban(self, ctx, name):
+        '''
+            `>>sticker ban <name>`
+            Ban a sticker in current guild.
+        '''
         await self.sticker_list.update_one({"name": name}, {"$addToSet": {"banned_guilds": ctx.guild.id}})
         await ctx.confirm()
 
@@ -78,6 +103,10 @@ class Sticker:
     @checks.guild_only()
     @checks.manager_only()
     async def unban(self, ctx, name):
+        '''
+            `>>sticker unban <name>`
+            Unban a sticker in current guild.
+        '''
         result = await self.sticker_list.update_one({"name": name}, {"$pull": {"banned_guilds": ctx.guild.id}})
         if result.modified_count > 0:
             await ctx.confirm()
@@ -86,9 +115,17 @@ class Sticker:
 
     @sticker.command()
     async def banlist(self, ctx):
+        '''
+            `>>sticker banlist`
+            Display current guild's sticker ban list.
+        '''
         banned_stickers = await self.sticker_list.distinct("name", {"banned_guilds": {"$eq": ctx.guild.id}})
         if banned_stickers:
-            embeds = utils.embed_page_format(banned_stickers, 10, title="Banned stickers for this server", description=lambda i, x: f"`{i+1}.` {x}")
+            embeds = utils.embed_page_format(
+                banned_stickers, 10,
+                title="Banned stickers for this server",
+                description=lambda i, x: f"`{i+1}.` {x}"
+            )
             await ctx.embed_page(embeds)
         else:
             await ctx.send("There's no banned sticker.")

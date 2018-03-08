@@ -49,7 +49,7 @@ class RImage:
     async def r(self, ctx):
         '''
             `>>random`
-            Base command. Does nothing by itself.
+            Base command. Does nothing by itself but with subcommands can be used to get a random image from various image boards.
         '''
         if ctx.invoked_subcommand is None:
             pass

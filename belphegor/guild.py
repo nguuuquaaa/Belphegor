@@ -719,7 +719,7 @@ class Guild:
         '''
         roles = await self.get_selfroles(ctx.guild)
         if roles:
-            embeds = utils.page_format(
+            embeds = utils.embed_page_format(
                 roles, 10,
                 title=f"{ctx.guild.name}'s selfrole pool:",
                 description=lambda i, x: f"`{i+1}.` {x.name}"

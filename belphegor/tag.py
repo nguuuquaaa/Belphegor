@@ -21,6 +21,10 @@ class Tag:
 
     @commands.group(name="tag", invoke_without_command=True)
     async def tag_cmd(self, ctx, *, name):
+        '''
+            `>>tag <name>`
+            Display a tag.
+        '''
         if ctx.invoked_subcommand is None:
             tag = await self.get_tag(name)
             if tag is None:
@@ -33,6 +37,11 @@ class Tag:
 
     @tag_cmd.command()
     async def create(self, ctx, name, *, content):
+        '''
+            `>>tag create <name> <content>`
+            Create a tag.
+            If name contains spaces, it must be enclosed in double quotes.
+        '''
         value = {"name": name, "content": content, "author_id": ctx.author.id}
         before = await self.tag_list.find_one_and_update({"name": name.strip()}, {"$setOnInsert": value}, upsert=True)
         if before:
@@ -42,6 +51,11 @@ class Tag:
 
     @tag_cmd.command()
     async def edit(self, ctx, name, *, content):
+        '''
+            `>>tag edit <name> <content>`
+            Edit a tag you own.
+            If name contains spaces, it must be enclosed in double quotes.
+        '''
         before = await self.tag_list.find_one_and_update({"name": name.strip(), "author_id": ctx.author.id, "content": {"$exists": True}}, {"$set": {"content": content}})
         if before is None:
             await ctx.send(f"Cannot edit tag.\nEither tag doesn't exist, tag is an alias or you are not the creator of the tag.")
@@ -50,6 +64,11 @@ class Tag:
 
     @tag_cmd.command()
     async def alias(self, ctx, name, *, alias_of):
+        '''
+            `>>tag alias <alias> <name>`
+            Create an alias for a tag.
+            If alias contains spaces, it must be enclosed in double quotes.
+        '''
         base_tag = await self.get_tag(alias_of)
         if base_tag:
             alias_of = base_tag["name"]
@@ -65,6 +84,10 @@ class Tag:
 
     @tag_cmd.command()
     async def delete(self, ctx, *, name):
+        '''
+            `>>tag delete <name>`
+            Delete a tag you own.
+        '''
         before = await self.tag_list.find_one_and_delete({"name": name, "author_id": ctx.author.id})
         if before:
             aliases = before.get("aliases", [])
@@ -76,6 +99,10 @@ class Tag:
 
     @tag_cmd.command()
     async def find(self, ctx, *, name):
+        '''
+            `>>tag find <name>`
+            Find tags.
+        '''
         tag_names = await self.tag_list.distinct("name", {})
         relevant = process.extract(name, tag_names, limit=10)
         text = "\n".join((f"{r[0]} ({r[1]}%)" for r in relevant if r[1]>50))
@@ -85,6 +112,10 @@ class Tag:
     @checks.guild_only()
     @checks.manager_only()
     async def ban(self, ctx, *, name):
+        '''
+            `>>tag ban <name>`
+            Ban a tag in current guild.
+        '''
         tag = await self.get_tag(name)
         await self.tag_list.update_one({"name": tag["name"]}, {"$addToSet": {"banned_guilds": ctx.guild.id}})
         await ctx.confirm()
@@ -93,6 +124,10 @@ class Tag:
     @checks.guild_only()
     @checks.manager_only()
     async def unban(self, ctx, *, name):
+        '''
+            `>>tag unban <name>`
+            Unban a tag in current guild.
+        '''
         tag = await self.get_tag(name)
         result = await self.tag_list.update_one({"name": tag["name"]}, {"$pull": {"banned_guilds": ctx.guild.id}})
         if result.modified_count > 0:
@@ -102,6 +137,10 @@ class Tag:
 
     @tag_cmd.command()
     async def banlist(self, ctx):
+        '''
+            `>>tag banlist`
+            Display current guild's tag ban list.
+        '''
         banned_tags = [tag async for tag in self.tag_list.find({"banned_guilds": {"$eq": ctx.guild.id}})]
         if banned_tags:
             embeds = utils.embed_page_format(banned_tags, 10, title="Banned tags for this server", description=lambda i, x: f"`{i+1}.` {', '.join([x['name']]+x.get('aliases', []))}")

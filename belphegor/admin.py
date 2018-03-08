@@ -89,12 +89,7 @@ class Admin:
     @checks.owner_only()
     async def status(self, ctx, *, stuff):
         data = stuff.partition(" ")
-        try:
-            t = int(data[0])
-            stuff = data[2]
-        except:
-            t = 0
-        await self.bot.change_presence(game=discord.Game(name=stuff, type=t))
+        await self.bot.change_presence(activity=discord.Activity(type=getattr(discord.ActivityType, data[0]), name=data[2]))
 
     @commands.command(hidden=True)
     @checks.owner_only()

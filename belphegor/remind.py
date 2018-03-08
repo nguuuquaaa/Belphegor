@@ -51,11 +51,20 @@ class Remind:
 
     @commands.group(aliases=["reminder"])
     async def remind(self, ctx):
+        '''
+            `>>remind`
+            Base command. Does nothing, but with subcommands can be used to set and view reminders.
+        '''
         if ctx.invoked_subcommand is None:
             pass
 
     @remind.command(name="me")
     async def remind_me(self, ctx, *, remind_text):
+        '''
+            `>>remind me <reminder>`
+            Set a reminder.
+            Use ~~machine~~human-readable time format to set timer, i.e `in 10h` or `in 10 days`.
+        '''
         try:
             remind_text, wait_time = utils.extract_time(remind_text)
         except:
@@ -81,6 +90,10 @@ class Remind:
 
     @remind.command(name="list")
     async def remind_list(self, ctx):
+        '''
+            `>>remind list`
+            Display all your reminders.
+        '''
         self_events = []
         async for ev in self.event_list.find({"author_id": ctx.author.id}, sort=[("event_time", 1)]):
             ev["event_time"] = ev["event_time"].replace(tzinfo=timezone.utc)
@@ -99,7 +112,11 @@ class Remind:
             await ctx.send("You have no reminder.")
 
     @remind.command(name="delete")
-    async def remind_delete(self, ctx, position:int):
+    async def remind_delete(self, ctx, position: int):
+        '''
+            `>>remind delete <position>`
+            Delete a reminder.
+        '''
         self_events = [ev async for ev in self.event_list.find({"author_id": ctx.author.id}, sort=[("event_time", 1)])]
         if 0 < position <= len(self_events):
             sentences = {
@@ -113,7 +130,7 @@ class Remind:
         else:
             await ctx.send("Position out of range.")
 
-    @commands.command()
+    @commands.command(hidden=True)
     async def ftime(self, ctx, *, phrase):
         try:
             text, time_ext = utils.extract_time(phrase)
@@ -127,6 +144,10 @@ class Remind:
 
     @commands.command(aliases=["time"])
     async def currenttime(self, ctx):
+        '''
+            `>>currenttime`
+            Show current time in UTC.
+        '''
         cur_time = utils.now_time()
         await ctx.send(utils.format_time(cur_time))
 

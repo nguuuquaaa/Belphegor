@@ -219,6 +219,10 @@ class Otogi:
 
     @commands.group(name="daemon", aliases=["d"], invoke_without_command=True)
     async def cmd_daemon(self, ctx, *, name: str):
+        '''
+            `>>daemon <name>`
+            Display a daemon info.
+        '''
         daemon = await self._search(ctx, name)
         if not daemon:
             return
@@ -228,6 +232,10 @@ class Otogi:
 
     @commands.command(name="pic", aliases=["p"])
     async def cmd_pic(self, ctx, *, name: str):
+        '''
+            `>>pic <name>`
+            Display a daemon image.
+        '''
         daemon = await self._search(ctx, name, prompt=False)
         if daemon:
             pic_embed = discord.Embed(colour=discord.Colour.orange())
@@ -338,8 +346,28 @@ class Otogi:
     @cmd_daemon.command(name="filter")
     async def cmd_daemon_filter(self, ctx, *, data):
         '''
-            Command takes multiple lines with format `<attribute> <value>`
-            Attributes include: name, alias, type, class, max_atk, max_hp, mlb_atk, mlb_hp, rarity, skill, ability, bond, faction, voice_actor, illustrator, how_to_acquire, notes_and_trivia and description
+            `>>daemon filter <criteria>`
+            Find all daemons with <criteria>.
+            Criteria can contain multiple lines, each with format `<attribute> <value>`
+            Available attributes:
+            - name
+            - alias
+            - rarity
+            - type
+            - class
+            - max_atk
+            - max_hp
+            - mlb_atk
+            - mlb_hp
+            - skill
+            - ability
+            - bond
+            - faction
+            - voice_actor
+            - illustrator
+            - how_to_acquire
+            - notes_and_trivia
+            - description
         '''
         data = data.strip().splitlines()
         attrs = []
@@ -359,6 +387,10 @@ class Otogi:
 
     @commands.command(name="trivia", aliases=["t"])
     async def cmd_t(self, ctx, *, name:str):
+        '''
+            `>>trivia <name>`
+            Display a daemon trivia info.
+        '''
         daemon = await self._search(ctx, name)
         if not daemon:
             return
@@ -368,6 +400,10 @@ class Otogi:
 
     @commands.group()
     async def update(self, ctx):
+        '''
+            `>>update`
+            Base command. Does nothing significant.
+        '''
         if ctx.invoked_subcommand is None:
             embed = discord.Embed(title="\U0001f4bf Update database", colour=discord.Colour.orange())
             embed.add_field(
@@ -383,6 +419,12 @@ class Otogi:
     @update.command()
     @checks.otogi_guild_only()
     async def create(self, ctx, *, data:str):
+        '''
+            `>>update create <data>`
+            Create a daemon with the input data.
+            Data can contains multiple lines, each with format `<attribute> <value>`
+            Normally it's advised to create a daemon with name and maybe alias, then update via wikia later.
+        '''
         cur_index = 1
         all_values = await self.daemon_collection.distinct("id", {})
         while cur_index in all_values:
@@ -414,7 +456,7 @@ class Otogi:
             print(e)
             await ctx.send("Wrong format.")
 
-    @update.command()
+    @update.command(hidden=True)
     @checks.owner_only()
     async def delete(self, ctx, *, name):
         daemon = await self._search(ctx, name, prompt=True)
@@ -423,7 +465,7 @@ class Otogi:
         await self.daemon_collection.find_one_and_delete({"id": daemon.id})
         await ctx.send(f"The entry for {daemon.name} has been deleted.")
 
-    @update.command()
+    @update.command(hidden=True)
     @checks.owner_only()
     async def edit(self, ctx, *, data):
         data = data.strip().splitlines()
@@ -457,7 +499,7 @@ class Otogi:
         else:
             await ctx.send(f"No field {field} found.")
 
-    @update.command(name="summon")
+    @update.command(hidden=True, name="summon")
     @checks.owner_only()
     async def _summon(self, ctx, *, name):
         daemon = await self._search(ctx, name, prompt=True)
@@ -472,7 +514,7 @@ class Otogi:
         else:
             await ctx.send(f"You can't add {daemon.rarity}* daemon to pool.")
 
-    @update.command()
+    @update.command(hidden=True)
     @checks.owner_only()
     async def nosummon(self, ctx, *, name):
         daemon = await self._search(ctx, name, prompt=True)
@@ -487,6 +529,10 @@ class Otogi:
     @update.command()
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     async def wikia(self, ctx, *, name):
+        '''
+            `>>update wikia <name>`
+            Update daemon info with the infomation from wikia.
+        '''
         daemon = await self._search(ctx, name, prompt=True)
         if not daemon:
             return
@@ -619,7 +665,7 @@ class Otogi:
 
         return new_daemon
 
-    @update.command(name="everything", aliases=["all"])
+    @update.command(hidden=True, name="everything", aliases=["all"])
     @checks.owner_only()
     async def update_everything(self, ctx, start_from: int=0):
         async for daemon_data in self.daemon_collection.find({"id": {"$gte": start_from}}):
@@ -647,6 +693,11 @@ class Otogi:
     @commands.group(aliases=["ls"])
     @commands.cooldown(rate=1, per=1, type=commands.BucketType.user)
     async def lunchsummon(self, ctx):
+        '''
+            `>>lunchsummon`
+            Lunch summon simulation.
+            The result is collected in mybox feature.
+        '''
         if ctx.invoked_subcommand is None:
             id = ctx.author.id
             player = await self.get_player(id)
@@ -674,6 +725,11 @@ class Otogi:
 
     @lunchsummon.command()
     async def till(self, ctx, *, name):
+        '''
+            `>>ls till <name>`
+            Estimate how much ~~salt~~ summons to get a certain daemon.
+            Does not count into mybox feature.
+        '''
         daemon = await self._search(ctx, name)
         if not daemon:
             return
@@ -702,6 +758,10 @@ class Otogi:
 
     @lunchsummon.command(name="pool")
     async def show_summon_pool(self, ctx):
+        '''
+            `>>lunchsummon pool`
+            Show lunch summon pool.
+        '''
         summon_pool = [p["pool"] async for p in self.summon_pool.find({}, sort=[("rarity", ASCENDING)])]
         daemons = []
         for pool in summon_pool:
@@ -718,6 +778,10 @@ class Otogi:
 
     @commands.command()
     async def mybox(self, ctx, *, member: discord.Member=None):
+        '''
+            `>>mybox <optional: member>`
+            Show <member>'s box. If no member is provided, show your box instead.
+        '''
         target = member or ctx.author
         player = await self.get_player(target.id)
         lbs = {d["id"]: d["lb"] for d in player["daemons"]}
@@ -784,6 +848,12 @@ class Otogi:
 
     @commands.group(invoke_without_command=True)
     async def mochi(self, ctx, *, names):
+        '''
+            `>>mochi <list of names>`
+            Sell daemon(s).
+            Names are separated by `;`
+            You can attach `lb?` to the end of a name to choose a daemon with certain limit break level.
+        '''
         player = await self.get_player(ctx.author.id)
         names = [n.strip() for n in names.split(";")]
         number_of_daemons = 0
@@ -805,6 +875,11 @@ class Otogi:
 
     @mochi.command()
     async def bulk(self, ctx, *, names):
+        '''
+            `>>mochi bunk <list of names>`
+            Sell all daemons with <names>.
+            Names are separated by `;`
+        '''
         player = await self.get_player(ctx.author.id)
         names = [n.strip() for n in names.split(";")]
         total_mochi = 0
@@ -824,6 +899,10 @@ class Otogi:
 
     @mochi.command()
     async def all(self, ctx, rarity: int):
+        '''
+            `>>mochi all <rarity>`
+            Sell all daemons with <rarity>.
+        '''
         player = await self.get_player(ctx.author.id)
         daemons = await self.batch_search([d["id"] for d in player["daemons"]])
         total_mochi = 0
@@ -841,6 +920,11 @@ class Otogi:
 
     @commands.command()
     async def gift(self, ctx, member: discord.Member, *, name):
+        '''
+            `>>gift <member> <name>`
+            Gift <member> a daemon with <name>.
+            You can attach `lb?` to the end of <name> to choose a daemon with certain limit break level.
+        '''
         name, lb = self._process_name(name)
         daemon = await self._search(ctx, name, prompt=False)
         if not daemon:
@@ -867,8 +951,13 @@ class Otogi:
 
     @commands.command()
     async def gimme(self, ctx, member: discord.Member, *, data):
-        data = data.rsplit("for", 1)
-        price = int(data[1].replace("mochi", "").replace("mc", "").strip(" s"))
+        '''
+            `>>gimme <member> <name> for <number of mochi>`
+            Ask <member> to trade a daemon with <name> for a price.
+            You can attach `lb?` to the end of <name> to choose a daemon with certain limit break level.
+        '''
+        data = data.rpartition(" for ")
+        price = int(data[2].replace("mochi", "").replace("mc", "").strip(" s"))
         name = data[0].strip()
         name, lb = self._process_name(name)
         daemon = await self._search(ctx, name, prompt=False)
@@ -922,6 +1011,11 @@ class Otogi:
 
     @commands.command(aliases=["lb"])
     async def limitbreak(self, ctx, *, name=None):
+        '''
+            `>>limitbreak <optional: name>`
+            Auto limit break all daemons with <name>.
+            If no name is provide, limit break everything.
+        '''
         player = await self.get_player(ctx.author.id)
         if name:
             name, lb = self._process_name(player, name)
@@ -949,6 +1043,10 @@ class Otogi:
 
     @commands.command(aliases=["nuker"])
     async def nukers(self, ctx):
+        '''
+            `>>nukers`
+            Show nuker (skill damage) ranking.
+        '''
         data = await self.stat_sheet.find_one({})
         sheet = data["values"]
 
@@ -970,6 +1068,10 @@ class Otogi:
 
     @commands.command(aliases=["auto"])
     async def autoattack(self, ctx):
+        '''
+            `>>autoattack`
+            Show auto attack ranking.
+        '''
         data = await self.stat_sheet.find_one({})
         sheet = data["values"][1:]
 
@@ -990,6 +1092,10 @@ class Otogi:
 
     @commands.command(aliases=["debuffer"])
     async def debuffers(self, ctx):
+        '''
+            `>>debuffers`
+            Show debuffer list.
+        '''
         data = await self.stat_sheet.find_one({})
         sheet = data["values"]
 
@@ -1015,6 +1121,10 @@ class Otogi:
 
     @commands.command(aliases=["buffer"])
     async def buffers(self, ctx):
+        '''
+            `>>buffers`
+            Show buffer list.
+        '''
         data = await self.stat_sheet.find_one({})
         sheet = data["values"]
 
@@ -1039,6 +1149,10 @@ class Otogi:
 
     @commands.command()
     async def gcqstr(self, ctx):
+        '''
+            `>>gcqstr`
+            Show Guild Conquest STR ranking.
+        '''
         cur = self.daemon_collection.aggregate([
             {
                 "$project": {
@@ -1101,7 +1215,7 @@ class Otogi:
     async def exchange_get(self, ctx, *, name):
         pass
 
-    @commands.group(aliases=["leaks"])
+    @commands.group(hidden=True, aliases=["leaks"])
     async def leak(self, ctx):
         if ctx.invoked_subcommand is None:
             if ctx.guild:
@@ -1130,26 +1244,26 @@ class Otogi:
             if lines:
                 await ctx.send("\n".join(lines).strip())
 
-    @leak.command(name="edit")
+    @leak.command(hidden=True, name="edit")
     @commands.check(lambda ctx: ctx.channel.id==303247718514556928)
     async def leak_edit(self, ctx, *, content):
         await self.belphegor_config.update_one({"category": "leak"}, {"$set": {"content": content, "last_update": utils.now_time().strftime("%Y-%m-%d")}})
         await ctx.confirm()
 
-    @leak.command(name="append")
+    @leak.command(hidden=True, name="append")
     @commands.check(lambda ctx: ctx.channel.id==303247718514556928)
     async def leak_append(self, ctx, *, content):
         cur = await self.belphegor_config.find_one({"category": "leak"}, projection={"_id": False, "content": True})
         await self.belphegor_config.update_one({"category": "leak"}, {"$set": {"content": f"{cur['content']}\n{content}", "last_update": utils.now_time().strftime("%Y-%m-%d")}})
         await ctx.confirm()
 
-    @leak.command(name="policy")
+    @leak.command(hidden=True, name="policy")
     @commands.check(lambda ctx: ctx.channel.id==303247718514556928)
     async def leak_policy(self, ctx, *, content):
         await self.belphegor_config.update_one({"category": "leak"}, {"$set": {"policy": content, "last_update": utils.now_time().strftime("%Y-%m-%d")}})
         await ctx.confirm()
 
-    @leak.command(name="test")
+    @leak.command(hidden=True, name="test")
     @commands.check(lambda ctx: ctx.channel.id==303247718514556928)
     async def leak_test(self, ctx, *, content):
         data = await self.belphegor_config.find_one(
@@ -1175,7 +1289,7 @@ class Otogi:
         if lines:
             await ctx.send("\n".join(lines).strip())
 
-    @leak.command(name="log")
+    @leak.command(hidden=True, name="log")
     @commands.check(lambda ctx: ctx.channel.id==303247718514556928)
     async def leak_log(self, ctx):
         data = await self.belphegor_config.find_one({"category": "leak"}, projection={"_id": False, "access_log": True})

@@ -37,11 +37,7 @@ class Help:
             Display general help.
         '''
         if ctx.invoked_subcommand is None:
-            embed = discord.Embed(
-                title=f"{self.emoji['ranged']} {self.bot.user.name}#{self.bot.user.discriminator}",
-                description="[Invite link](https://discordapp.com/oauth2/authorize?client_id=306706699102715907&scope=bot&permissions=305523830)",
-                colour=discord.Colour.teal()
-            )
+            embed = discord.Embed(title=f"{self.emoji['ranged']} {self.bot.user}", colour=discord.Colour.teal())
             embed.set_thumbnail(url=self.bot.user.avatar_url)
             embed.add_field(
                 name="Categories",
@@ -62,8 +58,8 @@ class Help:
             embed.add_field(
                 name="Other",
                 value=
-                    "`>>detail` - Get detailed command info\n"
-                    "This is not completed yet since I'm lazy.\n\n"
+                    "`>>detail` - Get detailed command info\n\n"
+                    "`>>invite` - Invite link\n"
                     "`>>stats` - Bot info\n"
                     "`>>feedback` - feedback anything\n",
                 inline=False
@@ -226,9 +222,9 @@ class Help:
             name="Commands",
             value=
                 "`>>m`, `>>music` - Base command, do nothing\n"
-                f"      `j`, `join` - Have {self.bot.user.display_name} join the voice channel you are\n"
+                f"      `j`, `join` - Have {ctx.me.display_name} join the voice channel you are\n"
                 "                         currently in and play everything in queue\n"
-                f"      `l`, `leave` - Have {self.bot.user.display_name} leave the voice channel\n\n"
+                f"      `l`, `leave` - Have {ctx.me.display_name} leave the voice channel\n\n"
                 "      `q`, `queue` - Search Youtube and queue a song\n"
                 "      `p`, `playlist` - Search Youtube and queue a playlist\n\n"
                 "      `i`, `info` - Display video info, default current song (position 0)\n"
@@ -425,7 +421,7 @@ class Help:
                         value=", ".join((f"`{c.__name__[6:].replace('guild', 'server')}`" for c in all_checks)) if all_checks else "None",
                         inline=False
                     )
-                    embed.add_field(name="Usage", value=command.help or "Not yet documented.", inline=False)
+                    embed.add_field(name="Usage", value=(command.help or "Not yet documented.").format(ctx.me.display_name), inline=False)
                     return await ctx.send(embed=embed)
             await ctx.send(f"Command `{name}` doesn't exist.")
         else:
@@ -494,6 +490,31 @@ class Help:
             embed.add_field(name="Uptime", value=f"{d}d {h}h{m}m{s}s")
             embed.set_footer(text=utils.format_time(now_time.astimezone()))
             await ctx.send(embed=embed)
+
+    @commands.command()
+    async def invite(self, ctx):
+        '''
+            `>>invite`
+            Bot invite link.
+        '''
+        perms = discord.Permissions()
+        perms.manage_guild = True
+        perms.manage_roles = True
+        perms.manage_channels = True
+        perms.kick_members = True
+        perms.ban_members = True
+        perms.read_messages = True
+        perms.send_messages = True
+        perms.manage_messages = True
+        perms.embed_links = True
+        perms.attach_files = True
+        perms.read_message_history = True
+        perms.add_reactions = True
+        perms.connect = True
+        perms.speak = True
+        perms.use_voice_activation = True
+        perms.external_emojis = True
+        await ctx.send(discord.utils.oauth_url(ctx.me.id, perms))
 
 #==================================================================================================================================================
 
