@@ -65,7 +65,9 @@ WEAPON_SORT = tuple(WEAPON_URLS.keys())
 SSA_SLOTS = {
     "Tier 3":               ["s1", "s2", "s3"],
     "Tier 4":               ["s1", "s2", "s3", "s4"],
-    "S Class Ability 2":    ["s2"]
+    "S Class Ability 1":    ["s1"],
+    "S Class Ability 2":    ["s2"],
+    "S Class Ability 3":    ["s3"]
 }
 DEF_EMOJIS = ("sdef", "rdef", "tdef")
 RESIST_EMOJIS = ("s_res", "r_res", "t_res")
@@ -384,6 +386,7 @@ class PSO2:
             r = ""
             for key, value in weapon.items():
                 if key == "properties":
+                    value = value[0]
                     desc = f"{value['name']}\n{indent(value['description'], '     ')}"
                 elif key == "atk":
                     desc = f"{self.emojis['satk']}{value['max']['satk']} {self.emojis['ratk']}{value['max']['ratk']} {self.emojis['tatk']}{value['max']['tatk']}"

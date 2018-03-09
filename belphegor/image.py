@@ -54,13 +54,30 @@ class RImage:
         if ctx.invoked_subcommand is None:
             pass
 
+    def process_tags(self, tags, *, safe, safe_tag="safe"):
+        tag_list = list(tags)
+        i = 0
+        while i < len(tag_list):
+            if tag_list[i].startswith(("rating:", "-rating:")):
+                t = tag_list.pop(i)
+                if (safe and t[7:7] == "s") or (not safe and t[7:7] in ("e", "q")):
+                    rating = t
+                    break
+            else:
+                i += 1
+        else:
+            rating = f"{'' if safe else '-'}rating:{safe_tag}"
+        return rating, ' '.join(tag_list)
+
     @retry_wrap
-    async def get_image_danbooru(self, tag, *, safe):
+    async def get_image_danbooru(self, tags, *, safe):
+        rating, tags = self.process_tags(tags, safe=safe)
         params = {
-            "tags":   f"{'' if safe else '-'}rating:safe {tag}",
+            "tags":   f"{rating} {tags}",
             "limit":  1,
             "random": "true"
         }
+        print(params)
         bytes_ = await self.bot.fetch("https://danbooru.donmai.us/posts.json", params=params)
         pic = json.loads(bytes_)[0]
         tag_str = utils.split_page(pic.get('tag_string', ''), 1800)
@@ -70,13 +87,14 @@ class RImage:
             url=f"https://danbooru.donmai.us/posts/{pic['id']}",
             colour=discord.Colour.red()
         )
-        embed.set_image(url=f"https://danbooru.donmai.us{pic['file_url']}")
+        embed.set_image(url=pic["file_url"] if pic["file_url"].startswith("http") else f"https://danbooru.donmai.us{pic['file_url']}")
         return embed
 
     @retry_wrap
     async def get_image_konachan(self, tags, *, safe, page=1):
+        rating, tags = self.process_tags(tags, safe=safe)
         params = {
-            "tags":   f"{'' if safe else '-'}rating:safe order:random {tags}",
+            "tags":   f"{rating} order:random {tags}",
             "limit":  1,
             "page":   page
         }
@@ -90,16 +108,17 @@ class RImage:
             url=f"http://konachan.{domain}/post/show/{pic['id']}",
             colour=discord.Colour.red()
         )
-        embed.set_image(url=f"http:{pic['file_url']}")
+        embed.set_image(url=pic["file_url"] if pic["file_url"].startswith("http") else f"https:{pic['file_url']}")
         return embed
 
     @retry_wrap
     async def get_image_safebooru(self, tags, *, safe, page=1):
+        rating, tags = self.process_tags(tags, safe=safe)
         params = {
             "page":   "dapi",
             "s":      "post",
             "q":      "index",
-            "tags":   f"{'' if safe else '-'}rating:safe {tags}",
+            "tags":   f"{rating} {tags}",
             "limit":  100,
             "pid":   page
         }
@@ -113,13 +132,14 @@ class RImage:
             url=f"https://safebooru.org/index.php?page=post&s=view&id={pic['@id']}",
             colour=discord.Colour.red()
         )
-        embed.set_image(url=f"http:{pic['@file_url']}")
+        embed.set_image(url=pic["@file_url"] if pic["@file_url"].startswith("http") else f"https:{pic['@file_url']}")
         return embed
 
     @retry_wrap
     async def get_image_yandere(self, tags, *, safe, page=1):
+        rating, tags = self.process_tags(tags, safe=safe, safe_tag="s")
         params = {
-            "tags":   f"{'' if safe else '-'}rating:s {tags}",
+            "tags":   f"{rating} {tags}",
             "limit":  100,
             "page":   page
         }
@@ -133,13 +153,14 @@ class RImage:
             url=f"https://yande.re/post/show/{pic['id']}",
             colour=discord.Colour.red()
         )
-        embed.set_image(url=pic['sample_url'])
+        embed.set_image(url=pic['file_url'])
         return embed
 
     @retry_wrap
     async def get_image_sancom(self, tags):
+        rating, tags = self.process_tags(tags, safe=False, safe_tag="s")
         params = {
-            "tags":   f"-rating:s order:random {tags}",
+            "tags":   f"{rating} order:random {tags}",
             "commit": "Search"
         }
         bytes_ = await self.bot.fetch("https://chan.sankakucomplex.com/", params=params)
@@ -173,27 +194,27 @@ class RImage:
         return embed
 
     @r.command(aliases=["d",])
-    async def danbooru(self, ctx, tag=""):
+    async def danbooru(self, ctx, *tags):
         '''
             `>>random danbooru <optional: tag>`
             Get a random safe-rating image from danbooru.
         '''
         async with ctx.typing():
-            await self.get_image_danbooru(ctx, tag, safe=True)
+            await self.get_image_danbooru(ctx, tags, safe=True)
 
     @r.command(aliases=["dh"])
     @checks.nsfw()
-    async def danbooru_h(self, ctx, tag=""):
+    async def danbooru_h(self, ctx, *tags):
         '''
             `>>random danbooru_h <optional: tag>`
             Get a random questionable/explicit-rating image from danbooru.
             Only usable in nsfw channel.
         '''
         async with ctx.typing():
-            await self.get_image_danbooru(ctx, tag, safe=False)
+            await self.get_image_danbooru(ctx, tags, safe=False)
 
     @r.command(aliases=["k",])
-    async def konachan(self, ctx, *, tags=""):
+    async def konachan(self, ctx, *tags):
         '''
             `>>random konachan <optional: tag>`
             Get a random safe-rating image from konachan.
@@ -203,7 +224,7 @@ class RImage:
 
     @r.command(aliases=["kh",])
     @checks.nsfw()
-    async def konachan_h(self, ctx, *, tags=""):
+    async def konachan_h(self, ctx, *tags):
         '''
             `>>random konachan_h <optional: tag>`
             Get a random questionable/explicit-rating image from konachan.
@@ -213,7 +234,7 @@ class RImage:
             await self.get_image_konachan(ctx, tags, safe=False)
 
     @r.command(aliases=["s",])
-    async def safebooru(self, ctx, *, tags=""):
+    async def safebooru(self, ctx, *tags):
         '''
             `>>random safebooru <optional: list of tags>`
             Get a random safe-rating image from safebooru.
@@ -222,7 +243,7 @@ class RImage:
             await self.get_image_safebooru(ctx, tags, safe=True)
 
     @r.command(aliases=["y",])
-    async def yandere(self, ctx, *, tags=""):
+    async def yandere(self, ctx, *tags):
         '''
             `>>random yandere <optional: list of tags>`
             Get a random questionable/explicit-rating image from yandere.
@@ -232,7 +253,7 @@ class RImage:
 
     @r.command(aliases=["sc",])
     @checks.nsfw()
-    async def sancom(self, ctx, *, tags=""):
+    async def sancom(self, ctx, *tags):
         '''
             `>>random sancom <optional: 1 or 2 tags>`
             Get a random questionable/explicit-rating image from Sankaku Complex.
@@ -242,7 +263,7 @@ class RImage:
             async with ctx.typing():
                 await self.get_image_sancom(ctx, tags)
 
-    @r.command()
+    @r.command(hidden=True, name="retry")
     @checks.owner_only()
     async def setretry(self, ctx, number:int):
         if number <= 0:

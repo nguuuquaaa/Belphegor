@@ -1172,7 +1172,18 @@ class Guild:
 
     @cmd_disable.command()
     async def info(self, ctx):
-        pass
+        '''
+            `>>disable info`
+
+        '''
+        empty_set = frozenset()
+        guild_data = self.bot.disabled_data.get(ctx.guild.id, {})
+        disabled_guild = guild_data.get("disabled_guild", False)
+        disabled_channel = guild_data.get("disabled_channel", empty_set)
+        disabled_member = guild_data.get("disabled_member", empty_set)
+        disabled_command_guild = guild_data.get("disabled_command_guild", empty_set)
+        disabled_command_channel = guild_data.get("disabled_command_channel", empty_set)
+        disabled_command_member = guild_data.get("disabled_command_member", empty_set)
 
 #==================================================================================================================================================
 

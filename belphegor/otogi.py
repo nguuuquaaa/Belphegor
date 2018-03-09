@@ -1034,7 +1034,7 @@ class Otogi:
         result = self.google_sheets.spreadsheets().values().get(spreadsheetId=sheet_id, range=sheet_range).execute()
         return result
 
-    @update.command(name="sheet")
+    @update.command(hidden=True, name="sheet")
     @checks.owner_only()
     async def update_sheet(self, ctx):
         result = await self.bot.loop.run_in_executor(None, self.get_sheet, "1oJnQ5TYL5d9LJ04HMmsuXBvJSAxqhYqcggDZKOctK2k", "Sheet1!$A$1:$YY")
@@ -1185,7 +1185,7 @@ class Otogi:
         )
         await ctx.embed_page(embeds)
 
-    @commands.command()
+    @commands.command(hidden=True)
     @checks.owner_only()
     async def datadump(self, ctx):
         async for daemon in self.daemon_collection.find({}):
@@ -1197,7 +1197,7 @@ class Otogi:
             json.dump(sum, file, indent=4, ensure_ascii=False)
         await ctx.confirm()
 
-    @commands.command()
+    @commands.command(hidden=True)
     @checks.owner_only()
     async def lastindex(self, ctx):
         cur_index = 1
@@ -1205,15 +1205,6 @@ class Otogi:
         while cur_index in all_values:
             cur_index += 1
         await ctx.send(cur_index-1)
-
-    @commands.group()
-    async def exchange(self, ctx):
-        if ctx.invoked_subcommand is None:
-            pass
-
-    @exchange.command(name="get")
-    async def exchange_get(self, ctx, *, name):
-        pass
 
     @commands.group(hidden=True, aliases=["leaks"])
     async def leak(self, ctx):
