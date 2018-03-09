@@ -107,7 +107,7 @@ class Song:
         self.music = discord.PCMVolumeTransformer(
             FFmpegWithBuffer(
                 url,
-                before_options="-reconnect 1 -reconnect_at_eof 1 -reconnect_streamed 1 -reconnect_delay_max 2"
+                before_options="-hide_banner -loglevel panic -reconnect 1 -reconnect_at_eof 1 -reconnect_streamed 1 -reconnect_delay_max 2"
             ),
             volume=self.default_volume
         )
@@ -229,7 +229,7 @@ class MusicPlayer:
         self.lock = asyncio.Lock()
         guild = bot.get_guild(guild_id)
         self.queue.playlist.extend((Song(guild.get_member(s["requestor_id"]), s["title"], s["url"]) for s in initial))
-        self.auto_info = {}
+        self.auto_info = None
 
     def ready_to_play(self, voice_client):
         self.in_voice_channel = True
@@ -273,11 +273,14 @@ class MusicPlayer:
                     return
             await self.bot.loop.run_in_executor(None, self.current_song.raw_update)
             self.voice_client.play(self.current_song.music, after=_next_part)
-            name = utils.discord_escape(self.current_song.requestor.display_name)
+            name = utils.discord_escape(getattr(self.current_song.requestor, "display_name", "<user left server>"))
             await self.channel.send(f"Playing **{self.current_song.title}** requested by {name}.")
-            for ctx in self.auto_info.values():
+            if self.auto_info:
                 try:
-                    await ctx.invoke(cmd)
+                    new_msg = copy.copy(self.auto_info)
+                    new_msg.author = self.current_song.requestor or new_msg.author
+                    new_ctx = await self.bot.get_context(new_msg, cls=data_type.BelphegorContext)
+                    await new_ctx.invoke(self.bot.get_command("music info"))
                 except Exception as e:
                     print(e)
             await self.play_next_song.wait()
@@ -444,8 +447,11 @@ class Music:
         '''
         music_player = await self.get_music_player(ctx.guild.id)
         if 0 <= vol <= 200:
-            music_player.current_song.default_volume = vol / 100
-            music_player.current_song.music.volume = vol / 100
+            try:
+                music_player.current_song.default_volume = vol / 100
+                music_player.current_song.music.volume = vol / 100
+            except:
+                pass
             await ctx.send(f"Volume for current song has been set to {vol}%.")
         else:
             await ctx.send("Volume must be between 0 and 200.")
@@ -715,7 +721,7 @@ class Music:
             Automatic info display.
         '''
         music_player = await self.get_music_player(ctx.guild.id)
-        music_player.auto_info[ctx.author.id] = ctx
+        music_player.auto_info = ctx.message
         await ctx.confirm()
 
     @music.command(aliases=["mi"])
@@ -725,7 +731,7 @@ class Music:
             Manual info display.
         '''
         music_player = await self.get_music_player(ctx.guild.id)
-        music_player.auto_info.pop(ctx.author.id, None)
+        music_player.auto_info = None
         await ctx.confirm()
 
 #==================================================================================================================================================
