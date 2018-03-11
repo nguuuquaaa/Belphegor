@@ -316,7 +316,8 @@ class Help:
             title="\U0001f3f7 Tag",
             description=
                 "Shortcut text.\n"
-                "Sometimes you want to copy-paste a goddamn long guide or so (it sucks), but you can just put into a tag with short name then call it later.",
+                "Sometimes you want to copy-paste a goddamn long guide or so (it sucks), but you can just put into a tag with short name then call it later.\n"
+                "Tag is guild-specific.",
             colour=discord.Colour.teal()
         )
         embed.add_field(
@@ -370,7 +371,8 @@ class Help:
             description=
                 "Send a reaction image.\n"
                 "Use $stickername anywhere admidst message to trigger sticker send.\n"
-                "Only one sticker shows up per message tho.",
+                "Only one sticker shows up per message tho.\n"
+                "Sticker is universal guild-wise.",
             colour=discord.Colour.teal()
         )
         embed.add_field(

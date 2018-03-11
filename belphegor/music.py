@@ -261,7 +261,7 @@ class MusicPlayer:
                     self.current_song = await asyncio.wait_for(self.queue.get(), 120, loop=self.bot.loop)
                 except asyncio.TimeoutError:
                     self.bot.loop.create_task(self.leave_voice())
-                    self.bot.loop.create_task(self.channel.send("*\"No music? Time to sleep then. Yaaawwnnnn~~\"*"))
+                    self.bot.loop.create_task(self.channel.send("No music? Time to sleep then. Yaaawwnnnn~~"))
                     return
             await self.bot.loop.run_in_executor(None, self.current_song.raw_update)
             self.voice_client.play(self.current_song.music, after=_next_part)

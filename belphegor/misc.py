@@ -227,7 +227,7 @@ class Misc:
             `>>hi`
             No.
         '''
-        await ctx.send("*\"Go away...\"*")
+        await ctx.send("Go away.")
 
     @commands.group(invoke_without_command=True)
     async def say(self, ctx, *, something):
@@ -244,7 +244,7 @@ class Misc:
             `>>say hi`
             Go away.
         '''
-        await ctx.send("*\"No.\"*")
+        await ctx.send("No.")
 
     @say.command(name="welcome")
     async def say_welcome(self, ctx):
@@ -252,7 +252,7 @@ class Misc:
             `>>say welcome`
             Leave me alone.
         '''
-        await ctx.send("*\"You are welcome to leave me alone...\"*")
+        await ctx.send("Welcome to Leave Me Alone village. The exit is right there.")
 
     def parse_google(self, bytes_):
         data = BS(bytes_.decode("utf-8"), "lxml")
