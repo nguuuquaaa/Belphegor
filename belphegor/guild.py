@@ -887,8 +887,14 @@ class Guild:
                 if e in self.banned_emojis:
                     await reaction.message.remove_reaction(reaction, user)
 
-    @commands.command(aliases=["guildprefix"])
-    async def serverprefix(self, ctx):
+    @commands.group(name="guild", aliases=["server"])
+    async def cmd_guild(self, ctx):
+
+        if ctx.invoked_subcommand is None:
+            pass
+
+    @cmd_guild.command(name="prefix")
+    async def guild_prefix(self, ctx):
         '''
             `>>server prefix`
             Display all server prefixes.
@@ -898,8 +904,8 @@ class Guild:
         desc = "\n".join((f"{i+1}. {p}" for i, p in enumerate(prefixes)))
         await ctx.send(embed=discord.Embed(title=f"Prefixes for {ctx.guild.name}", description=f"```fix\n{desc}\n```"))
 
-    @commands.command(aliases=["guildicon"])
-    async def servericon(self, ctx):
+    @cmd_guild.command(name="icon")
+    async def guild_icon(self, ctx):
         '''
             `>>server icon`
             Display server icon.
@@ -1170,7 +1176,7 @@ class Guild:
         await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$pull": {"disabled_command_member": (cmd, member.id)}})
         await ctx.send(f"Command `{cmd}` has been enabled for {member}'s use.")
 
-    @cmd_disable.command()
+    @cmd_guild.command()
     async def info(self, ctx):
         '''
             `>>disable info`

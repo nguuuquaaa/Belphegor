@@ -239,6 +239,14 @@ class Admin:
         new_ctx = await self.bot.get_context(msg, cls=data_type.BelphegorContext)
         await new_ctx.reinvoke()
 
+    @commands.command(hidden=True)
+    @checks.owner_only()
+    async def changeavatar(self, ctx, *, img_name):
+        with open(img_name, "rb") as f:
+            bytes_ = f.read()
+        await ctx.bot.user.edit(avatar=bytes_)
+        await ctx.confirm()
+
 #==================================================================================================================================================
 
 def setup(bot):

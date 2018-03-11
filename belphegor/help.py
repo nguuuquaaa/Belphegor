@@ -228,6 +228,8 @@ class Help:
                 "      `q`, `queue` - Search Youtube and queue a song\n"
                 "      `p`, `playlist` - Search Youtube and queue a playlist\n\n"
                 "      `i`, `info` - Display video info, default current song (position 0)\n"
+                "      `ai`, `autoinfo` - Auto info display mode\n"
+                "      `mi`, `manualinfo` - Manual info display mode\n\n"
                 "      `t`, `toggle` - Toggle play/pause\n"
                 "      `v`, `volume` - Set volume, must be between 0 and 200\n"
                 "      `f`, `forward` - Fast forward, default 10 (seconds)\n"

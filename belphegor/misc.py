@@ -244,7 +244,7 @@ class Misc:
             `>>say hi`
             Go away.
         '''
-        await ctx.send("*\"No. Go away, I just want to sleep...\"*")
+        await ctx.send("*\"No.\"*")
 
     @say.command(name="welcome")
     async def say_welcome(self, ctx):

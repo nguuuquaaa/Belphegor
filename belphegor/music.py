@@ -18,12 +18,6 @@ import copy
 
 #==================================================================================================================================================
 
-BELPHY_VOICE_URL = {
-    "https://vignette4.wikia.nocookie.net/mira-miracle/images/4/4d/Belphegor_Main.ogg/revision/latest?cb=20170201022200",
-    "https://vignette4.wikia.nocookie.net/mira-miracle/images/0/04/Belphegor_Skill.ogg/revision/latest?cb=20170201022201",
-    "https://vignette3.wikia.nocookie.net/mira-miracle/images/d/d9/Belphegor_Summon.ogg/revision/latest?cb=20170201022203",
-    "https://vignette4.wikia.nocookie.net/mira-miracle/images/5/58/Belphegor_Limit_Break.ogg/revision/latest?cb=20170201022206"
-}
 youtube_match = re.compile(r"(?:https?\:\/\/)?(?:www\.)?(?:youtube(?:-nocookie)?\.com\/\S*[^\w\s-]|youtu\.be\/)([\w-]{11})(?:[^\w\s-]|$)")
 
 #==================================================================================================================================================
@@ -85,6 +79,8 @@ class FFmpegWithBuffer(discord.FFmpegPCMAudio):
 #==================================================================================================================================================
 
 class Song:
+    __slots__ = ("requestor", "title", "url", "default_volume", "index", "duration", "music")
+
     def __init__(self, requestor, title, url):
         self.requestor = requestor
         self.title = utils.discord_escape(title)
@@ -121,11 +117,7 @@ class Song:
         return (second_elapsed//3600, second_elapsed%3600//60, second_elapsed%60)
 
     def to_dict(self):
-        if self.requestor:
-            id = self.requestor.id
-        else:
-            id = None
-        return {"requestor_id": id, "title": self.title, "url": self.url}
+        return {"requestor_id": getattr(self.requestor, "id", None), "title": self.title, "url": self.url}
 
 #==================================================================================================================================================
 
@@ -411,7 +403,9 @@ class Music:
         if not name:
             embeds = self.current_queue_info(music_player)
             return await ctx.embed_page(embeds)
-        else:
+        if 1 + music_player.queue.size() > 1000:
+            return await ctx.send("Too many entries.")
+        async with ctx.typing():
             results = await self.bot.run_in_lock(self.lock, self.youtube_search, name)
             stuff = "\n\n".join([
                 f"`{i+1}:` **[{utils.discord_escape(v['snippet']['title'])}](https://youtu.be/{v['id']['videoId']})**\n      By: {v['snippet']['channelTitle']}"
@@ -447,11 +441,9 @@ class Music:
         '''
         music_player = await self.get_music_player(ctx.guild.id)
         if 0 <= vol <= 200:
-            try:
+            if music_player.current_song:
                 music_player.current_song.default_volume = vol / 100
                 music_player.current_song.music.volume = vol / 100
-            except:
-                pass
             await ctx.send(f"Volume for current song has been set to {vol}%.")
         else:
             await ctx.send("Volume must be between 0 and 200.")
@@ -547,9 +539,10 @@ class Music:
         bytes_ = BytesIO()
         await msg.attachments[0].save(bytes_)
         playlist = json.loads(bytes_.getvalue().decode("utf-8"))
-        try:
-            if len(playlist) > 10000:
+        if isinstance(playlist, list):
+            if len(playlist) + music_player.queue.size() > 1000:
                 return await ctx.send("Too many entries.")
+        try:
             await music_player.queue.put_many([Song(msg.author, s["title"], s["url"]) for s in playlist])
             await ctx.send(f"Added {len(playlist)} songs to queue.")
         except:
@@ -607,6 +600,8 @@ class Music:
             result = results[index]
         async with ctx.typing():
             items = await self.bot.run_in_lock(self.lock, self.youtube_playlist_items, ctx.message, result["id"]["playlistId"])
+            if len(items) + music_player.queue.size() > 1000:
+                return await ctx.send("Too many entries.")
             if shuffle:
                 random.shuffle(items)
                 add_text = " in random position"
@@ -694,13 +689,16 @@ class Music:
         music_player = await self.get_music_player(ctx.guild.id)
         song = music_player.current_song
         if song:
-            if 0 < seconds < 60:
-                tbefore = song.time_elapsed()
-                safter = int(song.music.original.fast_forward(seconds*50) * 0.02)
-                tafter = (safter//3600, safter%3600//60, safter%60)
-                await ctx.send(f"Forward from {tbefore[0]:02}:{tbefore[1]:02}:{tbefore[2]:02} to {tafter[0]:02}:{tafter[1]:02}:{tafter[2]:02}.")
+            if music_player.voice_client.is_playing():
+                if 0 < seconds < 60:
+                    tbefore = song.time_elapsed()
+                    safter = int(song.music.original.fast_forward(seconds*50) * 0.02)
+                    tafter = (safter//3600, safter%3600//60, safter%60)
+                    await ctx.send(f"Forward from {tbefore[0]:02}:{tbefore[1]:02}:{tbefore[2]:02} to {tafter[0]:02}:{tafter[1]:02}:{tafter[2]:02}.")
+                else:
+                    await ctx.send("Fast forward time must be between 1 and 59 seconds.")
             else:
-                await ctx.send("Fast forward time must be between 1 and 59 seconds.")
+                await ctx.send("Nothing is playing right now, oi.")
         else:
             await ctx.send("No song is currently playing.")
 
@@ -708,7 +706,7 @@ class Music:
     async def setchannel(self, ctx):
         '''
             `>>music setchannel`
-            Set the current channel as announcement channel.
+            Set the current channel as song announcement channel.
         '''
         music_player = await self.get_music_player(ctx.guild.id)
         music_player.channel = ctx.channel
@@ -719,6 +717,7 @@ class Music:
         '''
             `>>music autoinfo`
             Automatic info display.
+            Display channel is the current channel that this command is invoked in, and paging is associated with song requestor.
         '''
         music_player = await self.get_music_player(ctx.guild.id)
         music_player.auto_info = ctx.message
@@ -727,7 +726,7 @@ class Music:
     @music.command(aliases=["mi"])
     async def manualinfo(self, ctx):
         '''
-            `>>music autoinfo`
+            `>>music manualinfo`
             Manual info display.
         '''
         music_player = await self.get_music_player(ctx.guild.id)
