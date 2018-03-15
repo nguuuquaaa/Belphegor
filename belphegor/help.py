@@ -451,10 +451,11 @@ class Help:
             Bot stats.
         '''
         async with ctx.typing():
+            owner = self.bot.get_user(config.OWNER_ID)
             bytes_ = await utils.fetch(
                 self.bot.session,
                 "https://api.github.com/repos/nguuuquaaa/Belphegor/commits",
-                headers={"User-Agent": "nguuuquaaa"}
+                headers={"User-Agent": owner.name}
             )
             now_time = utils.now_time()
             commits = json.loads(bytes_)
@@ -477,8 +478,6 @@ class Help:
             process = self.bot.process
             embed = discord.Embed(colour=discord.Colour.blue())
             embed.add_field(name="Lastest changes", value="\n".join(desc), inline=False)
-            embed.set_author(name="{}".format(self.bot.user), icon_url=self.bot.user.avatar_url)
-            owner = self.bot.get_user(config.OWNER_ID)
             embed.add_field(name="Owner", value=f"{owner.name}#{owner.discriminator}")
             embed.add_field(name="Library", value="[discord.py\\[rewrite\\]](https://github.com/Rapptz/discord.py/tree/rewrite)")
             embed.add_field(name="Created at", value=str(self.bot.user.created_at)[:10])

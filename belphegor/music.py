@@ -90,11 +90,12 @@ class Song:
 
     def raw_update(self):
         video = pafy.new(self.url)
-        audio = video.getbestaudio()
         for a in video.audiostreams:
             if a.bitrate == "128k":
                 audio = a
                 break
+        else:
+            audio = video.getbestaudio()
         try:
             url = audio.url
         except:
@@ -117,7 +118,7 @@ class Song:
         return (second_elapsed//3600, second_elapsed%3600//60, second_elapsed%60)
 
     def to_dict(self):
-        return {"requestor_id": getattr(self.requestor, "id", None), "title": self.title, "url": self.url}
+        return {"requestor_id": getattr(self.requestor, "id", None), "title": self.title, "url": self.url, "index": self.index}
 
 #==================================================================================================================================================
 
@@ -158,7 +159,7 @@ class Playlist:
                 for s in songs:
                     s.index = self.next_index
                     self.next_index += 1
-                self.playlist.extend(songs)
+                    self.playlist.append(songs)
                 await self.playlist_data.update_one(
                     {
                         "guild_id": self.guild_id
@@ -198,11 +199,8 @@ class Playlist:
     def size(self):
         return len(self.playlist)
 
-    def __call__(self, position):
-        try:
-            return self.playlist[position]
-        except:
-            return None
+    def __getitem__(self, position):
+        return self.playlist[position]
 
 #==================================================================================================================================================
 
@@ -252,6 +250,7 @@ class MusicPlayer:
             if not self.repeat:
                 self.current_song = None
             self.bot.loop.call_soon_threadsafe(self.play_next_song.set)
+
         cmd = self.bot.get_command("music info")
 
         while self.in_voice_channel:
@@ -272,10 +271,21 @@ class MusicPlayer:
                     new_msg = copy.copy(self.auto_info)
                     new_msg.author = self.current_song.requestor or new_msg.author
                     new_ctx = await self.bot.get_context(new_msg, cls=data_type.BelphegorContext)
-                    await new_ctx.invoke(self.bot.get_command("music info"))
+                    await new_ctx.invoke(cmd)
                 except Exception as e:
                     print(e)
             await self.play_next_song.wait()
+            voice_channel = self.voice_client.channel
+            for m in voice_channel.members:
+                if not m.bot:
+                    break
+            else:
+                try:
+                    await self.bot.wait_for("voice_state_update", check=lambda m, b, a: a.channel.id==voice_channel.id and m.bot, timeout=60)
+                except asyncio.TimeoutError:
+                    self.bot.loop.create_task(self.leave_voice())
+                    self.bot.loop.create_task(self.channel.send("Heeey, anybody's listening? No? Then I'll go to sleep."))
+                    return
 
 #==================================================================================================================================================
 
@@ -334,7 +344,12 @@ class Music:
         async with music_player.lock:
             msg = await ctx.send("Connecting...")
             if ctx.voice_client:
-                await ctx.voice_client.disconnect(force=True)
+                sentences = {"initial":  "Disconnect and rejoin?"}
+                result = await ctx.yes_no_prompt(sentences, delete_mode=True)
+                if result:
+                    await ctx.voice_client.disconnect(force=True)
+                else:
+                    return
             try:
                 voice_client = await voice_channel.connect(timeout=20, reconnect=False)
             except:
@@ -399,6 +414,7 @@ class Music:
             `>>music queue <optional: name>`
             Search Youtube for a song and put it in queue.
             If no name is provided, the current queue is displayed instead.
+            Queue is server-specific.
         '''
         music_player = await self.get_music_player(ctx.guild.id)
         if not name:
@@ -437,7 +453,7 @@ class Music:
     async def volume(self, ctx, vol: int):
         '''
             `>>music volume <value>`
-            Set volume. Volume must be an integer between 0 and 200.
+            Set volume of current song. Volume must be an integer between 0 and 200.
             Default volume is 100.
         '''
         music_player = await self.get_music_player(ctx.guild.id)
@@ -445,7 +461,9 @@ class Music:
             if music_player.current_song:
                 music_player.current_song.default_volume = vol / 100
                 music_player.current_song.music.volume = vol / 100
-            await ctx.send(f"Volume for current song has been set to {vol}%.")
+                await ctx.send(f"Volume for current song has been set to {vol}%.")
+            else:
+                await ctx.send("No song is currently playing.")
         else:
             await ctx.send("Volume must be between 0 and 200.")
 
@@ -453,8 +471,8 @@ class Music:
     async def repeat(self, ctx):
         '''
             `>>music repeat`
-            Turn on repeat mode. The current song will be repeated indefinitely.
-            Use again to switch it off.
+            Toggle repeat mode.
+            The current song will be repeated indefinitely during repeat mode.
         '''
         music_player = await self.get_music_player(ctx.guild.id)
         if music_player.repeat:
@@ -471,8 +489,10 @@ class Music:
             Delete a song from queue.
         '''
         music_player = await self.get_music_player(ctx.guild.id)
-        if 0 < position <= music_player.queue.size():
-            title = music_player.queue(position).title
+        queue = music_player.queue
+        position -= 1
+        if 0 <= position < queue.size():
+            title = queue[position].title
             sentences = {
                 "initial":  "Delet this?",
                 "yes":      f"Deleted **{title}** from queue.",
@@ -481,7 +501,7 @@ class Music:
             }
             check = await ctx.yes_no_prompt(sentences)
             if check:
-                await music_player.queue.delete(position-1)
+                await queue.delete(position)
         else:
             await ctx.send("Position out of range.")
 
@@ -569,9 +589,9 @@ class Music:
     @music.command(aliases=["p"])
     async def playlist(self, ctx, *, name=None):
         '''
-            `>>music playlist <optional: name>`
+            `>>music playlist <optional: -r or -random flag> <optional: name>`
             Search Youtube for a playlist and put it in queue.
-            If <name> starts with `-r` or `-random` flag then the playlist is put in in random order.
+            If random flag is provided then the playlist is put in in random order.
             If no name is provided, the current queue is displayed instead.
         '''
         music_player = await self.get_music_player(ctx.guild.id)
@@ -636,8 +656,8 @@ class Music:
                 song = music_player.current_song
                 if not song:
                     return await ctx.send("No song is currently playing.")
-            elif position < music_player.queue.size():
-                song = music_player.queue(position)
+            elif 0 < position <= music_player.queue.size():
+                song = music_player.queue[position]
             else:
                 return await ctx.send("Position out of range.")
             url = song.url
