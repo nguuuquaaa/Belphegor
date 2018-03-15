@@ -14,6 +14,5 @@ if __name__ == "__main__":
             break
         else:
             asyncio.set_event_loop(asyncio.new_event_loop())
-            importlib.reload(data_type)
-            importlib.reload(utils.checks)
-            importlib.reload(utils.image_processing)
+            for m in belphybot.reload_needed:
+                importlib.reload(m)

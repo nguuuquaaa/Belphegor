@@ -317,7 +317,7 @@ class Help:
             description=
                 "Shortcut text.\n"
                 "Sometimes you want to copy-paste a goddamn long guide or so (it sucks), but you can just put into a tag with short name then call it later.\n"
-                "Tag is guild-specific.",
+                "Tag is server-specific.",
             colour=discord.Colour.teal()
         )
         embed.add_field(
@@ -328,9 +328,8 @@ class Help:
                 "      `alias` - Create an alias to another tag\n"
                 "      `edit` - Edit a tag\n"
                 "      `delete` - Delete a tag\n"
-                "      `find` - Find tags\n\n"
-                "      `ban` - Ban a tag in current server\n"
-                "      `unban` - Unban a tag in current server\n",
+                "      `find` - Find tags\n"
+                "      `list` - All tags",
             inline=False
         )
         await ctx.send(embed=embed)

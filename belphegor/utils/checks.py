@@ -90,6 +90,5 @@ def guild_only():
             return True
         else:
             _loop.create_task(ctx.send("This command cannot be used in DM.", delete_after=30))
-            do_after(ctx.message.delete(), 30)
             return False
     return commands.check(check_guild_only)

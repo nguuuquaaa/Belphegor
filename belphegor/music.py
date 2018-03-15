@@ -3,7 +3,7 @@ from discord.ext import commands
 import asyncio
 import pafy
 from . import utils
-from .utils import config, token, data_type
+from .utils import config, token, data_type, checks
 from apiclient.discovery import build
 from discord.opus import Encoder as OpusEncoder
 import queue
@@ -310,6 +310,7 @@ class Music:
         return mp
 
     @commands.group(aliases=["m"])
+    @checks.guild_only()
     async def music(self, ctx):
         '''
             `>>music`

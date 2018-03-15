@@ -6,10 +6,12 @@ import asyncio
 import unicodedata
 from io import BytesIO
 import random
+from PIL import Image
+import textwrap
 
 #==================================================================================================================================================
 
-DEFAULT_WELCOME = "*\"Eeeeehhhhhh, go away {mention}, I don't want any more work...\"*"
+DEFAULT_WELCOME = "Eeeeehhhhhh, go away {mention}, I don't want any more work..."
 
 #==================================================================================================================================================
 
@@ -38,12 +40,12 @@ class Guild:
                   `muterole` - Mute role, for use with `>>mute` and `>>unmute` command
                   `autorole` - Auto assign/remove role for new member
                   `prefix` - Server custom prefix
-                  `log` - Log channel that records things not in Audit Logs
+                  `log` - Activity log channel
+                  `logmessage` - Message log
                   `eq` - PSO2 EQ Alert
                   `eqmini` - EQ Alert, but less spammy
         '''
-        if ctx.invoked_subcommand is None:
-            pass
+        pass
 
     @commands.group(name="unset")
     @checks.guild_only()
@@ -60,11 +62,11 @@ class Guild:
                   `muterole` - Mute role, for use with `>>mute` and `>>unmute` command
                   `autorole` - Auto assign/remove role for new member
                   `prefix` - Server custom prefix
-                  `log` - Log channel that records things not in Audit Logs
+                  `log` - Activity log channel
+                  `logmessage` - Message log
                   `eq` - PSO2 EQ Alert (both normal and minimal)
         '''
-        if ctx.invoked_subcommand is None:
-            pass
+        pass
 
     @commands.command()
     @checks.guild_only()
@@ -117,9 +119,8 @@ class Guild:
             `>>hackban <user ID> <optional: reason>`
             Ban user who is not currently in server.
         '''
-        user = await self.bot.get_user_info(user_id)
-        await ctx.guild.ban(user, reason=reason)
-        await ctx.send(f"{user.name} has been hackbanned.")
+        await ctx.guild.ban(discord.Object(user_id), reason=reason)
+        await ctx.send(f"{user_id} has been hackbanned.")
 
     @commands.command()
     @checks.guild_only()
@@ -193,7 +194,7 @@ class Guild:
             Set role with <role name> as NSFW role.
             Name is case-insensitive.
         '''
-        role = discord.utils.find(lambda r: name.lower() in r.name.lower(), ctx.guild.roles)
+        role = discord.utils.find(lambda r: name.lower()==r.name.lower(), ctx.guild.roles)
         await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$set": {"nsfw_role_id": role.id}, "$setOnInsert": {"guild_id": ctx.guild.id}}, upsert=True)
         await ctx.confirm()
 
@@ -213,7 +214,7 @@ class Guild:
             Set role with <role name> as muted role.
             Name is case-insensitive.
         '''
-        role = discord.utils.find(lambda r: name.lower() in r.name.lower(), ctx.guild.roles)
+        role = discord.utils.find(lambda r: name.lower()==r.name.lower(), ctx.guild.roles)
         await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$set": {"mute_role_id": role.id}, "$setOnInsert": {"guild_id": ctx.guild.id}}, upsert=True)
         await ctx.confirm()
 
@@ -387,7 +388,8 @@ class Guild:
         '''
             `>>set log <optional: channel>`
             Set <channel> as log channel. If no channel is provided, use the current channel that the command is invoked in.
-            Log channel records member events that Audit Logs doesn't record, such as member nick/roles change, member join/leave, and message edit/delete.
+            Log channel records member activity events such as member nick/roles change or member join/leave/ban.
+            If logmessage is set, it also records message edit/delete.
             Bot activity is excluded.
         '''
         target = channel or ctx.channel
@@ -401,6 +403,25 @@ class Guild:
             Unset log channel.
         '''
         await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$unset": {"log_channel_id": ""}})
+        await ctx.confirm()
+
+    @cmd_set.command(name="logmessage")
+    async def set_log_message(self, ctx):
+        '''
+            `>>set logmessage`
+            Set message log.
+            If log channel is set, this command enables message edit/delete log.
+        '''
+        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$set": {"log_message": True}, "$setOnInsert": {"guild_id": ctx.guild.id}}, upsert=True)
+        await ctx.confirm()
+
+    @cmd_unset.command(name="logmessage")
+    async def unset_log_message(self, ctx):
+        '''
+            `>>unset logmessage`
+            Unset message log.
+        '''
+        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$unset": {"log_message": ""}})
         await ctx.confirm()
 
     @cmd_set.command(name="prefix")
@@ -538,6 +559,10 @@ class Guild:
         if member.bot:
             return
         guild = member.guild
+        bans = await guild.bans()
+        for user, reason in bans:
+            if user.id == member.id:
+                return
         guild_data = await self.guild_data.find_one(
             {"guild_id": guild.id},
             projection={"_id": False, "log_channel_id": True}
@@ -552,10 +577,9 @@ class Guild:
                 embed.set_footer(text=utils.format_time(utils.now_time()))
                 await log_channel.send(embed=embed)
 
-    async def on_member_update(self, before, after):
-        if before.bot:
+    async def on_member_ban(self, guild, user):
+        if user.bot:
             return
-        guild = before.guild
         guild_data = await self.guild_data.find_one(
             {"guild_id": guild.id},
             projection={"_id": False, "log_channel_id": True}
@@ -563,27 +587,46 @@ class Guild:
         if guild_data:
             log_channel = guild.get_channel(guild_data.get("log_channel_id"))
             if log_channel:
-                old_roles = set(before.roles)
-                new_roles = set(after.roles)
-                nick_change = before.nick != after.nick
-                role_change = old_roles != new_roles
-                if nick_change or role_change:
-                    embed = discord.Embed(colour=discord.Colour.dark_orange())
-                    embed.add_field(name="Event", value="member_update", inline=False)
-                    embed.add_field(name="ID", value=before.id)
-                    embed.add_field(name="Name", value=str(before))
-                    if nick_change:
-                        embed.add_field(name="Old nickname", value=before.nick, inline=False)
-                        embed.add_field(name="New nickname", value=after.nick, inline=False)
-                    if role_change:
-                        add_roles = new_roles - old_roles
-                        remove_roles = old_roles - new_roles
-                        if add_roles:
-                            embed.add_field(name="Roles add", value=", ".join([r.name for r in add_roles]), inline=False)
-                        if remove_roles:
-                            embed.add_field(name="Roles remove", value=", ".join([r.name for r in remove_roles]), inline=False)
-                    embed.set_footer(text=utils.format_time(utils.now_time()))
-                    await log_channel.send(embed=embed)
+                embed = discord.Embed(colour=discord.Colour.dark_orange())
+                embed.add_field(name="Event", value="member_ban", inline=False)
+                embed.add_field(name="ID", value=user.id)
+                embed.add_field(name="Name", value=str(user))
+                embed.set_footer(text=utils.format_time(utils.now_time()))
+                await log_channel.send(embed=embed)
+
+    async def on_member_update(self, before, after):
+        if before.bot:
+            return
+        guild = before.guild
+        guild_data = await self.guild_data.find_one(
+            {"guild_id": guild.id},
+            projection={"_id": False, "log_channel_id": True, "log_message": True}
+        )
+        if guild_data:
+            if guild_data.get("log_message"):
+                log_channel = guild.get_channel(guild_data.get("log_channel_id"))
+                if log_channel:
+                    old_roles = set(before.roles)
+                    new_roles = set(after.roles)
+                    nick_change = before.nick != after.nick
+                    role_change = old_roles != new_roles
+                    if nick_change or role_change:
+                        embed = discord.Embed(colour=discord.Colour.dark_orange())
+                        embed.add_field(name="Event", value="member_update", inline=False)
+                        embed.add_field(name="ID", value=before.id)
+                        embed.add_field(name="Name", value=str(before))
+                        if nick_change:
+                            embed.add_field(name="Old nickname", value=before.nick, inline=False)
+                            embed.add_field(name="New nickname", value=after.nick, inline=False)
+                        if role_change:
+                            add_roles = new_roles - old_roles
+                            remove_roles = old_roles - new_roles
+                            if add_roles:
+                                embed.add_field(name="Roles add", value=", ".join([r.name for r in add_roles]), inline=False)
+                            if remove_roles:
+                                embed.add_field(name="Roles remove", value=", ".join([r.name for r in remove_roles]), inline=False)
+                        embed.set_footer(text=utils.format_time(utils.now_time()))
+                        await log_channel.send(embed=embed)
 
     async def on_message_delete(self, message):
         if message.author.bot:
@@ -591,21 +634,25 @@ class Guild:
         guild = message.guild
         if not guild:
             return
-        guild_data = await self.guild_data.find_one({"guild_id": guild.id})
+        guild_data = await self.guild_data.find_one(
+            {"guild_id": guild.id},
+            projection={"_id": False, "log_channel_id": True, "log_message": True}
+        )
         if guild_data:
-            log_channel = guild.get_channel(guild_data.get("log_channel_id"))
-            if log_channel:
-                embed = discord.Embed(colour=discord.Colour.dark_orange())
-                embed.add_field(name="Event", value="message_delete", inline=False)
-                embed.add_field(name="ID", value=message.id)
-                embed.add_field(name="Author", value=str(message.author))
-                embed.add_field(name="Channel", value=message.channel.mention)
-                if message.content:
-                    embed.add_field(name="Content", value=f"{message.content[:1000]}" if len(message.content)>1000 else message.content, inline=False)
-                if message.attachments:
-                    embed.add_field(name="Attachments", value="\n".join([a.url for a in message.attachments]))
-                embed.set_footer(text=utils.format_time(utils.now_time()))
-                await log_channel.send(embed=embed)
+            if guild_data.get("log_message"):
+                log_channel = guild.get_channel(guild_data.get("log_channel_id"))
+                if log_channel:
+                    embed = discord.Embed(colour=discord.Colour.dark_orange())
+                    embed.add_field(name="Event", value="message_delete", inline=False)
+                    embed.add_field(name="ID", value=message.id)
+                    embed.add_field(name="Author", value=str(message.author))
+                    embed.add_field(name="Channel", value=message.channel.mention)
+                    if message.content:
+                        embed.add_field(name="Content", value=f"{message.content[:1000]}" if len(message.content)>1000 else message.content, inline=False)
+                    if message.attachments:
+                        embed.add_field(name="Attachments", value="\n".join([a.url for a in message.attachments]))
+                    embed.set_footer(text=utils.format_time(utils.now_time()))
+                    await log_channel.send(embed=embed)
 
     async def on_message_edit(self, before, after):
         if before.author.bot:
@@ -615,21 +662,44 @@ class Guild:
             return
         guild_data = await self.guild_data.find_one(
             {"guild_id": guild.id},
-            projection={"_id": False, "log_channel_id": True}
+            projection={"_id": False, "log_channel_id": True, "log_message": True}
         )
         if guild_data:
-            log_channel = guild.get_channel(guild_data.get("log_channel_id"))
-            if log_channel:
-                if before.content != after.content:
+            if guild_data.get("log_message"):
+                log_channel = guild.get_channel(guild_data.get("log_channel_id"))
+                if log_channel:
+                    if before.content != after.content:
+                        embed = discord.Embed(colour=discord.Colour.dark_orange())
+                        embed.add_field(name="Event", value="message_edit", inline=False)
+                        embed.add_field(name="ID", value=before.id)
+                        embed.add_field(name="Author", value=str(before.author))
+                        embed.add_field(name="Channel", value=before.channel.mention)
+                        embed.add_field(name="Before", value=f"{before.content[:1000]}..." if len(before.content)>1000 else before.content, inline=False)
+                        embed.add_field(name="After", value=f"{after.content[:1000]}..." if len(after.content)>1000 else after.content, inline=False)
+                        embed.set_footer(text=utils.format_time(utils.now_time()))
+                        await log_channel.send(embed=embed)
+
+    #custom event for bulk message delete
+    #require state.py edit on every update
+    async def on_bulk_message_delete(self, messages):
+        channel = messages[0].channel
+        guild = channel.guild
+        guild_data = await self.guild_data.find_one(
+            {"guild_id": guild.id},
+            projection={"_id": False, "log_channel_id": True, "log_message": True}
+        )
+        if guild_data:
+            if guild_data.get("log_message"):
+                log_channel = guild.get_channel(guild_data.get("log_channel_id"))
+                if log_channel:
                     embed = discord.Embed(colour=discord.Colour.dark_orange())
-                    embed.add_field(name="Event", value="message_edit", inline=False)
-                    embed.add_field(name="ID", value=before.id)
-                    embed.add_field(name="Author", value=str(before.author))
-                    embed.add_field(name="Channel", value=before.channel.mention)
-                    embed.add_field(name="Before", value=f"{before.content[:1000]}..." if len(before.content)>1000 else before.content, inline=False)
-                    embed.add_field(name="After", value=f"{after.content[:1000]}..." if len(after.content)>1000 else after.content, inline=False)
+                    embed.add_field(name="Event", value="bulk_message_delete", inline=False)
+                    embed.add_field(name="Count", value=len(messages))
+                    embed.add_field(name="Channel", value=channel.mention)
                     embed.set_footer(text=utils.format_time(utils.now_time()))
-                    await log_channel.send(embed=embed)
+                    all_text = "\n".join((f"{m.created_at.strftime('%Y-%m-%d %I:%M:%S')} {m.id: <18} {m.author}\n{textwrap.indent(m.content, '    ')}" for m in messages))
+                    await log_channel.send(embed=embed, file=discord.File(all_text.encode("utf-8"), filename="purged_messages.log"))
+        print("Done")
 
     async def get_selfroles(self, guild):
         role_data = await self.guild_data.find_one({"guild_id": guild.id}, projection={"_id": -1, "selfrole_ids": 1})
@@ -648,7 +718,7 @@ class Guild:
             Role name is case-insensitive.
         '''
         if ctx.invoked_subcommand is None:
-            role = discord.utils.find(lambda r:r.name.lower()==name.lower(), ctx.guild.roles)
+            role = discord.utils.find(lambda r: r.name.lower()==name.lower(), ctx.guild.roles)
             roles = await self.get_selfroles(ctx.guild)
             if role in roles:
                 if role in ctx.author.roles:
@@ -674,7 +744,7 @@ class Guild:
             Add a role to selfrole pool.
             Role name is case-insensitive.
         '''
-        role = discord.utils.find(lambda r:r.name.lower()==name.lower(), ctx.guild.roles)
+        role = discord.utils.find(lambda r: r.name.lower()==name.lower(), ctx.guild.roles)
         if role:
             await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$addToSet": {"selfrole_ids": role.id}, "$setOnInsert": {"guild_id": ctx.guild.id}}, upsert=True)
             await ctx.confirm()
@@ -690,7 +760,7 @@ class Guild:
             Remove a selfrole from pool.
             Role name is case-insensitive.
         '''
-        role = discord.utils.find(lambda r:r.name.lower()==name.lower(), ctx.guild.roles)
+        role = discord.utils.find(lambda r: r.name.lower()==name.lower(), ctx.guild.roles)
         if role:
             await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$pull": {"selfrole_ids": role.id}})
             await ctx.confirm()
@@ -808,14 +878,14 @@ class Guild:
     @commands.command()
     @checks.guild_only()
     @checks.manager_only()
-    async def purge(self, ctx, number: int=10, *members: discord.Member):
+    async def purge(self, ctx, number: int, *members: discord.Member):
         '''
-            `>>purge <optional: number> <optional: list of members>`
+            `>>purge <number> <optional: list of members>`
             Purge messages in the current channel.
-            The default number of messages is 10.
             If members is provided, purge only messages of those members, otherwise purge everything.
         '''
         if number > 0:
+            await ctx.message.delete()
             if members:
                 await ctx.channel.purge(limit=number, check=lambda m: m.author in members)
             else:
@@ -889,9 +959,11 @@ class Guild:
 
     @commands.group(name="guild", aliases=["server"])
     async def cmd_guild(self, ctx):
-
-        if ctx.invoked_subcommand is None:
-            pass
+        '''
+            `>>server`
+            Base command. Does nothing by itself, but with subcommands can be used to view server info.
+        '''
+        pass
 
     @cmd_guild.command(name="prefix")
     async def guild_prefix(self, ctx):
@@ -911,8 +983,56 @@ class Guild:
             Display server icon.
         '''
         embed = discord.Embed(title=f"{ctx.guild.name}'s icon")
-        embed.set_image(url=ctx.guild.icon_url_as(format='png'))
+        embed.set_image(url=ctx.guild.icon_url_as(format="png"))
         await ctx.send(embed=embed)
+
+    @cmd_guild.command(name="info")
+    async def guild_info(self, ctx):
+        '''
+            `>>server info`
+            Display server info.
+        '''
+        guild = ctx.guild
+        embed = discord.Embed(title=guild.name, colour=discord.Colour.blue())
+        embed.set_thumbnail(url=guild.icon_url_as(format="png"))
+        embed.add_field(name="ID", value=guild.id)
+        embed.add_field(name="Owner", value=str(guild.owner))
+        embed.add_field(name="Created at", value=guild.created_at.strftime("%d-%m-%Y"))
+        embed.add_field(name="Region", value=str(guild.region).title().replace("Us-", "US ").replace("Vip-", "VIP ").replace("Eu-", "EU "))
+        embed.add_field(name="Features", value=", ".join(guild.features) or "None", inline=False)
+        embed.add_field(name="Channels", value=f"{len(guild.categories)} categories\n{len(guild.text_channels)} text channels\n{len(guild.voice_channels)} voice channels")
+        embed.add_field(name="Members", value=f"{guild.member_count} members")
+        embed.add_field(name="Roles", value=", ".join((r.name for r in guild.roles)), inline=False)
+        await ctx.send(embed=embed)
+
+    @commands.group(name="role")
+    async def cmd_role(self, ctx):
+        '''
+            `>>role`
+            Base command. Does nothing.
+        '''
+        pass
+
+    @cmd_role.command(name="info")
+    async def cmd_role_info(self, ctx, *, name):
+        role = discord.utils.find(lambda r: r.name.lower()==name.lower(), ctx.guild.roles)
+        if not role:
+            return await ctx.send(f"No role name {name} found.")
+        else:
+            embed = discord.Embed(title=role.name, colour=discord.Colour.blue())
+            embed.add_field(name="ID", value=role.id)
+            embed.add_field(name="Position", value=role.position)
+            embed.add_field(name="Created at", value=role.created_at.strftime("%d-%m-%Y"))
+            embed.add_field(name="Color", value=f"#{role.color.value:06X}")
+            embed.add_field(name="Members", value=len(role.members), inline=False)
+            perms = ("administrator", "manage_guild", "manage_channels", "manage_roles", "kick_members", "ban_members", "manage_nicknames", "manage_webhooks", "add_reactions", "view_audit_log", "manage_emojis",  "manage_messages", "read_messages", "send_messages", "send_tts_messages", "embed_links", "attach_files", "read_message_history", "mention_everyone", "external_emojis", "connect", "speak", "mute_members", "deafen_members", "move_members", "use_voice_activation", "change_nickname")
+            embed.add_field(name="Permissions", value=", ".join((p for p in perms if getattr(role.permissions, p, False))) or "None", inline=False)
+            pic = Image.new("RGB", (50, 50), role.colour.to_rgb())
+            bytes_ = BytesIO()
+            pic.save(bytes_, "png")
+            f = discord.File(bytes_.getvalue(), filename="role_color.png")
+            embed.set_thumbnail(url="attachment://role_color.png")
+            await ctx.send(file=f, embed=embed)
 
     async def get_command_name(self, ctx, cmd_name):
         cmd = self.bot.get_command(cmd_name)
@@ -1175,21 +1295,6 @@ class Guild:
         self.bot.disabled_data[ctx.guild.id] = guild_data
         await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$pull": {"disabled_command_member": (cmd, member.id)}})
         await ctx.send(f"Command `{cmd}` has been enabled for {member}'s use.")
-
-    @cmd_guild.command()
-    async def info(self, ctx):
-        '''
-            `>>disable info`
-
-        '''
-        empty_set = frozenset()
-        guild_data = self.bot.disabled_data.get(ctx.guild.id, {})
-        disabled_guild = guild_data.get("disabled_guild", False)
-        disabled_channel = guild_data.get("disabled_channel", empty_set)
-        disabled_member = guild_data.get("disabled_member", empty_set)
-        disabled_command_guild = guild_data.get("disabled_command_guild", empty_set)
-        disabled_command_channel = guild_data.get("disabled_command_channel", empty_set)
-        disabled_command_member = guild_data.get("disabled_command_member", empty_set)
 
 #==================================================================================================================================================
 
