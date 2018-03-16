@@ -167,11 +167,11 @@ class Admin:
 
     @commands.command(hidden=True)
     @checks.owner_only()
-    async def prettify(self, ctx, url, filename="data.html"):
+    async def prettify(self, ctx, url, *, params):
         try:
-            bytes_ = await self.bot.fetch(url)
+            bytes_ = await self.bot.fetch(url, params=eval(params))
             data = BS(bytes_.decode("utf-8"), "lxml")
-            with open(filename, "w", encoding="utf-8") as file:
+            with open("data.html", "w", encoding="utf-8") as file:
                 file.write(data.prettify())
         except Exception as e:
             print(e)

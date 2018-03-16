@@ -19,6 +19,7 @@ import copy
 #==================================================================================================================================================
 
 youtube_match = re.compile(r"(?:https?\:\/\/)?(?:www\.)?(?:youtube(?:-nocookie)?\.com\/\S*[^\w\s-]|youtu\.be\/)([\w-]{11})(?:[^\w\s-]|$)")
+MAX_PLAYLIST_SIZE = 1000
 
 #==================================================================================================================================================
 
@@ -435,7 +436,7 @@ class Music:
         if not name:
             embeds = self.current_queue_info(music_player)
             return await ctx.embed_page(embeds)
-        if 1 + len(music_player.queue) > 1000:
+        if 1 + len(music_player.queue) > MAX_PLAYLIST_SIZE:
             return await ctx.send("Too many entries.")
         async with ctx.typing():
             results = await self.bot.run_in_lock(self.lock, self.youtube_search, name)
@@ -576,7 +577,7 @@ class Music:
         await msg.attachments[0].save(bytes_)
         playlist = json.loads(bytes_.getvalue().decode("utf-8"))
         if isinstance(playlist, list):
-            if len(playlist) + len(music_player.queue) > 1000:
+            if len(playlist) + len(music_player.queue) > MAX_PLAYLIST_SIZE:
                 return await ctx.send("Too many entries.")
         try:
             await music_player.queue.put_many([Song(msg.author, s["title"], s["url"]) for s in playlist])
@@ -636,7 +637,7 @@ class Music:
             result = results[index]
         async with ctx.typing():
             items = await self.bot.run_in_lock(self.lock, self.youtube_playlist_items, ctx.message, result["id"]["playlistId"])
-            if len(items) + len(music_player.queue) > 1000:
+            if len(items) + len(music_player.queue) > MAX_PLAYLIST_SIZE:
                 return await ctx.send("Too many entries.")
             if shuffle:
                 random.shuffle(items)

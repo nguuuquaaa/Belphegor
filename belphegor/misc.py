@@ -13,6 +13,7 @@ from urllib.parse import quote
 from io import BytesIO
 import aiohttp
 from PIL import Image
+import traceback
 
 #==================================================================================================================================================
 
@@ -267,42 +268,47 @@ class Misc:
             if len(search_results) > 4:
                 break
 
+        g_container = data.find(lambda x: x.name=="div" and "obcontainer" in x.get("class", []))
         #unit convert
-        results = data.find_all("div", class_="_cif")
         try:
-            unit_in = results[0].find("select").find(selected=1)
-            unit_out = results[1].find("select").find(selected=1)
-            embed = discord.Embed(title="Search result:", description="**Unit convert**", colour=discord.Colour.dark_orange())
-            embed.add_field(name=unit_in.text, value=results[0].input['value'])
-            embed.add_field(name=unit_out.text, value=results[1].input['value'])
-            embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[:4])), inline=False)
-            return embed
+            if "card-section" in g_container["class"]:
+                results = g_container.find_all(True, recursive=False)
+                embed = discord.Embed(title="Search result:", description=f"**Unit convert - {results[0].find('option', selected=1).text}**", colour=discord.Colour.dark_orange())
+                embed.add_field(name=results[1].find("option", selected=1).text, value=results[1].find("input")["value"])
+                embed.add_field(name=results[3].find("option", selected=1).text, value=results[3].find("input")["value"])
+                if search_results:
+                    embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[:4])), inline=False)
+                return embed
         except:
             pass
 
         #timezone convert
         try:
-            zone_data = data.find('div', class_="vk_c vk_gy vk_sh card-section _MZc")
-            text = "\n".join((t.get_text().strip() for t in zone_data.find_all(True, recursive=False)))
-            embed = discord.Embed(
-                title="Search result:",
-                description=f"**Timezone**\n{text}",
-                colour=discord.Colour.dark_orange()
-            )
-            embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[:4])), inline=False)
-            return embed
+            if "knavi" in g_container["class"]:
+                zone_data = g_container.find("card-section")
+                text = zone_data.get_text().strip()
+                embed = discord.Embed(
+                    title="Search result:",
+                    description=f"**Timezone**\n{text}",
+                    colour=discord.Colour.dark_orange()
+                )
+                if search_results:
+                    embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[:4])), inline=False)
+                return embed
         except:
             pass
 
         #currency convert
-        tag = data.find("div", class_="ccw_form_layout")
         try:
-            inp = tag.find_all("input")
-            unit = tag.find_all("option", selected=1)
+            input_value = g_container.find("input", id="knowledge-currency__src-input")
+            input_type = g_container.find("select", id="knowledge-currency__src-selector")
+            output_value = g_container.find("select", id="knowledge-currency__tgt-input")
+            output_type = g_container.find("select", id="knowledge-currency__tgt-selector")
             embed = discord.Embed(title="Search result:", description="**Currency**", colour=discord.Colour.dark_orange())
-            embed.add_field(name=unit[0]['value'], value=inp[0]['value'])
-            embed.add_field(name=unit[1]['value'], value=inp[1]['value'])
-            embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[:4])), inline=False)
+            embed.add_field(name=input_type.find("option", selected=1).text, value=input_value["value"])
+            embed.add_field(name=output_type.find("option", selected=1).text, value=output_value["value"])
+            if search_results:
+                embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[:4])), inline=False)
             return embed
         except:
             pass
@@ -312,32 +318,33 @@ class Misc:
             inp = data.find("span", class_="cwclet").text
             out = data.find("span", class_="cwcot").text
             embed = discord.Embed(title="Search result:", description=f"**Calculator**\n{inp}\n\n {out}", colour=discord.Colour.dark_orange())
-            embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[:4])), inline=False)
+            if search_results:
+                embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[:4])), inline=False)
             return embed
         except:
             pass
 
         #video
-        tag = data.find("div", class_="_PWc")
+        tag = data.find(lambda x: x.name=="div" and "knowledge-block__video-nav-block" in x.get("class", []))
         if tag:
-            other = '\n\n'.join([f"<{t['href']}>" for t in search_results[1:5]])
+            other = '\n\n'.join([f"<{t['href']}>" for t in search_results[:4]])
             return f"**Search result:**\n{tag.find('a')['href']}\n\n**See also:**\n{other}"
 
         #wiki
-        tag = data.find("div", id="rhs")
-        try:
-            title = tag.find("div", class_="_Q1n").div.text
-            url_tag = tag.find("a", class_="q _KCd _tWc fl")
-            try:
-                url = f"\n[{url_tag.text}]({utils.safe_url(url_tag['href'])})"
-            except:
-                url = ""
-            description = f"**{title}**\n{tag.find('div', class_='_cgc').find('span').text.replace('MORE', '').replace('…', '')}{url}"
-            embed = discord.Embed(title="Search result:", description=description, colour=discord.Colour.dark_orange())
-            embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[:4])), inline=True)
-            return embed
-        except:
-            pass
+        #tag = data.find("div", id="rhs")
+        #try:
+        #    title = tag.find("div", class_="_Q1n").div.text
+        #    url_tag = tag.find("a", class_="q _KCd _tWc fl")
+        #    try:
+        #        url = f"\n[{url_tag.text}]({utils.safe_url(url_tag['href'])})"
+        #    except:
+        #        url = ""
+        #    description = f"**{title}**\n{tag.find('div', class_='_cgc').find('span').text.replace('MORE', '').replace('…', '')}{url}"
+        #    embed = discord.Embed(title="Search result:", description=description, colour=discord.Colour.dark_orange())
+        #    embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[:4])), inline=True)
+        #    return embed
+        #except:
+        #    pass
 
         #definition
         tag = data.find("div", class_="lr_container")
@@ -399,30 +406,30 @@ class Misc:
             pass
 
         #weather
-        tag = data.find("div", class_="g tpo knavi obcontainer mod")
-        try:
-            embed = discord.Embed(
-                title="Search result:",
-                description=f"**Weather**\n[More on weather.com]({utils.safe_url(tag.find('td', class_='_Hif').a['href'])})",
-                colour=discord.Colour.dark_orange()
-            )
-            embed.set_thumbnail(url=f"https:{tag.find('img', id='wob_tci')['src']}")
-            embed.add_field(
-                name=tag.find("div", class_="vk_gy vk_h").text,
-                value=f"{tag.find('div', id='wob_dts').text}\n{tag.find('div', id='wob_dcp').text}",
-                inline=False
-            )
-            embed.add_field(name="Temperature", value=f"{tag.find('span', id='wob_tm').text}°C | {tag.find('span', id='wob_ttm').text}°F")
-            embed.add_field(name="Precipitation", value=tag.find('span', id='wob_pp').text)
-            embed.add_field(name="Humidity", value=tag.find('span', id='wob_hm').text)
-            embed.add_field(name="Wind", value=tag.find('span', id='wob_ws').text)
-            embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[1:5])), inline=False)
-            return embed
-        except:
-            pass
+        #tag = data.find("div", class_="g tpo knavi obcontainer mod")
+        #try:
+        #    embed = discord.Embed(
+        #        title="Search result:",
+        #        description=f"**Weather**\n[More on weather.com]({utils.safe_url(tag.find('td', class_='_Hif').a['href'])})",
+        #        colour=discord.Colour.dark_orange()
+        #    )
+        #    embed.set_thumbnail(url=f"https:{tag.find('img', id='wob_tci')['src']}")
+        #    embed.add_field(
+        #        name=tag.find("div", class_="vk_gy vk_h").text,
+        #        value=f"{tag.find('div', id='wob_dts').text}\n{tag.find('div', id='wob_dcp').text}",
+        #        inline=False
+        #    )
+        #    embed.add_field(name="Temperature", value=f"{tag.find('span', id='wob_tm').text}°C | {tag.find('span', id='wob_ttm').text}°F")
+        #    embed.add_field(name="Precipitation", value=tag.find('span', id='wob_pp').text)
+        #    embed.add_field(name="Humidity", value=tag.find('span', id='wob_hm').text)
+        #    embed.add_field(name="Wind", value=tag.find('span', id='wob_ws').text)
+        #    embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[1:5])), inline=False)
+        #    return embed
+        #except:
+        #    pass
 
         #simple wiki
-        tag = data.find("div", class_="_oDd")
+        tag = data.find(lambda x: x.name=="div" and x.get("class")==["mod"] and x.get("style")=="clear:none")
         try:
             embed = discord.Embed(title="Search result:", description=f"{tag.text}\n[{search_results[0].text}]({search_results[0]['href']})", colour=discord.Colour.dark_orange())
             embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[1:5])), inline=False)
@@ -485,6 +492,8 @@ class Misc:
     async def google_error(self, ctx, error):
         if isinstance(error, commands.CommandOnCooldown):
             await ctx.send("Whoa slow down your Google search! You can only search once every 10 seconds.")
+        else:
+            print(traceback.format_exc())
 
     @commands.command(aliases=["translate"])
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
