@@ -1187,18 +1187,6 @@ class Otogi:
 
     @commands.command(hidden=True)
     @checks.owner_only()
-    async def datadump(self, ctx):
-        async for daemon in self.daemon_collection.find({}):
-            daemon.pop("_id")
-            with open(f"data/otogi/daemon/{daemon['id']}.json", "w", encoding="utf-8") as file:
-                json.dump(daemon, file, indent=4, ensure_ascii=False)
-        sum = {sp["rarity"]: sp["pool"] async for sp in self.summon_pool.find({})}
-        with open(f"data/otogi/jewel_summon.json", "w", encoding="utf-8") as file:
-            json.dump(sum, file, indent=4, ensure_ascii=False)
-        await ctx.confirm()
-
-    @commands.command(hidden=True)
-    @checks.owner_only()
     async def lastindex(self, ctx):
         cur_index = 1
         all_values = await self.daemon_collection.distinct("id", {})

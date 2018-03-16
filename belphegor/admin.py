@@ -167,20 +167,6 @@ class Admin:
 
     @commands.command(hidden=True)
     @checks.owner_only()
-    async def prettify(self, ctx, url, *, params):
-        try:
-            bytes_ = await self.bot.fetch(url, params=eval(params))
-            data = BS(bytes_.decode("utf-8"), "lxml")
-            with open("data.html", "w", encoding="utf-8") as file:
-                file.write(data.prettify())
-        except Exception as e:
-            print(e)
-            await ctx.deny()
-        else:
-            await ctx.confirm()
-
-    @commands.command(hidden=True)
-    @checks.owner_only()
     async def mongoitem(self, ctx, col, *, query="{}"):
         data = await self.bot.db[col].find_one(eval(query))
         if data:
@@ -188,48 +174,6 @@ class Admin:
             await ctx.send(file=discord.File(json.dumps(data, indent=4, ensure_ascii=False).encode("utf-8"), filename="data.json"))
         else:
             await ctx.send("Nothing found.")
-
-    @commands.command(hidden=True)
-    @checks.owner_only()
-    async def fuckgit(self, ctx, *, cmt):
-        current_dir = os.getcwd().replace("\\", "/")
-        with open("git_dir.txt", encoding="utf-8") as f:
-            data = filter(None, f.read().splitlines())
-        r = current_dir.rpartition("/")
-        target_dir = f"{r[0]}/Belphegor.git"
-        proc = subprocess.Popen("cmd.exe", cwd=target_dir, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-
-        def git_push():
-            for item in data:
-                c = f"{current_dir}{item}"
-                t = f"{target_dir}{item}"
-                if "." in item:
-                    copyfile(c, t)
-                else:
-                    copy_tree(c, t)
-                print(f"Done copying {item}")
-            for cmd in (
-                "git add .\n",
-                f"git commit -am \"{cmt}\"\n",
-                "git push belphegor master\n",
-                "exit\n"
-            ):
-                proc.stdin.write(cmd.encode("utf-8"))
-                proc.stdin.flush()
-                print(proc.stdout.readline().decode("utf-8"))
-
-        try:
-            await self.bot.loop.run_in_executor(None, git_push)
-        except:
-            print(traceback.format_exc())
-            await ctx.deny()
-        else:
-            return_code = await self.bot.loop.run_in_executor(None, proc.wait, 60)
-            if return_code is None:
-                proc.terminate()
-                await ctx.deny()
-            else:
-                await ctx.confirm()
 
     @commands.command(hidden=True, aliases=["invoke"])
     @checks.owner_only()
@@ -241,9 +185,8 @@ class Admin:
 
     @commands.command(hidden=True)
     @checks.owner_only()
-    async def changeavatar(self, ctx, *, img_name):
-        with open(img_name, "rb") as f:
-            bytes_ = f.read()
+    async def changeavatar(self, ctx, *, img_url):
+        bytes_ = await utils.fetch(img_url)
         await ctx.bot.user.edit(avatar=bytes_)
         await ctx.confirm()
 

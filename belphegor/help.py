@@ -28,7 +28,7 @@ class Help:
         for emoji_name in ("mochi", "ranged"):
             self.emoji[emoji_name] = discord.utils.find(lambda e: e.name==emoji_name, creampie_guild.emojis)
         self.emoji["hu"] = discord.utils.find(lambda e:e.name=="hu", test_guild.emojis)
-        self.feedback_channel = self.bot.get_channel(config.FEEDBACK_CHANNEL_ID)
+        bot.loop.create_task(self.get_webhook())
 
     @commands.group()
     async def help(self, ctx):
@@ -61,7 +61,7 @@ class Help:
                     "`>>detail` - Get detailed command info\n\n"
                     "`>>invite` - Invite link\n"
                     "`>>stats` - Bot info\n"
-                    "`>>feedback` - feedback anything\n",
+                    "`>>feedback` - Feedback anything\n",
                 inline=False
             )
             embed.add_field(
@@ -262,7 +262,9 @@ class Help:
             value=
                 "`>>set`\n"
                 "`>>unset`\n"
-                "These 2 commands are used to set up stuff. More detail in `>>detail`.\n\n"
+                "These 2 commands are used to set up stuff. More details in `>>detail`.\n\n"
+                "`>>channelmute` - Mute a member in current channel\n"
+                "`>>channelban` - Ban a member from current channel\n"
                 "`>>mute` - Give a member \"Muted\" role if exists\n"
                 "`>>unmute` - Remove \"Muted\" role from a member\n\n"
                 "`>>kick` - Kick member\n"
@@ -284,6 +286,17 @@ class Help:
                 "      `remove` - Remove a role from selfrole pool\n\n"
                 "`>>creampie` - Get NSFW role, if applicable\n"
                 "`>>censored` - Remove NSFW role, if applicable",
+            inline=False
+        )
+        embed.add_field(
+            name="Info",
+            value=
+                "`>>server`\n"
+                "      `info` - Display server info\n"
+                "      `prefix` - Display server (custom) prefixes\n"
+                "      `icon` - Server icon\n"
+                "`>>role`\n"
+                "      `info` - Display role info",
             inline=False
         )
         await ctx.send(embed=embed)
@@ -431,6 +444,11 @@ class Help:
             cmd = self.bot.get_command("detail")
             await ctx.invoke(cmd, name="detail")
 
+    async def get_webhook(self):
+        feedback_channel = self.bot.get_channel(config.FEEDBACK_CHANNEL_ID)
+        all_webhooks = await feedback_channel.webhooks()
+        self.feedback_wh = all_webhooks[0]
+
     @commands.command()
     async def feedback(self, ctx, *, content):
         '''
@@ -438,9 +456,8 @@ class Help:
             Feedback.
             Bugs, inconvenience or suggestion, all welcomed.
         '''
-        embed = discord.Embed(description=content)
-        embed.set_author(name=str(ctx.author), icon_url=ctx.author.avatar_url)
-        await self.feedback_channel.send(embed=embed)
+        embed = discord.Embed(title=ctx.author.id, description=content)
+        await self.feedback_wh.execute(embed=embed, username=str(ctx.author), avatar_url=ctx.author.avatar_url_as(format="png"))
         await ctx.confirm()
 
     @commands.command(aliases=["stat"])
