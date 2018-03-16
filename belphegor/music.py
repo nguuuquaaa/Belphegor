@@ -123,11 +123,13 @@ class Song:
 #==================================================================================================================================================
 
 class Playlist:
+    __slots__ = ("playlist_data", "guild_id", "playlist", "_iter", "_lock", "_not_empty", "_not_full", "next_index")
+
     def __init__(self, bot, guild_id, *, next_index):
         self.playlist_data = bot.db.music_playlist_data
         self.guild_id = guild_id
         self.playlist = []
-        self._wait = asyncio.Event()
+        self._iter = iter(self.playlist)
         self._lock = asyncio.Lock()
         self._not_empty = asyncio.Condition(self._lock)
         self._not_full = asyncio.Condition(self._lock)
@@ -179,7 +181,7 @@ class Playlist:
 
     async def get(self):
         async with self._not_empty:
-            if not self.size():
+            if not len(self.playlist):
                 await self._not_empty.wait()
             song = self.playlist.pop(0)
             await self.playlist_data.update_one({"guild_id": self.guild_id}, {"$pop": {"playlist": -1}})
@@ -196,15 +198,29 @@ class Playlist:
             self.playlist.clear()
             await self.playlist_data.update_one({"guild_id": self.guild_id}, {"$set": {"playlist": []}})
 
-    def size(self):
-        return len(self.playlist)
-
     def __getitem__(self, position):
         return self.playlist[position]
+
+    def __iter__(self):
+        return self._iter
+
+    def __next__(self):
+        return next(self._iter)
+
+    def __bool__(self):
+        return bool(self.playlist)
+
+    def __len__(self):
+        return len(self.playlist)
+
+    def __contains__(self, item):
+        return item in self.playlist
 
 #==================================================================================================================================================
 
 class MusicPlayer:
+    __slots__ = ("bot", "in_voice_channel", "guild_id", "queue", "voice_client", "current_song", "play_next_song", "repeat", "channel", "player", "lock", "auto_info")
+
     def __init__(self, bot, guild_id, *, initial, next_index):
         self.bot = bot
         self.in_voice_channel = False
@@ -281,7 +297,7 @@ class MusicPlayer:
                     break
             else:
                 try:
-                    await self.bot.wait_for("voice_state_update", check=lambda m, b, a: a.channel.id==voice_channel.id and m.bot, timeout=60)
+                    await self.bot.wait_for("voice_state_update", check=lambda m, b, a: getattr(a.channel, "id", None)==voice_channel.id and m.bot, timeout=60)
                 except asyncio.TimeoutError:
                     self.bot.loop.create_task(self.leave_voice())
                     self.bot.loop.create_task(self.channel.send("Heeey, anybody's listening? No? Then I'll go to sleep."))
@@ -392,14 +408,13 @@ class Music:
                 state = "Paused"
         except:
             state = "Stopped"
-        playlist = music_player.queue.playlist
         try:
             current_song_info = music_player.current_song.info()
         except:
             current_song_info = ""
-        if playlist:
+        if music_player.queue:
             return utils.embed_page_format(
-                playlist, 10, separator="\n\n",
+                music_player.queue, 10, separator="\n\n",
                 title=f"({state}) {current_song_info}",
                 description=lambda i, x: f"`{i+1}.` **[{x.title}]({x.url})**",
                 colour=discord.Colour.green(),
@@ -420,7 +435,7 @@ class Music:
         if not name:
             embeds = self.current_queue_info(music_player)
             return await ctx.embed_page(embeds)
-        if 1 + music_player.queue.size() > 1000:
+        if 1 + len(music_player.queue) > 1000:
             return await ctx.send("Too many entries.")
         async with ctx.typing():
             results = await self.bot.run_in_lock(self.lock, self.youtube_search, name)
@@ -491,7 +506,7 @@ class Music:
         music_player = await self.get_music_player(ctx.guild.id)
         queue = music_player.queue
         position -= 1
-        if 0 <= position < queue.size():
+        if 0 <= position < len(queue):
             title = queue[position].title
             sentences = {
                 "initial":  "Delet this?",
@@ -533,7 +548,7 @@ class Music:
         jsonable = []
         if music_player.current_song:
             jsonable.append({"title": music_player.current_song.title, "url": music_player.current_song.url})
-        for song in music_player.queue.playlist:
+        for song in music_player.queue:
             jsonable.append({"title": song.title, "url": song.url})
         bytes_ = json.dumps(jsonable, indent=4, ensure_ascii=False).encode("utf-8")
         await ctx.send(file=discord.File(bytes_, f"{name}.json"))
@@ -561,7 +576,7 @@ class Music:
         await msg.attachments[0].save(bytes_)
         playlist = json.loads(bytes_.getvalue().decode("utf-8"))
         if isinstance(playlist, list):
-            if len(playlist) + music_player.queue.size() > 1000:
+            if len(playlist) + len(music_player.queue) > 1000:
                 return await ctx.send("Too many entries.")
         try:
             await music_player.queue.put_many([Song(msg.author, s["title"], s["url"]) for s in playlist])
@@ -621,7 +636,7 @@ class Music:
             result = results[index]
         async with ctx.typing():
             items = await self.bot.run_in_lock(self.lock, self.youtube_playlist_items, ctx.message, result["id"]["playlistId"])
-            if len(items) + music_player.queue.size() > 1000:
+            if len(items) + len(music_player.queue) > 1000:
                 return await ctx.send("Too many entries.")
             if shuffle:
                 random.shuffle(items)
@@ -656,7 +671,7 @@ class Music:
                 song = music_player.current_song
                 if not song:
                     return await ctx.send("No song is currently playing.")
-            elif 0 < position <= music_player.queue.size():
+            elif 0 < position <= len(music_player.queue):
                 song = music_player.queue[position]
             else:
                 return await ctx.send("Position out of range.")
@@ -690,6 +705,7 @@ class Music:
         '''
             `>>music toggle`
             Toggle play/pause.
+            Should not pause for too long (hours), or else Youtube would complain.
         '''
         music_player = await self.get_music_player(ctx.guild.id)
         vc = music_player.voice_client

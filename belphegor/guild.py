@@ -524,7 +524,7 @@ class Guild:
             response = guild_data["autorole_response"]
             if response:
                 await message.channel.send(response, delete_after=30)
-            await utils.do_after(message.delete(), 30)
+            utils.do_after(message.delete(), 30)
 
     async def on_member_join(self, member):
         if member.bot:
