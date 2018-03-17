@@ -105,7 +105,7 @@ class Song:
         self.music = discord.PCMVolumeTransformer(
             FFmpegWithBuffer(
                 url,
-                before_options="-hide_banner -loglevel panic -reconnect 1 -reconnect_at_eof 1 -reconnect_streamed 1 -reconnect_delay_max 2"
+                before_options="-hide_banner -loglevel panic -reconnect 1"
             ),
             volume=self.default_volume
         )
@@ -370,6 +370,8 @@ class Music:
             try:
                 voice_client = await voice_channel.connect(timeout=20, reconnect=False)
             except:
+                import traceback
+                print(traceback.format_exc())
                 return await msg.edit(content="Cannot connect to voice. Try joining other voice channel.")
             else:
                 self.bot.loop.create_task(msg.edit(content=f"{self.bot.user.display_name} joined {voice_channel.name}."))

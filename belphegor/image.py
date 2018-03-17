@@ -36,7 +36,7 @@ class RImage:
                 try:
                     embed = await func(self, *args, **kwargs)
                     return await ctx.send(embed=embed)
-                except (IndexError, KeyError):
+                except IndexError:
                     return await ctx.send("No result found.")
                 except:
                     print(traceback.format_exc())
@@ -77,7 +77,6 @@ class RImage:
             "limit":  1,
             "random": "true"
         }
-        print(params)
         bytes_ = await self.bot.fetch("https://danbooru.donmai.us/posts.json", params=params)
         pic = json.loads(bytes_)[0]
         tag_str = utils.split_page(pic.get('tag_string', ''), 1800)

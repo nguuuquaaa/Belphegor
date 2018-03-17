@@ -624,7 +624,7 @@ class PSO2:
                         sched_time = start_time + timedelta(minutes=30*index)
                         time_left = int(round((sched_time - next_time).total_seconds(), -1))
                         if time_left == 0:
-                            full_desc.append(f"\u2694 **Now**\n   {data[key]}")
+                            full_desc.append(f"\u2694 **Now**\n   `All ships:` {data[key]}")
                             if random_eq and index == 2:
                                 full_desc.append(f"\u2694 **Now:**\n{random_eq}")
                         elif time_left > 0:
