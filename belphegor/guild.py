@@ -559,10 +559,6 @@ class Guild:
         if member.bot:
             return
         guild = member.guild
-        bans = await guild.bans()
-        for user, reason in bans:
-            if user.id == member.id:
-                return
         guild_data = await self.guild_data.find_one(
             {"guild_id": guild.id},
             projection={"_id": False, "log_channel_id": True}

@@ -31,7 +31,7 @@ def split_page(text, split_len, *, safe_mode=True):
         elif word=="@here":
             word = "@\u200bhere"
         if safe_mode:
-            if word[:7]=="http://" or word[:8]=="https://":
+            if word.startswith(("http://", "https://")):
                 word = safe_url(word)
             else:
                 word = discord_escape(word)
@@ -110,7 +110,7 @@ jp_timezone = timezone("Asia/Tokyo")
 def jp_time(dt_obj):
     return dt_obj.astimezone(jp_timezone).strftime("%a, %Y-%m-%d at %I:%M:%S %p, GMT%z (Tokyo/Japan)")
 
-discord_regex = re.compile(r"(?<!\\)[*_\[\]~`]")
+discord_regex = re.compile(r"[*_\[\]~`\\]")
 
 def discord_escape(any_string):
     return discord_regex.sub(lambda m: f"\\{m.group(0)}", any_string)

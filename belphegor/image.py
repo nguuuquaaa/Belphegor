@@ -60,7 +60,7 @@ class RImage:
         while i < len(tag_list):
             if tag_list[i].startswith(("rating:", "-rating:")):
                 t = tag_list.pop(i)
-                if (safe and t[7:7] == "s") or (not safe and t[7:7] in ("e", "q")):
+                if (safe and t[7:8] == "s") or ((not safe) and t[7:8] in ("e", "q")):
                     rating = t
                     break
             else:
@@ -82,7 +82,7 @@ class RImage:
         tag_str = utils.split_page(pic.get('tag_string', ''), 1800)
         embed = discord.Embed(
             title="Danbooru",
-            description=f"**Tags:** {utils.discord_escape(tag_str[0])}\n\n**Rating:** {RATING.get(pic.get('rating'), 'N/A')}",
+            description=f"**Tags:** {tag_str[0]}\n\n**Rating:** {RATING.get(pic.get('rating'), 'N/A')}",
             url=f"https://danbooru.donmai.us/posts/{pic['id']}",
             colour=discord.Colour.red()
         )
@@ -103,7 +103,7 @@ class RImage:
         tag_str = utils.split_page(pic.get('tags', ''), 1800)
         embed = discord.Embed(
             title="Konachan",
-            description=f"**Tags:** {utils.discord_escape(tag_str[0])}\n\n**Rating:** {RATING.get(pic.get('rating'), 'N/A')}",
+            description=f"**Tags:** {tag_str[0]}\n\n**Rating:** {RATING.get(pic.get('rating'), 'N/A')}",
             url=f"http://konachan.{domain}/post/show/{pic['id']}",
             colour=discord.Colour.red()
         )
@@ -127,7 +127,7 @@ class RImage:
         tag_str = utils.split_page(pic.get('@tags', '').strip(), 1800)
         embed = discord.Embed(
             title="Safebooru",
-            description=f"**Tags:** {utils.discord_escape(tag_str[0])}\n\n**Rating:** {RATING.get(pic.get('@rating'), 'N/A')}",
+            description=f"**Tags:** {tag_str[0]}\n\n**Rating:** {RATING.get(pic.get('@rating'), 'N/A')}",
             url=f"https://safebooru.org/index.php?page=post&s=view&id={pic['@id']}",
             colour=discord.Colour.red()
         )
@@ -148,7 +148,7 @@ class RImage:
         tag_str = utils.split_page(pic.get('tags', ''), 1800)
         embed = discord.Embed(
             title="Yandere",
-            description=f"**Tags:** {utils.discord_escape(tag_str[0])}\n\n**Rating:** {RATING.get(pic.get('rating'), 'N/A')}",
+            description=f"**Tags:** {tag_str[0]}\n\n**Rating:** {RATING.get(pic.get('rating'), 'N/A')}",
             url=f"https://yande.re/post/show/{pic['id']}",
             colour=discord.Colour.red()
         )

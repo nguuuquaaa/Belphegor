@@ -75,19 +75,19 @@ class FFmpegWithBuffer(discord.FFmpegPCMAudio):
 
     def cleanup(self):
         self._is_running = False
-        super().cleanup()
+        discord.FFmpegPCMAudio.cleanup(self)
 
 #==================================================================================================================================================
 
 class Song:
     __slots__ = ("requestor", "title", "url", "default_volume", "index", "duration", "music")
 
-    def __init__(self, requestor, title, url):
+    def __init__(self, requestor, title, url, index=0):
         self.requestor = requestor
         self.title = utils.discord_escape(title)
         self.url = url
         self.default_volume = 1.0
-        self.index = 0
+        self.index = index
 
     def raw_update(self):
         video = pafy.new(self.url)
@@ -162,7 +162,7 @@ class Playlist:
                 for s in songs:
                     s.index = self.next_index
                     self.next_index += 1
-                    self.playlist.append(songs)
+                    self.playlist.append(s)
                 await self.playlist_data.update_one(
                     {
                         "guild_id": self.guild_id
@@ -185,7 +185,7 @@ class Playlist:
             if not len(self.playlist):
                 await self._not_empty.wait()
             song = self.playlist.pop(0)
-            await self.playlist_data.update_one({"guild_id": self.guild_id}, {"$pop": {"playlist": -1}})
+            await self.playlist_data.update_one({"guild_id": self.guild_id}, {"$pop": {"playlist": -1}, "$set": song.to_dict()})
             return song
 
     async def delete(self, position):
@@ -235,7 +235,7 @@ class MusicPlayer:
         self.player = None
         self.lock = asyncio.Lock()
         guild = bot.get_guild(guild_id)
-        self.queue.playlist.extend((Song(guild.get_member(s["requestor_id"]), s["title"], s["url"]) for s in initial))
+        self.queue.playlist.extend((Song(guild.get_member(s["requestor_id"]), s["title"], s["url"], s["index"]) for s in initial))
         self.auto_info = None
 
     def ready_to_play(self, voice_client):
@@ -284,14 +284,16 @@ class MusicPlayer:
             name = utils.discord_escape(getattr(self.current_song.requestor, "display_name", "<user left server>"))
             await self.channel.send(f"Playing **{self.current_song.title}** requested by {name}.")
             if self.auto_info:
+                new_msg = copy.copy(self.auto_info)
+                new_msg.author = self.current_song.requestor or new_msg.author
+                new_ctx = await self.bot.get_context(new_msg, cls=data_type.BelphegorContext)
                 try:
-                    new_msg = copy.copy(self.auto_info)
-                    new_msg.author = self.current_song.requestor or new_msg.author
-                    new_ctx = await self.bot.get_context(new_msg, cls=data_type.BelphegorContext)
                     await new_ctx.invoke(cmd)
-                except Exception as e:
-                    print(e)
+                except discord.Forbidden:
+                    pass
             await self.play_next_song.wait()
+            if not self.current_song:
+                await self.queue.playlist_data.update_one({"guild_id": self.guild_id}, {"$set": {"current_song": None}})
             voice_channel = self.voice_client.channel
             for m in voice_channel.members:
                 if not m.bot:
@@ -333,6 +335,9 @@ class Music:
                 upsert=True
             )
             mp = MusicPlayer(self.bot, guild_id, initial=mp_data["playlist"], next_index=mp_data["next_index"])
+            cur_song = mp_data.get("current_song")
+            if cur_song:
+                mp.current_song = Song(bot.get_guild(guild_id).get_member(cur_song["requestor_id"]), cur_song["title"], cur_song["url"], cur_song["index"])
             self.music_players[guild_id] = mp
         return mp
 
