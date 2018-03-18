@@ -15,7 +15,7 @@ else:
 
 if __name__ == "__main__":
     while True:
-        belphybot = data_type.Belphegor(owner_id=config.OWNER_ID, default_prefix=[";"], initial_extensions=["belphegor.admin"])
+        belphybot = data_type.Belphegor(owner_id=config.OWNER_ID)
         belphybot.run(token.TOKEN)
         if not belphybot.restart_flag:
             break
