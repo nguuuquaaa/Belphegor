@@ -185,7 +185,7 @@ class Playlist:
             if not len(self.playlist):
                 await self._not_empty.wait()
             song = self.playlist.pop(0)
-            await self.playlist_data.update_one({"guild_id": self.guild_id}, {"$pop": {"playlist": -1}, "$set": song.to_dict()})
+            await self.playlist_data.update_one({"guild_id": self.guild_id}, {"$pop": {"playlist": -1}, "$set": {"current_song": song.to_dict()}})
             return song
 
     async def delete(self, position):

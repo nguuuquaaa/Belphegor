@@ -435,7 +435,7 @@ class Guild:
             Limit 10 custom prefixes per server.
         '''
         current = self.bot.guild_prefixes.get(ctx.guild.id, [])
-        if prefix in current:
+        if prefix not in current:
             if len(current) >= 10:
                 return await ctx.send("Too many prefixes.")
             current.append(prefix)
