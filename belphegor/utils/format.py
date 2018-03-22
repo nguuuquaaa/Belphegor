@@ -103,12 +103,12 @@ def now_time(tzinfo=pytz.utc):
     return datetime.now(tzinfo)
 
 def format_time(dt_obj):
-    return dt_obj.strftime("%a, %Y-%m-%d at %I:%M:%S %p, GMT%z")
+    return dt_obj.strftime("%a, %Y-%m-%d at %I:%M:%S %p, UTC%z")
 
 jp_timezone = timezone("Asia/Tokyo")
 
 def jp_time(dt_obj):
-    return dt_obj.astimezone(jp_timezone).strftime("%a, %Y-%m-%d at %I:%M:%S %p, GMT%z (Tokyo/Japan)")
+    return dt_obj.astimezone(jp_timezone).strftime("%a, %Y-%m-%d at %I:%M:%S %p, UTC%z (Tokyo/Japan)")
 
 discord_regex = re.compile(r"[*_\[\]~`\\]")
 

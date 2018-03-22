@@ -178,7 +178,7 @@ class RImage:
         post_data = BS(bytes_.decode("utf-8"), "lxml")
         img_link = post_data.find("a", id="highres")
         relevant = post_data.find("ul", id="tag-sidebar")
-        pic_tags = " ".join([t.find("a").text.strip().replace(" ", r"\_") for t in relevant.find_all(True, recursive=False)])
+        pic_tags = " ".join([t.find("a").text.strip().replace(" ", "_") for t in relevant.find_all(True, recursive=False)])
         tag_str = utils.split_page(pic_tags, 1800)
         stats = post_data.find("div", id="stats")
         rating = stats.find("ul").find_all(True, recursive=False)[-1].get_text().strip()

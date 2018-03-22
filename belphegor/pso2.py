@@ -119,6 +119,8 @@ def _match_this(match):
     else:
         return ""
 
+simple_time_regex = re.compile(r"([0-9]{1,2})[-/]([0-9]{1,2})[-/]?([0-9]{2,4})?")
+
 #==================================================================================================================================================
 
 class Chip(data_type.BaseObject):
@@ -251,6 +253,7 @@ class PSO2:
         self.emojis["set_effect"] = self.emojis["rear"]
         self.eq_alert_forever = bot.loop.create_task(self.eq_alert())
         self.last_eq_data = None
+        self.daily_order_pattern = bot.db.daily_order_pattern
 
     def cleanup(self):
         self.eq_alert_forever.cancel()
@@ -779,6 +782,72 @@ class PSO2:
                 unit["resist"][s] = utils.to_int(ele_res_tag[i].get_text().replace("%", "").strip(), default=0)
             category_units.append(unit)
         return category_units
+
+    @commands.command(name="daily", aliases=["dailyorder"])
+    async def cmd_daily_order(self, ctx, query_date=""):
+        '''
+            `>>daily <optional: date>`
+            Display daily orders/featured quests schedule of the specified date.
+            If no date is provided, today is used.
+        '''
+        m = simple_time_regex.fullmatch(query_date)
+        jp_time = utils.now_time(utils.jp_timezone)
+        if not m:
+            do_time = datetime(jp_time.year, jp_time.month, jp_time.day, 1)
+        else:
+            try:
+                do_time = datetime(utils.to_int(m.group(3), default=jp_time.year), int(m.group(2)), int(m.group(1)), 1)
+            except:
+                return await ctx.send("Uhh... that is not a valid date.")
+        today_fq = []
+        today_do = []
+        async for doc in self.daily_order_pattern.aggregate([
+            {
+                "$project": {
+                    "name": "$name",
+                    "days": {
+                        "$floor": {
+                            "$mod": [
+                                {
+                                    "$divide": [
+                                        {
+                                            "$subtract": [do_time, "$first_day"]
+                                        },
+                                        1000 * 86400
+                                    ]
+                                },
+                                "$interval"
+                            ]
+                        }
+                    },
+                    "interval_accumulate": "$interval_accumulate",
+                    "type": "$type"
+                }
+            },
+            {
+                "$redact": {
+                    "$cond": {
+                        "if": {
+                            "$in": ["$days", "$interval_accumulate"]
+                        },
+                        "then": "$$KEEP",
+                        "else": "$$PRUNE"
+                    }
+                }
+            }
+        ]):
+            if doc["type"] == "fq":
+                today_fq.append(doc["name"])
+            else:
+                today_do.append(doc["name"])
+        embed=discord.Embed(
+            title=f"Daily Orders/Quests ({do_time.day:02d}-{do_time.month:02d}-{do_time.year:02d})",
+            colour=discord.Colour.blue()
+        )
+        embed.add_field(name="Featured Quests", value="\n".join(today_fq) or "None", inline=False)
+        embed.add_field(name="Daily Orders", value="\n".join(today_do) or "None", inline=False)
+        embed.set_footer(text=utils.jp_time(jp_time))
+        await ctx.send(embed=embed)
 
 #==================================================================================================================================================
 

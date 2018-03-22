@@ -88,9 +88,14 @@ class Song:
         self.url = url
         self.default_volume = 1.0
         self.index = index
+        self.duration = 0
+        self.music = None
 
     def raw_update(self):
-        video = pafy.new(self.url)
+        try:
+            video = pafy.new(self.url)
+        except OSError:
+            return
         for a in video.audiostreams:
             if a.bitrate == "128k":
                 audio = a
@@ -220,11 +225,10 @@ class Playlist:
 #==================================================================================================================================================
 
 class MusicPlayer:
-    __slots__ = ("bot", "in_voice_channel", "guild_id", "queue", "voice_client", "current_song", "play_next_song", "repeat", "channel", "player", "lock", "auto_info")
+    __slots__ = ("bot", "guild_id", "queue", "voice_client", "current_song", "play_next_song", "repeat", "channel", "player", "lock", "auto_info")
 
     def __init__(self, bot, guild_id, *, initial, next_index):
         self.bot = bot
-        self.in_voice_channel = False
         self.guild_id = guild_id
         self.queue = Playlist(bot, guild_id, next_index=next_index)
         self.voice_client = None
@@ -239,7 +243,6 @@ class MusicPlayer:
         self.auto_info = None
 
     def ready_to_play(self, voice_client):
-        self.in_voice_channel = True
         self.voice_client = voice_client
         self.player = self.bot.loop.create_task(self.play_till_eternity())
 
@@ -249,19 +252,15 @@ class MusicPlayer:
             self.current_song = None
 
     async def leave_voice(self):
-        self.in_voice_channel = False
         self.repeat = False
-        try:
-            self.player.cancel()
-        except:
-            pass
+        self.player.cancel()
         try:
             await self.voice_client.disconnect(force=True)
         except:
             pass
 
     async def play_till_eternity(self):
-        def _next_part(e=None):
+        def next_part(e=None):
             if e:
                 print(e)
             if not self.repeat:
@@ -270,7 +269,7 @@ class MusicPlayer:
 
         cmd = self.bot.get_command("music info")
 
-        while self.in_voice_channel:
+        while True:
             self.play_next_song.clear()
             if not self.current_song:
                 try:
@@ -280,18 +279,22 @@ class MusicPlayer:
                     self.bot.loop.create_task(self.channel.send("No music? Time to sleep then. Yaaawwnnnn~~"))
                     return
             await self.bot.loop.run_in_executor(None, self.current_song.raw_update)
-            self.voice_client.play(self.current_song.music, after=_next_part)
-            name = utils.discord_escape(getattr(self.current_song.requestor, "display_name", "<user left server>"))
-            await self.channel.send(f"Playing **{self.current_song.title}** requested by {name}.")
-            if self.auto_info:
-                new_msg = copy.copy(self.auto_info)
-                new_msg.author = self.current_song.requestor or new_msg.author
-                new_ctx = await self.bot.get_context(new_msg, cls=data_type.BelphegorContext)
-                try:
-                    await new_ctx.invoke(cmd)
-                except discord.Forbidden:
-                    pass
-            await self.play_next_song.wait()
+            if self.current_song.music is None:
+                await self.channel.send(f"**{self.current_song.title}** is not available.")
+                self.current_song = None
+            else:
+                self.voice_client.play(self.current_song.music, after=next_part)
+                name = utils.discord_escape(getattr(self.current_song.requestor, "display_name", "<user left server>"))
+                await self.channel.send(f"Playing **{self.current_song.title}** requested by {name}.")
+                if self.auto_info:
+                    new_msg = copy.copy(self.auto_info)
+                    new_msg.author = self.current_song.requestor or new_msg.author
+                    new_ctx = await self.bot.get_context(new_msg, cls=data_type.BelphegorContext)
+                    try:
+                        await new_ctx.invoke(cmd)
+                    except discord.Forbidden:
+                        pass
+                await self.play_next_song.wait()
             if not self.current_song:
                 await self.queue.playlist_data.update_one({"guild_id": self.guild_id}, {"$set": {"current_song": None}})
             voice_channel = self.voice_client.channel
@@ -300,7 +303,7 @@ class MusicPlayer:
                     break
             else:
                 try:
-                    await self.bot.wait_for("voice_state_update", check=lambda m, b, a: getattr(a.channel, "id", None)==voice_channel.id and m.bot, timeout=60)
+                    await self.bot.wait_for("voice_state_update", check=lambda m, b, a: getattr(a.channel, "id", None)==voice_channel.id and m.bot, timeout=120)
                 except asyncio.TimeoutError:
                     self.bot.loop.create_task(self.leave_voice())
                     self.bot.loop.create_task(self.channel.send("Heeey, anybody's listening? No? Then I'll go to sleep."))
@@ -337,7 +340,7 @@ class Music:
             mp = MusicPlayer(self.bot, guild_id, initial=mp_data["playlist"], next_index=mp_data["next_index"])
             cur_song = mp_data.get("current_song")
             if cur_song:
-                mp.current_song = Song(bot.get_guild(guild_id).get_member(cur_song["requestor_id"]), cur_song["title"], cur_song["url"], cur_song["index"])
+                mp.current_song = Song(self.bot.get_guild(guild_id).get_member(cur_song["requestor_id"]), cur_song["title"], cur_song["url"], cur_song["index"])
             self.music_players[guild_id] = mp
         return mp
 

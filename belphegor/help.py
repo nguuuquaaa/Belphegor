@@ -139,7 +139,8 @@ class Help:
                 "`>>i`, `>>item` - Search for items\n"
                 "`>>price` - Check item price, quite outdated\n"
                 "Note: Data taken from DB Kakia\n\n"
-                "`>>eq` - Display EQ schedule for the next 3 hours",
+                "`>>eq` - Display EQ schedule for the next 3 hours\n"
+                "`>>daily` - Display daily orders/featured quests",
             inline=False
         )
         embed.add_field(
