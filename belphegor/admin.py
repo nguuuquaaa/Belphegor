@@ -190,6 +190,18 @@ class Admin:
         await ctx.bot.user.edit(avatar=bytes_)
         await ctx.confirm()
 
+    @commands.command(hidden=True)
+    @checks.owner_only()
+    async def prettify(self, ctx, url, *, params="None"):
+        try:
+            bytes_ = await self.bot.fetch(url, params=eval(params))
+            data = BS(bytes_.decode("utf-8"), "lxml")
+        except Exception as e:
+            print(e)
+            await ctx.deny()
+        else:
+            await ctx.send(file=discord.File(data.prettify().encode("utf-8"), filename="data.html"))
+
 #==================================================================================================================================================
 
 def setup(bot):

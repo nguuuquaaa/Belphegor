@@ -128,9 +128,8 @@ class Game:
                 "timeout":  "Timeout, cancelled abandoning."
             }
             check = await ctx.yes_no_prompt(sentences)
-            if not check:
-                return
-            await current_game.cmd_abandon(ctx.author.id)
+            if check:
+                await current_game.cmd_abandon(ctx.author.id)
 
     @commands.command()
     @checks.guild_only()

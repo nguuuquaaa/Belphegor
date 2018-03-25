@@ -679,6 +679,11 @@ class Misc:
         code = f"exec({code})"
         await ctx.send(file=discord.File(code.encode("utf-8"), filename="fuckthis.py"))
 
+    @commands.command(name="choose")
+    async def cmd_choose(self, ctx, *, choices):
+        choices = choices.split(" or ")
+        await ctx.send(random.choice(choices))
+
 #==================================================================================================================================================
 
 def setup(bot):

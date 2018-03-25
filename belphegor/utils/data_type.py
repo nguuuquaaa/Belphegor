@@ -154,7 +154,7 @@ class BelphegorContext(commands.Context):
                 timeout=timeout
             )
         except:
-            result = False
+            result = None
             if not delete_mode:
                 _loop.create_task(message.edit(content=sentences["timeout"]))
         else:
@@ -169,10 +169,7 @@ class BelphegorContext(commands.Context):
         if delete_mode:
             _loop.create_task(message.delete())
         else:
-            try:
-                _loop.create_task(message.clear_reactions())
-            except:
-                pass
+            _loop.create_task(message.clear_reactions())
         return result
 
     async def search(self, name, pool, *, cls=BaseObject, colour=None, atts=["id"], name_att, emoji_att=None, prompt=None, sort={}):

@@ -284,7 +284,7 @@ class Guild:
         '''
             `>>set welcomemessage <message>`
             Set custom welcome message.
-            Use `{name}` for member name, `{mention}` for member mention, `{server}` for server name.
+            You can use `{name}` for member name, `{mention}` for member mention, `{server}` for server name, `{{` and `}}` for literal { and } character.
         '''
         try:
             content = f"Welcome message will be displayed as:\n{text}".format(name=ctx.author.display_name, mention=ctx.author.mention, server=ctx.guild.name)
@@ -308,7 +308,7 @@ class Guild:
         '''
             `>>set dmrule <message>`
             Set message that will be DM'ed to new member.
-            Use `{server}` for server name.
+            Use `{server}` for server name, `{{` and `}}` for literal { and } character.
         '''
         try:
             content = f"Newcomer will be messaged:\n{text}".format(server=ctx.guild.name)
@@ -355,18 +355,44 @@ class Guild:
         except asyncio.TimeoutError:
             return await ctx.send("You took too long, so I'll just sleep then.")
         phrase = message.content
-        msg = await ctx.send("Do you want to set a custom response? Type `no` to skip.")
-        try:
-            message = await self.bot.wait_for("message", check=lambda m: m.author.id==ctx.author.id and m.channel.id==ctx.channel.id, timeout=600)
-        except asyncio.TimeoutError:
-            return await ctx.send("You took too long, so I'll just sleep then.")
-        if message.content.lower() == "no":
-            response = None
-        else:
-            response = message.content
+        msg = await ctx.send(
+            "Do you want to set a custom response?\n"
+            "You can use `{name}` and `{mention}` for member name and mention respectively, `{role}` for role name and `{server}` for server name"
+            ", `{{` and `}}` for literal { and } character.\n"
+            "Type `no` to skip."
+        )
+        while True:
+            try:
+                message = await self.bot.wait_for("message", check=lambda m: m.author.id==ctx.author.id and m.channel.id==ctx.channel.id, timeout=600)
+            except asyncio.TimeoutError:
+                return await ctx.send("You took too long, so I'll just sleep then.")
+            if message.content.lower() == "no":
+                response = None
+            else:
+                response = message.content
+                try:
+                    test_response = response.format(name=message.author.name, mention=message.author.mention, role=role.name, server=message.guild.name)
+                except:
+                    await ctx.send("Beep bop, format error. Please try again.")
+                else:
+                    await ctx.send(f"Successful registration will be responsed with:\n{test_response}")
+                    break
+        if response:
+            sentences = {
+                "initial":  "Do you want the response to be automatically delete after 30s?",
+                "yes":      "OK it's a yes, got it.",
+                "no":       "So it's a no then.",
+                "timeout":  "Do you even need to think that long? I'll set up a yes then."
+            }
+            check = await ctx.yes_no_prompt(sentences)
+            if check is None:
+                check = True
         await self.guild_data.update_one(
             {"guild_id": ctx.guild.id},
-            {"$set": {"autorole_id": role.id, "autorole_type": artype, "autorole_phrase": phrase, "autorole_response": response}, "$setOnInsert": {"guild_id": ctx.guild.id}},
+            {
+                "$set": {"autorole_id": role.id, "autorole_type": artype, "autorole_phrase": phrase, "autorole_response": response, "autorole_response_delete": check},
+                "$setOnInsert": {"guild_id": ctx.guild.id}
+            },
             upsert=True
         )
         await ctx.send("\U0001f44c Autorole is ready to go.")
@@ -510,7 +536,7 @@ class Guild:
             return
         guild_data = await self.guild_data.find_one(
             {"guild_id": message.guild.id, "autorole_phrase": message.content},
-            projection={"_id": False, "autorole_id": True, "autorole_type": True, "autorole_phrase": True, "autorole_response": True}
+            projection={"_id": False, "autorole_id": True, "autorole_type": True, "autorole_phrase": True, "autorole_response": True, "autorole_response_delete": True}
         )
         if guild_data:
             role = discord.utils.find(lambda r: r.id==guild_data["autorole_id"], message.guild.roles)
@@ -523,7 +549,10 @@ class Guild:
                 await message.author.remove_roles(role)
             response = guild_data["autorole_response"]
             if response:
-                await message.channel.send(response, delete_after=30)
+                await message.channel.send(
+                    response.format(name=message.author.name, mention=message.author.mention, role=role.name, server=message.guild.name),
+                    delete_after=30 if guild_data.get("autorole_response_delete", True) else None
+                )
             utils.do_after(message.delete(), 30)
 
     async def on_member_join(self, member):
@@ -678,24 +707,24 @@ class Guild:
     #custom event for bulk message delete
     #require state.py edit on every update
     async def on_bulk_message_delete(self, messages):
-        channel = messages[0].channel
-        guild = channel.guild
-        guild_data = await self.guild_data.find_one(
-            {"guild_id": guild.id},
-            projection={"_id": False, "log_channel_id": True, "log_message": True}
-        )
-        if guild_data:
-            if guild_data.get("log_message"):
-                log_channel = guild.get_channel(guild_data.get("log_channel_id"))
-                if log_channel:
-                    embed = discord.Embed(colour=discord.Colour.dark_orange())
-                    embed.add_field(name="Event", value="bulk_message_delete", inline=False)
-                    embed.add_field(name="Count", value=len(messages))
-                    embed.add_field(name="Channel", value=channel.mention)
-                    embed.set_footer(text=utils.format_time(utils.now_time()))
-                    all_text = "\n".join((f"{m.created_at.strftime('%Y-%m-%d %I:%M:%S')} {m.id: <18} {m.author}\n{textwrap.indent(m.content, '    ')}" for m in messages))
-                    await log_channel.send(embed=embed, file=discord.File(all_text.encode("utf-8"), filename="purged_messages.log"))
-        print("Done")
+        if messages:
+            channel = messages[0].channel
+            guild = channel.guild
+            guild_data = await self.guild_data.find_one(
+                {"guild_id": guild.id},
+                projection={"_id": False, "log_channel_id": True, "log_message": True}
+            )
+            if guild_data:
+                if guild_data.get("log_message"):
+                    log_channel = guild.get_channel(guild_data.get("log_channel_id"))
+                    if log_channel:
+                        embed = discord.Embed(colour=discord.Colour.dark_orange())
+                        embed.add_field(name="Event", value="bulk_message_delete", inline=False)
+                        embed.add_field(name="Count", value=len(messages))
+                        embed.add_field(name="Channel", value=channel.mention)
+                        embed.set_footer(text=utils.format_time(utils.now_time()))
+                        all_text = "\n".join((f"{m.created_at.strftime('%Y-%m-%d %I:%M:%S')} {m.id: <18} {m.author}\n{textwrap.indent(m.content, '    ')}" for m in messages))
+                        await log_channel.send(embed=embed, file=discord.File(all_text.encode("utf-8"), filename="purged_messages.log"))
 
     async def get_selfroles(self, guild):
         role_data = await self.guild_data.find_one({"guild_id": guild.id}, projection={"_id": -1, "selfrole_ids": 1})
