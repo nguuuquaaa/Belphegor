@@ -501,7 +501,7 @@ class Help:
             embed.add_field(name="Created at", value=str(self.bot.user.created_at)[:10])
             embed.add_field(name="Guilds", value=f"{len(self.bot.guilds)} guilds")
             cpu_percentage = process.cpu_percent(None)
-            embed.add_field(name="Process", value=f"CPU: {(cpu_percentage/self.bot.cpu_count):.2f}%\nRAM: {(process.memory_info().rss/1024/1024):.2f} MBs")
+            embed.add_field(name="Process", value=f"CPU: {(cpu_percentage/self.bot.cpu_count):.2f}%\nRAM: {(process.memory_full_info().uss/1024/1024):.2f} MBs")
             uptime = int((now_time - self.bot.start_time).total_seconds())
             d = uptime // 86400
             h = (uptime % 86400) // 3600

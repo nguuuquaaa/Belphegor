@@ -530,7 +530,8 @@ class Guild:
             await ctx.deny()
 
     async def on_message(self, message):
-        if message.author.bot:
+        member = message.author
+        if member.bot:
             return
         if not message.guild:
             return
@@ -544,16 +545,22 @@ class Guild:
                 return
             artype = guild_data["autorole_type"]
             if artype == 0:
-                await message.author.add_roles(role)
+                if role in member.roles:
+                    return
+                else:
+                    await member.add_roles(role)
             elif artype == 1:
-                await message.author.remove_roles(role)
+                if role in member.roles:
+                    await member.remove_roles(role)
+                else:
+                    return
             response = guild_data["autorole_response"]
             if response:
                 await message.channel.send(
                     response.format(name=message.author.name, mention=message.author.mention, role=role.name, server=message.guild.name),
                     delete_after=30 if guild_data.get("autorole_response_delete", True) else None
                 )
-            utils.do_after(message.delete(), 30)
+            await message.delete()
 
     async def on_member_join(self, member):
         if member.bot:
