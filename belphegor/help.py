@@ -493,15 +493,16 @@ class Help:
                     else:
                         dt = f" ({delta%60}s ago)"
                 desc.append(f"[`{c['sha'][:7]}`]({c['html_url']}) {c['commit']['message']}{dt}")
-            process = self.bot.process
             embed = discord.Embed(colour=discord.Colour.blue())
             embed.add_field(name="Lastest changes", value="\n".join(desc), inline=False)
             embed.add_field(name="Owner", value=f"{owner.name}#{owner.discriminator}")
             embed.add_field(name="Library", value="[discord.py\\[rewrite\\]](https://github.com/Rapptz/discord.py/tree/rewrite)")
             embed.add_field(name="Created at", value=str(self.bot.user.created_at)[:10])
             embed.add_field(name="Guilds", value=f"{len(self.bot.guilds)} guilds")
-            cpu_percentage = process.cpu_percent(None)
-            embed.add_field(name="Process", value=f"CPU: {(cpu_percentage/self.bot.cpu_count):.2f}%\nRAM: {(process.memory_full_info().uss/1024/1024):.2f} MBs")
+            process = self.bot.process
+            with process.oneshot():
+                cpu_percentage = process.cpu_percent(None)
+                embed.add_field(name="Process", value=f"CPU: {(cpu_percentage/self.bot.cpu_count):.2f}%\nRAM: {(process.memory_full_info().uss/1024/1024):.2f} MBs")
             uptime = int((now_time - self.bot.start_time).total_seconds())
             d = uptime // 86400
             h = (uptime % 86400) // 3600
