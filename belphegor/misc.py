@@ -268,10 +268,16 @@ class Misc:
             if len(search_results) > 4:
                 break
 
+        #video
+        tag = data.find("div", class_="FGpTBd")
+        if tag:
+            other = '\n\n'.join([f"<{t['href']}>" for t in search_results[:4]])
+            return f"**Search result:**\n{tag.find('a')['href']}\n\n**See also:**\n{other}"
+
         g_container = data.find(lambda x: x.name=="div" and "obcontainer" in x.get("class", []))
-        #unit convert
-        try:
-            if "card-section" in g_container["class"]:
+        if g_container:
+            #unit convert
+            if "WsjYwc" in g_container["class"]:
                 results = g_container.find_all(True, recursive=False)
                 embed = discord.Embed(title="Search result:", description=f"**Unit convert - {results[0].find('option', selected=1).text}**", colour=discord.Colour.dark_orange())
                 embed.add_field(name=results[1].find("option", selected=1).text, value=results[1].find("input")["value"])
@@ -279,13 +285,10 @@ class Misc:
                 if search_results:
                     embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[:4])), inline=False)
                 return embed
-        except:
-            pass
 
-        #timezone convert
-        try:
-            if "knavi" in g_container["class"]:
-                zone_data = g_container.find("card-section")
+            #timezone convert
+            zone_data = g_container.find("div", class_="sL6Rbf")
+            if zone_data:
                 text = zone_data.get_text().strip()
                 embed = discord.Embed(
                     title="Search result:",
@@ -295,60 +298,48 @@ class Misc:
                 if search_results:
                     embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[:4])), inline=False)
                 return embed
-        except:
-            pass
 
-        #currency convert
-        try:
+            #currency convert
             input_value = g_container.find("input", id="knowledge-currency__src-input")
             input_type = g_container.find("select", id="knowledge-currency__src-selector")
-            output_value = g_container.find("select", id="knowledge-currency__tgt-input")
+            output_value = g_container.find("input", id="knowledge-currency__tgt-input")
             output_type = g_container.find("select", id="knowledge-currency__tgt-selector")
-            embed = discord.Embed(title="Search result:", description="**Currency**", colour=discord.Colour.dark_orange())
-            embed.add_field(name=input_type.find("option", selected=1).text, value=input_value["value"])
-            embed.add_field(name=output_type.find("option", selected=1).text, value=output_value["value"])
-            if search_results:
-                embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[:4])), inline=False)
-            return embed
-        except:
-            pass
+            if all((input_value, input_type, output_value, output_type)):
+                embed = discord.Embed(title="Search result:", description="**Currency**", colour=discord.Colour.dark_orange())
+                embed.add_field(name=input_type.find("option", selected=1).text, value=input_value["value"])
+                embed.add_field(name=output_type.find("option", selected=1).text, value=output_value["value"])
+                if search_results:
+                    embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[:4])), inline=False)
+                return embed
 
-        #calculator
-        try:
-            inp = data.find("span", class_="cwclet").text
-            out = data.find("span", class_="cwcot").text
-            embed = discord.Embed(title="Search result:", description=f"**Calculator**\n{inp}\n\n {out}", colour=discord.Colour.dark_orange())
-            if search_results:
-                embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[:4])), inline=False)
-            return embed
-        except:
-            pass
+            #calculator
+            inp = data.find("span", class_="cwclet")
+            out = data.find("span", class_="cwcot")
+            if inp or out:
+                embed = discord.Embed(title="Search result:", description=f"**Calculator**\n{inp.text}\n\n {out.text}", colour=discord.Colour.dark_orange())
+                if search_results:
+                    embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[:4])), inline=False)
+                return embed
 
-        #video
-        tag = data.find(lambda x: x.name=="div" and "knowledge-block__video-nav-block" in x.get("class", []))
-        if tag:
-            other = '\n\n'.join([f"<{t['href']}>" for t in search_results[:4]])
-            return f"**Search result:**\n{tag.find('a')['href']}\n\n**See also:**\n{other}"
 
         #wiki
-        #tag = data.find("div", id="rhs")
-        #try:
-        #    title = tag.find("div", class_="_Q1n").div.text
-        #    url_tag = tag.find("a", class_="q _KCd _tWc fl")
-        #    try:
-        #        url = f"\n[{url_tag.text}]({utils.safe_url(url_tag['href'])})"
-        #    except:
-        #        url = ""
-        #    description = f"**{title}**\n{tag.find('div', class_='_cgc').find('span').text.replace('MORE', '').replace('…', '')}{url}"
-        #    embed = discord.Embed(title="Search result:", description=description, colour=discord.Colour.dark_orange())
-        #    embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[:4])), inline=True)
-        #    return embed
-        #except:
-        #    pass
+        tag = data.find("div", class_="knowledge-panel")
+        if tag:
+            title = tag.find("div", class_="d1rFIf").div.text
+            desc = tag.find('div', class_='kno-rdesc')
+            url_tag = desc.find("a")
+            if url_tag:
+                url = f"\n[{url_tag.text}]({utils.safe_url(url_tag['href'])})"
+            else:
+                url = ""
+            description = f"**{title}**\n{desc.find('span').text.replace('MORE', '').replace('…', '')}{url}"
+            embed = discord.Embed(title="Search result:", description=description, colour=discord.Colour.dark_orange())
+            embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[:4])), inline=True)
+            return embed
 
         #definition
         tag = data.find("div", class_="lr_container")
-        try:
+        if tag:
             relevant_data = tag.find_all(
                 lambda t:
                     (
@@ -402,55 +393,51 @@ class Misc:
                 embed.add_field(name="See also:", value=see_also, inline=False)
                 embeds.append(embed)
             return embeds
-        except:
-            pass
 
         #weather
-        #tag = data.find("div", class_="g tpo knavi obcontainer mod")
-        #try:
-        #    embed = discord.Embed(
-        #        title="Search result:",
-        #        description=f"**Weather**\n[More on weather.com]({utils.safe_url(tag.find('td', class_='_Hif').a['href'])})",
-        #        colour=discord.Colour.dark_orange()
-        #    )
-        #    embed.set_thumbnail(url=f"https:{tag.find('img', id='wob_tci')['src']}")
-        #    embed.add_field(
-        #        name=tag.find("div", class_="vk_gy vk_h").text,
-        #        value=f"{tag.find('div', id='wob_dts').text}\n{tag.find('div', id='wob_dcp').text}",
-        #        inline=False
-        #    )
-        #    embed.add_field(name="Temperature", value=f"{tag.find('span', id='wob_tm').text}°C | {tag.find('span', id='wob_ttm').text}°F")
-        #    embed.add_field(name="Precipitation", value=tag.find('span', id='wob_pp').text)
-        #    embed.add_field(name="Humidity", value=tag.find('span', id='wob_hm').text)
-        #    embed.add_field(name="Wind", value=tag.find('span', id='wob_ws').text)
-        #    embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[1:5])), inline=False)
-        #    return embed
-        #except:
-        #    pass
+        tag = data.find("div", class_="card-section", id="wob_wc")
+        if tag:
+            more_link = tag.next_sibling
+            embed = discord.Embed(
+                title="Search result:",
+                description=f"**Weather**\n[{more_link.text}]({utils.safe_url(more_link.find('a')['href'])})",
+                colour=discord.Colour.dark_orange()
+            )
+            embed.set_thumbnail(url=f"https:{tag.find('img', id='wob_tci')['src']}")
+            embed.add_field(
+                name=tag.find("div", class_="vk_gy vk_h").text,
+                value=f"{tag.find('div', id='wob_dts').text}\n{tag.find('div', id='wob_dcp').text}",
+                inline=False
+            )
+            embed.add_field(name="Temperature", value=f"{tag.find('span', id='wob_tm').text}°C | {tag.find('span', id='wob_ttm').text}°F")
+            embed.add_field(name="Precipitation", value=tag.find('span', id='wob_pp').text)
+            embed.add_field(name="Humidity", value=tag.find('span', id='wob_hm').text)
+            embed.add_field(name="Wind", value=tag.find('span', id='wob_ws').text)
+            embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[1:5])), inline=False)
+            return embed
 
         #simple wiki
-        tag = data.find(lambda x: x.name=="div" and x.get("class")==["mod"] and x.get("style")=="clear:none")
-        try:
+        tag = data.find("div", class_="mod", style="clear:none")
+        if tag:
             embed = discord.Embed(title="Search result:", description=f"{tag.text}\n[{search_results[0].text}]({search_results[0]['href']})", colour=discord.Colour.dark_orange())
             embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[1:5])), inline=False)
             return embed
-        except:
-            pass
 
         #translate
-        tag = data.find("div", class_="_NId")
-        try:
-            inp = tag.find("a", id="tw-nosp")
-            out = tag.find("pre", id="tw-target-text")
-            link = tag.find("a", id="tw-gtlink")
-            langs = tag.find_all("option", selected="1")
+        tag = data.find("div", id="tw-container")
+        if tag:
+            s = tag.find("div", id="tw-source")
+            inp = s.find("textarea", id="tw-source-text-ta")
+            inp_lang = s.find("div", class_="tw-lang-selector-wrapper").find("option", selected="1")
+            t = tag.find("div", id="tw-target")
+            out = t.find("pre", id="tw-target-text")
+            out_lang = t.find("div", class_="tw-lang-selector-wrapper").find("option", selected="1")
+            link = tag.next_sibling.find("a")
             embed = discord.Embed(title="Search result:", description=f"[Google Translate]({link['href']})", colour=discord.Colour.dark_orange())
-            embed.add_field(name=langs[0].text, value=inp.text)
-            embed.add_field(name=langs[1].text, value=out.text)
+            embed.add_field(name=inp_lang.text, value=inp.text)
+            embed.add_field(name=out_lang.text, value=out.text)
             embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[0:4])), inline=False)
             return embed
-        except:
-            pass
 
         #non-special search
         other = '\n\n'.join((f"<{r['href']}>" for r in search_results[1:5]))
@@ -495,7 +482,7 @@ class Misc:
         else:
             print(traceback.format_exc())
 
-    @commands.command(aliases=["translate"])
+    @commands.command(aliases=["translate", "trans"])
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     async def gtrans(self, ctx, *, search):
         '''
