@@ -119,18 +119,12 @@ def safe_url(any_url):
     return quote(any_url, safe=r":/&$+,;=@#~%?")
 
 def _raw_page_format(container, per_page, *, separator="\n", book=None, book_amount=None, title=None, pretext=None, description=None, posttext=None,
-                    colour=None, author=None, author_icon=None, footer=None, thumbnail_url=None):
+                    colour=None, author=None, author_icon=None, footer=None, thumbnail_url=None, fields=None):
     embeds = []
     item_amount = len(container)
     page_amount = (item_amount - 1) // per_page + 1
     if per_page:
         for i in range(0, item_amount, per_page):
-            if book is None:
-                desc = separator.join((description(index, container[index]) for index in range(i, min(i+per_page, item_amount))))
-                paging = f"(Page {i//per_page+1}/{page_amount})"
-            else:
-                desc = separator.join((description(index, container[index], book) for index in range(i, min(i+per_page, item_amount))))
-                paging = f"(Page {i//per_page+1}/{page_amount} - Book {book+1}/{book_amount})"
             if pretext:
                 if callable(pretext):
                     pt = pretext(book)
@@ -145,10 +139,21 @@ def _raw_page_format(container, per_page, *, separator="\n", book=None, book_amo
                     ptt = posttext
             else:
                 ptt = ""
-            desc = f"{pt}\n{desc}\n\n{paging}\n{ptt}"
+
+            if callable(description):
+                if book is None:
+                    desc = separator.join((description(index, container[index]) for index in range(i, min(i+per_page, item_amount))))
+                    paging = f"(Page {i//per_page+1}/{page_amount})"
+                else:
+                    desc = separator.join((description(index, container[index], book) for index in range(i, min(i+per_page, item_amount))))
+                    paging = f"(Page {i//per_page+1}/{page_amount} - Book {book+1}/{book_amount})"
+                desc = f"{pt}\n{desc}\n\n{paging}\n{ptt}"
+            else:
+                desc = description
+
             embed = discord.Embed(
-                title=title,
-                description=desc,
+                title=title or discord.Embed.Empty,
+                description=desc or discord.Embed.Empty,
                 colour=colour or discord.Embed.Empty
             )
             if author:
@@ -157,6 +162,15 @@ def _raw_page_format(container, per_page, *, separator="\n", book=None, book_amo
                 embed.set_thumbnail(url=thumbnail_url)
             if footer:
                 embed.set_footer(text=footer)
+            if fields:
+                if book is None:
+                    for index in range(i, min(i+per_page, item_amount)):
+                        name, value, inline = fields(index, container[index])
+                        embed.add_field(name=name, value=value, inline=inline)
+                else:
+                    for index in range(i, min(i+per_page, item_amount)):
+                        name, value, inline = fields(index, container[index], book)
+                        embed.add_field(name=name, value=value, inline=inline)
             embeds.append(embed)
     else:
         embed = discord.Embed(title=title, description=description, colour=colour)

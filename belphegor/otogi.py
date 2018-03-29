@@ -762,7 +762,7 @@ class Otogi:
             `>>lunchsummon pool`
             Show lunch summon pool.
         '''
-        summon_pool = [p["pool"] async for p in self.summon_pool.find({}, sort=[("rarity", ASCENDING)])]
+        summon_pool = [p["pool"] async for p in self.summon_pool.find().sort("rarity")]
         daemons = []
         for pool in summon_pool:
             dp = [d async for d in self.daemon_collection.find({"id": {"$in": pool}}, projection={"_id": False, "id": True, "name": True})]
@@ -1047,7 +1047,7 @@ class Otogi:
             `>>nukers`
             Show nuker (skill damage) ranking.
         '''
-        data = await self.stat_sheet.find_one({})
+        data = await self.stat_sheet.find_one()
         sheet = data["values"]
 
         headers = sheet[0]
@@ -1072,7 +1072,7 @@ class Otogi:
             `>>autoattack`
             Show auto attack ranking.
         '''
-        data = await self.stat_sheet.find_one({})
+        data = await self.stat_sheet.find_one()
         sheet = data["values"][1:]
 
         headers = data["values"][0]
@@ -1096,7 +1096,7 @@ class Otogi:
             `>>debuffers`
             Show debuffer list.
         '''
-        data = await self.stat_sheet.find_one({})
+        data = await self.stat_sheet.find_one()
         sheet = data["values"]
 
         headers = sheet[0]
@@ -1125,7 +1125,7 @@ class Otogi:
             `>>buffers`
             Show buffer list.
         '''
-        data = await self.stat_sheet.find_one({})
+        data = await self.stat_sheet.find_one()
         sheet = data["values"]
 
         headers = sheet[0]

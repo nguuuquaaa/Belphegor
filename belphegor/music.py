@@ -128,7 +128,7 @@ class Song:
 
 #==================================================================================================================================================
 
-class Playlist:
+class MusicQueue:
     __slots__ = ("playlist_data", "guild_id", "playlist", "_iter", "_lock", "_not_empty", "_not_full", "next_index")
 
     def __init__(self, bot, guild_id, *, next_index):
@@ -225,39 +225,39 @@ class Playlist:
 #==================================================================================================================================================
 
 class MusicPlayer:
-    __slots__ = ("bot", "guild_id", "queue", "voice_client", "current_song", "play_next_song", "repeat", "channel", "player", "lock", "auto_info")
+    __slots__ = ("bot", "guild", "queue", "current_song", "play_next_song", "repeat", "channel", "player", "lock", "auto_info")
 
-    def __init__(self, bot, guild_id, *, initial, next_index):
+    def __init__(self, bot, guild, *, initial, next_index):
         self.bot = bot
-        self.guild_id = guild_id
-        self.queue = Playlist(bot, guild_id, next_index=next_index)
-        self.voice_client = None
+        self.guild = guild
+        self.queue = MusicQueue(bot, guild.id, next_index=next_index)
         self.current_song = None
         self.play_next_song = asyncio.Event()
         self.repeat = False
         self.channel = None
         self.player = None
         self.lock = asyncio.Lock()
-        guild = bot.get_guild(guild_id)
         self.queue.playlist.extend((Song(guild.get_member(s["requestor_id"]), s["title"], s["url"], s["index"]) for s in initial))
         self.auto_info = None
 
-    def ready_to_play(self, voice_client):
-        self.voice_client = voice_client
+    def ready_to_play(self, channel):
+        self.channel = channel
         self.player = self.bot.loop.create_task(self.play_till_eternity())
 
     def skip(self):
-        if self.voice_client.is_playing():
-            self.voice_client.stop()
+        if self.guild.voice_client.is_playing():
+            self.guild.voice_client.stop()
             self.current_song = None
 
     async def leave_voice(self):
         self.repeat = False
-        self.player.cancel()
         try:
-            await self.voice_client.disconnect(force=True)
+            self.player.cancel()
         except:
             pass
+        self.bot.get_cog("Music").music_players.pop(self.guild.id)
+        if self.guild.voice_client:
+            await self.guild.voice_client.disconnect(force=True)
 
     async def play_till_eternity(self):
         def next_part(e=None):
@@ -283,7 +283,7 @@ class MusicPlayer:
                 await self.channel.send(f"**{self.current_song.title}** is not available.")
                 self.current_song = None
             else:
-                self.voice_client.play(self.current_song.music, after=next_part)
+                self.guild.voice_client.play(self.current_song.music, after=next_part)
                 name = utils.discord_escape(getattr(self.current_song.requestor, "display_name", "<user left server>"))
                 await self.channel.send(f"Playing **{self.current_song.title}** requested by {name}.")
                 if self.auto_info:
@@ -296,8 +296,8 @@ class MusicPlayer:
                         pass
                 await self.play_next_song.wait()
             if not self.current_song:
-                await self.queue.playlist_data.update_one({"guild_id": self.guild_id}, {"$set": {"current_song": None}})
-            voice_channel = self.voice_client.channel
+                await self.queue.playlist_data.update_one({"guild_id": self.guild.id}, {"$set": {"current_song": None}})
+            voice_channel = self.guild.voice_client.channel
             for m in voice_channel.members:
                 if not m.bot:
                     break
@@ -328,20 +328,20 @@ class Music:
         for mp in self.music_players.values():
             self.bot.create_task_and_count(mp.leave_voice())
 
-    async def get_music_player(self, guild_id):
-        mp = self.music_players.get(guild_id)
+    async def get_music_player(self, guild):
+        mp = self.music_players.get(guild.id)
         if not mp:
             mp_data = await self.playlist_data.find_one_and_update(
-                {"guild_id": guild_id},
-                {"$setOnInsert": {"guild_id": guild_id, "next_index": 0, "playlist": []}},
+                {"guild_id": guild.id},
+                {"$setOnInsert": {"guild_id": guild.id, "next_index": 0, "playlist": []}},
                 return_document=ReturnDocument.AFTER,
                 upsert=True
             )
-            mp = MusicPlayer(self.bot, guild_id, initial=mp_data["playlist"], next_index=mp_data["next_index"])
+            mp = MusicPlayer(self.bot, guild, initial=mp_data["playlist"], next_index=mp_data["next_index"])
             cur_song = mp_data.get("current_song")
             if cur_song:
-                mp.current_song = Song(self.bot.get_guild(guild_id).get_member(cur_song["requestor_id"]), cur_song["title"], cur_song["url"], cur_song["index"])
-            self.music_players[guild_id] = mp
+                mp.current_song = Song(guild.get_member(cur_song["requestor_id"]), cur_song["title"], cur_song["url"], cur_song["index"])
+            self.music_players[guild.id] = mp
         return mp
 
     @commands.group(aliases=["m"])
@@ -365,7 +365,7 @@ class Music:
             voice_channel = ctx.author.voice.channel
         except AttributeError:
             return await ctx.send("You are not in a voice channel.")
-        music_player = await self.get_music_player(voice_channel.guild.id)
+        music_player = await self.get_music_player(ctx.guild)
         async with music_player.lock:
             msg = await ctx.send("Connecting...")
             if ctx.voice_client:
@@ -376,15 +376,12 @@ class Music:
                 else:
                     return
             try:
-                voice_client = await voice_channel.connect(timeout=20, reconnect=False)
+                await voice_channel.connect(timeout=20, reconnect=False)
             except:
-                import traceback
-                print(traceback.format_exc())
                 return await msg.edit(content="Cannot connect to voice. Try joining other voice channel.")
             else:
-                self.bot.loop.create_task(msg.edit(content=f"{self.bot.user.display_name} joined {voice_channel.name}."))
-            music_player.ready_to_play(voice_client)
-            music_player.channel = ctx.channel
+                music_player.ready_to_play(ctx.channel)
+                await msg.edit(content=f"{self.bot.user.display_name} joined {voice_channel.name}.")
 
     @music.command(aliases=["l"])
     async def leave(self, ctx):
@@ -392,10 +389,10 @@ class Music:
             `>>music leave`
             Have {0} leave voice channel.
         '''
-        music_player = await self.get_music_player(ctx.guild.id)
+        music_player = await self.get_music_player(ctx.guild)
         async with music_player.lock:
             try:
-                name = music_player.voice_client.channel.name
+                name = ctx.voice_client.channel.name
             except AttributeError:
                 await ctx.send(f"{self.bot.user.display_name} is not in any voice channel.")
             else:
@@ -442,7 +439,7 @@ class Music:
             If no name is provided, the current queue is displayed instead.
             Queue is server-specific.
         '''
-        music_player = await self.get_music_player(ctx.guild.id)
+        music_player = await self.get_music_player(ctx.guild)
         if not name:
             embeds = self.current_queue_info(music_player)
             return await ctx.embed_page(embeds)
@@ -472,7 +469,7 @@ class Music:
             `>>music skip`
             Skip current song.
         '''
-        music_player = await self.get_music_player(ctx.guild.id)
+        music_player = await self.get_music_player(ctx.guild)
         music_player.skip()
 
     @music.command(aliases=["v"])
@@ -482,7 +479,7 @@ class Music:
             Set volume of current song. Volume must be an integer between 0 and 200.
             Default volume is 100.
         '''
-        music_player = await self.get_music_player(ctx.guild.id)
+        music_player = await self.get_music_player(ctx.guild)
         if 0 <= vol <= 200:
             if music_player.current_song:
                 music_player.current_song.default_volume = vol / 100
@@ -500,7 +497,7 @@ class Music:
             Toggle repeat mode.
             The current song will be repeated indefinitely during repeat mode.
         '''
-        music_player = await self.get_music_player(ctx.guild.id)
+        music_player = await self.get_music_player(ctx.guild)
         if music_player.repeat:
             music_player.repeat = False
             await ctx.send("Repeat mode has been turned off.")
@@ -514,7 +511,7 @@ class Music:
             `>>music delete <position>`
             Delete a song from queue.
         '''
-        music_player = await self.get_music_player(ctx.guild.id)
+        music_player = await self.get_music_player(ctx.guild)
         queue = music_player.queue
         position -= 1
         if 0 <= position < len(queue):
@@ -537,7 +534,7 @@ class Music:
             `>>music purge`
             Purge all songs from queue.
         '''
-        music_player = await self.get_music_player(ctx.guild.id)
+        music_player = await self.get_music_player(ctx.guild)
         sentences = {
             "initial":  f"Purge queue?",
             "yes":      "Queue purged.",
@@ -555,7 +552,7 @@ class Music:
             Export current queue to a JSON file.
             If no name is provided, default name `playlist` is used instead.
         '''
-        music_player = await self.get_music_player(ctx.guild.id)
+        music_player = await self.get_music_player(ctx.guild)
         jsonable = []
         if music_player.current_song:
             jsonable.append({"title": music_player.current_song.title, "url": music_player.current_song.url})
@@ -570,7 +567,7 @@ class Music:
             `>>music import`
             Import JSON playlist file to queue.
         '''
-        music_player = await self.get_music_player(ctx.guild.id)
+        music_player = await self.get_music_player(ctx.guild)
         msg = ctx.message
         if not msg.attachments:
             await msg.add_reaction("\U0001f504")
@@ -620,7 +617,7 @@ class Music:
             If random flag is provided then the playlist is put in in random order.
             If no name is provided, the current queue is displayed instead.
         '''
-        music_player = await self.get_music_player(ctx.guild.id)
+        music_player = await self.get_music_player(ctx.guild)
         if not name:
             embeds = self.current_queue_info(music_player)
             return await ctx.embed_page(embeds)
@@ -671,7 +668,7 @@ class Music:
             Display video info.
             If no argument is provided, the currently playing song is used instead.
         '''
-        music_player = await self.get_music_player(ctx.guild.id)
+        music_player = await self.get_music_player(ctx.guild)
         try:
             position = int(stuff)
         except:
@@ -718,7 +715,7 @@ class Music:
             Toggle play/pause.
             Should not pause for too long (hours), or else Youtube would complain.
         '''
-        music_player = await self.get_music_player(ctx.guild.id)
+        music_player = await self.get_music_player(ctx.guild)
         vc = music_player.voice_client
         if vc.is_paused():
             vc.resume()
@@ -734,7 +731,7 @@ class Music:
             Fast forward. The limit is 59 seconds.
             If no argument is provided, fast forward by 10 seconds.
         '''
-        music_player = await self.get_music_player(ctx.guild.id)
+        music_player = await self.get_music_player(ctx.guild)
         song = music_player.current_song
         if song:
             if music_player.voice_client.is_playing():
@@ -756,7 +753,7 @@ class Music:
             `>>music setchannel`
             Set the current channel as song announcement channel.
         '''
-        music_player = await self.get_music_player(ctx.guild.id)
+        music_player = await self.get_music_player(ctx.guild)
         music_player.channel = ctx.channel
         await ctx.confirm()
 
@@ -767,7 +764,7 @@ class Music:
             Automatic info display.
             Display channel is the current channel that this command is invoked in, and paging is associated with song requestor.
         '''
-        music_player = await self.get_music_player(ctx.guild.id)
+        music_player = await self.get_music_player(ctx.guild)
         music_player.auto_info = ctx.message
         await ctx.confirm()
 
@@ -777,7 +774,7 @@ class Music:
             `>>music manualinfo`
             Manual info display.
         '''
-        music_player = await self.get_music_player(ctx.guild.id)
+        music_player = await self.get_music_player(ctx.guild)
         music_player.auto_info = None
         await ctx.confirm()
 

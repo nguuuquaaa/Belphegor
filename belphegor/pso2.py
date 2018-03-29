@@ -3,7 +3,7 @@ from discord.ext import commands
 from PIL import Image
 from io import BytesIO
 from . import utils
-from .utils import config, checks, data_type
+from .utils import config, checks, data_type, token
 import aiohttp
 import asyncio
 import re
@@ -13,6 +13,7 @@ import json
 from datetime import datetime, timedelta
 import traceback
 from textwrap import indent
+from apiclient.discovery import build
 
 #==================================================================================================================================================
 
@@ -120,6 +121,8 @@ def _match_this(match):
         return ""
 
 simple_time_regex = re.compile(r"([0-9]{1,2})[-/]([0-9]{1,2})[-/]?([0-9]{2,4})?")
+
+iso_time_regex = re.compile(r"([0-9]{4})\-([0-9]{2})\-([0-9]{2})T([0-9]{2})\:([0-9]{2})\:([0-9]{2})(Z|[+-]([0-9]{2})\:([0-9]{2}))")
 
 #==================================================================================================================================================
 
@@ -254,6 +257,7 @@ class PSO2:
         self.eq_alert_forever = bot.loop.create_task(self.eq_alert())
         self.last_eq_data = None
         self.daily_order_pattern = bot.db.daily_order_pattern
+        self.calendar = build("calendar", "v3", developerKey=token.GOOGLE_CLIENT_API_KEY)
 
     def cleanup(self):
         self.eq_alert_forever.cancel()
@@ -848,6 +852,37 @@ class PSO2:
         embed.add_field(name="Daily Orders", value="\n".join(today_do) or "None", inline=False)
         embed.set_footer(text=utils.jp_time(jp_time))
         await ctx.send(embed=embed)
+
+    def get_calendar_events(self, calendar_id, time_min=None):
+        time_min = time_min or (utils.now_time(utils.jp_timezone)- timedelta(hours=1)).isoformat("T", "seconds")
+        response = self.calendar.events().list(calendarId=calendar_id, timeMin=time_min).execute()
+        results = []
+        for item in response.get("items", []):
+            title = item.get("summary").lower()
+            if title.startswith(("pso2 day", "arks league")) or title.endswith("boost"):
+                results.append(item)
+        return results
+
+    @commands.command(name="boost")
+    @checks.owner_only()
+    async def cmd_boost(self, ctx):
+        incoming_events = await self.bot.loop.run_in_executor(None, self.get_calendar_events, "pso2emgquest@gmail.com")
+
+        def process_date(i, x):
+            start_date = iso_time_regex.fullmatch(x['start']['dateTime'])
+            end_date = iso_time_regex.fullmatch(x['end']['dateTime'])
+            txt = \
+                f"From {start_date.group(4)}:{start_date.group(5)}, {start_date.group(3)}-{start_date.group(2)}\n" \
+                f"To {end_date.group(4)}:{end_date.group(5)}, {end_date.group(3)}-{end_date.group(2)}"
+            return x['summary'], txt, False
+
+        embeds = utils.embed_page_format(
+            incoming_events, 10, separator="\n\n",
+            title="Boosto",
+            fields=process_date,
+            footer=utils.jp_time(utils.now_time())
+        )
+        await ctx.embed_page(embeds)
 
 #==================================================================================================================================================
 

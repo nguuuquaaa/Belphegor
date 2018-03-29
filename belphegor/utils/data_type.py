@@ -1,8 +1,6 @@
 import discord
 from discord.ext import commands
-from .format import embed_page_format, now_time
-from .checks import do_after
-from .request import *
+from . import format, checks, request, config
 import asyncio
 import aiohttp
 import psutil
@@ -230,7 +228,7 @@ class BelphegorContext(commands.Context):
             elif len(result) == 1 and not prompt:
                 return result[0]
             emojis = self.cog.emojis
-            embeds = embed_page_format(
+            embeds = format.embed_page_format(
                 result, 10,
                 title="Do you mean:",
                 description=lambda i, x: f"`{i+1}:` {emojis.get(getattr(x, emoji_att), '') if emoji_att else ''}{getattr(x, name_att)}",
@@ -269,7 +267,7 @@ class Belphegor(commands.Bot):
         self.process = psutil.Process(os.getpid())
         self.cpu_count = psutil.cpu_count()
         self.process.cpu_percent(None)
-        self.start_time = now_time()
+        self.start_time = format.now_time()
         self.loop.create_task(self.load())
         self.mongo_client = motor_asyncio.AsyncIOMotorClient()
         self.db = self.mongo_client.belphydb
@@ -339,10 +337,12 @@ class Belphegor(commands.Bot):
         super().remove_cog(name)
 
     def create_task_and_count(self, coro):
+        self.counter += 1
+
         async def do_stuff():
-            self.counter += 1
             await coro
             self.counter -= 1
+
         self.loop.create_task(do_stuff())
 
     async def run_in_lock(self, *args, **kwargs):
@@ -373,7 +373,7 @@ class Belphegor(commands.Bot):
 
         if author_id in self.blocked_user_ids:
             self.loop.create_task(ctx.send("Omae wa mou blocked.", delete_after=30))
-            do_after(ctx.message.delete(), 30)
+            checks.do_after(ctx.message.delete(), 30)
             return False
 
         blocked_data = self.disabled_data.get(guild_id)
@@ -383,29 +383,29 @@ class Belphegor(commands.Bot):
 
             if blocked_data.get("disabled_bot_guild", False):
                 self.loop.create_task(ctx.send("Command usage is disabled in this server.", delete_after=30))
-                do_after(ctx.message.delete(), 30)
+                checks.do_after(ctx.message.delete(), 30)
                 return False
             if channel_id in blocked_data.get("disabled_bot_channel", EMPTY_SET):
                 self.loop.create_task(ctx.send("Command usage is disabled in this channel.", delete_after=30))
-                do_after(ctx.message.delete(), 30)
+                checks.do_after(ctx.message.delete(), 30)
                 return False
             if author_id in blocked_data.get("disabled_bot_member", EMPTY_SET):
                 self.loop.create_task(ctx.send("You are forbidden from using bot commands in this server.", delete_after=30))
-                do_after(ctx.message.delete(), 30)
+                checks.do_after(ctx.message.delete(), 30)
                 return False
 
             cmd_name = ctx.command.qualified_name
             if cmd_name in blocked_data.get("disabled_command_guild", EMPTY_SET):
                 self.loop.create_task(ctx.send("This command is disabled in this server.", delete_after=30))
-                do_after(ctx.message.delete(), 30)
+                checks.do_after(ctx.message.delete(), 30)
                 return False
             if (cmd_name, channel_id) in blocked_data.get("disabled_command_channel", EMPTY_SET):
                 self.loop.create_task(ctx.send("This command is disabled in this channel.", delete_after=30))
-                do_after(ctx.message.delete(), 30)
+                checks.do_after(ctx.message.delete(), 30)
                 return False
             if (cmd_name, author_id) in blocked_data.get("disabled_command_member", EMPTY_SET):
                 self.loop.create_task(ctx.send("You are forbidden from using this command in this server.", delete_after=30))
-                do_after(ctx.message.delete(), 30)
+                checks.do_after(ctx.message.delete(), 30)
                 return False
         return True
 
@@ -484,7 +484,7 @@ class Belphegor(commands.Bot):
         print("Done")
 
     async def fetch(self, url, **kwargs):
-        return await fetch(self.session, url, **kwargs)
+        return await request.fetch(self.session, url, **kwargs)
 
     async def download(self, url, path, **kwargs):
-        return await download(self.session, url, path, **kwargs)
+        return await request.download(self.session, url, path, **kwargs)

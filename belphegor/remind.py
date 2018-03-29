@@ -21,12 +21,11 @@ class Remind:
         self.reminder.cancel()
 
     async def check_till_eternity(self):
-        self.active.clear()
         while True:
             cur = self.event_list.find().sort("event_time").limit(1)
             result = await cur.to_list(length=1)
+            self.active.clear()
             if not result:
-                self.active.clear()
                 await self.active.wait()
             else:
                 remind_event = result[0]
@@ -34,7 +33,6 @@ class Remind:
                 time_left = (remind_event["event_time"] - utils.now_time()).total_seconds()
                 if time_left > 60:
                     try:
-                        self.active.clear()
                         await asyncio.wait_for(self.active.wait(), timeout=time_left-60)
                     except asyncio.TimeoutError:
                         pass
@@ -53,7 +51,7 @@ class Remind:
                 add_text = ""
                 delta = 0
             else:
-                add_text = "Oops, I just realized I forgot to tell you, tehepero.\n"
+                add_text = "Oops, I just realized I forgot to tell you, tehepero (ᵒ ڡ <)๑⌒☆\n"
                 delta = time_left_seconds
 
             wait_time_text = utils.seconds_to_text(remind_event["wait_time"]+delta)
