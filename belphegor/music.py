@@ -241,10 +241,10 @@ class MusicPlayer:
         self.channel = channel
         self.player = self.bot.loop.create_task(self.play_till_eternity())
 
-    def skip(self):
+    async def skip(self):
         if self.guild.voice_client.is_playing():
             self.guild.voice_client.stop()
-            self.repeat = False
+            await self.clear_current_song()
 
     async def leave_voice(self):
         self.repeat = False
@@ -470,7 +470,7 @@ class Music:
             Skip current song.
         '''
         music_player = await self.get_music_player(ctx.guild)
-        music_player.skip()
+        await music_player.skip()
 
     @music.command(aliases=["v"])
     async def volume(self, ctx, vol: int):

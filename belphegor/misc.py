@@ -446,7 +446,8 @@ class Misc:
         return f"**Search result:**\n{search_results[0]['href']}\n**See also:**\n{other}"
 
     @commands.command(aliases=["g"])
-    @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
+    @checks.owner_only()
+    #@commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     async def google(self, ctx, *, search):
         '''
             `>>google <query>`
@@ -482,7 +483,7 @@ class Misc:
         if isinstance(error, commands.CommandOnCooldown):
             await ctx.send("Whoa slow down your Google search! You can only search once every 10 seconds.")
         else:
-            print(traceback.format_exc())
+            self.bot.dispatch("command_error", ctx, error)
 
     @commands.command(aliases=["translate", "trans"])
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
@@ -514,6 +515,8 @@ class Misc:
     async def gtrans_error(self, ctx, error):
         if isinstance(error, commands.CommandOnCooldown):
             await ctx.send("Whoa slow down your Google translate! You can only do it once every 10 seconds.")
+        else:
+            self.bot.dispatch("command_error", ctx, error)
 
     @commands.command()
     async def char(self, ctx, *, characters):
