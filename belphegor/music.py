@@ -104,7 +104,7 @@ class Song:
             audio = video.getbestaudio()
         try:
             url = audio.url
-        except:
+        except AttributeError:
             url = video.streams[-1].url
         self.duration = video.duration
         self.music = discord.PCMVolumeTransformer(
@@ -190,7 +190,7 @@ class MusicQueue:
             if not len(self.playlist):
                 await self._not_empty.wait()
             song = self.playlist.pop(0)
-            await self.playlist_data.update_one({"guild_id": self.guild_id}, {"$pop": {"playlist": -1}, "$set": {"current_song": song.to_dict()}})
+            await asyncio.shield(self.playlist_data.update_one({"guild_id": self.guild_id}, {"$pop": {"playlist": -1}, "$set": {"current_song": song.to_dict()}}))
             return song
 
     async def delete(self, position):
@@ -208,10 +208,7 @@ class MusicQueue:
         return self.playlist[position]
 
     def __iter__(self):
-        return self._iter
-
-    def __next__(self):
-        return next(self._iter)
+        return iter(self.playlist)
 
     def __bool__(self):
         return bool(self.playlist)
@@ -247,27 +244,25 @@ class MusicPlayer:
     def skip(self):
         if self.guild.voice_client.is_playing():
             self.guild.voice_client.stop()
-            self.current_song = None
+            self.repeat = False
 
     async def leave_voice(self):
         self.repeat = False
-        try:
-            self.player.cancel()
-        except:
-            pass
-        self.bot.get_cog("Music").music_players.pop(self.guild.id)
         if self.guild.voice_client:
-            await self.guild.voice_client.disconnect(force=True)
+            await asyncio.shield(self.guild.voice_client.disconnect(force=True))
+
+    async def clear_current_song(self):
+        self.current_song = None
+        await asyncio.shield(self.queue.playlist_data.update_one({"guild_id": self.guild.id}, {"$set": {"current_song": None}}))
 
     async def play_till_eternity(self):
-        def next_part(e=None):
+        def next_part(e):
             if e:
                 print(e)
-            if not self.repeat:
-                self.current_song = None
             self.bot.loop.call_soon_threadsafe(self.play_next_song.set)
 
         cmd = self.bot.get_command("music info")
+        voice = self.guild.voice_client
 
         while True:
             self.play_next_song.clear()
@@ -275,38 +270,35 @@ class MusicPlayer:
                 try:
                     self.current_song = await asyncio.wait_for(self.queue.get(), 120, loop=self.bot.loop)
                 except asyncio.TimeoutError:
-                    self.bot.loop.create_task(self.leave_voice())
-                    self.bot.loop.create_task(self.channel.send("No music? Time to sleep then. Yaaawwnnnn~~"))
+                    await self.leave_voice()
+                    await self.channel.send("No music? Time to sleep then. Yaaawwnnnn~~")
                     return
             await self.bot.loop.run_in_executor(None, self.current_song.raw_update)
             if self.current_song.music is None:
                 await self.channel.send(f"**{self.current_song.title}** is not available.")
-                self.current_song = None
+                await self.clear_current_song()
             else:
-                self.guild.voice_client.play(self.current_song.music, after=next_part)
+                voice.play(self.current_song.music, after=next_part)
                 name = utils.discord_escape(getattr(self.current_song.requestor, "display_name", "<user left server>"))
                 await self.channel.send(f"Playing **{self.current_song.title}** requested by {name}.")
                 if self.auto_info:
                     new_msg = copy.copy(self.auto_info)
                     new_msg.author = self.current_song.requestor or new_msg.author
                     new_ctx = await self.bot.get_context(new_msg, cls=data_type.BelphegorContext)
-                    try:
-                        await new_ctx.invoke(cmd)
-                    except discord.Forbidden:
-                        pass
+                    await new_ctx.invoke(cmd)
                 await self.play_next_song.wait()
-            if not self.current_song:
-                await self.queue.playlist_data.update_one({"guild_id": self.guild.id}, {"$set": {"current_song": None}})
-            voice_channel = self.guild.voice_client.channel
-            for m in voice_channel.members:
+                if not self.repeat:
+                    await self.clear_current_song()
+
+            for m in voice.channel.members:
                 if not m.bot:
                     break
             else:
                 try:
-                    await self.bot.wait_for("voice_state_update", check=lambda m, b, a: getattr(a.channel, "id", None)==voice_channel.id and m.bot, timeout=120)
+                    await self.bot.wait_for("voice_state_update", check=lambda m, b, a: a.channel.id==voice.channel.id and m.bot, timeout=120)
                 except asyncio.TimeoutError:
-                    self.bot.loop.create_task(self.leave_voice())
-                    self.bot.loop.create_task(self.channel.send("Heeey, anybody's listening? No? Then I'll go to sleep."))
+                    await self.leave_voice()
+                    await self.channel.send("Heeey, anybody's listening? No? Then I'll go to sleep.")
                     return
 
 #==================================================================================================================================================
@@ -322,27 +314,30 @@ class Music:
         self.music_players = {}
         locale.setlocale(locale.LC_ALL, '')
         self.youtube = build("youtube", "v3", developerKey=token.GOOGLE_CLIENT_API_KEY)
-        self.lock = asyncio.Lock()
+        self.yt_lock = asyncio.Lock()
+        self.mp_lock = asyncio.Lock()
 
     def cleanup(self):
         for mp in self.music_players.values():
+            mp.player.cancel()
             self.bot.create_task_and_count(mp.leave_voice())
 
     async def get_music_player(self, guild):
-        mp = self.music_players.get(guild.id)
-        if not mp:
-            mp_data = await self.playlist_data.find_one_and_update(
-                {"guild_id": guild.id},
-                {"$setOnInsert": {"guild_id": guild.id, "next_index": 0, "playlist": []}},
-                return_document=ReturnDocument.AFTER,
-                upsert=True
-            )
-            mp = MusicPlayer(self.bot, guild, initial=mp_data["playlist"], next_index=mp_data["next_index"])
-            cur_song = mp_data.get("current_song")
-            if cur_song:
-                mp.current_song = Song(guild.get_member(cur_song["requestor_id"]), cur_song["title"], cur_song["url"], cur_song["index"])
-            self.music_players[guild.id] = mp
-        return mp
+        async with self.mp_lock:
+            mp = self.music_players.get(guild.id)
+            if not mp:
+                mp_data = await self.playlist_data.find_one_and_update(
+                    {"guild_id": guild.id},
+                    {"$setOnInsert": {"guild_id": guild.id, "next_index": 0, "playlist": []}},
+                    return_document=ReturnDocument.AFTER,
+                    upsert=True
+                )
+                mp = MusicPlayer(self.bot, guild, initial=mp_data["playlist"], next_index=mp_data["next_index"])
+                cur_song = mp_data.get("current_song")
+                if cur_song:
+                    mp.current_song = Song(guild.get_member(cur_song["requestor_id"]), cur_song["title"], cur_song["url"], cur_song["index"])
+                self.music_players[guild.id] = mp
+            return mp
 
     @commands.group(aliases=["m"])
     @checks.guild_only()
@@ -364,22 +359,26 @@ class Music:
         try:
             voice_channel = ctx.author.voice.channel
         except AttributeError:
-            return await ctx.send("You are not in a voice channel.")
+            msg = await ctx.send("You are not in a voice channel. Try joining one, I'm waiting.")
+            try:
+                member, before, after = await self.bot.wait_for("voice_state_update", check=lambda m, b, a: m.id==ctx.author.id and a.channel.guild.id==ctx.guild.id, timeout=120)
+            except asyncio.TimeoutError:
+                return msg.edit("So you don't want to listen to music? Great, I don't have to work then!")
+            else:
+                voice_channel = after.channel
+                await msg.delete()
+
         music_player = await self.get_music_player(ctx.guild)
         async with music_player.lock:
-            msg = await ctx.send("Connecting...")
             if ctx.voice_client:
-                sentences = {"initial":  "Disconnect and rejoin?"}
-                result = await ctx.yes_no_prompt(sentences, delete_mode=True)
-                if result:
-                    await ctx.voice_client.disconnect(force=True)
-                else:
-                    return
-            try:
-                await voice_channel.connect(timeout=20, reconnect=False)
-            except:
-                return await msg.edit(content="Cannot connect to voice. Try joining other voice channel.")
+                await ctx.send("I am already in a voice channel.")
             else:
+                msg = await ctx.send("Connecting...")
+                try:
+                    await voice_channel.connect(timeout=20, reconnect=False)
+                except asyncio.TimeoutError:
+                    return await msg.edit(content="Cannot connect to voice. Try joining other voice channel.")
+
                 music_player.ready_to_play(ctx.channel)
                 await msg.edit(content=f"{self.bot.user.display_name} joined {voice_channel.name}.")
 
@@ -396,6 +395,7 @@ class Music:
             except AttributeError:
                 await ctx.send(f"{self.bot.user.display_name} is not in any voice channel.")
             else:
+                music_player.player.cancel()
                 await music_player.leave_voice()
                 await ctx.send(f"{self.bot.user.display_name} left {name}.")
 
@@ -446,7 +446,7 @@ class Music:
         if 1 + len(music_player.queue) > MAX_PLAYLIST_SIZE:
             return await ctx.send("Too many entries.")
         async with ctx.typing():
-            results = await self.bot.run_in_lock(self.lock, self.youtube_search, name)
+            results = await self.bot.run_in_lock(self.yt_lock, self.youtube_search, name)
             stuff = "\n\n".join([
                 f"`{i+1}:` **[{utils.discord_escape(v['snippet']['title'])}](https://youtu.be/{v['id']['videoId']})**\n      By: {v['snippet']['channelTitle']}"
                 for i,v in enumerate(results)
@@ -629,7 +629,7 @@ class Music:
             name = name[3:]
         else:
             shuffle = False
-        results = await self.bot.run_in_lock(self.lock, self.youtube_search, name, "playlist")
+        results = await self.bot.run_in_lock(self.yt_lock, self.youtube_search, name, "playlist")
         stuff = "\n\n".join([
             f"`{i+1}:` **[{utils.discord_escape(p['snippet']['title'])}](https://www.youtube.com/playlist?list={p['id']['playlistId']})**\n      By: {p['snippet']['channelTitle']}"
             for i,p in enumerate(results)
@@ -643,7 +643,7 @@ class Music:
         else:
             result = results[index]
         async with ctx.typing():
-            items = await self.bot.run_in_lock(self.lock, self.youtube_playlist_items, ctx.message, result["id"]["playlistId"])
+            items = await self.bot.run_in_lock(self.yt_lock, self.youtube_playlist_items, ctx.message, result["id"]["playlistId"])
             if len(items) + len(music_player.queue) > MAX_PLAYLIST_SIZE:
                 return await ctx.send("Too many entries.")
             if shuffle:
@@ -684,7 +684,7 @@ class Music:
             else:
                 return await ctx.send("Position out of range.")
             url = song.url
-        video = await self.bot.run_in_lock(self.lock, self.youtube_video_info, url)
+        video = await self.bot.run_in_lock(self.yt_lock, self.youtube_video_info, url)
         snippet = video["snippet"]
         description = utils.unifix(snippet.get("description", "None")).strip()
         description_page = utils.split_page(description, 500)
@@ -716,13 +716,14 @@ class Music:
             Should not pause for too long (hours), or else Youtube would complain.
         '''
         music_player = await self.get_music_player(ctx.guild)
-        vc = music_player.voice_client
-        if vc.is_paused():
-            vc.resume()
-            await ctx.send("Resumed playing.")
-        elif vc.is_playing():
-            vc.pause()
-            await ctx.send("Paused.")
+        vc = ctx.voice_client
+        if vc:
+            if vc.is_paused():
+                vc.resume()
+                await ctx.send("Resumed playing.")
+            elif vc.is_playing():
+                vc.pause()
+                await ctx.send("Paused.")
 
     @music.command(aliases=["f"])
     async def forward(self, ctx, seconds: int=10):
@@ -734,18 +735,18 @@ class Music:
         music_player = await self.get_music_player(ctx.guild)
         song = music_player.current_song
         if song:
-            if music_player.voice_client.is_playing():
-                if 0 < seconds < 60:
-                    tbefore = song.time_elapsed()
-                    safter = int(song.music.original.fast_forward(seconds*50) * 0.02)
-                    tafter = (safter//3600, safter%3600//60, safter%60)
-                    await ctx.send(f"Forward from {tbefore[0]:02}:{tbefore[1]:02}:{tbefore[2]:02} to {tafter[0]:02}:{tafter[1]:02}:{tafter[2]:02}.")
-                else:
-                    await ctx.send("Fast forward time must be between 1 and 59 seconds.")
-            else:
-                await ctx.send("Nothing is playing right now, oi.")
-        else:
-            await ctx.send("No song is currently playing.")
+            if ctx.voice_client:
+                if ctx.voice_client.is_playing():
+                    if 0 < seconds < 60:
+                        tbefore = song.time_elapsed()
+                        safter = int(song.music.original.fast_forward(seconds*50) * 0.02)
+                        tafter = (safter//3600, safter%3600//60, safter%60)
+                        await ctx.send(f"Forward from {tbefore[0]:02}:{tbefore[1]:02}:{tbefore[2]:02} to {tafter[0]:02}:{tafter[1]:02}:{tafter[2]:02}.")
+                    else:
+                        await ctx.send("Fast forward time must be between 1 and 59 seconds.")
+                    return
+
+        await ctx.send("Nothing is playing right now, oi.")
 
     @music.command(aliases=["channel"])
     async def setchannel(self, ctx):

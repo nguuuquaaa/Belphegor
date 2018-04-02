@@ -14,6 +14,7 @@ from io import BytesIO
 import aiohttp
 from PIL import Image
 import traceback
+import collections
 
 #==================================================================================================================================================
 
@@ -206,9 +207,10 @@ class Misc:
         if 120 >= max_side > 3 and 0 < number_of_dices <= 100:
             rng = board_game.Dices(max_side, number_of_dices)
             roll_result = rng.roll()
+            counter = collections.Counter(roll_result)
             await ctx.send(
-                "```\nRoll result:\n{}\n\nDistribution:\n{}\n```"
-                .format(", ".join([str(r) for r in roll_result]), "\n".join(["{} showed up {} times.".format(i, roll_result.count(i)) for i in range(1, max_side+1)]))
+                "```\nRoll result:\n{}\n\nDistribution:\nValue│Count\n─────┼─────\n{}\n```"
+                .format(", ".join((str(r) for r in roll_result)), "\n".join((f"{i: 4d} │{counter[i]: 4d}" for i in range(1, max_side+1))))
             )
         else:
             await ctx.send("Max side must be between 4 and 120 and number of dices must be between 1 and 100")
