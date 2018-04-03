@@ -545,8 +545,7 @@ class Otogi:
                 else:
                     await ctx.send("No wikia page found.")
             except:
-                print(traceback.format_exc())
-                await ctx.send("Something went wrong.")
+                await ctx.send("Something went wrong.", file=discord.File(traceback.format_exc().encode("utf-8"), filename="traceback.txt"))
 
     async def search_wikia(self, daemon):
         name = daemon.name
@@ -569,7 +568,7 @@ class Otogi:
         while form.count(" Form") > 1:
             form = form[:-5]
         else:
-            bytes_ = await self.bot.fetch(f"http://otogi.wikia.com/api/v1/Search/List?query={quote(name)}&limit=5&batch=1&namespaces=0%2C14")
+            bytes_ = await self.bot.fetch(f"http://otogi.wikia.com/api/v1/Search/List?query={quote(utils.unifix(name))}&limit=5&batch=1&namespaces=0%2C14")
             search_query = json.loads(bytes_)
             for item in search_query.get("items"):
                 if "/" not in item["title"]:
@@ -668,15 +667,38 @@ class Otogi:
     @update.command(hidden=True, name="everything", aliases=["all"])
     @checks.owner_only()
     async def update_everything(self, ctx, start_from: int=0):
+        done = []
+        undone = []
+
+        def progress(rate):
+            bf = "\u2588" * int(rate*10)
+            c = "\u2591"
+            return f"Progress: {bf:{c}<10} {int(rate*100)}%"
+
+        msg = await ctx.send(f"Fetching...\n{progress(0)}")
+        count = await self.daemon_collection.count({"id": {"$gte": start_from}})
         async for daemon_data in self.daemon_collection.find({"id": {"$gte": start_from}}):
             try:
                 daemon = Daemon(daemon_data)
                 new_daemon = await self.search_wikia(daemon)
                 await self.daemon_collection.replace_one({"id": daemon.id}, new_daemon.__dict__)
             except:
-                return print(traceback.format_exc())
+                undone.append(f"#{daemon.id: 4d} {daemon.name}")
             else:
-                print(f"Done #{new_daemon.id} {new_daemon.name}")
+                done.append(f"#{new_daemon.id: 4d} {new_daemon.name}")
+            cur = daemon_data["id"]
+            if cur%10 == 0:
+                await msg.edit(content=f"Fetching...\n{progress(cur/count)}")
+        await ctx.send(file=discord.File(json.dumps({"done": done, "undone": undone}, indent=4, ensure_ascii=False).encode("utf-8"), filename="result.json"))
+
+    @update.command(hidden=True, name="one")
+    @checks.owner_only()
+    async def update_one(self, ctx, *, name):
+        cmd_create = self.bot.get_command("update create")
+        cmd_wikia = self.bot.get_command("update wikia")
+        await ctx.invoke(cmd_create, data=name)
+        d = await self.daemon_collection.find_one({"name": name}, projection={"id": True})
+        await ctx.invoke(cmd_wikia, name=str(d["id"]))
 
     async def get_player(self, id):
         async with self.lock:

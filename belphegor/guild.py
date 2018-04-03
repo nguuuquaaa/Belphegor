@@ -62,6 +62,7 @@ class Guild:
                   `muterole` - Mute role, for use with `>>mute` and `>>unmute` command
                   `autorole` - Auto assign/remove role for new member
                   `prefix` - Server custom prefix
+                  `allprefix` - All server custom prefixes
                   `log` - Activity log channel
                   `logmessage` - Message log
                   `eq` - PSO2 EQ Alert (both normal and minimal)
@@ -486,6 +487,16 @@ class Guild:
             await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$pull": {"prefixes": prefix}})
         finally:
             await ctx.confirm()
+
+    @cmd_unset.command(name="allprefix")
+    async def cmd_unset_all_prefix(self, ctx):
+        '''
+            `>>unset allprefix`
+            Remove all custom prefixes.
+        '''
+        self.bot.guild_prefixes[ctx.guild.id] = []
+        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$set": {"prefixes": []}})
+        await ctx.confirm()
 
     @cmd_set.command(name="eq", aliases=["eqalert"])
     async def set_eq_channel(self, ctx, channel: discord.TextChannel=None):
