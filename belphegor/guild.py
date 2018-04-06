@@ -24,6 +24,8 @@ class Guild:
         self.bot = bot
         self.guild_data = bot.db.guild_data
         self.banned_emojis = set()
+        self.autorole_registration = {}
+
 
     @commands.group(name="set")
     @checks.guild_only()
@@ -380,12 +382,12 @@ class Guild:
                     break
         if response:
             sentences = {
-                "initial":  "Do you want the response to be automatically delete after 30s?",
+                "initial":  "Do you want the response to be automatically delete after 30s?\nBtw registration phrase will be deleted immediately.",
                 "yes":      "OK it's a yes, got it.",
                 "no":       "So it's a no then.",
                 "timeout":  "Do you even need to think that long? I'll set up a yes then."
             }
-            check = await ctx.yes_no_prompt(sentences)
+            check = await ctx.yes_no_prompt(sentences, timeout=120)
             if check is None:
                 check = True
         await self.guild_data.update_one(
@@ -396,6 +398,7 @@ class Guild:
             },
             upsert=True
         )
+        self.autorole_registration[ctx.guild.id] = phrase
         await ctx.send("\U0001f44c Autorole is ready to go.")
 
     @cmd_unset.command(name="autorole")
@@ -542,15 +545,20 @@ class Guild:
 
     async def on_message(self, message):
         member = message.author
-        if member.bot:
+        if member.bot or not message.guild:
             return
-        if not message.guild:
-            return
-        guild_data = await self.guild_data.find_one(
-            {"guild_id": message.guild.id, "autorole_phrase": message.content},
-            projection={"_id": False, "autorole_id": True, "autorole_type": True, "autorole_phrase": True, "autorole_response": True, "autorole_response_delete": True}
-        )
-        if guild_data:
+        check_not_in = message.guild.id not in self.autorole_registration
+        check_equal = message.content == self.autorole_registration.get(message.guild.id)
+        if check_not_in or check_equal:
+            guild_data = await self.guild_data.find_one(
+                {"guild_id": message.guild.id},
+                projection={"_id": False, "autorole_id": True, "autorole_type": True, "autorole_phrase": True, "autorole_response": True, "autorole_response_delete": True}
+            ) or {}
+            if check_not_in:
+                phrase = guild_data.get("autorole_phrase", False)
+                self.autorole_registration[message.guild.id] = phrase
+                check_equal = message.content == phrase
+        if check_equal:
             role = discord.utils.find(lambda r: r.id==guild_data["autorole_id"], message.guild.roles)
             if not role:
                 return
