@@ -18,7 +18,7 @@ RATING = {
 
 #==================================================================================================================================================
 
-class RImage:
+class RandomImage:
     '''
     Random pictures from various image boards.
     Also sauce find. Since everyone needs sauce.
@@ -281,19 +281,19 @@ class RImage:
             If no argument is provided, wait 2 minutes for uploaded image.
         '''
         if not url:
-            msg = ctx.message
-            if not msg.attachments:
-                await msg.add_reaction("\U0001f504")
+            if not ctx.message.attachments:
+                msg = await ctx.send("You want sauce of what? Post the dang url or upload the dang pic here.")
                 try:
-                    msg = await self.bot.wait_for("message", check=lambda m:m.author.id==ctx.author.id and m.attachments, timeout=120)
+                    message = await self.bot.wait_for("message", check=lambda m: m.author.id==ctx.author.id and m.attachments or m.content, timeout=120)
                 except asyncio.TimeoutError:
-                    pass
-                finally:
-                    try:
-                        await ctx.message.clear_reactions()
-                    except:
-                        pass
-            url = msg.attachments[0].url
+                    return await msg.edit("That's it, I'm not waiting anymore.")
+            if message.attachments:
+                url = message.attachments[0].url
+            else:
+                url = message.content
+            await msg.delete()
+        if not url.startswith(("http://", "https://")):
+            return await ctx.send("Invalid url.")
         async with ctx.typing():
             payload = aiohttp.FormData()
             payload.add_field("file", b"", filename="", content_type="application/octet-stream")
@@ -354,4 +354,4 @@ class RImage:
 #==================================================================================================================================================
 
 def setup(bot):
-    bot.add_cog(RImage(bot))
+    bot.add_cog(RandomImage(bot))

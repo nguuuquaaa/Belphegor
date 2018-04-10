@@ -5,7 +5,7 @@ import asyncio
 
 #==================================================================================================================================================
 
-async def pie_chart(data, *, unit="counts", aa=4):
+async def pie_chart(data, *, unit="counts", aa=4, loop=None):
     def drawing():
         number_of_fields = len(data)
         number_of_items = sum((d["count"] for d in data))
@@ -55,5 +55,5 @@ async def pie_chart(data, *, unit="counts", aa=4):
         resized_pic.save(bytes_io, format="png")
         return bytes_io.getvalue()
 
-    _loop = asyncio.get_event_loop()
+    _loop = loop or asyncio.get_event_loop()
     return await _loop.run_in_executor(None, drawing)

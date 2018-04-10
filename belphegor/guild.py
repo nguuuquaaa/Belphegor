@@ -26,7 +26,6 @@ class Guild:
         self.banned_emojis = set()
         self.autorole_registration = {}
 
-
     @commands.group(name="set")
     @checks.guild_only()
     @checks.manager_only()

@@ -55,7 +55,7 @@ class Admin:
     @checks.owner_only()
     async def reload(self, ctx, extension=""):
         if extension:
-            await self.reload_extension(ctx, extension)
+            await self.reload_extension(ctx, f"belphegor.{extension}")
         else:
             await self.reload_all_extensions(ctx)
 
@@ -161,9 +161,12 @@ class Admin:
     @commands.command(hidden=True)
     @checks.owner_only()
     async def hackblock(self, ctx, user_id: int):
-        user = await self.bot.get_user_info(user_id)
-        cmd = self.bot.get_command("block")
-        await ctx.invoke(cmd, user)
+        self.bot.blocked_user_ids.add(user_id)
+        result = await self.belphegor_config.update_one({"category": "block"}, {"$addToSet": {"blocked_user_ids": user_id}})
+        if result.modified_count > 0:
+            await ctx.confirm()
+        else:
+            await ctx.deny()
 
     @commands.command(hidden=True)
     @checks.owner_only()

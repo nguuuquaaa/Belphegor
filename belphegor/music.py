@@ -15,6 +15,7 @@ import random
 import re
 from pymongo import ReturnDocument
 import copy
+import weakref
 
 #==================================================================================================================================================
 
@@ -88,7 +89,7 @@ class Song:
         self.url = url
         self.default_volume = 1.0
         self.index = index
-        self.duration = 0
+        self.duration = "00:00:00"
         self.music = None
 
     def raw_update(self):
@@ -116,7 +117,10 @@ class Song:
         )
 
     def info(self):
-        second_elapsed = int(self.music.original.counter * 0.02)
+        if self.music:
+            second_elapsed = int(self.music.original.counter * 0.02)
+        else:
+            second_elapsed = 0
         return f"{self.title} ({second_elapsed//3600:02}:{second_elapsed%3600//60:02}:{second_elapsed%60:02} / {self.duration})"
 
     def time_elapsed(self):
@@ -239,7 +243,7 @@ class MusicPlayer:
 
     def ready_to_play(self, channel):
         self.channel = channel
-        self.player = self.bot.loop.create_task(self.play_till_eternity())
+        self.player = weakref.ref(self.bot.loop.create_task(self.play_till_eternity()))
 
     async def skip(self):
         if self.guild.voice_client.is_playing():
@@ -268,7 +272,7 @@ class MusicPlayer:
             self.play_next_song.clear()
             if not self.current_song:
                 try:
-                    self.current_song = await asyncio.wait_for(self.queue.get(), 120, loop=self.bot.loop)
+                    self.current_song = await asyncio.wait_for(self.queue.get(), timeout=120, loop=self.bot.loop)
                 except asyncio.TimeoutError:
                     await self.leave_voice()
                     await self.channel.send("No music? Time to sleep then. Yaaawwnnnn~~")
@@ -295,7 +299,7 @@ class MusicPlayer:
                     break
             else:
                 try:
-                    await self.bot.wait_for("voice_state_update", check=lambda m, b, a: a.channel.id==voice.channel.id and m.bot, timeout=120)
+                    await self.bot.wait_for("voice_state_update", check=lambda m, b, a: a.channel.id==voice.channel.id and not m.bot, timeout=120)
                 except asyncio.TimeoutError:
                     await self.leave_voice()
                     await self.channel.send("Heeey, anybody's listening? No? Then I'll go to sleep.")
@@ -319,7 +323,10 @@ class Music:
 
     def cleanup(self):
         for mp in self.music_players.values():
-            mp.player.cancel()
+            try:
+                mp.player().cancel()
+            except AttributeError:
+                pass
             self.bot.create_task_and_count(mp.leave_voice())
 
     async def get_music_player(self, guild):
@@ -328,7 +335,7 @@ class Music:
             if not mp:
                 mp_data = await self.playlist_data.find_one_and_update(
                     {"guild_id": guild.id},
-                    {"$setOnInsert": {"guild_id": guild.id, "next_index": 0, "playlist": []}},
+                    {"$setOnInsert": {"guild_id": guild.id, "next_index": 0, "playlist": [], "current_song": None}},
                     return_document=ReturnDocument.AFTER,
                     upsert=True
                 )
@@ -338,6 +345,11 @@ class Music:
                     mp.current_song = Song(guild.get_member(cur_song["requestor_id"]), cur_song["title"], cur_song["url"], cur_song["index"])
                 self.music_players[guild.id] = mp
             return mp
+
+    async def on_voice_state_update(self, member, before, after):
+        if member.id == self.bot.user.id:
+            if not after:
+                self.music_players.pop(member.guild.id, None)
 
     @commands.group(aliases=["m"])
     @checks.guild_only()
@@ -395,7 +407,7 @@ class Music:
             except AttributeError:
                 await ctx.send(f"{self.bot.user.display_name} is not in any voice channel.")
             else:
-                music_player.player.cancel()
+                music_player.player().cancel()
                 await music_player.leave_voice()
                 await ctx.send(f"{self.bot.user.display_name} left {name}.")
 
@@ -418,7 +430,7 @@ class Music:
             state = "Stopped"
         try:
             current_song_info = music_player.current_song.info()
-        except:
+        except AttributeError:
             current_song_info = ""
         if music_player.queue:
             return utils.embed_page_format(
