@@ -208,8 +208,11 @@ class MusicQueue:
             self.playlist.clear()
             await self.playlist_data.update_one({"guild_id": self.guild_id}, {"$set": {"playlist": []}})
 
-    def __getitem__(self, position):
-        return self.playlist[position]
+    def __getitem__(self, key):
+        if isinstance(key, slice):
+            raise TypeError("Don't slice music queue.")
+        else:
+            return self.playlist[key]
 
     def __iter__(self):
         return iter(self.playlist)
@@ -226,14 +229,13 @@ class MusicQueue:
 #==================================================================================================================================================
 
 class MusicPlayer:
-    __slots__ = ("bot", "guild", "queue", "current_song", "play_next_song", "repeat", "channel", "player", "lock", "auto_info")
+    __slots__ = ("bot", "guild", "queue", "current_song", "repeat", "channel", "player", "lock", "auto_info")
 
     def __init__(self, bot, guild, *, initial, next_index):
         self.bot = bot
         self.guild = guild
         self.queue = MusicQueue(bot, guild.id, next_index=next_index)
         self.current_song = None
-        self.play_next_song = asyncio.Event()
         self.repeat = False
         self.channel = None
         self.player = None
@@ -263,16 +265,17 @@ class MusicPlayer:
         def next_part(e):
             if e:
                 print(e)
-            self.bot.loop.call_soon_threadsafe(self.play_next_song.set)
+            self.bot.loop.call_soon_threadsafe(play_next_song.set)
 
+        play_next_song = asyncio.Event()
         cmd = self.bot.get_command("music info")
         voice = self.guild.voice_client
 
         while True:
-            self.play_next_song.clear()
+            play_next_song.clear()
             if not self.current_song:
                 try:
-                    self.current_song = await asyncio.wait_for(self.queue.get(), timeout=120, loop=self.bot.loop)
+                    self.current_song = await asyncio.wait_for(self.queue.get(), 120, loop=self.bot.loop)
                 except asyncio.TimeoutError:
                     await self.leave_voice()
                     await self.channel.send("No music? Time to sleep then. Yaaawwnnnn~~")
@@ -283,14 +286,14 @@ class MusicPlayer:
                 await self.clear_current_song()
             else:
                 voice.play(self.current_song.music, after=next_part)
-                name = utils.discord_escape(getattr(self.current_song.requestor, "display_name", "<user left server>"))
+                name = utils.discord_escape(getattr(self.current_song.requestor, "display_name", "<User left server>"))
                 await self.channel.send(f"Playing **{self.current_song.title}** requested by {name}.")
                 if self.auto_info:
                     new_msg = copy.copy(self.auto_info)
                     new_msg.author = self.current_song.requestor or new_msg.author
                     new_ctx = await self.bot.get_context(new_msg, cls=data_type.BelphegorContext)
                     await new_ctx.invoke(cmd)
-                await self.play_next_song.wait()
+                await play_next_song.wait()
                 if not self.repeat:
                     await self.clear_current_song()
 
