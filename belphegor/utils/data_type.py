@@ -517,8 +517,10 @@ class Observer:
     async def wait(self, *, timeout=None):
         if isinstance(timeout, (int, float)):
             await asyncio.wait_for(self._flag.wait(), timeout)
-        else:
+        elif timeout is None:
             await self._flag.wait()
+        else:
+            raise TypeError("Watchu thonk timeout iz?")
 
     @property
     def item(self):

@@ -861,7 +861,7 @@ class Guild:
             roles = await self.get_selfroles(ctx.guild)
             if not roles:
                 return await ctx.send("Server has no selfrole.")
-            colors = {(0, 0, 0)}
+            colors = {(0, 0, 0), (255, 255, 255)}
             check_roles = []
             for role in roles:
                 rgb = role.colour.to_rgb()
