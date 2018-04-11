@@ -455,7 +455,7 @@ class PSO2:
     def weapon_parse(self, category, bytes_):
         category_weapons = []
         data = BS(bytes_.decode("utf-8"), "lxml")
-        table = data.find("table", class_="wikitable sortable").find_all(True, recursive=False)[1:]
+        table = data.find(lambda x: x.name=="table" and "wikitable" in x.get("class") and "sortable" in x.get("class")).find_all(True, recursive=False)[1:]
         for item in table:
             weapon = {"category": category}
             relevant = item.find_all(True, recursive=False)

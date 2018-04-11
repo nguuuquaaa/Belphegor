@@ -62,8 +62,9 @@ class Admin:
     @commands.command(hidden=True)
     @checks.owner_only()
     async def unload(self, ctx, extension):
-        if extension in self.bot.extensions:
-            self.bot.unload_extension(extension)
+        e = f"belphegor.{extension}"
+        if e in self.bot.extensions:
+            self.bot.unload_extension(e)
             print(f"Unloaded {extension}")
             await ctx.confirm()
         else:

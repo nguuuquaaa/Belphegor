@@ -399,10 +399,10 @@ class Misc:
         #weather
         tag = data.find("div", class_="card-section", id="wob_wc")
         if tag:
-            more_link = tag.next_sibling
+            more_link = tag.next_sibling.find("a")
             embed = discord.Embed(
                 title="Search result:",
-                description=f"**Weather**\n[{more_link.text}]({utils.safe_url(more_link.find('a')['href'])})",
+                description=f"**Weather**\n[{more_link.text}]({utils.safe_url(more_link['href'])})",
                 colour=discord.Colour.dark_orange()
             )
             embed.set_thumbnail(url=f"https:{tag.find('img', id='wob_tci')['src']}")
@@ -446,8 +446,7 @@ class Misc:
         return f"**Search result:**\n{search_results[0]['href']}\n**See also:**\n{other}"
 
     @commands.command(aliases=["g"])
-    @checks.owner_only()
-    #@commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     async def google(self, ctx, *, search):
         '''
             `>>google <query>`
