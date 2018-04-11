@@ -7,6 +7,7 @@ import asyncio
 from . import utils
 import json
 import re
+import weakref
 
 #==================================================================================================================================================
 
@@ -15,10 +16,10 @@ class Remind:
         self.bot = bot
         self.active = asyncio.Event()
         self.event_list = bot.db.remind_event_list
-        self.reminder = bot.loop.create_task(self.check_till_eternity())
+        self.reminder = weakref.ref(bot.loop.create_task(self.check_till_eternity()))
 
     def cleanup(self):
-        self.reminder.cancel()
+        self.reminder().cancel()
 
     async def check_till_eternity(self):
         while True:
@@ -40,7 +41,7 @@ class Remind:
                         continue
 
                 self.start_reminder(remind_event)
-                await self.event_list.delete_one({"_id": remind_event["_id"]})
+                await asyncio.shield(self.event_list.delete_one({"_id": remind_event["_id"]}))
 
     def start_reminder(self, remind_event):
         async def reminder():

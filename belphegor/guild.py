@@ -607,7 +607,8 @@ class Guild:
             autorole_type = guild_data.get("autorole_type", None)
             if autorole_type == 1:
                 role = discord.utils.find(lambda r: r.id==guild_data["autorole_id"], guild.roles)
-                await member.add_roles(role)
+                if role:
+                    await member.add_roles(role)
 
     async def on_member_remove(self, member):
         if member.bot:

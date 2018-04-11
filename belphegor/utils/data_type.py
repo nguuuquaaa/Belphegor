@@ -10,6 +10,7 @@ import sys
 import traceback
 import functools
 import re
+import copy
 
 #==================================================================================================================================================
 
@@ -365,6 +366,7 @@ class Belphegor(commands.Bot):
         print("Logging out...")
         while self.counter > 0:
             await asyncio.sleep(0.1)
+        await asyncio.sleep(1)
 
     def block_or_not(self, ctx):
         author_id = ctx.author.id
@@ -488,3 +490,40 @@ class Belphegor(commands.Bot):
 
     async def download(self, url, path, **kwargs):
         return await request.download(self.session, url, path, **kwargs)
+
+#==================================================================================================================================================
+
+class Observer:
+    def __init__(self, item=None):
+        self._item = item
+        self._flag = asyncio.Event()
+
+    def clear(self):
+        self._flag.clear()
+
+    def edit(self, att, value):
+        setattr(self._item, att, value)
+        self._flag.set()
+
+    def assign(self, item):
+        self._item = item
+        self._flag.set()
+
+    def call(self, method, *args, **kwargs):
+        ret = getattr(self._item, method)(*args, **kwargs)
+        self._flag.set()
+        return ret
+
+    async def wait(self, *, timeout=None):
+        if isinstance(timeout, (int, float)):
+            await asyncio.wait_for(self._flag.wait(), timeout)
+        else:
+            await self._flag.wait()
+
+    @property
+    def item(self):
+        return copy.copy(self._item)
+
+    @item.setter
+    def item(self, value):
+        raise AttributeError("Dun explicitly do dis.")

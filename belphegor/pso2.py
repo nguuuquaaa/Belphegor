@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 import traceback
 from textwrap import indent
 from apiclient.discovery import build
+import weakref
 
 #==================================================================================================================================================
 
@@ -254,13 +255,13 @@ class PSO2:
         ):
             self.emojis[emoji_name] = discord.utils.find(lambda e:e.name==emoji_name, test_guild_2.emojis)
         self.emojis["set_effect"] = self.emojis["rear"]
-        self.eq_alert_forever = bot.loop.create_task(self.eq_alert())
+        self.eq_alert_forever = weakref.ref(bot.loop.create_task(self.eq_alert()))
         self.last_eq_data = None
         self.daily_order_pattern = bot.db.daily_order_pattern
         self.calendar = build("calendar", "v3", developerKey=token.GOOGLE_CLIENT_API_KEY)
 
     def cleanup(self):
-        self.eq_alert_forever.cancel()
+        self.eq_alert_forever().cancel()
 
     @commands.command(aliases=["c"])
     async def chip(self, ctx, *, name):
