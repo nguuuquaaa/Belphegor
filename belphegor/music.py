@@ -231,12 +231,12 @@ class MusicQueue:
 class MusicPlayer:
     __slots__ = ("bot", "guild", "queue", "current_song", "repeat", "channel", "player", "lock", "auto_info", "inactivity")
 
-    def __init__(self, bot, guild, *, initial, next_index):
+    def __init__(self, bot, guild, *, initial, next_index, repeat=False):
         self.bot = bot
         self.guild = guild
         self.queue = MusicQueue(bot, guild.id, next_index=next_index)
         self.current_song = None
-        self.repeat = False
+        self.repeat = repeat
         self.channel = None
         self.player = None
         self.lock = asyncio.Lock()
@@ -248,19 +248,23 @@ class MusicPlayer:
         self.channel = channel
         self.player = weakref.ref(self.bot.loop.create_task(self.play_till_eternity()))
 
-    async def skip(self):
+    def skip(self):
         if self.guild.voice_client.is_playing():
             self.guild.voice_client.stop()
-            await self.clear_current_song()
+            if self.repeat is True:
+                self.current_song = None
 
     async def leave_voice(self):
-        self.repeat = False
         if self.guild.voice_client:
             await asyncio.shield(self.guild.voice_client.disconnect(force=True))
 
     async def clear_current_song(self):
         self.current_song = None
         await asyncio.shield(self.queue.playlist_data.update_one({"guild_id": self.guild.id}, {"$set": {"current_song": None}}))
+
+    async def set_repeat(self, mode):
+        self.repeat = mode
+        await self.queue.playlist_data.update_one({"guild_id": self.guild.id}, {"$set": {"repeat": mode}})
 
     def cancel(self):
         try:
@@ -302,6 +306,8 @@ class MusicPlayer:
                     new_ctx = await self.bot.get_context(new_msg, cls=data_type.BelphegorContext)
                     await new_ctx.invoke(cmd)
                 await play_next_song.wait()
+                if self.repeat is None:
+                    await asyncio.shield(self.queue.put(self.current_song))
                 if not self.repeat:
                     await self.clear_current_song()
 
@@ -356,11 +362,11 @@ class Music:
             if not mp:
                 mp_data = await self.playlist_data.find_one_and_update(
                     {"guild_id": guild.id},
-                    {"$setOnInsert": {"guild_id": guild.id, "next_index": 0, "playlist": [], "current_song": None}},
+                    {"$setOnInsert": {"guild_id": guild.id, "next_index": 0, "playlist": [], "current_song": None, "repeat": False}},
                     return_document=ReturnDocument.AFTER,
                     upsert=True
                 )
-                mp = MusicPlayer(self.bot, guild, initial=mp_data["playlist"], next_index=mp_data["next_index"])
+                mp = MusicPlayer(self.bot, guild, initial=mp_data["playlist"], next_index=mp_data["next_index"], repeat=mp_data["repeat"])
                 cur_song = mp_data.get("current_song")
                 if cur_song:
                     mp.current_song = Song(guild.get_member(cur_song["requestor_id"]), cur_song["title"], cur_song["url"], cur_song["index"])
@@ -441,12 +447,18 @@ class Music:
 
     def current_queue_info(self, music_player):
         try:
-            if music_player.voice_client.is_playing():
-                state = "Playing"
+            if music_player.guild.voice_client.is_playing():
+                state = "\u25b6"
             else:
-                state = "Paused"
-        except:
-            state = "Stopped"
+                state = "\u23f8"
+        except AttributeError:
+            state = "\u23f9"
+        if music_player.repeat is None:
+            repeat = "\U0001f501"
+        elif music_player.repeat is True:
+            repeat = "\U0001f502"
+        elif music_player.repeat is False:
+            repeat = ""
         try:
             current_song_info = music_player.current_song.info()
         except AttributeError:
@@ -454,7 +466,7 @@ class Music:
         if music_player.queue:
             return utils.embed_page_format(
                 music_player.queue, 10, separator="\n\n",
-                title=f"({state}) {current_song_info}",
+                title=f"{state}{repeat} {current_song_info}",
                 description=lambda i, x: f"`{i+1}.` **[{x.title}]({x.url})**",
                 colour=discord.Colour.green(),
                 thumbnail_url="http://i.imgur.com/HKIOv84.png"
@@ -501,7 +513,8 @@ class Music:
             Skip current song.
         '''
         music_player = await self.get_music_player(ctx.guild)
-        await music_player.skip()
+        music_player.skip()
+        await ctx.confirm()
 
     @music.command(aliases=["v"])
     async def volume(self, ctx, vol: int):
@@ -525,16 +538,18 @@ class Music:
     async def repeat(self, ctx):
         '''
             `>>music repeat`
-            Toggle repeat mode.
-            The current song will be repeated indefinitely during repeat mode.
+            Toggle repeat mode (one song, playlist, off).
         '''
         music_player = await self.get_music_player(ctx.guild)
-        if music_player.repeat:
-            music_player.repeat = False
+        if music_player.repeat is False:
+            await music_player.set_repeat(True)
+            await ctx.send("Repeat mode has been set to one song repeat.")
+        elif music_player.repeat is True:
+            await music_player.set_repeat(None)
+            await ctx.send("Repeat mode has been set to playlist repeat.")
+        elif music_player.repeat is None:
+            await music_player.set_repeat(False)
             await ctx.send("Repeat mode has been turned off.")
-        else:
-            music_player.repeat = True
-            await ctx.send("Repeat mode has been turned on.")
 
     @music.command(aliases=["d"])
     async def delete(self, ctx, position: int):
@@ -795,6 +810,7 @@ class Music:
             `>>music autoinfo`
             Automatic info display.
             Display channel is the current channel that this command is invoked in, and paging is associated with song requestor.
+            This option is reset after each session.
         '''
         music_player = await self.get_music_player(ctx.guild)
         music_player.auto_info = ctx.message

@@ -673,7 +673,7 @@ class PSO2:
         except Exception as e:
             await asyncio.sleep(10)
             print(e)
-            self.eq_alert_forever = _loop.create_task(self.eq_alert())
+            self.eq_alert_forever = weakref.ref(_loop.create_task(self.eq_alert()))
 
     def get_emoji(self, dt_obj):
         if dt_obj.minute == 0:
