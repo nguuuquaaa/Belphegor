@@ -1,8 +1,9 @@
 from belphegor import utils
-from belphegor.utils import data_type, config, token
+from belphegor.utils import config, token
 import logging
 import importlib
 import asyncio
+import bot
 
 try:
     import uvloop
@@ -15,7 +16,7 @@ else:
 
 if __name__ == "__main__":
     while True:
-        belphybot = data_type.Belphegor(owner_id=config.OWNER_ID)
+        belphybot = bot.Belphegor(owner_id=config.OWNER_ID)
         belphybot.run(token.TOKEN)
         if not belphybot.restart_flag:
             break

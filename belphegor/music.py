@@ -342,10 +342,11 @@ class Music:
 
     async def cleanup_when_inactive(self, music_player):
         try:
+            inactivity = music_player.inactivity
             while True:
-                music_player.inactivity.clear()
-                timeout = music_player.item
-                await music_player.inactivity.wait(timeout=timeout)
+                inactivity.clear()
+                timeout = inactivity.item
+                await inactivity.wait(timeout=timeout)
         except asyncio.TimeoutError:
             self.music_players.pop(music_player.guild.id, None)
 
