@@ -364,7 +364,7 @@ class Music:
                 if cur_song:
                     mp.current_song = Song(guild.get_member(cur_song["requestor_id"]), cur_song["title"], cur_song["url"], cur_song["index"])
                 self.music_players[guild.id] = mp
-                self.bot.loop.create_task(cleanup_when_inactive(mp))
+                self.bot.loop.create_task(self.cleanup_when_inactive(mp))
             if not mp.channel:
                 mp.inactivity.assign(120)
             return mp

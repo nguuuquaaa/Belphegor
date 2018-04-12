@@ -494,6 +494,8 @@ class Belphegor(commands.Bot):
 #==================================================================================================================================================
 
 class Observer:
+    __slots__ = ("_item", "_flag")
+
     def __init__(self, item=None):
         self._item = item
         self._flag = asyncio.Event()
