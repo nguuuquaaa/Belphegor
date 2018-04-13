@@ -317,7 +317,7 @@ class RandomImage:
                     result_content = tag.find("div", class_="resultcontent")
                     for br in result_content.find_all("br"):
                         br.replace_with("\n")
-                    title = result_content.get_text().strip().splitlines()[0]
+                    title = utils.get_element(result_content.get_text().strip().splitlines(), 0, default="No title")
                 similarity = content.find("div", class_="resultsimilarityinfo").text
                 content_url = content.find("a", class_="linkify")
                 if not content_url:
