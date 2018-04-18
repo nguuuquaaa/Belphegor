@@ -87,14 +87,6 @@ class Belphegor(commands.Bot):
         await asyncio.sleep(5)
         await self.change_presence(activity=discord.Game(name='with Chronos-senpai'))
 
-    def remove_cog(self, name):
-        cog = self.get_cog(name)
-        try:
-            cog.cleanup()
-        except:
-            pass
-        super().remove_cog(name)
-
     def create_task_and_count(self, coro):
         self.counter += 1
 

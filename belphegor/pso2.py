@@ -260,7 +260,7 @@ class PSO2:
         self.daily_order_pattern = bot.db.daily_order_pattern
         self.calendar = build("calendar", "v3", developerKey=token.GOOGLE_CLIENT_API_KEY)
 
-    def cleanup(self):
+    def __unload(self):
         self.eq_alert_forever().cancel()
 
     @commands.command(aliases=["c"])

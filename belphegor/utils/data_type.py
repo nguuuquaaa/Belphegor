@@ -224,8 +224,9 @@ class BelphegorContext(commands.Context):
                 description=lambda i, x: f"`{i+1}:` {emojis.get(getattr(x, emoji_att), '') if emoji_att else ''}{getattr(x, name_att)}",
                 colour=colour
             )
-            self.bot.loop.create_task(self.embed_page(embeds))
+            t = self.bot.loop.create_task(self.embed_page(embeds))
             index = await self.wait_for_choice(max=len(result))
+            t.cancel()
             if index is None:
                 return None
             else:

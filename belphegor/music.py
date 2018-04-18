@@ -81,10 +81,11 @@ class FFmpegWithBuffer(discord.FFmpegPCMAudio):
 #==================================================================================================================================================
 
 class Song:
-    __slots__ = ("requestor", "title", "url", "default_volume", "index", "duration", "music")
+    __slots__ = ("requestor", "raw_title", "title", "url", "default_volume", "index", "duration", "music")
 
     def __init__(self, requestor, title, url, index=0):
         self.requestor = requestor
+        self.raw_title = title
         self.title = utils.discord_escape(title)
         self.url = url
         self.default_volume = 1.0
@@ -128,7 +129,7 @@ class Song:
         return (second_elapsed//3600, second_elapsed%3600//60, second_elapsed%60)
 
     def to_dict(self):
-        return {"requestor_id": getattr(self.requestor, "id", None), "title": self.title, "url": self.url, "index": self.index}
+        return {"requestor_id": getattr(self.requestor, "id", None), "title": self.raw_title, "url": self.url, "index": self.index}
 
 #==================================================================================================================================================
 
@@ -341,7 +342,7 @@ class Music:
         self.yt_lock = asyncio.Lock()
         self.mp_lock = asyncio.Lock()
 
-    def cleanup(self):
+    def __unload(self):
         for mp in self.music_players.values():
             mp.cancel()
             self.bot.create_task_and_count(mp.leave_voice())
@@ -472,7 +473,7 @@ class Music:
                 thumbnail_url="http://i.imgur.com/HKIOv84.png"
                 )
         else:
-            return [discord.Embed(title=f"({state}) {current_song_info}", colour=discord.Colour.green())]
+            return [discord.Embed(title=f"{state}{repeat} {current_song_info}", colour=discord.Colour.green())]
 
     @music.command(aliases=["q"])
     async def queue(self, ctx, *, name=None):

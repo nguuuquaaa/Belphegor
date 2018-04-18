@@ -482,7 +482,7 @@ class Misc:
         if isinstance(error, commands.CommandOnCooldown):
             await ctx.send("Whoa slow down your Google search! You can only search once every 10 seconds.")
         else:
-            self.bot.dispatch("command_error", ctx, error)
+            await ctx.send("Unexpected error.")
 
     @commands.command(aliases=["translate", "trans"])
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
@@ -515,7 +515,7 @@ class Misc:
         if isinstance(error, commands.CommandOnCooldown):
             await ctx.send("Whoa slow down your Google translate! You can only do it once every 10 seconds.")
         else:
-            self.bot.dispatch("command_error", ctx, error)
+            await ctx.send("Unexpected error.")
 
     @commands.command()
     async def char(self, ctx, *, characters):

@@ -18,7 +18,7 @@ class Remind:
         self.event_list = bot.db.remind_event_list
         self.reminder = weakref.ref(bot.loop.create_task(self.check_till_eternity()))
 
-    def cleanup(self):
+    def __unload(self):
         self.reminder().cancel()
 
     async def check_till_eternity(self):

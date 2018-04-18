@@ -4,6 +4,7 @@ import re
 from fuzzywuzzy import process
 from . import utils
 from .utils import checks
+import pymongo
 
 #==================================================================================================================================================
 
@@ -11,7 +12,23 @@ class Sticker:
     def __init__(self, bot):
         self.bot = bot
         self.sticker_list = self.bot.db.sticker_list
-        self.sticker_regex = re.compile(r"(?<=\$)\w+")
+        self.belphegor_config = bot.db.belphegor_config
+        self.bot.loop.create_task(self.update_and_get_prefix())
+
+    async def update_and_get_prefix(self, new_prefix=None):
+        if new_prefix:
+            data = await self.belphegor_config.find_one_and_update(
+                {"category": "sticker"},
+                {"$set": {"prefix": new_prefix}},
+                projection={"prefix": True},
+                return_document=pymongo.ReturnDocument.AFTER
+            )
+        else:
+            data = await self.belphegor_config.find_one(
+                {"category": "sticker"},
+                projection={"prefix": True}
+            )
+        self.sticker_regex = re.compile(fr"(?<=\{data['prefix']})\w+")
 
     async def on_message(self, message):
         if message.author.bot:
@@ -129,6 +146,12 @@ class Sticker:
             await ctx.embed_page(embeds)
         else:
             await ctx.send("There's no banned sticker.")
+
+    @sticker.command()
+    @checks.owner_only()
+    async def prefix(self, ctx, p):
+        await self.update_and_get_prefix(p)
+        await ctx.confirm()
 
 #==================================================================================================================================================
 
