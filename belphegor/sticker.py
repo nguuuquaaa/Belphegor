@@ -156,7 +156,14 @@ class Sticker:
         '''
             `>>sticker prefix <`
         '''
-        if NO_SPACE_REGEX.fullmatch(new_prefix):
+        if new_prefix == "$":
+            self.sticker_regexes.pop(guild.id, None)
+            await self.guild_data.update_one(
+                {"guild_id": guild.id},
+                {"$unset": {"sticker_prefix": None}}
+            )
+            await ctx.confirm()
+        elif NO_SPACE_REGEX.fullmatch(new_prefix):
             self.sticker_regexes[guild.id] = re.compile(fr"(?<={re.escape(new_prefix)})\w+")
             await self.guild_data.update_one(
                 {"guild_id": guild.id},

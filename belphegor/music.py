@@ -270,7 +270,7 @@ class MusicPlayer:
     def cancel(self):
         try:
             self.player().cancel()
-        except AttributeError:
+        except:
             pass
         self.inactivity.assign(0)
 
@@ -489,23 +489,22 @@ class Music:
             return await ctx.embed_page(embeds)
         if 1 + len(music_player.queue) > MAX_PLAYLIST_SIZE:
             return await ctx.send("Too many entries.")
-        async with ctx.typing():
-            results = await self.bot.run_in_lock(self.yt_lock, self.youtube_search, name)
-            stuff = "\n\n".join([
-                f"`{i+1}:` **[{utils.discord_escape(v['snippet']['title'])}](https://youtu.be/{v['id']['videoId']})**\n      By: {v['snippet']['channelTitle']}"
-                for i,v in enumerate(results)
-            ])
-            embed = discord.Embed(title="\U0001f3b5 Video search result: ", description=f"{stuff}\n\n`<>:` cancel", colour=discord.Colour.green())
-            embed.set_thumbnail(url="http://i.imgur.com/HKIOv84.png")
-            await ctx.send(embed=embed)
-            index = await ctx.wait_for_choice(max=len(results))
-            if index is None:
-                return
-            else:
-                result = results[index]
-            title = result["snippet"]["title"]
-            await music_player.queue.put(Song(ctx.message.author, title, f"https://youtu.be/{result['id']['videoId']}"))
-            await ctx.send(f"Added **{title}** to queue.")
+        results = await self.bot.run_in_lock(self.yt_lock, self.youtube_search, name)
+        stuff = "\n\n".join([
+            f"`{i+1}:` **[{utils.discord_escape(v['snippet']['title'])}](https://youtu.be/{v['id']['videoId']})**\n      By: {v['snippet']['channelTitle']}"
+            for i,v in enumerate(results)
+        ])
+        embed = discord.Embed(title="\U0001f3b5 Video search result: ", description=f"{stuff}\n\n`<>:` cancel", colour=discord.Colour.green())
+        embed.set_thumbnail(url="http://i.imgur.com/HKIOv84.png")
+        await ctx.send(embed=embed)
+        index = await ctx.wait_for_choice(max=len(results))
+        if index is None:
+            return
+        else:
+            result = results[index]
+        title = result["snippet"]["title"]
+        await music_player.queue.put(Song(ctx.message.author, title, f"https://youtu.be/{result['id']['videoId']}"))
+        await ctx.send(f"Added **{title}** to queue.")
 
     @music.command(aliases=["s"])
     async def skip(self, ctx):
@@ -539,18 +538,32 @@ class Music:
     async def repeat(self, ctx):
         '''
             `>>music repeat`
-            Toggle repeat mode (one song, playlist, off).
+            Toggle repeat mode.
+            \U000025b6 - Off, play normally
+            \U0001f502 - Repeat one song
+            \U0001f501 - Repeat playlist
         '''
         music_player = await self.get_music_player(ctx.guild)
-        if music_player.repeat is False:
-            await music_player.set_repeat(True)
-            await ctx.send("Repeat mode has been set to one song repeat.")
-        elif music_player.repeat is True:
-            await music_player.set_repeat(None)
-            await ctx.send("Repeat mode has been set to playlist repeat.")
-        elif music_player.repeat is None:
-            await music_player.set_repeat(False)
-            await ctx.send("Repeat mode has been turned off.")
+        _loop = self.bot.loop
+        modes = ("\U000025b6", "\U0001f502", "\U0001f501")
+        for m in modes:
+            _loop.create_task(ctx.message.add_reaction(m))
+        try:
+            reaction, user = await self.bot.wait_for("reaction_add", check=lambda r, u: r.emoji in modes and u.id==ctx.author.id, timeout=60)
+        except asyncio.TimeoutError:
+            return await ctx.send("Cancelled changing repeat mode.")
+        else:
+            if reaction.emoji == modes[0]:
+                await music_player.set_repeat(False)
+                await ctx.send("Repeat mode has been turned off.")
+            elif reaction.emoji == modes[1]:
+                await music_player.set_repeat(True)
+                await ctx.send("Repeat mode has been set to one song repeat.")
+            else:
+                await music_player.set_repeat(None)
+                await ctx.send("Repeat mode has been set to playlist repeat.")
+        finally:
+            await ctx.message.clear_reactions()
 
     @music.command(aliases=["d"])
     async def delete(self, ctx, position: int):
@@ -689,17 +702,16 @@ class Music:
             return
         else:
             result = results[index]
-        async with ctx.typing():
-            items = await self.bot.run_in_lock(self.yt_lock, self.youtube_playlist_items, ctx.message, result["id"]["playlistId"])
-            if len(items) + len(music_player.queue) > MAX_PLAYLIST_SIZE:
-                return await ctx.send("Too many entries.")
-            if shuffle:
-                random.shuffle(items)
-                add_text = " in random position"
-            else:
-                add_text = ""
-            await music_player.queue.put_many(items)
-            await ctx.send(f"Added {len(items)} songs to queue{add_text}.")
+        items = await self.bot.run_in_lock(self.yt_lock, self.youtube_playlist_items, ctx.message, result["id"]["playlistId"])
+        if len(items) + len(music_player.queue) > MAX_PLAYLIST_SIZE:
+            return await ctx.send("Too many entries.")
+        if shuffle:
+            random.shuffle(items)
+            add_text = " in random position"
+        else:
+            add_text = ""
+        await music_player.queue.put_many(items)
+        await ctx.send(f"Added {len(items)} songs to queue{add_text}.")
 
     def youtube_video_info(self, url):
         video_id = youtube_match.match(url).group(1)
