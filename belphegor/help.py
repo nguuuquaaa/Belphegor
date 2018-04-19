@@ -396,6 +396,7 @@ class Help:
                 "      `edit` - Edit a sticker\n"
                 "      `delete` - Delete a sticker\n"
                 "      `find` - Find stickers\n\n"
+                "      `prefix` - Set server custom sticker prefix\n"
                 "      `ban` - Ban a sticker in current server\n"
                 "      `unban` - Unban a sticker in current server",
             inline=False

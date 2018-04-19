@@ -453,12 +453,12 @@ class Guild:
         await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$unset": {"log_message": ""}})
         await ctx.confirm()
 
-    @cmd_set.command(name="prefix")
+    @cmd_set.command(name="prefix", ignore_extra=False)
     async def cmd_prefix(self, ctx, prefix):
         '''
             `>>set prefix <prefix>`
             Add custom prefix.
-            If <prefix> contains whitespace then it must be enclosed in double-quote marks.
+            If <prefix> contains whitespaces then it must be enclosed in double-quote marks.
             If a custom prefix is set then the default `>>` prefix is not available anymore. You can explicitly set it up if you want it alongside new prefixes.
             Bot mention is always a prefix, regardless of custom prefixes.
             Limit 10 custom prefixes per server.
@@ -471,6 +471,14 @@ class Guild:
             self.bot.guild_prefixes[ctx.guild.id] = current
             await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$addToSet": {"prefixes": prefix}, "$setOnInsert": {"guild_id": ctx.guild.id}}, upsert=True)
         await ctx.confirm()
+
+    @cmd_prefix.error
+    async def cmd_prefix_error(self, ctx, error):
+        if isinstance(error, commands.TooManyArguments):
+            await ctx.send(
+                "If you want to set prefix with whitespaces you must enclosed it in double-quote marks.\n"
+                "Reason is that discord strips whitespaces at the beginning and end of message so prefix may registered incorrectly."
+            )
 
     @cmd_unset.command(name="prefix")
     async def cmd_noprefix(self, ctx, prefix):

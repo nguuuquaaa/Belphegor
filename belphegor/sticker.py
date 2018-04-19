@@ -8,32 +8,31 @@ import pymongo
 
 #==================================================================================================================================================
 
+DEFAULT_PREFIX_REGEX = re.compile(r"(?<=\$)\w+")
+NO_SPACE_REGEX = re.compile(r"\S+")
+NO_WORD_REGEX = re.compile(r"\W+")
+
+#==================================================================================================================================================
+
 class Sticker:
     def __init__(self, bot):
         self.bot = bot
         self.sticker_list = self.bot.db.sticker_list
-        self.belphegor_config = bot.db.belphegor_config
-        self.bot.loop.create_task(self.update_and_get_prefix())
+        self.guild_data = bot.db.guild_data
+        self.sticker_regexes = {}
+        bot.loop.create_task(self.get_all_prefixes())
 
-    async def update_and_get_prefix(self, new_prefix=None):
-        if new_prefix:
-            data = await self.belphegor_config.find_one_and_update(
-                {"category": "sticker"},
-                {"$set": {"prefix": new_prefix}},
-                projection={"prefix": True},
-                return_document=pymongo.ReturnDocument.AFTER
-            )
-        else:
-            data = await self.belphegor_config.find_one(
-                {"category": "sticker"},
-                projection={"prefix": True}
-            )
-        self.sticker_regex = re.compile(fr"(?<=\{data['prefix']})\w+")
+    async def get_all_prefixes(self):
+        async for data in self.guild_data.find(
+            {"sticker_prefix": {"$exists": True}},
+            projection={"_id": False, "guild_id": True, "sticker_prefix": True}
+        ):
+            self.sticker_regexes[data["guild_id"]] = re.compile(fr"(?<={re.escape(data['sticker_prefix'])})\w+")
 
     async def on_message(self, message):
         if message.author.bot:
             return
-        result = self.sticker_regex.findall(message.content)
+        result = self.sticker_regexes.get(getattr(message.guild, "id", None), DEFAULT_PREFIX_REGEX).findall(message.content)
         query = {"name": {"$in": result}}
         if message.guild:
             query["banned_guilds"] = {"$ne": message.guild.id}
@@ -59,8 +58,8 @@ class Sticker:
             Add a sticker.
             Name can't contain spaces.
         '''
-        name = re.sub(r"\W+", "", name)
-        if url[:8] == "https://" or url[:7] == "http://":
+        name = NO_WORD_REGEX.sub("", name)
+        if url.startswith(("https://", "http://")):
             value = {"name": name, "url": url, "author_id": ctx.author.id}
             before = await self.sticker_list.find_one_and_update({"name": name}, {"$setOnInsert": value}, upsert=True)
             if before is not None:
@@ -113,8 +112,11 @@ class Sticker:
             `>>sticker ban <name>`
             Ban a sticker in current guild.
         '''
-        await self.sticker_list.update_one({"name": name}, {"$addToSet": {"banned_guilds": ctx.guild.id}})
-        await ctx.confirm()
+        result = await self.sticker_list.update_one({"name": name}, {"$addToSet": {"banned_guilds": ctx.guild.id}})
+        if result.matched_count > 0:
+            await ctx.confirm()
+        else:
+            await ctx.deny()
 
     @sticker.command()
     @checks.guild_only()
@@ -125,7 +127,7 @@ class Sticker:
             Unban a sticker in current guild.
         '''
         result = await self.sticker_list.update_one({"name": name}, {"$pull": {"banned_guilds": ctx.guild.id}})
-        if result.modified_count > 0:
+        if result.matched_count > 0:
             await ctx.confirm()
         else:
             await ctx.deny()
@@ -136,7 +138,7 @@ class Sticker:
             `>>sticker banlist`
             Display current guild's sticker ban list.
         '''
-        banned_stickers = await self.sticker_list.distinct("name", {"banned_guilds": {"$eq": ctx.guild.id}})
+        banned_stickers = await self.sticker_list.distinct("name", {"banned_guilds": ctx.guild.id})
         if banned_stickers:
             embeds = utils.embed_page_format(
                 banned_stickers, 10,
@@ -148,10 +150,19 @@ class Sticker:
             await ctx.send("There's no banned sticker.")
 
     @sticker.command()
-    @checks.owner_only()
-    async def prefix(self, ctx, p):
-        await self.update_and_get_prefix(p)
-        await ctx.confirm()
+    @checks.guild_only()
+    @checks.manager_only()
+    async def prefix(self, ctx, new_prefix):
+        '''
+            `>>sticker prefix <`
+        '''
+        if NO_SPACE_REGEX.fullmatch(new_prefix):
+            self.sticker_regexes[guild.id] = re.compile(fr"(?<={re.escape(new_prefix)})\w+")
+            await self.guild_data.update_one(
+                {"guild_id": guild.id},
+                {"$set": {"sticker_prefix": new_prefix}}
+            )
+            await ctx.confirm()
 
 #==================================================================================================================================================
 
