@@ -58,26 +58,14 @@ class Belphegor(commands.Bot):
         await self.process_commands(message)
 
     async def on_command_error(self, ctx, error):
-        if self.extra_events.get('on_command_error', None):
-            return
         if hasattr(ctx.command, 'on_error'):
             return
-        cog = ctx.cog
-        if cog:
-            attr = f"_{cog.__class__.__name__}__error"
-            if hasattr(cog, attr):
-                return
-
         print(f"Ignoring exception in command {ctx.command}:", file=sys.stderr)
-        if isinstance(error, (commands.CheckFailure, commands.CommandOnCooldown, commands.BadArgument, commands.MissingRequiredArgument, commands.BotMissingPermissions)):
-            print(f"{type(error).__module__}.{type(error).__name__}: {error}", file=sys.stderr)
-        else:
+        if isinstance(error, commands.CommandInvokeError):
+            error = error.original
             traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
-        if not isinstance(error, (commands.CheckFailure, commands.CommandOnCooldown, commands.CommandNotFound)):
-            try:
-                await ctx.deny()
-            except:
-                pass
+        else:
+            traceback.print_exception(type(error), error, None, file=sys.stderr)
 
     async def on_ready(self):
         print('Logged in as')

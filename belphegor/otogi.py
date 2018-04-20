@@ -545,7 +545,8 @@ class Otogi:
                 else:
                     await ctx.send("No wikia page found.")
             except:
-                await ctx.send("Something went wrong.", file=discord.File(traceback.format_exc().encode("utf-8"), filename="traceback.txt"))
+                await ctx.send("Something went wrong.")
+                raise
 
     async def search_wikia(self, daemon):
         name = daemon.name

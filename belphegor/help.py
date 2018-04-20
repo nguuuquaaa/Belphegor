@@ -6,6 +6,7 @@ import json
 import re
 import datetime
 import pytz
+import inspect
 
 #==================================================================================================================================================
 
@@ -341,9 +342,10 @@ class Help:
                 "      `create` - Create a tag\n"
                 "      `alias` - Create an alias to another tag\n"
                 "      `edit` - Edit a tag\n"
-                "      `delete` - Delete a tag\n"
+                "      `delete` - Delete a tag\n\n"
                 "      `find` - Find tags\n"
-                "      `list` - All tags",
+                "      `list` - All tags by member\n"
+                "      `all` - All tags of server\n",
             inline=False
         )
         await ctx.send(embed=embed)
@@ -395,7 +397,8 @@ class Help:
                 "      `add` - Add a sticker\n"
                 "      `edit` - Edit a sticker\n"
                 "      `delete` - Delete a sticker\n"
-                "      `find` - Find stickers\n\n"
+                "      `find` - Find stickers\n"
+                "      `list` - All stickers by member\n\n"
                 "      `prefix` - Set server custom sticker prefix\n"
                 "      `ban` - Ban a sticker in current server\n"
                 "      `unban` - Unban a sticker in current server",

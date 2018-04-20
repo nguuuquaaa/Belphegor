@@ -11,12 +11,18 @@ class Tag:
         self.bot = bot
         self.tag_list = bot.db.tag_list
 
-    async def get_tag(self, name, guild):
-        tag = await self.tag_list.find_one({"guild_id": guild.id, "name": name})
+    async def get_tag(self, name, guild, update=False):
+        if update:
+            tag = await self.tag_list.find_one_and_update({"guild_id": guild.id, "name": name}, {"$inc": {"uses": 1}})
+        else:
+            tag = await self.tag_list.find_one({"guild_id": guild.id, "name": name})
         if tag:
             alias_of = tag.get("alias_of", None)
             if alias_of:
-                tag = await self.tag_list.find_one({"guild_id": guild.id, "name": alias_of})
+                if update:
+                    tag = await self.tag_list.find_one_and_update({"guild_id": guild.id, "name": alias_of}, {"$inc": {"uses": 1}})
+                else:
+                    tag = await self.tag_list.find_one({"guild_id": guild.id, "name": alias_of})
         return tag
 
     @commands.group(name="tag", invoke_without_command=True)
@@ -26,7 +32,7 @@ class Tag:
             `>>tag <name>`
             Display a tag.
         '''
-        tag = await self.get_tag(name, ctx.guild)
+        tag = await self.get_tag(name, ctx.guild, update=True)
         if tag is None:
             await ctx.send(f"Cannot find tag {name} in database.")
         else:
@@ -93,10 +99,10 @@ class Tag:
             Delete a tag you own.
             Server managers can still delete other people' tags tho.
         '''
-        if not ctx.channel.permissions_for(ctx.author).manage_guild:
-            q = {"author_id": ctx.author.id}
-        else:
+        if ctx.channel.permissions_for(ctx.author).manage_guild:
             q = {}
+        else:
+            q = {"author_id": ctx.author.id}
         q.update({"guild_id": ctx.guild.id, "name": name})
         before = await self.tag_list.find_one_and_delete(q)
         if before:
@@ -121,23 +127,62 @@ class Tag:
         text = "\n".join((f"{r[0]} ({r[1]}%)" for r in relevant if r[1]>50))
         await ctx.send(f"Result:\n```\n{text}\n```")
 
-    @tag_cmd.command(name="list")
+    @tag_cmd.command(name="all")
     @checks.guild_only()
-    async def cmd_tag_list(self, ctx):
+    async def cmd_tag_all(self, ctx):
         '''
-            `>>tag list`
+            `>>tag all`
             Display current server's all tags.
         '''
         tags = await self.tag_list.distinct("name", {"guild_id": ctx.guild.id})
         embeds = utils.embed_page_format(
-            tags, 20,
+            tags, 10,
             title=f"All ({len(tags)}) tags for this server",
-            description=lambda i, x: f"{i+1}. {x}"
+            description=lambda i, x: f"`{i+1}.` {x}",
+            colour=discord.Colour.blue()
         )
         if embeds:
             await ctx.embed_page(embeds)
         else:
             await ctx.send("This server has no tag.")
+
+    @tag_cmd.command(name="list")
+    @checks.guild_only()
+    async def cmd_tag_list(self, ctx, member: discord.Member=None):
+        '''
+            `>>tag list <optional: member>`
+            Get all stickers created by <member> in this server.
+            If no member is provided, get all stickers you created.
+        '''
+        target = member or ctx.author
+        tag_names = await self.tag_list.distinct("name", {"guild_id": ctx.guild.id, "author_id": target.id})
+        embeds = utils.embed_page_format(
+            tag_names, 10,
+            title=f"All tags by {target.display_name}",
+            description=lambda i, x: f"`{i+1}.` {x}",
+            colour=discord.Colour.blue()
+        )
+        if embeds:
+            await ctx.embed_page(embeds)
+        else:
+            await ctx.send("You haven't created any tag.")
+
+    @tag_cmd.command(name="info")
+    @checks.guild_only()
+    async def cmd_tag_info(self, ctx, *, name):
+        data = await self.tag_list.find_one({"guild_id": ctx.guild.id, "name": name})
+        if data:
+            embed = discord.Embed(title="Info", colour=discord.Colour.blue())
+            embed.add_field(name="Name", value=name, inline=False)
+            embed.add_field(name="Author", value=f"<@{data['author_id']}>")
+            original = data.get("alias_of")
+            if original:
+                embed.add_field(name="Alias of", value=original)
+            else:
+                embed.add_field(name="Uses", value=data.get("uses", 0))
+            await ctx.send(embed=embed)
+        else:
+            await ctx.send(f"Can't find tag with name {name}.")
 
 #==================================================================================================================================================
 

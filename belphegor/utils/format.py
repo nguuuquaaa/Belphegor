@@ -19,6 +19,14 @@ _keep_special_char = ("\n", "\t")
 def unifix(any_string):
     return "".join((c for c in normalize("NFKC", any_string) if category(c)[0]!="C" or c in _keep_special_char)).strip()
 
+def no_mass_mention(word):
+    if word == "@everyone":
+        return "@\u200beveryone"
+    elif word == "@here":
+        return "@\u200bhere"
+    else:
+        return word
+
 _split_regex = re.compile(r"(\s)")
 
 def split_page(text, split_len, *, safe_mode=True):
@@ -26,10 +34,7 @@ def split_page(text, split_len, *, safe_mode=True):
     description_page = ["",]
     cur_index = 0
     for word in description:
-        if word=="@everyone":
-            word = "@\u200beveryone"
-        elif word=="@here":
-            word = "@\u200bhere"
+        word = no_mass_mention(word)
         if safe_mode:
             if word.startswith(("http://", "https://")):
                 word = safe_url(word)

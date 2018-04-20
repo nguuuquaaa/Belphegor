@@ -65,10 +65,10 @@ class Admin:
         e = f"belphegor.{extension}"
         if e in self.bot.extensions:
             self.bot.unload_extension(e)
-            print(f"Unloaded {extension}")
+            print(f"Unloaded {e}")
             await ctx.confirm()
         else:
-            print(f"Extension {extension} doesn't exist.")
+            print(f"Extension {e} doesn't exist.")
             await ctx.deny()
 
     @commands.command(hidden=True)

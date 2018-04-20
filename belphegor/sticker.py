@@ -35,8 +35,8 @@ class Sticker:
         result = self.sticker_regexes.get(getattr(message.guild, "id", None), DEFAULT_PREFIX_REGEX).findall(message.content)
         query = {"name": {"$in": result}}
         if message.guild:
-            query["banned_guilds"] = {"$ne": message.guild.id}
-        st = await self.sticker_list.find_one(query)
+            query["banned_guilds"] = {"$not": {"$eq": message.guild.id}}
+        st = await self.sticker_list.find_one_and_update(query, {"$inc": {"uses": 1}}, projection={"_id": False, "url": True})
         if st:
             embed = discord.Embed()
             embed.set_image(url=st["url"])
@@ -60,7 +60,7 @@ class Sticker:
         '''
         name = NO_WORD_REGEX.sub("", name)
         if url.startswith(("https://", "http://")):
-            value = {"name": name, "url": url, "author_id": ctx.author.id}
+            value = {"name": name, "url": url, "author_id": ctx.author.id, "uses": 0}
             before = await self.sticker_list.find_one_and_update({"name": name}, {"$setOnInsert": value}, upsert=True)
             if before is not None:
                 await ctx.send("Cannot add already existed sticker.")
@@ -93,6 +93,26 @@ class Sticker:
         else:
             await ctx.send(f"Cannot delete sticker.\nEither sticker doesn't exist or you are not the creator of the sticker.")
 
+    @sticker.command(name="list")
+    async def sticker_list(self, ctx, user: discord.User=None):
+        '''
+            `>>sticker list <optional: user>`
+            Get all stickers created by <user>.
+            If no user is provided, get all stickers you created.
+        '''
+        target = user or ctx.author
+        sticker_names = await self.sticker_list.distinct("name", {"author_id": target.id})
+        embeds = utils.embed_page_format(
+            sticker_names, 10,
+            title=f"All stickers by {target.display_name}",
+            description=lambda i, x: f"`{i+1}.` {x}",
+            colour=discord.Colour.green()
+        )
+        if embeds:
+            await ctx.embed_page(embeds)
+        else:
+            await ctx.send("You haven't created any sticker.")
+
     @sticker.command()
     async def find(self, ctx, name):
         '''
@@ -102,7 +122,7 @@ class Sticker:
         sticker_names = await self.sticker_list.distinct("name", {})
         relevant = process.extract(name, sticker_names, limit=10)
         text = "\n".join((f"{r[0]} ({r[1]}%)" for r in relevant if r[1]>50))
-        await ctx.send(f"Result:\n```\n{text}\n```")
+        await ctx.send(embed=discord.Embed(title="Result:", description=text, colour=discord.Colour.green()))
 
     @sticker.command()
     @checks.guild_only()
@@ -147,7 +167,7 @@ class Sticker:
             )
             await ctx.embed_page(embeds)
         else:
-            await ctx.send("There's no banned sticker.")
+            await ctx.send("This server has no banned sticker.")
 
     @sticker.command()
     @checks.guild_only()
@@ -157,19 +177,33 @@ class Sticker:
             `>>sticker prefix <`
         '''
         if new_prefix == "$":
-            self.sticker_regexes.pop(guild.id, None)
+            self.sticker_regexes.pop(ctx.guild.id, None)
             await self.guild_data.update_one(
-                {"guild_id": guild.id},
+                {"guild_id": ctx.guild.id},
                 {"$unset": {"sticker_prefix": None}}
             )
             await ctx.confirm()
         elif NO_SPACE_REGEX.fullmatch(new_prefix):
-            self.sticker_regexes[guild.id] = re.compile(fr"(?<={re.escape(new_prefix)})\w+")
+            self.sticker_regexes[ctx.guild.id] = re.compile(fr"(?<={re.escape(new_prefix)})\w+")
             await self.guild_data.update_one(
-                {"guild_id": guild.id},
+                {"guild_id": ctx.guild.id},
                 {"$set": {"sticker_prefix": new_prefix}}
             )
             await ctx.confirm()
+
+    @sticker.command(name="info")
+    async def cmd_sticker_info(self, ctx, name):
+        data = await self.sticker_list.find_one({"name": name})
+        if data:
+            embed = discord.Embed(title="Info", colour=discord.Colour.green())
+            if getattr(ctx.guild, "id", None) in data.get("banned_guilds", ()):
+                embed.description = "Banned in this server."
+            embed.add_field(name="Name", value=name, inline=False)
+            embed.add_field(name="Author", value=f"<@{data['author_id']}>")
+            embed.add_field(name="Uses", value=data.get("uses", 0))
+            await ctx.send(embed=embed)
+        else:
+            await ctx.send(f"Can't find sticker with name {name}.")
 
 #==================================================================================================================================================
 
