@@ -11,7 +11,7 @@ class Tag:
         self.bot = bot
         self.tag_list = bot.db.tag_list
 
-    async def get_tag(self, name, guild, update=False):
+    async def get_tag(self, name, guild, *, update=False):
         if update:
             tag = await self.tag_list.find_one_and_update({"guild_id": guild.id, "name": name}, {"$inc": {"uses": 1}})
         else:

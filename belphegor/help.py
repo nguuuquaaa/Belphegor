@@ -7,6 +7,7 @@ import re
 import datetime
 import pytz
 import inspect
+import os
 
 #==================================================================================================================================================
 
@@ -16,7 +17,7 @@ ISO_DATE = re.compile(r"([0-9]{4})\-([0-9]{2})\-([0-9]{2})T([0-9]{2})\:([0-9]{2}
 
 class Help:
     '''
-    Display help.
+        Help and utility commands.
     '''
 
     def __init__(self, bot):
@@ -442,7 +443,12 @@ class Help:
                         value=", ".join((f"`{c.__name__[6:].replace('guild', 'server')}`" for c in all_checks)) if all_checks else "None",
                         inline=False
                     )
-                    embed.add_field(name="Usage", value=(command.help or "Not yet documented.").format(ctx.me.display_name), inline=False)
+                    if command.help:
+                        usage = command.help.partition("\n")
+                        usage = f"``{usage[0]}``\n{usage[2]}".format(ctx.me.display_name)
+                    else:
+                        usage = "Not yet documented."
+                    embed.add_field(name="Usage", value=usage, inline=False)
                     return await ctx.send(embed=embed)
             await ctx.send(f"Command `{name}` doesn't exist.")
         else:
@@ -499,7 +505,7 @@ class Help:
                 desc.append(f"[`{c['sha'][:7]}`]({c['html_url']}) {c['commit']['message']}{dt}")
             embed = discord.Embed(colour=discord.Colour.blue())
             embed.add_field(name="Lastest changes", value="\n".join(desc), inline=False)
-            embed.add_field(name="Owner", value=f"{owner.name}#{owner.discriminator}")
+            embed.add_field(name="Owner", value=owner.mention)
             embed.add_field(name="Library", value="[discord.py\\[rewrite\\]](https://github.com/Rapptz/discord.py/tree/rewrite)")
             embed.add_field(name="Created at", value=str(self.bot.user.created_at)[:10])
             embed.add_field(name="Guilds", value=f"{len(self.bot.guilds)} guilds")
@@ -540,6 +546,21 @@ class Help:
         perms.use_voice_activation = True
         perms.external_emojis = True
         await ctx.send(discord.utils.oauth_url(ctx.me.id, perms))
+
+    @commands.command()
+    async def source(self, ctx, *, cmd_name=None):
+        base_url = "https://github.com/nguuuquaaa/Belphegor"
+        if not cmd_name:
+            return await ctx.send(f"<{base_url}>")
+        cmd = self.bot.get_command(cmd_name)
+        if not cmd:
+            return await ctx.send(f"Command {cmd_name} doesn't exist.")
+
+        src = cmd.callback.__code__
+        lines, firstlineno = inspect.getsourcelines(src)
+        location = os.path.relpath(src.co_filename).replace('\\', '/')
+        final_url = f"<{base_url}/tree/master/{location}#L{firstlineno}-L{firstlineno + len(lines) - 1}>"
+        await ctx.send(final_url)
 
 #==================================================================================================================================================
 
