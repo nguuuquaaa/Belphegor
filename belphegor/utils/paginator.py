@@ -23,7 +23,7 @@ EVERYONE = Everyone()
 #==================================================================================================================================================
 
 class Paginator:
-    def __init__(self, container, per_page, *, separator="\n", jump=10, book=False, page_display=True, **kwargs):
+    def __init__(self, container, per_page=1, *, separator="\n", jump=10, book=False, page_display=True, **kwargs):
         self.container = container
         self.per_page = per_page
         self.separator = separator
@@ -83,7 +83,7 @@ class Paginator:
 
     def _setup_base_reactions(self):
         self.navigation = collections.OrderedDict()
-        if not (self.book and max(self.page_amount) <= 1) or not (not self.book and self.page_amount <= 1):
+        if (self.book and max(self.page_amount) > 1) or (not self.book and self.page_amount > 1):
             self.navigation["\u23ee"] = Paginator.jump_left
             self.navigation["\u25c0"] = Paginator.go_left
             self.navigation["\u25b6"] = Paginator.go_right
