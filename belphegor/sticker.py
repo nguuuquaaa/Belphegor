@@ -198,7 +198,7 @@ class Sticker:
             embed = discord.Embed(title="Info", colour=discord.Colour.green())
             if getattr(ctx.guild, "id", None) in data.get("banned_guilds", ()):
                 embed.description = "Banned in this server."
-            embed.add_field(name="Name", value=name, inline=False)
+            embed.add_field(name="Name", value=f"[{name}]({data['url']})", inline=False)
             embed.add_field(name="Author", value=f"<@{data['author_id']}>")
             embed.add_field(name="Uses", value=data.get("uses", 0))
             await ctx.send(embed=embed)

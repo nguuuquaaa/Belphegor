@@ -549,6 +549,11 @@ class Help:
 
     @commands.command()
     async def source(self, ctx, *, cmd_name=None):
+        '''
+            `>>source <command>`
+            Get source code of <command>.
+            Shamelessly copy from R. Danny.
+        '''
         base_url = "https://github.com/nguuuquaaa/Belphegor"
         if not cmd_name:
             return await ctx.send(f"<{base_url}>")
