@@ -135,14 +135,14 @@ class Tag:
             Display current server's all tags.
         '''
         tags = await self.tag_list.distinct("name", {"guild_id": ctx.guild.id})
-        embeds = utils.embed_page_format(
-            tags, 10,
-            title=f"All ({len(tags)}) tags for this server",
-            description=lambda i, x: f"`{i+1}.` {x}",
-            colour=discord.Colour.blue()
-        )
-        if embeds:
-            await ctx.embed_page(embeds)
+        if tags:
+            paging = utils.Paginator(
+                tags, 10,
+                title=f"All ({len(tags)}) tags for this server",
+                description=lambda i, x: f"`{i+1}.` {x}",
+                colour=discord.Colour.blue()
+            )
+            await paging.navigate(ctx)
         else:
             await ctx.send("This server has no tag.")
 
@@ -156,14 +156,14 @@ class Tag:
         '''
         target = member or ctx.author
         tag_names = await self.tag_list.distinct("name", {"guild_id": ctx.guild.id, "author_id": target.id})
-        embeds = utils.embed_page_format(
-            tag_names, 10,
-            title=f"All tags by {target.display_name}",
-            description=lambda i, x: f"`{i+1}.` {x}",
-            colour=discord.Colour.blue()
-        )
-        if embeds:
-            await ctx.embed_page(embeds)
+        if tag_names:
+            paging = utils.Paginator(
+                tag_names, 10,
+                title=f"All tags by {target.display_name}",
+                description=lambda i, x: f"`{i+1}.` {x}",
+                colour=discord.Colour.blue()
+            )
+            await paging.navigate(ctx)
         else:
             await ctx.send("You haven't created any tag.")
 

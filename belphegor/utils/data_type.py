@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from . import format
+from . import format, paginator
 import asyncio
 import re
 import copy
@@ -48,85 +48,6 @@ class BelphegorContext(commands.Context):
 
     async def deny(self):
         await self.message.add_reaction("\u274c")
-
-    async def embed_page(self, embeds, *, timeout=60, target=None):
-        _loop = self.bot.loop
-        item = embeds[0]
-        vertical = isinstance(item, list)
-        if vertical:
-            message = await self.send(embed=item[0])
-            max_page = sum((len(p) for p in embeds))
-            max_vertical = len(embeds)
-            if max_vertical == 1:
-                vertical = False
-                embeds = item
-        else:
-            max_vertical = 1
-            message = await self.send(embed=item)
-            max_page = len(embeds)
-        if max_page > 1:
-            target = target or self.author
-            current_page = 0
-            if max_page > max_vertical:
-                possible_reactions = ["\u23ee", "\u25c0", "\u25b6", "\u23ed"]
-            else:
-                possible_reactions = []
-            if vertical:
-                pool_index = 0
-                pool = item
-                max_page = len(pool)
-                possible_reactions.extend(("\U0001f53c", "\U0001f53d", "\u274c"))
-            else:
-                pool = embeds
-                possible_reactions.append("\u274c")
-            for r in possible_reactions:
-                _loop.create_task(message.add_reaction(r))
-
-            async def rmv_rection(r, u):
-                try:
-                    await message.remove_reaction(r, u)
-                except:
-                    pass
-
-            while True:
-                try:
-                    reaction, user = await self.bot.wait_for(
-                        "reaction_add",
-                        check=lambda r,u: u.id==target.id and r.emoji in possible_reactions and r.message.id==message.id,
-                        timeout=timeout
-                    )
-                except:
-                    try:
-                        return await message.clear_reactions()
-                    except:
-                        return
-                e = reaction.emoji
-                if e == "\u25c0":
-                    current_page = max(current_page-1, 0)
-                elif e == "\u25b6":
-                    current_page = min(current_page+1, max_page-1)
-                elif e == "\u23ee":
-                    current_page = max(current_page-10, 0)
-                elif e == "\u23ed":
-                    current_page = min(current_page+10, max_page-1)
-                elif e == "\u274c":
-                    try:
-                        return await message.clear_reactions()
-                    except:
-                        return
-                elif vertical:
-                    if e == "\U0001f53c":
-                        pool_index = max(pool_index-1, 0)
-                        pool = embeds[pool_index]
-                        max_page = len(pool)
-                        current_page = min(current_page, max_page-1)
-                    elif e == "\U0001f53d":
-                        pool_index = min(pool_index+1, max_vertical-1)
-                        pool = embeds[pool_index]
-                        max_page = len(pool)
-                        current_page = min(current_page, max_page-1)
-                await message.edit(embed=pool[current_page])
-                _loop.create_task(rmv_rection(reaction, user))
 
     async def yes_no_prompt(self, sentences, *, timeout=60, target=None, delete_mode=False):
         _loop = self.bot.loop
@@ -218,19 +139,19 @@ class BelphegorContext(commands.Context):
             elif len(result) == 1 and not prompt:
                 return result[0]
             emojis = self.cog.emojis
-            embeds = format.embed_page_format(
+            paging = paginator.Paginator(
                 result, 10,
                 title="Do you mean:",
                 description=lambda i, x: f"`{i+1}:` {emojis.get(getattr(x, emoji_att), '') if emoji_att else ''}{getattr(x, name_att)}",
                 colour=colour
             )
-            t = self.bot.loop.create_task(self.embed_page(embeds))
+            t = self.bot.loop.create_task(paging.navigate(self))
             index = await self.wait_for_choice(max=len(result))
             t.cancel()
             if index is None:
                 return None
             else:
-                return result[index]
+                return result[index-1]
 
     async def wait_for_choice(self, *, max, target=None, timeout=600):
         target = target or self.author
@@ -239,10 +160,10 @@ class BelphegorContext(commands.Context):
         except asyncio.TimeoutError:
             return None
         try:
-            result = int(msg.content) - 1
+            result = int(msg.content)
         except:
             return None
-        if 0 <= result < max:
+        if 0 < result <= max:
             return result
         else:
             return None

@@ -475,13 +475,16 @@ class Misc:
                     pass
                 else:
                     return await ctx.send("I-it's not an error I tell ya! It's a feature!")
-        await ctx.embed_page(result)
+        paging = utils.Paginator(result, 1)
+        paging.render = lambda: paging.container[paging.current_page]
+        await paging.navigate(ctx)
 
     @google.error
     async def google_error(self, ctx, error):
         if isinstance(error, commands.CommandOnCooldown):
             await ctx.send("Whoa slow down your Google search! You can only search once every 10 seconds.")
         else:
+            traceback.print_exc()
             await ctx.send("Unexpected error.")
 
     @commands.command(aliases=["translate", "trans"])

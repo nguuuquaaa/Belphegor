@@ -375,15 +375,16 @@ class Otogi:
             stuff = d.partition(" ")
             attrs.append((stuff[0].lower(), stuff[2].lower()))
         result = await self._search_att(attrs)
-        if not result:
-            return await ctx.send("No result found.")
-        embeds = utils.embed_page_format(
-            result, 5, separator="\n\n",
-            title=f"Search result: {len(result)} results",
-            description=lambda i, x: f"`#{x['id']}` **{x['name']}**{x['value']}",
-            colour=discord.Colour.orange()
-        )
-        await ctx.embed_page(embeds)
+        if result:
+            paging = utils.Paginator(
+                result, 5, separator="\n\n",
+                title=f"Search result: {len(result)} results",
+                description=lambda i, x: f"`#{x['id']}` **{x['name']}**{x['value']}",
+                colour=discord.Colour.orange()
+            )
+            await paging.navigate(ctx)
+        else:
+            await ctx.send("No result found.")
 
     @commands.command(name="trivia", aliases=["t"])
     async def cmd_t(self, ctx, *, name:str):
@@ -790,14 +791,14 @@ class Otogi:
         for pool in summon_pool:
             dp = [d async for d in self.daemon_collection.find({"id": {"$in": pool}}, projection={"_id": False, "id": True, "name": True})]
             daemons.append(dp)
-        embeds = utils.embed_page_format(
+        paging = utils.Paginator(
             daemons, 10, book=True,
             title="Current summon pool:",
-            pretext=lambda n: str(self.emojis["star"])*(n+3),
+            prefix=lambda i, n: str(self.emojis["star"])*(n+3),
             description=lambda i, x, n: x["name"],
             colour=discord.Colour.orange()
         )
-        await ctx.embed_page(embeds)
+        await paging.navigate(ctx)
 
     @commands.command()
     async def mybox(self, ctx, *, member: discord.Member=None):
@@ -832,17 +833,17 @@ class Otogi:
             }
         ])
         daemons = [pool["daemons"] async for pool in cur]
-        embeds = utils.embed_page_format(
-            daemons, 10, book=True,
-            author=f"{target.display_name}'s box:",
-            author_icon=target.avatar_url,
-            title=f"Mochi: {player['mochi']}{self.emojis['mochi']}",
-            pretext=lambda n: str(self.emojis["star"])*(n+3),
-            description=lambda i, x, n: f"{x['name']} lb{lbs[x['id']]}",
-            colour=discord.Colour.orange()
-        )
-        if embeds:
-            await ctx.embed_page(embeds)
+        if daemons:
+            paging = utils.Paginator(
+                daemons, 10, book=True,
+                author=f"{target.display_name}'s box:",
+                author_icon=target.avatar_url,
+                title=f"Mochi: {player['mochi']}{self.emojis['mochi']}",
+                prefix=lambda i, n: str(self.emojis["star"])*(n+3),
+                description=lambda i, x, n: f"{x['name']} lb{lbs[x['id']]}",
+                colour=discord.Colour.orange()
+            )
+            await paging.navigate(ctx)
         else:
             embed = discord.Embed(f"Mochi: {player['mochi']}{self.emojis['mochi']}", description="Empty", colour=discord.Colour.orange())
             embed.set_author(name=f"{target.display_name}'s box", icon_url=target.avatar_url)
@@ -1081,13 +1082,13 @@ class Otogi:
 
         filter_sheet = [s for s in sheet if s[skill_type_index]=="Damage"]
         filter_sheet.sort(key=lambda x: -int(x[skill_dmg_index].replace(",", "")))
-        embeds = utils.embed_page_format(
+        paging = utils.Paginator(
             filter_sheet, 5, separator="\n\n",
             title="Nuker rank",
             description=lambda i, x: f"{i+1}. **{x[name_index]}**\n   MLB Effective Skill DMG: {x[skill_dmg_index]}\n   MLB Auto ATK DMG: {x[auto_dmg_index]}",
             colour=discord.Colour.orange()
         )
-        await ctx.embed_page(embeds)
+        await paging.navigate(ctx)
 
     @commands.command(aliases=["auto"])
     async def autoattack(self, ctx):
@@ -1105,13 +1106,13 @@ class Otogi:
 
         filter_sheet = [s for s in sheet if s[class_index]!="Healer"]
         filter_sheet.sort(key=lambda x: -int(x[auto_dmg_index].replace(",", "")))
-        embeds = utils.embed_page_format(
+        paging = utils.Paginator(
             filter_sheet, 5, separator="\n\n",
             title="Auto attack rank",
             description=lambda i, x: f"{i+1}. **{x[name_index]}**\n   Class: {x[class_index]}\n   MLB Auto ATK DMG: {x[auto_dmg_index]}",
             colour=discord.Colour.orange()
         )
-        await ctx.embed_page(embeds)
+        await paging.navigate(ctx)
 
     @commands.command(aliases=["debuffer"])
     async def debuffers(self, ctx):
@@ -1131,7 +1132,7 @@ class Otogi:
 
         filter_sheet = [s for s in sheet if utils.get_element(s, skill_effect_index)=="Increases DMG Rec'd" or s[skill_type_index]=="Debuff"]
         filter_sheet.sort(key=lambda x: x[0])
-        embeds = utils.embed_page_format(
+        paging = utils.Paginator(
             filter_sheet, 5, separator="\n\n",
             title="Debuffer list",
             description=
@@ -1140,7 +1141,7 @@ class Otogi:
                     f"   MLB Effective Skill DMG: {x[skill_dmg_index]}\n   Skill Effect: {utils.get_element(x, skill_effect_index) or 'N/A'}",
             colour=discord.Colour.orange()
         )
-        await ctx.embed_page(embeds)
+        await paging.navigate(ctx)
 
     @commands.command(aliases=["buffer"])
     async def buffers(self, ctx):
@@ -1159,7 +1160,7 @@ class Otogi:
 
         filter_sheet = [s for s in sheet if s[skill_type_index]=="Buff"]
         filter_sheet.sort(key=lambda x: x[0])
-        embeds = utils.embed_page_format(
+        paging = utils.Paginator(
             filter_sheet, 5, separator="\n\n",
             title="Buffer list",
             description=
@@ -1168,7 +1169,7 @@ class Otogi:
                     f"   Skill Effect: {utils.get_element(x, skill_effect_index) or 'N/A'}",
             colour=discord.Colour.orange()
         )
-        await ctx.embed_page(embeds)
+        await paging.navigate(ctx)
 
     @commands.command()
     async def gcqstr(self, ctx):
@@ -1200,13 +1201,13 @@ class Otogi:
             }
         ])
         daemons = [d async for d in cur]
-        embeds = utils.embed_page_format(
+        paging = utils.Paginator(
             daemons, 5, separator="\n\n",
             title="GCQ STR rank",
             description=lambda i, x: f"{i+1}. **{x['name']}**\n   Max ATK: {x['atk']}\n   Max HP: {x['hp']}\n   GCQ STR: {x['total_stat']}",
             colour=discord.Colour.orange()
         )
-        await ctx.embed_page(embeds)
+        await paging.navigate(ctx)
 
     @commands.command(hidden=True)
     @checks.owner_only()
@@ -1295,22 +1296,16 @@ class Otogi:
     @commands.check(lambda ctx: ctx.channel.id==303247718514556928)
     async def leak_log(self, ctx):
         data = await self.belphegor_config.find_one({"category": "leak"}, projection={"_id": False, "access_log": True})
-        log_data = data["access_log"][::-1]
+        log_data = data["access_log"].reverse()
         embeds = []
         number_of_results = min(len(log_data), 100)
-        max_page = (number_of_results - 1) // 5 + 1
-        for index in range(0, number_of_results, 5):
-            desc = "\n\n".join((
-                f"`{utils.format_time(l['timestamp'])}`\nUsername: {self.bot.get_user(l['user_id'])}\nUser ID: {l['user_id']}"
-                for i, l in enumerate(log_data[index:index+5])
-            ))
-            embed = discord.Embed(
-                title=f"Leak access log (last {number_of_results} command uses)",
-                description=f"{desc}\n\n(Page {index//5+1}/{max_page})"
-            )
-            embed.set_footer(text=utils.format_time(utils.now_time()))
-            embeds.append(embed)
-        await ctx.embed_page(embeds)
+        paging = utils.Paginator(
+            log_data[:number_of_results], 5, separator="\n\n",
+            title=f"Leak access log (last {number_of_results} command uses)",
+            description=lambda i, x: f"`{utils.format_time(x['timestamp'])}`\nUsername: {self.bot.get_user(x['user_id'])}\nUser ID: {x['user_id']}",
+            footer=utils.format_time(utils.now_time())
+        )
+        await paging.navigate(ctx)
 
 #==================================================================================================================================================
 

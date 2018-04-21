@@ -115,14 +115,14 @@ class Remind:
             self_events.append(ev)
         description = []
         cur_time = utils.now_time()
-        embeds = utils.embed_page_format(
-            self_events, 5,
-            title=f"All reminders for {ctx.author.display_name}",
-            description=lambda i, x: f"`{i+1}.` \"{x['text']}\"\n  In {utils.seconds_to_text((x['event_time']-cur_time).total_seconds())}",
-            footer=utils.format_time(cur_time)
-        )
-        if embeds:
-            await ctx.embed_page(embeds)
+        if self_events:
+            paging = utils.Paginator(
+                self_events, 5,
+                title=f"All reminders for {ctx.author.display_name}",
+                description=lambda i, x: f"`{i+1}.` \"{x['text']}\"\n  In {utils.seconds_to_text((x['event_time']-cur_time).total_seconds())}",
+                footer=utils.format_time(cur_time)
+            )
+            await paging.navigate(ctx)
         else:
             await ctx.send("You have no reminder.")
 

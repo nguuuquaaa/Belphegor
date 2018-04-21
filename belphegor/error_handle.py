@@ -18,10 +18,10 @@ class ErrorHandle:
     def set_error_handle(self):
         self.old_on_error = self.bot.on_error
 
-        async def new_on_error(botself, event, *args, **kwargs):
+        async def new_on_error(event, *args, **kwargs):
             etype, e, etb = sys.exc_info()
             prt_err = "".join(traceback.format_exception(etype, e, etb, 5))
-            await self.error_hook.execute(f"```\n{prt_err}\n```")
+            await self.error_hook.execute(f"```\nIgnoring exception in event {event}:\n{prt_err}\n```")
 
         self.bot.on_error = new_on_error
 

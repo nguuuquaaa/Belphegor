@@ -80,7 +80,7 @@ time_regex = re.compile(
     r"(?:[\s\b]*)"
     r"(?:for|in|and|,|;|&)?(?:\s*)"
     r"(\d+\.?\d*)(?:\s*)"
-    r"(w(?:(?:eek)?s?)?|d(?:(?:ay)s?)?|h(?:(?:(?:ou)?r)s?)?|m(?:(?:in)(?:ute)?s?)?|s(?:(?:ec)(?:ond)?s?)?)"
+    r"(y(?:ears?)?|mo(?:nths?)?|w(?:eeks?)?|d(?:ays?)?|h(?:(?:ou)?rs?)?|m(?:in(?:ute)?s?)?|s(?:ec(?:ond)?s?)?)"
     r"(?:[\s\b]*)",
     flags=re.I
 )
@@ -88,20 +88,26 @@ time_regex = re.compile(
 def extract_time(text):
     extract = time_regex.findall(text)
     new_text = time_regex.sub("", text)
-    result = {"weeks": 0, "days": 0, "hours": 0, "minutes": 0, "seconds": 0}
+    result = {"years": 0, "months": 0, "weeks": 0, "days": 0, "hours": 0, "minutes": 0, "seconds": 0}
     if extract:
         for wt in extract:
-            fc = wt[1][:1].lower()
-            if fc == "w":
+            fc = wt[1]
+            if fc.startswith("y"):
+                result["years"] += float(wt[0])
+            elif fc.startswith("mo"):
+                result["months"] += float(wt[0])
+            elif fc.startswith("w"):
                 result["weeks"] += float(wt[0])
-            elif fc == "d":
+            elif fc.startswith("d"):
                 result["days"] += float(wt[0])
-            elif fc == "h":
+            elif fc.startswith("h"):
                 result["hours"] += float(wt[0])
-            elif fc == "m":
+            elif fc.startswith("m"):
                 result["minutes"] += float(wt[0])
-            elif fc == "s":
+            elif fc.startswith("s"):
                 result["seconds"] += float(wt[0])
+        result["days"] += result.pop("years") * 365
+        result["days"] += result.pop("months") * 30
     return new_text, timedelta(**result)
 
 def now_time(tzinfo=pytz.utc):
@@ -122,83 +128,3 @@ def discord_escape(any_string):
 
 def safe_url(any_url):
     return quote(any_url, safe=r":/&$+,;=@#~%?")
-
-def _raw_page_format(container, per_page, *, separator="\n", book=None, book_amount=None, title=None, pretext=None, description=None, posttext=None,
-                    colour=None, author=None, author_icon=None, footer=None, thumbnail_url=None, fields=None):
-    embeds = []
-    item_amount = len(container)
-    page_amount = (item_amount - 1) // per_page + 1
-    if per_page:
-        for i in range(0, item_amount, per_page):
-            if pretext:
-                if callable(pretext):
-                    pt = pretext(book)
-                else:
-                    pt = pretext
-            else:
-                pt = ""
-            if posttext:
-                if callable(posttext):
-                    ptt = posttext(book)
-                elif ptt:
-                    ptt = posttext
-            else:
-                ptt = ""
-
-            if callable(description):
-                if book is None:
-                    desc = separator.join((description(index, container[index]) for index in range(i, min(i+per_page, item_amount))))
-                    paging = f"(Page {i//per_page+1}/{page_amount})"
-                else:
-                    desc = separator.join((description(index, container[index], book) for index in range(i, min(i+per_page, item_amount))))
-                    paging = f"(Page {i//per_page+1}/{page_amount} - Book {book+1}/{book_amount})"
-                desc = f"{pt}\n{desc}\n\n{paging}\n{ptt}"
-            else:
-                desc = description
-
-            embed = discord.Embed(
-                title=title or discord.Embed.Empty,
-                description=desc or discord.Embed.Empty,
-                colour=colour or discord.Embed.Empty
-            )
-            if author:
-                embed.set_author(name=author, icon_url=author_icon or discord.Embed.Empty)
-            if thumbnail_url:
-                embed.set_thumbnail(url=thumbnail_url)
-            if footer:
-                embed.set_footer(text=footer)
-            if fields:
-                if book is None:
-                    for index in range(i, min(i+per_page, item_amount)):
-                        name, value, inline = fields(index, container[index])
-                        embed.add_field(name=name, value=value, inline=inline)
-                else:
-                    for index in range(i, min(i+per_page, item_amount)):
-                        name, value, inline = fields(index, container[index], book)
-                        embed.add_field(name=name, value=value, inline=inline)
-            embeds.append(embed)
-    else:
-        embed = discord.Embed(title=title, description=description, colour=colour)
-        if author:
-            embed.set_author(name=author)
-        if thumbnail_url:
-            embed.set_thumbnail(url=thumbnail_url)
-        if footer:
-            embed.set_footer(text=footer)
-        embeds.append(embed)
-    return embeds
-
-def embed_page_format(container, *args, book=False, **kwargs):
-    embeds = []
-    if container:
-        if book:
-            book_amount = len(container)
-            title = kwargs.pop("title", None)
-            if callable(title):
-                return [_raw_page_format(items, *args, title=title(n), book=n, book_amount=book_amount, **kwargs) for n, items in enumerate(container)]
-            else:
-                return [_raw_page_format(items, *args, title=title, book=n, book_amount=book_amount, **kwargs) for n, items in enumerate(container)]
-        else:
-            return _raw_page_format(container, *args, **kwargs)
-    else:
-        return None

@@ -349,6 +349,7 @@ class Guild:
             "`2:` Newcomer will get a role on join, and it will be removed upon registration."
         )
         artype = await ctx.wait_for_choice(max=2)
+        artype -= 1
         if artype is None:
             return await ctx.send("Okay, no autorole, right.")
         msg = await ctx.send("Input the registration phrase:")
@@ -848,12 +849,12 @@ class Guild:
         '''
         roles = await self.get_selfroles(ctx.guild)
         if roles:
-            embeds = utils.embed_page_format(
+            paging = utils.Paginator(
                 roles, 10,
                 title=f"{ctx.guild.name}'s selfrole pool:",
                 description=lambda i, x: f"`{i+1}.` {x.name}"
             )
-            await ctx.embed_page(embeds)
+            await paging.navigate(ctx)
         else:
             await ctx.send("Server has no selfrole.")
 

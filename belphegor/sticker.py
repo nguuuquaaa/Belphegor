@@ -102,14 +102,14 @@ class Sticker:
         '''
         target = user or ctx.author
         sticker_names = await self.sticker_list.distinct("name", {"author_id": target.id})
-        embeds = utils.embed_page_format(
-            sticker_names, 10,
-            title=f"All stickers by {target.display_name}",
-            description=lambda i, x: f"`{i+1}.` {x}",
-            colour=discord.Colour.green()
-        )
-        if embeds:
-            await ctx.embed_page(embeds)
+        if sticker_names:
+            paging = utils.Paginator(
+                sticker_names, 10,
+                title=f"All stickers by {target.display_name}",
+                description=lambda i, x: f"`{i+1}.` {x}",
+                colour=discord.Colour.green()
+            )
+            await paging.navigate(ctx)
         else:
             await ctx.send("You haven't created any sticker.")
 
@@ -160,12 +160,12 @@ class Sticker:
         '''
         banned_stickers = await self.sticker_list.distinct("name", {"banned_guilds": ctx.guild.id})
         if banned_stickers:
-            embeds = utils.embed_page_format(
+            paging = utils.Paginator(
                 banned_stickers, 10,
                 title="Banned stickers for this server",
                 description=lambda i, x: f"`{i+1}.` {x}"
             )
-            await ctx.embed_page(embeds)
+            await paging.navigate(ctx)
         else:
             await ctx.send("This server has no banned sticker.")
 

@@ -465,7 +465,7 @@ class Music:
         except AttributeError:
             current_song_info = ""
         if music_player.queue:
-            return utils.embed_page_format(
+            return utils.Paginator(
                 music_player.queue, 10, separator="\n\n",
                 title=f"{state}{repeat} {current_song_info}",
                 description=lambda i, x: f"`{i+1}.` **[{x.title}]({x.url})**",
@@ -473,7 +473,7 @@ class Music:
                 thumbnail_url="http://i.imgur.com/HKIOv84.png"
                 )
         else:
-            return [discord.Embed(title=f"{state}{repeat} {current_song_info}", colour=discord.Colour.green())]
+            return discord.Embed(title=f"{state}{repeat} {current_song_info}", colour=discord.Colour.green())
 
     @music.command(aliases=["q"])
     async def queue(self, ctx, *, name=None):
@@ -485,8 +485,11 @@ class Music:
         '''
         music_player = await self.get_music_player(ctx.guild)
         if not name:
-            embeds = self.current_queue_info(music_player)
-            return await ctx.embed_page(embeds)
+            i = self.current_queue_info(music_player)
+            if isinstance(i, utils.Paginator):
+                return await i.navigate(ctx)
+            else:
+                return await ctx.send(embed=i)
         if 1 + len(music_player.queue) > MAX_PLAYLIST_SIZE:
             return await ctx.send("Too many entries.")
         results = await self.bot.run_in_lock(self.yt_lock, self.youtube_search, name)
@@ -501,7 +504,7 @@ class Music:
         if index is None:
             return
         else:
-            result = results[index]
+            result = results[index-1]
         title = result["snippet"]["title"]
         await music_player.queue.put(Song(ctx.message.author, title, f"https://youtu.be/{result['id']['videoId']}"))
         await ctx.send(f"Added **{title}** to queue.")
@@ -679,8 +682,11 @@ class Music:
         '''
         music_player = await self.get_music_player(ctx.guild)
         if not name:
-            embeds = self.current_queue_info(music_player)
-            return await ctx.embed_page(embeds)
+            i = self.current_queue_info(music_player)
+            if isinstance(i, utils.Paginator):
+                return await i.navigate(ctx)
+            else:
+                return await ctx.send(embed=i)
         if name.startswith("-random "):
             shuffle = True
             name = name[8:]
@@ -701,7 +707,7 @@ class Music:
         if index is None:
             return
         else:
-            result = results[index]
+            result = results[index-1]
         items = await self.bot.run_in_lock(self.yt_lock, self.youtube_playlist_items, ctx.message, result["id"]["playlistId"])
         if len(items) + len(music_player.queue) > MAX_PLAYLIST_SIZE:
             return await ctx.send("Too many entries.")
@@ -745,27 +751,51 @@ class Music:
             url = song.url
         video = await self.bot.run_in_lock(self.yt_lock, self.youtube_video_info, url)
         snippet = video["snippet"]
+        stat = video["statistics"]
         description = utils.unifix(snippet.get("description", "None")).strip()
         description_page = utils.split_page(description, 500)
-        max_page = len(description_page)
-        embeds = []
-        for index, desc in enumerate(description_page):
-            embed = discord.Embed(title=f"\U0001f3b5 {snippet['title']}", url=url, colour=discord.Colour.green())
-            embed.set_thumbnail(url="http://i.imgur.com/HKIOv84.png")
-            embed.add_field(name="Uploader", value=f"[{snippet['channelTitle']}](https://www.youtube.com/channel/{snippet['channelId']})")
-            embed.add_field(name="Date", value=snippet["publishedAt"][:10])
-            embed.add_field(name="Duration", value=f"\U0001f552 {video['contentDetails'].get('duration', '0s')[2:].lower()}")
-            embed.add_field(name="Views", value=f"\U0001f441 {int(video['statistics'].get('viewCount', 0)):n}")
-            embed.add_field(name="Likes", value=f"\U0001f44d {int(video['statistics'].get('likeCount', 0)):n}")
-            embed.add_field(name="Dislikes", value=f"\U0001f44e {int(video['statistics'].get('dislikeCount', 0)):n}")
-            embed.add_field(name="Description", value=f"{desc}\n\n(Page {index+1}/{max_page})", inline=False)
-            for key in ("maxres", "standard", "high", "medium", "default"):
-                value = snippet["thumbnails"].get(key, None)
-                if value is not None:
-                    embed.set_image(url=value["url"])
-                    break
-            embeds.append(embed)
-        await ctx.embed_page(embeds)
+
+        info_w_desc = []
+        info_wo = []
+        base_info = (
+            ("Uploader",    f"[{snippet['channelTitle']}](https://www.youtube.com/channel/{snippet['channelId']})", True),
+            ("Date",        snippet["publishedAt"][:10],                                                            True),
+            ("Duration",    f"\U0001f552 {video['contentDetails'].get('duration', '0s')[2:].lower()}",              True),
+            ("Views",       f"\U0001f441 {int(stat.get('viewCount', 0)):n}",                                        True),
+            ("Likes",       f"\U0001f44d {int(stat.get('likeCount', 0)):n}",                                        True),
+            ("Dislikes",    f"\U0001f44e {int(stat.get('dislikeCount', 0)):n}",                                     True)
+        )
+        for i in range(len(description_page)):
+            info_w_desc.extend(base_info)
+            info_wo.extend(base_info)
+            info_w_desc.append(("Description", description_page[i], False))
+            info_wo.append((None, None, None))
+        for key in ("maxres", "standard", "high", "medium", "default"):
+            value = snippet["thumbnails"].get(key, None)
+            if value is not None:
+                image_url = value["url"]
+                break
+
+        paging = utils.Paginator(
+            info_wo, 7, page_display=False,
+            title=f"\U0001f3b5 {snippet['title']}",
+            url=url,
+            colour=discord.Colour.green(),
+            fields=lambda i, x: (x[0], x[1], x[2]),
+            thumbnail_url="http://i.imgur.com/HKIOv84.png",
+            image_url=image_url
+        )
+
+        paging.saved_cache = {}
+        paging.saved_container = info_w_desc
+        def switch(s):
+            s.page_display = not s.page_display
+            s.container, s.saved_container = s.saved_container, s.container
+            s.cached_embeds, s.saved_cache = s.saved_cache, s.cached_embeds
+            return s.render()
+
+        paging.set_action("\U0001f1e9", switch)
+        await paging.navigate(ctx)
 
     @music.command(aliases=["t"])
     async def toggle(self, ctx):

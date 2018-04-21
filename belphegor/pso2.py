@@ -442,15 +442,16 @@ class PSO2:
             stuff = d.partition(" ")
             attrs.append((stuff[0].lower(), stuff[2].lower()))
         result = await self._search_att(attrs)
-        if not result:
-            return await ctx.send("No result found.")
-        embeds = utils.embed_page_format(
-            result, 5, separator="\n\n",
-            title=f"Search result: {len(result)} results",
-            description=lambda i, x: f"{self.emojis[x['category']]}**{x['en_name']}**{x['value']}",
-            colour=discord.Colour.blue()
-        )
-        await ctx.embed_page(embeds)
+        if result:
+            paging = utils.Paginator(
+                result, 5, separator="\n\n",
+                title=f"Search result: {len(result)} results",
+                description=lambda i, x: f"{self.emojis[x['category']]}**{x['en_name']}**{x['value']}",
+                colour=discord.Colour.blue()
+            )
+            await paging.navigate(ctx)
+        else:
+            await ctx.send("No result found.")
 
     def weapon_parse(self, category, bytes_):
         category_weapons = []
@@ -877,13 +878,13 @@ class PSO2:
                 f"To {end_date.group(4)}:{end_date.group(5)}, {end_date.group(3)}-{end_date.group(2)}"
             return x['summary'], txt, False
 
-        embeds = utils.embed_page_format(
+        paging = utils.Paginator(
             incoming_events, 10, separator="\n\n",
             title="Boosto",
             fields=process_date,
             footer=utils.jp_time(utils.now_time())
         )
-        await ctx.embed_page(embeds)
+        await paging.navigate(ctx)
 
 #==================================================================================================================================================
 
