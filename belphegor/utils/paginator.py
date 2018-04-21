@@ -27,7 +27,7 @@ class Paginator:
         self.container = container
         self.per_page = per_page
         self.separator = separator
-        self.book = book
+        self.book_mode = book
         self.jump = jump
         self.page_display = page_display
         self.render_data = kwargs
@@ -36,7 +36,7 @@ class Paginator:
             self.page_amount = []
             for c in container:
                 l = len(c)
-                self._item_amount.append(c)
+                self._item_amount.append(l)
                 self.page_amount.append((l - 1) // per_page + 1)
         else:
             self._item_amount = len(container)
@@ -49,11 +49,11 @@ class Paginator:
         self.cached_embeds = {}
 
     def get_page_amount(self, book=None):
-        if self.current_book is None:
-            return self.page_amount
-        else:
+        if self.book_mode:
             book = book or self.current_book
             return self.page_amount[book]
+        else:
+            return self.page_amount
 
     def go_left(self):
         self.current_page = max(self.current_page-1, 0)
@@ -83,7 +83,7 @@ class Paginator:
 
     def _setup_base_reactions(self):
         self.navigation = collections.OrderedDict()
-        if (self.book and max(self.page_amount) > 1) or (not self.book and self.page_amount > 1):
+        if (self.book_mode and max(self.page_amount) > 1) or (not self.book_mode and self.page_amount > 1):
             self.navigation["\u23ee"] = Paginator.jump_left
             self.navigation["\u25c0"] = Paginator.go_left
             self.navigation["\u25b6"] = Paginator.go_right
@@ -105,6 +105,7 @@ class Paginator:
     def render(self):
         page = self.current_page
         book = self.current_book
+        book_mode = self.book_mode
         cached_render = self.cached_embeds.get((page, book))
         if cached_render:
             return cached_render
@@ -112,21 +113,20 @@ class Paginator:
         render_data = self.render_data
         Empty = discord.Embed.Empty
 
-        if book is None:
-            container = self.container
-            per_page = self.per_page
-            item_amount = self._item_amount
-            page_amount = self.page_amount
-        else:
+        per_page = self.per_page
+        if book_mode:
             container = self.container[book]
-            per_page = self.per_page[book]
             item_amount = self._item_amount[book]
             page_amount = self.page_amount[book]
             book_amount = len(self.container)
+        else:
+            container = self.container
+            item_amount = self._item_amount
+            page_amount = self.page_amount
 
         title = render_data.get("title")
         if callable(title):
-            if book:
+            if book_mode:
                 t = title(page, book)
             else:
                 t = title(page)
@@ -134,7 +134,7 @@ class Paginator:
             t = title
         url = render_data.get("url")
         if callable(url):
-            if book:
+            if book_mode:
                 u = url(page, book)
             else:
                 u = url(page)
@@ -148,7 +148,7 @@ class Paginator:
 
         prefix = render_data.get("prefix")
         if callable(prefix):
-            if book:
+            if book_mode:
                 pf = prefix(page, book)
             else:
                 pf = prefix(page)
@@ -157,7 +157,7 @@ class Paginator:
 
         suffix = render_data.get("suffix")
         if callable(suffix):
-            if book:
+            if book_mode:
                 sf = suffix(page, book)
             else:
                 sf = suffix(page)
@@ -170,18 +170,7 @@ class Paginator:
         index = page * per_page
 
         for i in range(index, min(index+per_page, item_amount)):
-            if book is None:
-                if description:
-                    if callable(description):
-                        desc.append(description(i, container[i]))
-                    else:
-                        desc.append(description)
-                if fields:
-                    name, value, inline = fields(i, container[i])
-                    if name and value:
-                        embed.add_field(name=name, value=value, inline=inline)
-                paging = f"Page {page+1}/{page_amount}"
-            else:
+            if book_mode:
                 if description:
                     if callable(description):
                         desc.append(description(i, container[i], book))
@@ -192,6 +181,17 @@ class Paginator:
                     if name and value:
                         embed.add_field(name=name, value=value, inline=inline)
                 paging = f"Page {page+1}/{page_amount} - Book {book+1}/{book_amount}"
+            else:
+                if description:
+                    if callable(description):
+                        desc.append(description(i, container[i]))
+                    else:
+                        desc.append(description)
+                if fields:
+                    name, value, inline = fields(i, container[i])
+                    if name and value:
+                        embed.add_field(name=name, value=value, inline=inline)
+                paging = f"Page {page+1}/{page_amount}"
 
         embed.description = self.separator.join(desc) or Empty
 
@@ -205,7 +205,7 @@ class Paginator:
 
         image_url = render_data.get("image_url")
         if callable(image_url):
-            if book:
+            if book_mode:
                 imgur = image_url(page, book)
             else:
                 imgur = image_url(page)
@@ -216,7 +216,7 @@ class Paginator:
 
         footer = render_data.get("footer")
         if callable(footer):
-            if book:
+            if book_mode:
                 f = footer(page, book)
             else:
                 f = footer(page)
