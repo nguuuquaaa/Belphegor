@@ -40,7 +40,7 @@ class ErrorHandle:
             await ctx.send("Argument missing. You sure read command description in detail?", delete_after=30)
         elif isinstance(error, commands.BadArgument):
             await ctx.send("Bad arguments. You sure read command description in detail?", delete_after=30)
-        elif isinstance(error, commands.CommandNotFound):
+        elif isinstance(error, ignored):
             pass
         else:
             prt_err = "".join(traceback.format_exception(type(error), error, None))
