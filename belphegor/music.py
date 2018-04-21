@@ -744,7 +744,7 @@ class Music:
                 song = music_player.current_song
                 if not song:
                     return await ctx.send("No song is currently playing.")
-            elif 0 < position <= len(music_player.queue):
+            elif 0 <= position < len(music_player.queue):
                 song = music_player.queue[position]
             else:
                 return await ctx.send("Position out of range.")
@@ -788,11 +788,12 @@ class Music:
 
         paging.saved_cache = {}
         paging.saved_container = info_w_desc
-        def switch(s):
-            s.page_display = not s.page_display
-            s.container, s.saved_container = s.saved_container, s.container
-            s.cached_embeds, s.saved_cache = s.saved_cache, s.cached_embeds
-            return s.render()
+
+        def switch():
+            paging.page_display = not paging.page_display
+            paging.container, paging.saved_container = paging.saved_container, paging.container
+            paging.cached_embeds, paging.saved_cache = paging.saved_cache, paging.cached_embeds
+            return paging.render()
 
         paging.set_action("\U0001f1e9", switch)
         await paging.navigate(ctx)

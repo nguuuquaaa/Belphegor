@@ -45,7 +45,7 @@ class Paginator:
         self.current_page = 0
         self.current_book = 0 if book else None
         self.book_amount = len(container) if book else 1
-        self._setup_base_reactions()
+        self._setup_base_actions()
         self.cached_embeds = {}
 
     def get_page_amount(self, book=None):
@@ -81,18 +81,18 @@ class Paginator:
         self.current_page = min(self.current_page, self.get_page_amount()-1)
         return self.render()
 
-    def _setup_base_reactions(self):
+    def _setup_base_actions(self):
         self.navigation = collections.OrderedDict()
         if (self.book_mode and max(self.page_amount) > 1) or (not self.book_mode and self.page_amount > 1):
-            self.navigation["\u23ee"] = Paginator.jump_left
-            self.navigation["\u25c0"] = Paginator.go_left
-            self.navigation["\u25b6"] = Paginator.go_right
-            self.navigation["\u23ed"] = Paginator.jump_right
+            self.navigation["\u23ee"] = self.jump_left
+            self.navigation["\u25c0"] = self.go_left
+            self.navigation["\u25b6"] = self.go_right
+            self.navigation["\u23ed"] = self.jump_right
         if self.book_amount > 1:
-            self.navigation["\U0001f53c"] = Paginator.go_up
-            self.navigation["\U0001f53d"] = Paginator.go_down
+            self.navigation["\U0001f53c"] = self.go_up
+            self.navigation["\U0001f53d"] = self.go_down
         if self.navigation:
-            self.navigation["\u274c"] = lambda s: None
+            self.navigation["\u274c"] = lambda: None
 
     def set_action(self, emoji, func):
         if emoji != "\u274c":
@@ -100,7 +100,7 @@ class Paginator:
             try:
                 self.navigation.move_to_end("\u274c")
             except KeyError:
-                self.navigation["\u274c"] = lambda s: None
+                self.navigation["\u274c"] = lambda: None
 
     def render(self):
         page = self.current_page
@@ -255,7 +255,7 @@ class Paginator:
                     )
                 except asyncio.TimeoutError:
                     return
-                embed = self.navigation[reaction.emoji](self)
+                embed = self.navigation[reaction.emoji]()
                 if embed:
                     await message.edit(embed=embed)
                     _loop.create_task(try_it(message.remove_reaction(reaction, user)))

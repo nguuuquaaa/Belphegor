@@ -475,6 +475,7 @@ class Misc:
                     pass
                 else:
                     return await ctx.send("I-it's not an error I tell ya! It's a feature!")
+
         paging = utils.Paginator(result)
         paging.render = lambda: paging.container[paging.current_page]
         await paging.navigate(ctx)
