@@ -106,8 +106,8 @@ def extract_time(text):
                 result["minutes"] += float(wt[0])
             elif fc.startswith("s"):
                 result["seconds"] += float(wt[0])
-        result["days"] += result.pop("years") * 365
-        result["days"] += result.pop("months") * 30
+    result["days"] += result.pop("years") * 365
+    result["days"] += result.pop("months") * 30
     return new_text, timedelta(**result)
 
 def now_time(tzinfo=pytz.utc):

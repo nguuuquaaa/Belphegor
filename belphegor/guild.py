@@ -229,7 +229,7 @@ class Guild:
         await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$unset": {"mute_role_id": None}})
         await ctx.confirm()
 
-    @commands.command()
+    @commands.command(aliases=["nsfw"])
     @checks.guild_only()
     async def creampie(self, ctx):
         '''
@@ -245,7 +245,7 @@ class Guild:
         else:
             await ctx.send("NSFW role is not set up in this server.")
 
-    @commands.command()
+    @commands.command(aliases=["sfw"])
     @checks.guild_only()
     async def censored(self, ctx):
         '''
@@ -595,9 +595,15 @@ class Guild:
         guild = member.guild
         guild_data = await self.guild_data.find_one(
             {"guild_id": guild.id},
-            projection={"_id": False, "log_channel_id": True, "welcome_channel_id": True, "welcome_message": True, "welcome_rule": True, "autorole_type": True, "autorole_id": True}
+            projection={
+                "_id": False, "log_channel_id": True, "welcome_channel_id": True, "welcome_message": True, "welcome_rule": True,
+                "autorole_type": True, "autorole_id": True, "mute_role_id": True, "muted_member_ids": True}
         )
         if guild_data:
+            if member.id in guild_data.get("muted_member_ids", ()):
+                mute_role = discord.utils.find(lambda r: r.id==guild_data["mute_role_id"], guild.roles)
+                if mute_role:
+                    await member.add_roles(mute_role)
             log_channel = guild.get_channel(guild_data.get("log_channel_id"))
             if log_channel:
                 embed = discord.Embed(colour=discord.Colour.dark_orange())
@@ -660,32 +666,39 @@ class Guild:
         guild = before.guild
         guild_data = await self.guild_data.find_one(
             {"guild_id": guild.id},
-            projection={"_id": False, "log_channel_id": True, "log_message": True}
+            projection={"_id": False, "log_channel_id": True, "log_message": True, "mute_role_id": True, "muted_member_ids": True}
         )
         if guild_data:
-            if guild_data.get("log_message"):
-                log_channel = guild.get_channel(guild_data.get("log_channel_id"))
-                if log_channel:
-                    old_roles = set(before.roles)
-                    new_roles = set(after.roles)
-                    nick_change = before.nick != after.nick
-                    role_change = old_roles != new_roles
-                    if nick_change or role_change:
-                        embed = discord.Embed(colour=discord.Colour.dark_orange())
-                        embed.add_field(name="Event", value="member_update", inline=False)
-                        embed.add_field(name="ID", value=before.id)
-                        embed.add_field(name="Name", value=str(before))
-                        if nick_change:
-                            embed.add_field(name="Old nickname", value=before.nick, inline=False)
-                            embed.add_field(name="New nickname", value=after.nick, inline=False)
-                        if role_change:
-                            add_roles = new_roles - old_roles
-                            remove_roles = old_roles - new_roles
-                            if add_roles:
-                                embed.add_field(name="Roles add", value=", ".join([r.name for r in add_roles]), inline=False)
-                            if remove_roles:
-                                embed.add_field(name="Roles remove", value=", ".join([r.name for r in remove_roles]), inline=False)
-                        embed.set_footer(text=utils.format_time(utils.now_time()))
+            old_roles = set(before.roles)
+            new_roles = set(after.roles)
+            nick_change = before.nick != after.nick
+            role_change = old_roles != new_roles
+            if nick_change or role_change:
+                embed = discord.Embed(colour=discord.Colour.dark_orange())
+                embed.add_field(name="Event", value="member_update", inline=False)
+                embed.add_field(name="ID", value=before.id)
+                embed.add_field(name="Name", value=str(before))
+                if nick_change:
+                    embed.add_field(name="Old nickname", value=before.nick, inline=False)
+                    embed.add_field(name="New nickname", value=after.nick, inline=False)
+                if role_change:
+                    add_roles = new_roles - old_roles
+                    remove_roles = old_roles - new_roles
+                    if add_roles:
+                        embed.add_field(name="Roles add", value=", ".join([r.name for r in add_roles]), inline=False)
+                        if guild_data.get("mute_role_id") in (r.id for r in add_roles):
+                            if before.id not in guild_data.get("muted_members", ()):
+                                await self.guild_data.update_one({"guild_id": guild.id}, {"$addToSet": {"muted_member_ids": before.id}})
+                    if remove_roles:
+                        embed.add_field(name="Roles remove", value=", ".join([r.name for r in remove_roles]), inline=False)
+                        if guild_data.get("mute_role_id") in (r.id for r in remove_roles):
+                            if before.id in guild_data.get("muted_members", ()):
+                                await self.guild_data.update_one({"guild_id": guild.id}, {"$pull": {"muted_member_ids": before.id}})
+                embed.set_footer(text=utils.format_time(utils.now_time()))
+
+                if guild_data.get("log_message"):
+                    log_channel = guild.get_channel(guild_data.get("log_channel_id"))
+                    if log_channel:
                         await log_channel.send(embed=embed)
 
     async def on_message_delete(self, message):
@@ -894,7 +907,7 @@ class Guild:
             Can specify mute time in reason, i.e. `for 1 hour`.
             If no mute time is specified, mute indefinitely.
         '''
-        role_data = await self.guild_data.find_one({"guild_id": guild.id, "mute_role_id": {"$ne": None}}, projection={"_id": -1, "mute_role_id": 1})
+        role_data = await self.guild_data.find_one({"guild_id": ctx.guild.id, "mute_role_id": {"$ne": None}}, projection={"_id": -1, "mute_role_id": 1})
         if role_data:
             muted_role = discord.utils.find(lambda r: r.id==role_data["mute_role_id"], ctx.guild.roles)
             await member.add_roles(muted_role)
@@ -902,6 +915,8 @@ class Guild:
                 reason, duration = utils.extract_time(reason)
                 duration = duration.total_seconds()
             except:
+                import traceback
+                traceback.print_exc()
                 return await ctx.send("Time too large.")
             if duration > 0:
                 await ctx.send(f"{member.mention} has been muted for {utils.seconds_to_text(duration)}.\nReason: {reason}")
@@ -927,7 +942,7 @@ class Guild:
             `>>unmute <member>`
             Remove muted role from member.
         '''
-        role_data = await self.guild_data.find_one({"guild_id": guild.id, "mute_role_id": {"$ne": None}}, projection={"_id": -1, "mute_role_id": 1})
+        role_data = await self.guild_data.find_one({"guild_id": ctx.guild.id, "mute_role_id": {"$ne": None}}, projection={"_id": -1, "mute_role_id": 1})
         if role_data:
             muted_role = discord.utils.find(lambda r: r.id==role_data["mute_role_id"], ctx.guild.roles)
             await member.remove_roles(muted_role)
