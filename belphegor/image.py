@@ -10,6 +10,14 @@ from bs4 import BeautifulSoup as BS
 import traceback
 import asyncio
 
+#==================================================================================================================================================
+
+class NSFW(Exception):
+    def __str__(self):
+        return "This query is usable NSFW commands only."
+
+#==================================================================================================================================================
+
 RATING = {
     "s": "safe",
     "q": "questionable",
@@ -38,8 +46,9 @@ class RandomImage:
                     return await ctx.send(embed=embed)
                 except IndexError:
                     return await ctx.send("No result found.")
-                except:
-                    print(traceback.format_exc())
+                except NSFW:
+                    return await ctx.send("This query is usable with NSFW commands only.")
+                except KeyError:
                     retries -= 1
             await ctx.send("Query failed. Please try again.")
         return new_func
@@ -57,17 +66,35 @@ class RandomImage:
     def process_tags(self, tags, *, safe, safe_tag="safe"):
         tag_list = list(tags)
         i = 0
+        base_rating = frozenset(("s", "q", "e"))
+        rating = frozenset()
+        rtag = ""
         while i < len(tag_list):
             if tag_list[i].startswith(("rating:", "-rating:")):
-                t = tag_list.pop(i)
-                if (safe and t[7:8] == "s") or ((not safe) and t[7:8] in ("e", "q")):
-                    rating = t
-                    break
+                tag = tag_list.pop(i)
+                if tag.startswith("rating:"):
+                    r = tag[7:8]
+                    if r in base_rating:
+                        rating = frozenset((r,))
+                        rtag = tag
+                elif tag.startswith("-rating:"):
+                    r = tag[8:9]
+                    if r in base_rating:
+                        rating = base_rating - frozenset((r,))
+                        rtag = tag
             else:
                 i += 1
+
+        if safe:
+            if "q" in rating or "e" in rating:
+                raise NSFW
+            else:
+                rtag = f"rating:{safe_tag}"
         else:
-            rating = f"{'' if safe else '-'}rating:{safe_tag}"
-        return rating, ' '.join(tag_list)
+            if len(rating) == 0:
+                rtag = f"-rating:{safe_tag}"
+
+        return rtag, ' '.join(tag_list)
 
     @retry_wrap
     async def get_image_danbooru(self, tags, *, safe):
@@ -198,8 +225,7 @@ class RandomImage:
             `>>random danbooru <optional: tag>`
             Get a random safe-rating image from danbooru.
         '''
-        async with ctx.typing():
-            await self.get_image_danbooru(ctx, tags, safe=True)
+        await self.get_image_danbooru(ctx, tags, safe=True)
 
     @r.command(aliases=["dh"])
     @checks.nsfw()
@@ -209,8 +235,7 @@ class RandomImage:
             Get a random questionable/explicit-rating image from danbooru.
             Only usable in nsfw channel.
         '''
-        async with ctx.typing():
-            await self.get_image_danbooru(ctx, tags, safe=False)
+        await self.get_image_danbooru(ctx, tags, safe=False)
 
     @r.command(aliases=["k",])
     async def konachan(self, ctx, *tags):
@@ -218,8 +243,7 @@ class RandomImage:
             `>>random konachan <optional: tag>`
             Get a random safe-rating image from konachan.
         '''
-        async with ctx.typing():
-            await self.get_image_konachan(ctx, tags, safe=True)
+        await self.get_image_konachan(ctx, tags, safe=True)
 
     @r.command(aliases=["kh",])
     @checks.nsfw()
@@ -229,8 +253,7 @@ class RandomImage:
             Get a random questionable/explicit-rating image from konachan.
             Only usable in nsfw channel.
         '''
-        async with ctx.typing():
-            await self.get_image_konachan(ctx, tags, safe=False)
+        await self.get_image_konachan(ctx, tags, safe=False)
 
     @r.command(aliases=["s",])
     async def safebooru(self, ctx, *tags):
@@ -238,8 +261,7 @@ class RandomImage:
             `>>random safebooru <optional: list of tags>`
             Get a random safe-rating image from safebooru.
         '''
-        async with ctx.typing():
-            await self.get_image_safebooru(ctx, tags, safe=True)
+        await self.get_image_safebooru(ctx, tags, safe=True)
 
     @r.command(aliases=["y",])
     async def yandere(self, ctx, *tags):
@@ -247,8 +269,7 @@ class RandomImage:
             `>>random yandere <optional: list of tags>`
             Get a random questionable/explicit-rating image from yandere.
         '''
-        async with ctx.typing():
-            await self.get_image_yandere(ctx, tags, safe=True)
+        await self.get_image_yandere(ctx, tags, safe=True)
 
     @r.command(aliases=["sc",])
     @checks.nsfw()
