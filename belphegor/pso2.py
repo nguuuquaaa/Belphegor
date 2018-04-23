@@ -515,24 +515,16 @@ class PSO2:
             params = {"name": name}
             bytes_ = await utils.fetch(self.bot.session, "http://db.kakia.org/item/search", params=params)
             result = json.loads(bytes_)
-            number_of_items = len(result)
-            embeds = []
-            max_page = (number_of_items - 1) // 5 + 1
-            nl = "\n"
-            for index in range(0, number_of_items, 5):
-                desc = "\n\n".join((
-                    f"**EN:** {item['EnName']}\n**JP:** {utils.unifix(item['JpName'])}\n{item['EnDesc'].replace(nl, ' ')}"
-                    for item in result[index:index+5]
-                ))
-                embed = discord.Embed(
-                    title=f"Search result: {number_of_items} results",
-                    description=f"{desc}\n\n(Page {index//5+1}/{max_page})",
-                    colour=discord.Colour.blue()
-                )
-                embeds.append(embed)
-            if not embeds:
+            if not result:
                 return await ctx.send("Can't find any item with that name.")
-        await ctx.embed_page(embeds)
+            nl = "\n"
+            paging = utils.Paginator(
+                result, 5, separator="\n\n",
+                title=f"Search result: {len(result)} results",
+                description=lambda i, x: f"**EN:** {x['EnName']}\n**JP:** {utils.unifix(x['JpName'])}\n{x['EnDesc'].replace(nl, ' ')}",
+                colour=discord.Colour.blue()
+            )
+        await paging.navigate(ctx)
 
     @commands.command(name="price")
     async def cmd_price(self, ctx, *, name):

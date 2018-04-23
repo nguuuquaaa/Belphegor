@@ -223,7 +223,7 @@ class Paginator:
         else:
             f = footer
         if self.page_display:
-            embed.set_footer(text=f"({paging}) \u25fd {footer}" if footer else paging)
+            embed.set_footer(text=f"({paging}) \u25fd {footer}" if footer else f"({paging})")
         else:
             embed.set_footer(text=footer or Empty)
 

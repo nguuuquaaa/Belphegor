@@ -753,7 +753,6 @@ class Guild:
                         await log_channel.send(embed=embed)
 
     #custom event for bulk message delete
-    #require state.py edit on every update
     async def on_bulk_message_delete(self, messages):
         if messages:
             channel = messages[0].channel
@@ -887,7 +886,7 @@ class Guild:
             check_roles = []
             for role in roles:
                 rgb = role.colour.to_rgb()
-                while rgb in colors:
+                while rgb in colors and not rgb:
                     rgb = (random.randrange(256), random.randrange(256), random.randrange(256))
                 colors.add(rgb)
                 check_roles.append({"name": role.name, "count": len(role.members), "color": rgb})
