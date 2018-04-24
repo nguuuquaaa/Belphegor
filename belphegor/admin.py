@@ -84,6 +84,7 @@ class Admin:
             print(traceback.format_exc())
             await ctx.deny()
         else:
+            print(f"Reimported {module_name}")
             await ctx.confirm()
 
     @commands.command(hidden=True)

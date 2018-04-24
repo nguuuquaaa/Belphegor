@@ -26,7 +26,10 @@ def owner_only():
 
 def nsfw():
     def check_nsfw(ctx):
-        if ctx.channel.nsfw or ctx.channel.name.startswith("nsfw-"):
+        if ctx.guild is None:
+            create_task(ctx.send("Sorry, no porn in DM.", delete_after=30), loop=ctx.bot.loop)
+            return False
+        elif ctx.channel.nsfw or ctx.channel.name.startswith("nsfw-"):
             return True
         else:
             create_task(ctx.send("This command can only be used in nsfw channels.", delete_after=30), loop=ctx.bot.loop)

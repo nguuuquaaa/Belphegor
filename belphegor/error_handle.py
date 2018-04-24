@@ -14,6 +14,7 @@ class ErrorHandle:
 
     def __unload(self):
         self.bot.on_error = self.old_on_error
+        del self.bot.error_hook
 
     def set_error_handle(self):
         self.old_on_error = self.bot.on_error
@@ -28,6 +29,7 @@ class ErrorHandle:
     async def get_wh(self):
         ch = self.bot.get_channel(config.LOG_CHANNEL_ID)
         self.error_hook = (await ch.webhooks())[0]
+        self.bot.error_hook = self.error_hook
 
     async def on_command_error(self, ctx, error):
         ignored = (commands.DisabledCommand, commands.CheckFailure, commands.CommandNotFound, commands.UserInputError)
