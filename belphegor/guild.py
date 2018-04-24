@@ -886,7 +886,7 @@ class Guild:
             check_roles = []
             for role in roles:
                 rgb = role.colour.to_rgb()
-                while rgb in colors and not rgb:
+                while rgb in colors:
                     rgb = (random.randrange(256), random.randrange(256), random.randrange(256))
                 colors.add(rgb)
                 check_roles.append({"name": role.name, "count": len(role.members), "color": rgb})

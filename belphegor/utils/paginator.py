@@ -23,14 +23,14 @@ EVERYONE = Everyone()
 #==================================================================================================================================================
 
 class Paginator:
-    def __init__(self, container, per_page=1, *, separator="\n", jump=10, book=False, page_display=True, **kwargs):
+    def __init__(self, container, per_page=1, *, separator="\n", jump=10, book=False, page_display=True, render=False, **kwargs):
         self.container = container
         self.per_page = per_page
         self.separator = separator
         self.book_mode = book
         self.jump = jump
         self.page_display = page_display
-        self.render_data = kwargs
+
         if book:
             self._item_amount = []
             self.page_amount = []
@@ -42,55 +42,66 @@ class Paginator:
             self._item_amount = len(container)
             self.page_amount = (len(container) - 1) // per_page + 1
 
+        if render == True:
+            self.render = self._from_item
+        elif render == False:
+            self.render = self._prerender
+            self.page_amount = self._item_amount
+        elif callable(render):
+            self.render = render
+        else:
+            raise ValueError("Render is either boolean or a callable.")
+
+        self.render_data = kwargs
         self.current_page = 0
         self.current_book = 0 if book else None
         self.book_amount = len(container) if book else 1
         self._setup_base_actions()
         self.cached_embeds = {}
 
-    def get_page_amount(self, book=None):
+    def _get_page_amount(self, book=None):
         if self.book_mode:
             book = book or self.current_book
             return self.page_amount[book]
         else:
             return self.page_amount
 
-    def go_left(self):
+    def _go_left(self):
         self.current_page = max(self.current_page-1, 0)
         return self.render()
 
-    def go_right(self):
-        self.current_page = min(self.current_page+1, self.get_page_amount()-1)
+    def _go_right(self):
+        self.current_page = min(self.current_page+1, self._get_page_amount()-1)
         return self.render()
 
-    def jump_left(self):
+    def _jump_left(self):
         self.current_page = max(self.current_page-self.jump, 0)
         return self.render()
 
-    def jump_right(self):
-        self.current_page = min(self.current_page+self.jump, self.get_page_amount()-1)
+    def _jump_right(self):
+        self.current_page = min(self.current_page+self.jump, self._get_page_amount()-1)
         return self.render()
 
-    def go_up(self):
+    def _go_up(self):
         self.current_book = max(self.current_book-1, 0)
-        self.current_page = min(self.current_page, self.get_page_amount()-1)
+        self.current_page = min(self.current_page, self._get_page_amount()-1)
         return self.render()
 
-    def go_down(self):
+    def _go_down(self):
         self.current_book = min(self.current_book+1, self.book_amount-1)
-        self.current_page = min(self.current_page, self.get_page_amount()-1)
+        self.current_page = min(self.current_page, self._get_page_amount()-1)
         return self.render()
 
     def _setup_base_actions(self):
         self.navigation = collections.OrderedDict()
         if (self.book_mode and max(self.page_amount) > 1) or (not self.book_mode and self.page_amount > 1):
-            self.navigation["\u23ee"] = self.jump_left
-            self.navigation["\u25c0"] = self.go_left
-            self.navigation["\u25b6"] = self.go_right
-            self.navigation["\u23ed"] = self.jump_right
+            self.navigation["\u23ee"] = self._jump_left
+            self.navigation["\u25c0"] = self._go_left
+            self.navigation["\u25b6"] = self._go_right
+            self.navigation["\u23ed"] = self._jump_right
         if self.book_amount > 1:
-            self.navigation["\U0001f53c"] = self.go_up
-            self.navigation["\U0001f53d"] = self.go_down
+            self.navigation["\U0001f53c"] = self._go_up
+            self.navigation["\U0001f53d"] = self._go_down
         if self.navigation:
             self.navigation["\u274c"] = lambda: None
 
@@ -102,7 +113,14 @@ class Paginator:
             except KeyError:
                 self.navigation["\u274c"] = lambda: None
 
-    def render(self):
+    def _prerender(self):
+        if self.book_mode:
+            c = self.container[self.current_book]
+        else:
+            c = self.container
+        return c[self.current_page]
+
+    def _from_item(self):
         page = self.current_page
         book = self.current_book
         book_mode = self.book_mode

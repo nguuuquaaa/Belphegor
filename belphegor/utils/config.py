@@ -21,6 +21,7 @@ USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTM
 all_extensions = [
     "belphegor.admin",
     "belphegor.error_handle",
+    "belphegor.override",
     "belphegor.guild",
     "belphegor.otogi",
     "belphegor.pso2",

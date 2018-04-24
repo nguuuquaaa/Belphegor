@@ -7,13 +7,17 @@ import math
 #==================================================================================================================================================
 
 class AAImageProcessing:
-    def __init__(self, pred, *, bg_color=(0, 0, 0, 0), aa=4):
+    def __init__(self, pred, *, background=(255, 255, 255, 0), aa=4):
         if isinstance(pred, (tuple, list)):
             self.aa = aa
             self.original_size = pred
             self.size = tuple(self.aa*i for i in pred)
-            self.image = Image.new("RGBA", self.size, bg_color)
-
+            if isinstance(background, tuple):
+                self.image = Image.new("RGBA", self.size, background)
+            elif isinstance(background, Image.Image):
+                self.set_base_image(background)
+            else:
+                raise TypeError("Background must be a tuple denotes color or an Image object.")
         else:
             self.aa = 1
             self.image = pred
@@ -21,6 +25,19 @@ class AAImageProcessing:
             self.size = self.original_size
 
         self.draw = ImageDraw.Draw(self.image)
+
+    def set_base_image(self, image):
+        aasize = self.size
+        s = image.size
+        center = (s[0]/2, s[1]/2)
+
+        scale = min(s[0]/aasize[0], s[1]/aasize[1])
+        cut_size = (aasize[0]*scale/2, aasize[1]*scale/2)
+
+        border = (int(center[0]-cut_size[0]), int(center[1]-cut_size[1]), int(center[0]+cut_size[0]), int(center[1]+cut_size[1]))
+        border = (max(border[0], 0), max(border[1], 0), min(border[2], aasize[0]), min(border[3], aasize[1]))
+
+        self.image = image.resize(aasize, resample=Image.LANCZOS, box=border)
 
     def save(self, fp, *, format, scale=1, **params):
         im = self.image.resize((int(self.original_size[0]*scale), int(self.original_size[1]*scale)), resample=Image.LANCZOS)
@@ -88,22 +105,24 @@ class AAImageProcessing:
             inner_border = (int(aaxy[0]+half_aawidth), int(aaxy[1]+half_aawidth), int(aaxy[2]-half_aawidth), int(aaxy[3]-half_aawidth))
 
             figure = Image.new("RGBA", self.size, (0, 0, 0, 0))
-            fig_draw = ImageDraw.Draw(figure)
-            fig_draw.pieslice(outer_border, start, end, fill=adjust_alpha(outline, 255))
-            fig_draw.pieslice(inner_border, start, end, fill=adjust_alpha(fill, 255))
-            fig_draw.line((int_center, arc_start), width=aawidth, fill=adjust_alpha(outline, 255))
-            fig_draw.line((int_center, arc_end), width=aawidth, fill=adjust_alpha(outline, 255))
-            fig_draw.ellipse((int(center[0]-half_aawidth), int(center[1]-half_aawidth), int(center[0]+half_aawidth), int(center[1]+half_aawidth)), fill=adjust_alpha(outline, 255))
-
             mask = Image.new("L", self.size, 0)
-            mask_draw = ImageDraw.Draw(mask)
-            om = data_type.get_element(outline, 3, default=255)
-            fm = data_type.get_element(fill, 3, default=255)
-            mask_draw.pieslice(outer_border, start, end, fill=om)
-            mask_draw.pieslice(inner_border, start, end, fill=fm)
-            mask_draw.line((int_center, arc_start), width=aawidth, fill=om)
-            mask_draw.line((int_center, arc_end), width=aawidth, fill=om)
-            mask_draw.ellipse((int(center[0]-half_aawidth), int(center[1]-half_aawidth), int(center[0]+half_aawidth), int(center[1]+half_aawidth)), fill=om)
+            draw = (
+                (ImageDraw.Draw(figure), adjust_alpha(outline, 255), adjust_alpha(fill, 255)),
+                (ImageDraw.Draw(mask), data_type.get_element(outline, 3, default=255), data_type.get_element(fill, 3, default=255))
+            )
+
+            for value in draw:
+                dr = value[0]
+                o = value[1]
+                f = value[2]
+
+                dr.pieslice(outer_border, start, end, fill=o)
+                dr.pieslice(inner_border, start, end, fill=f)
+                dr.line((int_center, arc_start), width=aawidth, fill=o)
+                dr.line((int_center, arc_end), width=aawidth, fill=o)
+                dr.ellipse((int(center[0]-half_aawidth), int(center[1]-half_aawidth), int(center[0]+half_aawidth), int(center[1]+half_aawidth)), fill=o)
+                dr.ellipse((int(arc_start[0]-half_aawidth), int(arc_start[1]-half_aawidth), int(arc_start[0]+half_aawidth), int(arc_start[1]+half_aawidth)), fill=o)
+                dr.ellipse((int(arc_end[0]-half_aawidth), int(arc_end[1]-half_aawidth), int(arc_end[0]+half_aawidth), int(arc_end[1]+half_aawidth)), fill=o)
 
             self.image.paste(figure, (0, 0), mask)
 
@@ -126,32 +145,41 @@ class AAImageProcessing:
             inner_border = (int(aaxy[0]+half_aawidth), int(aaxy[1]+half_aawidth), int(aaxy[2]-half_aawidth), int(aaxy[3]-half_aawidth))
 
             figure = Image.new("RGBA", self.size, (0, 0, 0, 0))
-            fig_draw = ImageDraw.Draw(figure)
             mask = Image.new("L", self.size, 0)
-            mask_draw = ImageDraw.Draw(mask)
 
-            last_angle = cutlist[-1][0]
-            oc = adjust_alpha(outline, 255)
-            om = data_type.get_element(outline, 3, default=255)
+            draw = (
+                (ImageDraw.Draw(figure), adjust_alpha(outline, 255), lambda f: adjust_alpha(f, 255)),
+                (ImageDraw.Draw(mask), data_type.get_element(outline, 3, default=255), lambda f: data_type.get_element(f, 3, default=255))
+            )
 
-            for c in cutlist:
-                current_angle = c[0]
-                fill = c[1]
-                fig_draw.pieslice(outer_border, last_angle, current_angle, fill=oc)
-                fig_draw.pieslice(inner_border, last_angle, current_angle, fill=adjust_alpha(fill, 255))
-                mask_draw.pieslice(outer_border, last_angle, current_angle, fill=om)
-                mask_draw.pieslice(inner_border, last_angle, current_angle, fill=data_type.get_element(fill, 3, default=255))
-                last_angle = current_angle
+            for value in draw:
+                ccl = cutlist[:]
+                last_angle = ccl.pop(0)[0]
+                start_angle = last_angle
+                dr = value[0]
+                o = value[1]
+                f = value[2]
 
-            for c in cutlist:
-                current_angle = c[0]
-                fill = c[1]
-                arc_end = (int(center[0]+math.cos(math.radians(current_angle))*half_size[0]), int(center[1]+math.sin(math.radians(current_angle))*half_size[1]))
-                fig_draw.line((arc_end, int_center), width=aawidth, fill=oc)
-                mask_draw.line((arc_end, int_center), width=aawidth, fill=om)
+                for c in ccl:
+                    current_angle = c[0]
+                    fill = c[1]
+                    dr.pieslice(outer_border, last_angle, current_angle, fill=o)
+                    dr.pieslice(inner_border, last_angle, current_angle, fill=f(fill))
+                    last_angle = current_angle
 
-            fig_draw.ellipse((int(center[0]-half_aawidth), int(center[1]-half_aawidth), int(center[0]+half_aawidth), int(center[1]+half_aawidth)), fill=oc)
-            mask_draw.ellipse((int(center[0]-half_aawidth), int(center[1]-half_aawidth), int(center[0]+half_aawidth), int(center[1]+half_aawidth)), fill=om)
+                for c in ccl:
+                    current_angle = c[0]
+                    fill = c[1]
+                    arc_end = (int(center[0]+math.cos(math.radians(current_angle))*half_size[0]), int(center[1]+math.sin(math.radians(current_angle))*half_size[1]))
+                    dr.line((arc_end, int_center), width=aawidth, fill=o)
+
+                if (last_angle - start_angle) % 360 < 0.01:
+                    arc_start = (int(center[0]+math.cos(math.radians(start_angle))*half_size[0]), int(center[1]+math.sin(math.radians(start_angle))*half_size[1]))
+                    arc_end = (int(center[0]+math.cos(math.radians(last_angle))*half_size[0]), int(center[1]+math.sin(math.radians(last_angle))*half_size[1]))
+                    dr.ellipse((int(arc_start[0]-half_aawidth), int(arc_start[1]-half_aawidth), int(arc_start[0]+half_aawidth), int(arc_start[1]+half_aawidth)), fill=o)
+                    dr.ellipse((int(arc_end[0]-half_aawidth), int(arc_end[1]-half_aawidth), int(arc_end[0]+half_aawidth), int(arc_end[1]+half_aawidth)), fill=o)
+
+                dr.ellipse((int(center[0]-half_aawidth), int(center[1]-half_aawidth), int(center[0]+half_aawidth), int(center[1]+half_aawidth)), fill=o)
 
             self.image.paste(figure, (0, 0), mask)
 
@@ -184,27 +212,24 @@ def adjust_alpha(inp, alpha):
     if inp:
         return (inp[0], inp[1], inp[2], alpha)
 
-async def pie_chart(data, *, unit="counts", image=None, bg_color=(255, 255, 255, 0), text_color=(255, 255, 255, 255), outline=None, scale=1, aa=4, loop=None):
+async def pie_chart(data, *, unit="counts", background=(255, 255, 255, 0), text_color=(255, 255, 255, 255), outline=None, scale=1, aa=4, loop=None):
     def drawing():
         number_of_fields = len(data)
         number_of_items = sum((d["count"] for d in data))
         if number_of_items == 0:
             return None
-        image_draw = AAImageProcessing((800, max(500, 70+60*number_of_fields)), bg_color=bg_color, aa=aa)
-        if image:
-            image_draw.circle_paste(image, (20, 20, 480, 480))
+        height = max(500, 70+60*number_of_fields)
+        image_draw = AAImageProcessing((800, height), background=background, aa=aa)
         font = ImageFont.truetype(f"{config.DATA_PATH}/font/arial.ttf", 20*aa)
         big_font = ImageFont.truetype(f"{config.DATA_PATH}/font/arialbd.ttf", 20*aa)
-        cutlist = []
+        cutlist = [(-90, None)]
         current_angle = -90
         for index, item in enumerate(data):
             current_angle = current_angle + 360 * item["count"] / number_of_items
             cutlist.append((current_angle, item["color"]))
             image_draw.draw_rectangle(
                 (525, 27+index*60, 550, 52+index*60),
-                fill=adjust_alpha(item["color"], 255),
-                outline=adjust_alpha(outline, 255),
-                outline_width=2,
+                fill=adjust_alpha(item["color"], 255)
             )
             image_draw.draw_text(
                 (560, 30+index*60),
