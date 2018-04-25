@@ -382,7 +382,6 @@ class Otogi:
                 description=lambda i, x: f"`#{x['id']}` **{x['name']}**{x['value']}",
                 colour=discord.Colour.orange()
             )
-            print(paging.render())
             await paging.navigate(ctx)
         else:
             await ctx.send("No result found.")
