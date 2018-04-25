@@ -153,7 +153,7 @@ class AAImageProcessing:
             )
 
             for value in draw:
-                ccl = cutlist[:]
+                ccl = cutlist.copy()
                 last_angle = ccl.pop(0)[0]
                 start_angle = last_angle
                 dr = value[0]

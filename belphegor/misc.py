@@ -173,16 +173,28 @@ class Misc:
         inp = message.content
         if inp[:3] in ("/o/", "\\o\\"):
             r = []
-            for index, ch in enumerate(inp):
+            index = 0
+            l = len(inp)
+            while index < l:
                 current = inp[index:index+3]
                 if current == "\\o\\":
                     r.append("/o/")
+                    index += 3
                 elif current == "/o/":
                     r.append("\\o\\")
-            await message.channel.send(" ".join(r))
+                    index += 3
+                else:
+                    index += 1
+            try:
+                await message.channel.send(" ".join(r))
+            except:
+                pass
         elif inp == "ping":
-            msg = await message.channel.send("pong")
-            await msg.edit(content=f"pong (ws: {int(1000*self.bot.latency)}ms, edit: {int(1000*(msg.created_at-message.created_at).total_seconds())}ms)")
+            try:
+                msg = await message.channel.send("pong")
+                await msg.edit(content=f"pong (ws: {int(1000*self.bot.latency)}ms, edit: {int(1000*(msg.created_at-message.created_at).total_seconds())}ms)")
+            except:
+                pass
 
     @commands.command()
     async def avatar(self, ctx, *, member: discord.Member=None):
