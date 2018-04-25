@@ -23,7 +23,7 @@ EVERYONE = Everyone()
 #==================================================================================================================================================
 
 class Paginator:
-    def __init__(self, container, per_page=1, *, separator="\n", jump=10, book=False, page_display=True, render=False, **kwargs):
+    def __init__(self, container, per_page=1, *, separator="\n", jump=10, book=False, page_display=True, render=True, **kwargs):
         self.container = container
         self.per_page = per_page
         self.separator = separator
@@ -42,9 +42,9 @@ class Paginator:
             self._item_amount = len(container)
             self.page_amount = (len(container) - 1) // per_page + 1
 
-        if render == True:
+        if render is True:
             self.render = self._from_item
-        elif render == False:
+        elif render is False:
             self.render = self._prerender
             self.page_amount = self._item_amount
         elif callable(render):
