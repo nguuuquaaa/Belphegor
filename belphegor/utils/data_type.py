@@ -92,6 +92,7 @@ class BelphegorContext(commands.Context):
             if result:
                 return cls(result)
             else:
+                await ctx.send(f"Can't find {name} in database.")
                 return None
         name = name.lower()
         regex = ".*?".join(map(re.escape, name.split()))
@@ -128,14 +129,17 @@ class BelphegorContext(commands.Context):
             try:
                 return cls(item_data)
             except:
+                await ctx.send(f"Can't find {name} in database.")
                 return None
         else:
             result = [cls(item_data) async for item_data in cursor]
             if not result:
+                await ctx.send(f"Can't find {name} in database.")
                 return None
             elif len(result) == 1 and not prompt:
                 return result[0]
             emojis = self.cog.emojis
+
             paging = paginator.Paginator(
                 result, 10,
                 title="Do you mean:",

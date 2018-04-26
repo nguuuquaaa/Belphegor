@@ -69,9 +69,9 @@ class Paginator:
     def get_item_amount(self, book=None):
         if self.book_mode:
             book = book or self.current_book
-            return self._page_amount[book]
+            return self._item_amount[book]
         else:
-            return self._page_amount
+            return self._item_amount
 
     def _go_left(self):
         self.current_page = max(self.current_page-1, 0)
@@ -219,9 +219,10 @@ class Paginator:
         _bot = ctx.bot
         _loop = _bot.loop
         target = target or ctx.author
-        if not self.navigation:
-            return
-        embed = next(iter(self.navigation.values()))()
+        if self.container:
+            embed = self.render()
+        else:
+            embed = next(iter(self.navigation.values()))()
         message = await ctx.send(embed=embed)
         for e in self.navigation:
             _loop.create_task(message.add_reaction(e))

@@ -220,7 +220,7 @@ class Otogi:
         '''
         daemon = await self._search(ctx, name)
         if not daemon:
-            return await ctx.send(f"Can't find {name} in database.")
+            return
 
         paging = utils.Paginator([])
 
@@ -442,7 +442,7 @@ class Otogi:
     async def delete(self, ctx, *, name):
         daemon = await self._search(ctx, name, prompt=True)
         if not daemon:
-            return await ctx.send(f"Can't find {name} in database.")
+            return
         await self.daemon_collection.find_one_and_delete({"id": daemon.id})
         await ctx.send(f"The entry for {daemon.name} has been deleted.")
 
@@ -452,7 +452,7 @@ class Otogi:
         data = data.strip().splitlines()
         daemon = await self._search(ctx, data[0], prompt=True)
         if not daemon:
-            return await ctx.send(f"Can't find {name} in database.")
+            return
         field = data[1]
         value = data[2]
         if field.lower() in (
@@ -485,7 +485,7 @@ class Otogi:
     async def _summon(self, ctx, *, name):
         daemon = await self._search(ctx, name, prompt=True)
         if not daemon:
-            return await ctx.send(f"Can't find {name} in database.")
+            return
         if daemon.rarity in (3, 4, 5):
             update_result = await self.summon_pool.update_one({"rarity": daemon.rarity}, {"$addToSet": {"pool": daemon.id}})
             if update_result.modified_count > 0:
@@ -500,7 +500,7 @@ class Otogi:
     async def nosummon(self, ctx, *, name):
         daemon = await self._search(ctx, name, prompt=True)
         if not daemon:
-            return await ctx.send(f"Can't find {name} in database.")
+            return
         update_result = await self.summon_pool.update_one({"rarity": daemon.rarity}, {"$pull": {"pool": daemon.id}})
         if update_result.modified_count > 0:
             await ctx.send(f"The daemon {daemon.name} has been removed from summon pool.")
@@ -516,7 +516,7 @@ class Otogi:
         '''
         daemon = await self._search(ctx, name, prompt=True)
         if not daemon:
-            return await ctx.send(f"Can't find {name} in database.")
+            return
         async with ctx.typing():
             try:
                 new_daemon = await self.search_wikia(daemon)
@@ -755,7 +755,7 @@ class Otogi:
         '''
         daemon = await self._search(ctx, name)
         if not daemon:
-            return await ctx.send(f"Can't find {name} in database.")
+            return
         pool_data = await self.summon_pool.find_one({"rarity": daemon.rarity})
         pool = pool_data["pool"]
         for daemon_id in pool:
@@ -955,7 +955,7 @@ class Otogi:
         name, lb = self._process_name(name)
         daemon = await self._search(ctx, name, prompt=False)
         if not daemon:
-            return await ctx.send(f"Can't find {name} in database.")
+            return
         myself = await self.get_player(ctx.author.id)
         target = await self.get_player(member.id)
         i = 0
@@ -989,7 +989,7 @@ class Otogi:
         name, lb = self._process_name(name)
         daemon = await self._search(ctx, name, prompt=False)
         if not daemon:
-            return await ctx.send(f"Can't find {name} in database.")
+            return
         myself = await self.get_player(ctx.author.id)
         target = await self.get_player(member.id)
         i = 0
@@ -1048,7 +1048,7 @@ class Otogi:
             name, lb = self._process_name(player, name)
             daemon = await self._search(ctx, name, prompt=False)
             if not daemon:
-                return await ctx.send(f"Can't find {name} in database.")
+                return
             self.lb_that(player, daemon.id)
         else:
             all_ids = set([])

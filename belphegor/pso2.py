@@ -276,7 +276,7 @@ class PSO2:
             atts=["en_name", "jp_name"], name_att="en_name", emoji_att="element"
         )
         if not chip:
-            return await ctx.send(f"Can't find {name} in database.")
+            return
         await ctx.send(embed=chip.embed_form(self))
 
     @commands.group(name="weapon", aliases=["w",], invoke_without_command=True)
@@ -292,7 +292,7 @@ class PSO2:
             atts=["en_name", "jp_name"], name_att="en_name", emoji_att="category", sort={"category": WEAPON_SORT}
         )
         if not weapon:
-            return await ctx.send(f"Can't find {name} in database.")
+            return
         await ctx.send(embed=weapon.embed_form(self))
 
     async def _search_att(self, attrs):
@@ -724,7 +724,7 @@ class PSO2:
             atts=["en_name", "jp_name"], name_att="en_name", emoji_att="category"
         )
         if not unit:
-            return await ctx.send(f"Can't find {name} in database.")
+            return
         await ctx.send(embed=unit.embed_form(self))
 
     @cmd_unit.command(hidden=True, name="update")
