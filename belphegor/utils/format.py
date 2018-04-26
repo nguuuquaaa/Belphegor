@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 import pytz
 from pytz import timezone
 from urllib.parse import quote
+import collections
 
 #==================================================================================================================================================
 
@@ -128,3 +129,9 @@ def discord_escape(any_string):
 
 def safe_url(any_url):
     return quote(any_url, safe=r":/&$+,;=@#~%?")
+
+def progress_bar(rate, length=2):
+    rate = rate if rate <= 1 else 1
+    bf = "\u2588" * int(rate*10*length)
+    c = "\u2591"
+    return f"Progress: {bf:{c}<{10*length}} {rate*100:.2f}%"

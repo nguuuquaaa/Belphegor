@@ -50,7 +50,7 @@ class Paginator:
         elif callable(render):
             self.render = render
         else:
-            raise ValueError("Render is either boolean or a callable.")
+            raise TypeError("Render is either boolean or a callable.")
 
         self.render_data = kwargs
         self.current_page = 0

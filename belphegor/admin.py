@@ -13,6 +13,7 @@ from shutil import copyfile
 from distutils.dir_util import copy_tree
 import subprocess
 import copy
+import sys
 
 #==================================================================================================================================================
 
@@ -74,17 +75,14 @@ class Admin:
     @commands.command(hidden=True)
     @checks.owner_only()
     async def reimport(self, ctx, module_name):
-        modules = module_name.split(".")
-        module = __import__("belphegor")
+        module = sys.modules.get(f"belphegor.{module_name}")
         try:
-            for m in modules:
-                module = getattr(module, m)
             importlib.reload(module)
         except:
-            print(traceback.format_exc())
+            traceback.print_exc()
             await ctx.deny()
         else:
-            print(f"Reimported {module_name}")
+            print(f"Reimported belphegor.{module_name}")
             await ctx.confirm()
 
     @commands.command(hidden=True)

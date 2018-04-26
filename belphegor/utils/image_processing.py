@@ -126,7 +126,7 @@ class AAImageProcessing:
 
             self.image.paste(figure, (0, 0), mask)
 
-    def draw_pie_chart(self, xy, cutlist, *, outline=None, outline_width=0):
+    def draw_pie_chart(self, xy, cutlist, *, explode=None, outline=None, outline_width=0):
         aa = self.aa
         aaxy = tuple(aa*i for i in xy)
         if outline_width < 1 or outline is None:
@@ -244,7 +244,7 @@ async def pie_chart(data, *, unit="counts", background=(255, 255, 255, 0), text_
                 fill=text_color
             )
         image_draw.draw_pie_chart(
-            (20, 20, 480, 480),
+            (40, 40, 460, 460),
             cutlist,
             outline=outline,
             outline_width=5,

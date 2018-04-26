@@ -633,22 +633,35 @@ class Otogi:
             ability_value = utils.unifix(str(tags[i].text))
             if len(ability_value) > 5:
                 new_daemon.abilities.append({"name": utils.unifix(tags[i-1].text), "effect": ability_value})
-        for i in (14, 15, 16):
+        for i in (14, 15):
             bond_data = tags[i].find_all("td")
             bond_value = utils.unifix(str(bond_data[1].text))
             if len(bond_value) > 5:
                 new_daemon.bonds.append({"name": re.sub(' +', ' ', utils.unifix(bond_data[0].text)), "effect": bond_value})
 
+        try:
+            bond_data = tags[16].find_all("td")
+            bond_value = utils.unifix(str(bond_data[1].text))
+            if len(bond_value) > 5:
+                new_daemon.bonds.append({"name": re.sub(' +', ' ', utils.unifix(bond_data[0].text)), "effect": bond_value})
+        except:
+            delta = 0
+        else:
+            delta = 1
+
         #additional info
-        add_keys = {17: "voice_actor", 19: "illustrator", 21: "description", 23: "how_to_acquire", 25: "notes_and_trivia"}
+        add_keys = {16+delta: "voice_actor", 18+delta: "illustrator", 20+delta: "description", 22+delta: "how_to_acquire", 24+delta: "notes_and_trivia"}
         for i, add_type in add_keys.items():
             setattr(new_daemon, add_type, utils.unifix(tags[i+1].text))
-        quote_keys = {28: "main", 29: "skill", 30: "summon", 31: "limit_break"}
+        quote_keys = {27+delta: "main", 28+delta: "skill", 29+delta: "summon", 30: "limit_break"}
         for i, quote_type in quote_keys.items():
             quote_data = tags[i].find_all("td")
+            url = quote_data[2].span.find("a")
+            if url:
+                url = url["href"]
             new_daemon.quotes[quote_type] = {
                 "value": utils.unifix(quote_data[1].text),
-                "url": quote_data[2].span.a["href"]
+                "url": url
             }
 
         #pic links
@@ -672,26 +685,28 @@ class Otogi:
         done = []
         undone = []
 
-        def progress(rate):
-            bf = "\u2588" * int(rate*10)
-            c = "\u2591"
-            return f"Progress: {bf:{c}<10} {int(rate*100)}%"
+        msg = await ctx.send(f"Fetching...\n{utils.progress_bar(0)}")
+        cursor = self.daemon_collection.find({"id": {"$gte": start_from}})
+        count = await cursor.count()
+        if count:
+            i = 0
+            async for daemon_data in cursor:
+                try:
+                    daemon = Daemon(daemon_data)
+                    new_daemon = await self.search_wikia(daemon)
+                    await self.daemon_collection.replace_one({"id": daemon.id}, new_daemon.__dict__)
+                except:
+                    undone.append(f"#{daemon.id: 4d} {daemon.name}")
+                else:
+                    done.append(f"#{new_daemon.id: 4d} {new_daemon.name}")
+                i += 1
+                if i%10 == 0:
+                    await msg.edit(content=f"Fetching...\n{utils.progress_bar(i/count)}")
 
-        msg = await ctx.send(f"Fetching...\n{progress(0)}")
-        count = await self.daemon_collection.count({"id": {"$gte": start_from}})
-        async for daemon_data in self.daemon_collection.find({"id": {"$gte": start_from}}):
-            try:
-                daemon = Daemon(daemon_data)
-                new_daemon = await self.search_wikia(daemon)
-                await self.daemon_collection.replace_one({"id": daemon.id}, new_daemon.__dict__)
-            except:
-                undone.append(f"#{daemon.id: 4d} {daemon.name}")
-            else:
-                done.append(f"#{new_daemon.id: 4d} {new_daemon.name}")
-            cur = daemon_data["id"]
-            if cur%10 == 0:
-                await msg.edit(content=f"Fetching...\n{progress(cur/count)}")
-        await ctx.send(file=discord.File(json.dumps({"done": done, "undone": undone}, indent=4, ensure_ascii=False).encode("utf-8"), filename="result.json"))
+            await msg.edit(content=f"Done.\n{utils.progress_bar(i/count)}")
+            await ctx.send(file=discord.File(json.dumps({"done": done, "undone": undone}, indent=4, ensure_ascii=False).encode("utf-8"), filename="result.json"))
+        else:
+            await ctx.send("There's nothing to update.")
 
     @update.command(hidden=True, name="one")
     @checks.owner_only()

@@ -295,25 +295,6 @@ class PSO2:
             return
         await ctx.send(embed=weapon.embed_form(self))
 
-    @cmd_weapon.command(hidden=True, name="update")
-    @checks.owner_only()
-    async def wupdate(self, ctx, *args):
-        msg = await ctx.send("Fetching...")
-        if not args:
-            urls = WEAPON_URLS
-        else:
-            urls = {key: value for key, value in WEAPON_URLS.items() if key in args}
-        weapons = []
-        for category, url in urls.items():
-            bytes_ = await utils.fetch(self.bot.session, url)
-            category_weapons = await self.bot.loop.run_in_executor(None, self.weapon_parse, category, bytes_)
-            weapons.extend(category_weapons)
-            print(f"Done parsing {CATEGORY_DICT[category]}.")
-        await self.weapon_list.delete_many({"category": {"$in": tuple(urls.keys())}})
-        await self.weapon_list.insert_many(weapons)
-        print("Done everything.")
-        await msg.edit(content = "Done.")
-
     async def _search_att(self, attrs):
         result = []
         query = {}
@@ -503,6 +484,26 @@ class PSO2:
                     weapon["classes"].append(CLASS_DICT[cl])
             category_weapons.append(weapon)
         return category_weapons
+
+    @cmd_weapon.command(hidden=True, name="update")
+    @checks.owner_only()
+    async def wupdate(self, ctx, *args):
+        msg = await ctx.send("Fetching...")
+        if not args:
+            urls = WEAPON_URLS
+        else:
+            urls = {key: value for key, value in WEAPON_URLS.items() if key in args}
+        weapons = []
+        for category, url in urls.items():
+            bytes_ = await utils.fetch(self.bot.session, url)
+            try:
+                category_weapons = await self.bot.loop.run_in_executor(None, self.weapon_parse, category, bytes_)
+            except:
+                return await ctx.send(f"Error parsing CATEGORY_DICT[category].")
+            weapons.extend(category_weapons)
+        await self.weapon_list.delete_many({"category": {"$in": tuple(urls.keys())}})
+        await self.weapon_list.insert_many(weapons)
+        await msg.edit(content="Done.")
 
     @commands.command(name="item", aliases=["i"])
     async def cmd_item(self, ctx, *, name):
