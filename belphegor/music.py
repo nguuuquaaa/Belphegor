@@ -755,8 +755,8 @@ class Music:
         description = utils.unifix(snippet.get("description", "None")).strip()
         description_page = utils.split_page(description, 500)
 
-        info_w_desc = []
-        info_wo = []
+        info_with_desc = []
+        info_without_desc = []
         base_info = (
             ("Uploader",    f"[{snippet['channelTitle']}](https://www.youtube.com/channel/{snippet['channelId']})", True),
             ("Date",        snippet["publishedAt"][:10],                                                            True),
@@ -766,10 +766,10 @@ class Music:
             ("Dislikes",    f"\U0001f44e {int(stat.get('dislikeCount', 0)):n}",                                     True)
         )
         for i in range(len(description_page)):
-            info_w_desc.extend(base_info)
-            info_wo.extend(base_info)
-            info_w_desc.append(("Description", description_page[i], False))
-            info_wo.append((None, None, None))
+            info_with_desc.extend(base_info)
+            info_without_desc.extend(base_info)
+            info_with_desc.append(("Description", description_page[i], False))
+            info_without_desc.append((None, None, None))
         for key in ("maxres", "standard", "high", "medium", "default"):
             value = snippet["thumbnails"].get(key, None)
             if value is not None:
@@ -777,7 +777,7 @@ class Music:
                 break
 
         paging = utils.Paginator(
-            info_wo, 7, page_display=False,
+            info_without_desc, 7, page_display=False,
             title=f"\U0001f3b5 {snippet['title']}",
             url=url,
             colour=discord.Colour.green(),
@@ -786,13 +786,12 @@ class Music:
             image_url=image_url
         )
 
-        paging.saved_cache = {}
-        paging.saved_container = info_w_desc
+        paging.saved_container = info_with_desc
 
         def switch():
             paging.page_display = not paging.page_display
             paging.container, paging.saved_container = paging.saved_container, paging.container
-            paging.cached_embeds, paging.saved_cache = paging.saved_cache, paging.cached_embeds
+            paging.render_data["image_url"] = None if paging.render_data["image_url"] else image_url
             return paging.render()
 
         paging.set_action("\U0001f1e9", switch)

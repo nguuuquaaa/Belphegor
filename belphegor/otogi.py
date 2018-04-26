@@ -18,7 +18,7 @@ class Daemon(data_type.BaseObject):
     @classmethod
     def empty(cls, id):
         return cls({
-            "id": id, "name": None, "alias": None, "pic_url": None, "artwork_url": None, "max_atk": 0, "max_hp": 0,
+            "id": id, "name": None, "alias": None, "url": None, "pic_url": None, "artwork_url": None, "max_atk": 0, "max_hp": 0,
             "mlb_atk": None, "mlb_hp": None, "rarity": 0, "daemon_type": None, "daemon_class": None, "skills": [], "abilities": [], "bonds": [],
             "faction": None, "voice_actor": None, "illustrator": None, "description": None, "how_to_acquire": None, "notes_and_trivia": None,
             "quotes": {"main": {}, "skill": {}, "summon": {}, "limit_break": {}}
@@ -26,14 +26,13 @@ class Daemon(data_type.BaseObject):
 
     def embed_form(self, cog):
         emojis = cog.emojis
-        data_embed = discord.Embed(colour=discord.Colour.orange())
-        data_embed.add_field(
-            name=f"{emojis.get(self.daemon_type, '')} #{self.id} {self.name}",
-            value=
+        data_embed = discord.Embed(
+            title=f"{emojis.get(self.daemon_type, '')} #{self.id} {self.name}",
+            description=
                 f"{emojis.get(self.daemon_class, '')} | {str(emojis['star'])*self.rarity}\n"
                 f"{emojis['atk']}{self.atk}\n{emojis['hp']}{self.hp}"
                 "\n----------------------------------------------------------------------------------",
-            inline=False
+            colour=discord.Colour.orange()
         )
         check = len(self.skills) + len(self.abilities) + len(self.bonds) - 1
         field_list = ("skills", "abilities", "bonds")
@@ -51,21 +50,17 @@ class Daemon(data_type.BaseObject):
                 check -= 1
             except:
                 pass
-        pic_embed = discord.Embed(colour=discord.Colour.orange())
-        pic_embed.set_image(url=self.true_url)
-        return pic_embed, data_embed
+        return data_embed
 
     def more_info(self, cog):
-        pic_embed = discord.Embed(colour=discord.Colour.orange())
-        pic_embed.set_image(url=self.true_artwork)
-        try:
-            bracket_index = self.name.index("[")
-            base_name = self.name[:bracket_index-1]
-        except:
-            base_name = self.name
         description = self.description or "--"
         des = description.partition(".")
-        data_embed = discord.Embed(title=self.name, url=f"http://otogi.wikia.com/wiki/{quote(base_name)}", description=f"***{des[0]}.***{des[2]}", colour=discord.Colour.orange())
+        data_embed = discord.Embed(
+            title=f"Wikia: {self.name}",
+            description=f"***{des[0]}.***{des[2]}",
+            url=getattr(self, "url", None) or discord.Embed.Empty,
+            colour=discord.Colour.orange()
+        )
         data_embed.add_field(name="Voice Actor", value=self.voice_actor or "--")
         data_embed.add_field(name="Illustrator", value=self.illustrator or "--")
         data_embed.add_field(name="How to Acquire", value=self.how_to_acquire or "--", inline=False)
@@ -80,7 +75,7 @@ class Daemon(data_type.BaseObject):
                 f"Limit break: [{quotes['limit_break'].get('value')}]({quotes['limit_break'].get('url')})\n",
             inline=False
         )
-        return pic_embed, data_embed
+        return data_embed
 
     @property
     def atk(self):
@@ -97,14 +92,14 @@ class Daemon(data_type.BaseObject):
             return self.max_hp
 
     @property
-    def true_artwork(self):
+    def true_artwork_url(self):
         if self.artwork_url:
             return self.artwork_url
         else:
             return config.NO_IMG
 
     @property
-    def true_url(self):
+    def true_image_url(self):
         if self.pic_url:
             return self.pic_url
         else:
@@ -225,28 +220,26 @@ class Otogi:
         '''
         daemon = await self._search(ctx, name)
         if not daemon:
-            return
-        pic_embed, data_embed = daemon.embed_form(self)
-        await ctx.send(embed=pic_embed)
-        await ctx.send(embed=data_embed)
+            return await ctx.send(f"Can't find {name} in database.")
 
-    @commands.command(name="pic", aliases=["p"])
-    async def cmd_pic(self, ctx, *, name: str):
-        '''
-            `>>pic <name>`
-            Display a daemon image.
-        '''
-        daemon = await self._search(ctx, name, prompt=False)
-        if daemon:
-            pic_embed = discord.Embed(colour=discord.Colour.orange())
-            pic_embed.set_image(url=daemon.true_url)
-            await ctx.send(embed=pic_embed)
-            if daemon.artwork_url:
-                artwork_embed = discord.Embed(colour=discord.Colour.orange())
-                artwork_embed.set_image(url=daemon.artwork_url)
-                await ctx.send(embed=artwork_embed)
-        else:
-            await ctx.send(f"Can't find {name} in database.")
+        paging = utils.Paginator([])
+
+        info_embed = daemon.embed_form(self)
+        paging.set_action("\U0001f1e9", lambda: info_embed)
+        trivia_embed = daemon.more_info(self)
+        paging.set_action("\U0001f1f9", lambda: trivia_embed)
+        if daemon.artwork_url:
+            artwork = discord.Embed(colour=discord.Colour.orange())
+            artwork.set_image(url=daemon.artwork_url)
+            paging.set_action("\U0001f5bc", lambda: artwork)
+
+        empty_embed = discord.Embed(colour=discord.Colour.orange())
+        paging.set_action("\U0001f53c", lambda: empty_embed)
+
+        image = discord.Embed(colour=discord.Colour.orange())
+        image.set_image(url=daemon.true_image_url)
+        await ctx.send(embed=image)
+        await paging.navigate(ctx)
 
     async def _search_att(self, attrs):
         result = []
@@ -386,19 +379,6 @@ class Otogi:
         else:
             await ctx.send("No result found.")
 
-    @commands.command(name="trivia", aliases=["t"])
-    async def cmd_t(self, ctx, *, name:str):
-        '''
-            `>>trivia <name>`
-            Display a daemon trivia info.
-        '''
-        daemon = await self._search(ctx, name)
-        if not daemon:
-            return
-        pic_embed, data_embed = daemon.more_info(self)
-        await ctx.send(embed=pic_embed)
-        await ctx.send(embed=data_embed)
-
     @commands.group()
     async def update(self, ctx):
         '''
@@ -462,7 +442,7 @@ class Otogi:
     async def delete(self, ctx, *, name):
         daemon = await self._search(ctx, name, prompt=True)
         if not daemon:
-            return
+            return await ctx.send(f"Can't find {name} in database.")
         await self.daemon_collection.find_one_and_delete({"id": daemon.id})
         await ctx.send(f"The entry for {daemon.name} has been deleted.")
 
@@ -472,11 +452,11 @@ class Otogi:
         data = data.strip().splitlines()
         daemon = await self._search(ctx, data[0], prompt=True)
         if not daemon:
-            return
+            return await ctx.send(f"Can't find {name} in database.")
         field = data[1]
         value = data[2]
         if field.lower() in (
-            "name", "alias","pic_url", "artwork_url", "max_atk", "max_hp", "mlb_atk", "mlb_hp", "rarity",
+            "name", "alias", "pic_url", "artwork_url", "max_atk", "max_hp", "mlb_atk", "mlb_hp", "rarity",
             "daemon_type", "daemon_class", "skill", "ability1", "ability2", "bond1", "bond2", "faction"
         ):
             try:
@@ -505,7 +485,7 @@ class Otogi:
     async def _summon(self, ctx, *, name):
         daemon = await self._search(ctx, name, prompt=True)
         if not daemon:
-            return
+            return await ctx.send(f"Can't find {name} in database.")
         if daemon.rarity in (3, 4, 5):
             update_result = await self.summon_pool.update_one({"rarity": daemon.rarity}, {"$addToSet": {"pool": daemon.id}})
             if update_result.modified_count > 0:
@@ -520,7 +500,7 @@ class Otogi:
     async def nosummon(self, ctx, *, name):
         daemon = await self._search(ctx, name, prompt=True)
         if not daemon:
-            return
+            return await ctx.send(f"Can't find {name} in database.")
         update_result = await self.summon_pool.update_one({"rarity": daemon.rarity}, {"$pull": {"pool": daemon.id}})
         if update_result.modified_count > 0:
             await ctx.send(f"The daemon {daemon.name} has been removed from summon pool.")
@@ -536,7 +516,7 @@ class Otogi:
         '''
         daemon = await self._search(ctx, name, prompt=True)
         if not daemon:
-            return
+            return await ctx.send(f"Can't find {name} in database.")
         async with ctx.typing():
             try:
                 new_daemon = await self.search_wikia(daemon)
@@ -549,7 +529,7 @@ class Otogi:
                 await ctx.send("Something went wrong.")
                 raise
 
-    async def search_wikia(self, daemon):
+    async def search_wikia(self, daemon, *, direct=False):
         name = daemon.name
         alias = daemon.alias
         try:
@@ -561,14 +541,15 @@ class Otogi:
             form = "Original Form"
 
         #wikia search
-        if base_name == "Commander Yashichi":
-            base_name = "Yashichi"
-            form = "Commander Form"
-        elif base_name in ("Tsukuyomi", "Tsukiyomi"):
-            base_name = "Tsukuyomi"
-            form = "Original Form"
-        while form.count(" Form") > 1:
-            form = form[:-5]
+        if direct:
+            if base_name == "Commander Yashichi":
+                base_name = "Yashichi"
+                form = "Commander Form"
+            elif base_name in ("Tsukuyomi", "Tsukiyomi"):
+                base_name = "Tsukuyomi"
+                form = "Original Form"
+            while form.count(" Form") > 1:
+                form = form[:-5]
         else:
             bytes_ = await self.bot.fetch(f"http://otogi.wikia.com/api/v1/Search/List?query={quote(utils.unifix(name))}&limit=5&batch=1&namespaces=0%2C14")
             search_query = json.loads(bytes_)
@@ -594,6 +575,7 @@ class Otogi:
                 pic_kind[kind] = None
 
         new_daemon = await self.bot.loop.run_in_executor(None, self._bs_process, daemon, form, raw_data, pic_kind)
+        new_daemon.url = url
         return new_daemon
 
     def _bs_process(self, daemon, form, raw_data, pic_kind):
@@ -606,6 +588,8 @@ class Otogi:
         #name and alias
         new_daemon.name = utils.unifix(tags[0].text)
         new_daemon.alias = utils.unifix(daemon.alias)
+
+        new_daemon.url = None
 
         #type, class and rarity
         rarity_and_class = tags[3].find_all("td")
@@ -679,7 +663,7 @@ class Otogi:
 
         return new_daemon
 
-    @update.command(hidden=True, name="everything", aliases=["all"])
+    @update.command(hidden=True, name="from", aliases=["all"])
     @checks.owner_only()
     async def update_everything(self, ctx, start_from: int=0):
         done = []
@@ -693,7 +677,7 @@ class Otogi:
             async for daemon_data in cursor:
                 try:
                     daemon = Daemon(daemon_data)
-                    new_daemon = await self.search_wikia(daemon)
+                    new_daemon = await self.search_wikia(daemon, direct=True)
                     await self.daemon_collection.replace_one({"id": daemon.id}, new_daemon.__dict__)
                 except:
                     undone.append(f"#{daemon.id: 4d} {daemon.name}")
@@ -771,7 +755,7 @@ class Otogi:
         '''
         daemon = await self._search(ctx, name)
         if not daemon:
-            return
+            return await ctx.send(f"Can't find {name} in database.")
         pool_data = await self.summon_pool.find_one({"rarity": daemon.rarity})
         pool = pool_data["pool"]
         for daemon_id in pool:
@@ -900,6 +884,8 @@ class Otogi:
         for raw_name in names:
             name, lb = self._process_name(raw_name)
             daemon = await self._search(ctx, name, prompt=False)
+            if not daemon:
+                continue
             for i, d in enumerate(player["daemons"]):
                 if d["id"] == daemon.id and d["lb"] == lb:
                     index = i
@@ -925,6 +911,8 @@ class Otogi:
         for raw_name in names:
             name, lb = self._process_name(raw_name)
             daemon = await self._search(ctx, name, prompt=False)
+            if not daemon:
+                continue
             i = 0
             while i < len(player["daemons"]):
                 d = player["daemons"][i]
@@ -1059,6 +1047,8 @@ class Otogi:
         if name:
             name, lb = self._process_name(player, name)
             daemon = await self._search(ctx, name, prompt=False)
+            if not daemon:
+                return await ctx.send(f"Can't find {name} in database.")
             self.lb_that(player, daemon.id)
         else:
             all_ids = set([])

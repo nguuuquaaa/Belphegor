@@ -93,8 +93,6 @@ class Help:
             value=
                 "`>>d`, `>>daemon` - Check a daemon info\n"
                 "      `filter` - Find daemons with given conditions\n"
-                "`>>t`, `>>trivia` - Daemon trivia stuff\n"
-                "`>>p`, `>>pic` - Illustrations\n"
                 "Note: Data taken from [Otogi Wikia](http://otogi.wikia.com/)\n\n"
                 "`>>update` - Update database\n\n"
                 "`>>nuker(s)` - Nuker rank\n"

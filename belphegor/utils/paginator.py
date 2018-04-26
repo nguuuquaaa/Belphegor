@@ -3,6 +3,7 @@ from discord.ext import commands
 import collections
 import traceback
 import asyncio
+import inspect
 
 #==================================================================================================================================================
 
@@ -33,20 +34,20 @@ class Paginator:
 
         if book:
             self._item_amount = []
-            self.page_amount = []
+            self._page_amount = []
             for c in container:
                 l = len(c)
                 self._item_amount.append(l)
-                self.page_amount.append((l - 1) // per_page + 1)
+                self._page_amount.append((l - 1) // per_page + 1)
         else:
             self._item_amount = len(container)
-            self.page_amount = (len(container) - 1) // per_page + 1
+            self._page_amount = (len(container) - 1) // per_page + 1
 
         if render is True:
             self.render = self._from_item
         elif render is False:
             self.render = self._prerender
-            self.page_amount = self._item_amount
+            self._page_amount = self._item_amount
         elif callable(render):
             self.render = render
         else:
@@ -57,21 +58,27 @@ class Paginator:
         self.current_book = 0 if book else None
         self.book_amount = len(container) if book else 1
         self._setup_base_actions()
-        self.cached_embeds = {}
 
-    def _get_page_amount(self, book=None):
+    def get_page_amount(self, book=None):
         if self.book_mode:
             book = book or self.current_book
-            return self.page_amount[book]
+            return self._page_amount[book]
         else:
-            return self.page_amount
+            return self._page_amount
+
+    def get_item_amount(self, book=None):
+        if self.book_mode:
+            book = book or self.current_book
+            return self._page_amount[book]
+        else:
+            return self._page_amount
 
     def _go_left(self):
         self.current_page = max(self.current_page-1, 0)
         return self.render()
 
     def _go_right(self):
-        self.current_page = min(self.current_page+1, self._get_page_amount()-1)
+        self.current_page = min(self.current_page+1, self.get_page_amount()-1)
         return self.render()
 
     def _jump_left(self):
@@ -79,22 +86,22 @@ class Paginator:
         return self.render()
 
     def _jump_right(self):
-        self.current_page = min(self.current_page+self.jump, self._get_page_amount()-1)
+        self.current_page = min(self.current_page+self.jump, self.get_page_amount()-1)
         return self.render()
 
     def _go_up(self):
         self.current_book = max(self.current_book-1, 0)
-        self.current_page = min(self.current_page, self._get_page_amount()-1)
+        self.current_page = min(self.current_page, self.get_page_amount()-1)
         return self.render()
 
     def _go_down(self):
         self.current_book = min(self.current_book+1, self.book_amount-1)
-        self.current_page = min(self.current_page, self._get_page_amount()-1)
+        self.current_page = min(self.current_page, self.get_page_amount()-1)
         return self.render()
 
     def _setup_base_actions(self):
         self.navigation = collections.OrderedDict()
-        if (self.book_mode and max(self.page_amount) > 1) or (not self.book_mode and self.page_amount > 1):
+        if (self.book_mode and max(self._page_amount) > 1) or (not self.book_mode and self._page_amount > 1):
             self.navigation["\u23ee"] = self._jump_left
             self.navigation["\u25c0"] = self._go_left
             self.navigation["\u25b6"] = self._go_right
@@ -124,63 +131,37 @@ class Paginator:
         page = self.current_page
         book = self.current_book
         book_mode = self.book_mode
-        cached_render = self.cached_embeds.get((page, book))
-        if cached_render:
-            return cached_render
-
         render_data = self.render_data
         Empty = discord.Embed.Empty
-
         per_page = self.per_page
+
         if book_mode:
             container = self.container[book]
             item_amount = self._item_amount[book]
-            page_amount = self.page_amount[book]
+            page_amount = self._page_amount[book]
             book_amount = len(self.container)
         else:
             container = self.container
             item_amount = self._item_amount
-            page_amount = self.page_amount
+            page_amount = self._page_amount
 
-        title = render_data.get("title")
-        if callable(title):
-            if book_mode:
-                t = title(page, book)
+        parts = {}
+        for key in ("title", "url", "colour", "prefix", "suffix", "author", "thumbnail_url", "image_url", "footer"):
+            subject = render_data.get(key)
+            if callable(subject):
+                if book_mode:
+                    value = subject(page, book)
+                else:
+                    value = subject(page)
             else:
-                t = title(page)
-        else:
-            t = title
-        url = render_data.get("url")
-        if callable(url):
-            if book_mode:
-                u = url(page, book)
-            else:
-                u = url(page)
-        else:
-            u = url
+                value = subject
+            parts[key] = value
+
         embed = discord.Embed(
-            title=t or Empty,
-            url=u or Empty,
-            colour=render_data.get("colour", Empty)
+            title=parts.get("title") or Empty,
+            url=parts.get("url") or Empty,
+            colour=parts.get("colour") or Empty
         )
-
-        prefix = render_data.get("prefix")
-        if callable(prefix):
-            if book_mode:
-                pf = prefix(page, book)
-            else:
-                pf = prefix(page)
-        else:
-            pf = prefix or ""
-
-        suffix = render_data.get("suffix")
-        if callable(suffix):
-            if book_mode:
-                sf = suffix(page, book)
-            else:
-                sf = suffix(page)
-        else:
-            sf = suffix or ""
 
         description = render_data.get("description")
         fields = render_data.get("fields")
@@ -211,48 +192,36 @@ class Paginator:
                         embed.add_field(name=name, value=value, inline=inline)
                 paging = f"Page {page+1}/{page_amount}"
 
-        embed.description = self.separator.join(desc) or Empty
+        if desc:
+            embed.description = f"{parts.get('prefix') or ''}\n{self.separator.join(desc)}\n{parts.get('suffix') or ''}"
 
-        author = render_data.get("author")
+        author = parts.get("author")
         if author:
-            embed.set_author(name=author, icon_url=render_data.get("author_icon", Empty))
+            embed.set_author(name=author, icon_url=render_data.get("author_icon") or Empty)
 
-        thumbnail_url = render_data.get("thumbnail_url")
+        thumbnail_url = parts.get("thumbnail_url")
         if thumbnail_url:
             embed.set_thumbnail(url=thumbnail_url)
 
-        image_url = render_data.get("image_url")
-        if callable(image_url):
-            if book_mode:
-                imgur = image_url(page, book)
-            else:
-                imgur = image_url(page)
-        else:
-            imgur = image_url
-        if imgur:
-            embed.set_image(url=imgur)
+        image_url = parts.get("image_url")
+        if image_url:
+            embed.set_image(url=image_url)
 
-        footer = render_data.get("footer")
-        if callable(footer):
-            if book_mode:
-                f = footer(page, book)
-            else:
-                f = footer(page)
-        else:
-            f = footer
+        footer = parts.get("footer")
         if self.page_display:
             embed.set_footer(text=f"({paging}) \u25fd {footer}" if footer else f"({paging})")
         else:
             embed.set_footer(text=footer or Empty)
 
-        self.cached_embeds[(page, book)] = embed
         return embed
 
     async def navigate(self, ctx, *, timeout=60, target=None):
         _bot = ctx.bot
         _loop = _bot.loop
         target = target or ctx.author
-        embed = self.render()
+        if not self.navigation:
+            return
+        embed = next(iter(self.navigation.values()))()
         message = await ctx.send(embed=embed)
         for e in self.navigation:
             _loop.create_task(message.add_reaction(e))
@@ -274,6 +243,8 @@ class Paginator:
                 except asyncio.TimeoutError:
                     return
                 embed = self.navigation[reaction.emoji]()
+                if inspect.isawaitable(embed):
+                    embed = await embed
                 if embed:
                     await message.edit(embed=embed)
                     _loop.create_task(try_it(message.remove_reaction(reaction, user)))
