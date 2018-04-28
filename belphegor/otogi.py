@@ -736,7 +736,7 @@ class Otogi:
             await self.player_list.find_one_and_update({"id": id}, {"$push": {"daemons": {"$each": [{"id": daemon_id, "lb": 0}], "$sort": {"id": 1, "lb": -1}}}})
             daemon = await ctx.search(daemon_id, self.daemon_collection, cls=Daemon, atts=["id"], name_att="name", prompt=False)
             embed = discord.Embed(title=f"{ctx.author.display_name} summoned {daemon.name}!", colour=discord.Colour.orange())
-            scale_url = daemon.true_url
+            scale_url = daemon.true_image_url
             data = scale_url.split("?cb=")
             try:
                 code = data[2].partition("&")

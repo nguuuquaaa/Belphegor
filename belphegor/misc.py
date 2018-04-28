@@ -84,6 +84,7 @@ class Misc:
     def __init__(self, bot):
         self.bot = bot
         self.jankenpon_record = bot.db.jankenpon_record
+        self.google_regex = re.compile(r"\<input name\=\"rlz\" value\=\"([a-zA-Z0-9_])\" type\=\"hidden\">")
         self.google_lock = asyncio.Lock()
 
     def quote(self, streak):
@@ -469,11 +470,12 @@ class Misc:
             async with ctx.typing():
                 params = {
                     "q": quote(search),
+                    "oq": quote(search),
                     "safe": "active",
                     "lr": "lang_en",
                     "hl": "en"
                 }
-                if ctx.channel.nsfw:
+                if ctx.channel.is_nsfw():
                     params.pop("safe")
                 bytes_ = await self.bot.fetch("https://www.google.com/search", params=params)
                 result = await self.bot.loop.run_in_executor(None, self.parse_google, bytes_)

@@ -609,7 +609,7 @@ class Guild:
                 embed = discord.Embed(colour=discord.Colour.dark_orange())
                 embed.add_field(name="Event", value="member_join", inline=False)
                 embed.add_field(name="ID", value=member.id)
-                embed.add_field(name="Name", value=str(member))
+                embed.add_field(name="Name", value=member.mention)
                 embed.set_footer(text=utils.format_time(utils.now_time()))
                 await log_channel.send(embed=embed)
             welcome_channel = guild.get_channel(guild_data.get("welcome_channel_id"))
@@ -639,7 +639,7 @@ class Guild:
                 embed = discord.Embed(colour=discord.Colour.dark_orange())
                 embed.add_field(name="Event", value="member_leave", inline=False)
                 embed.add_field(name="ID", value=member.id)
-                embed.add_field(name="Name", value=str(member))
+                embed.add_field(name="Name", value=member.mention)
                 embed.set_footer(text=utils.format_time(utils.now_time()))
                 await log_channel.send(embed=embed)
 
@@ -656,7 +656,7 @@ class Guild:
                 embed = discord.Embed(colour=discord.Colour.dark_orange())
                 embed.add_field(name="Event", value="member_ban", inline=False)
                 embed.add_field(name="ID", value=user.id)
-                embed.add_field(name="Name", value=str(user))
+                embed.add_field(name="Name", value=user.mention)
                 embed.set_footer(text=utils.format_time(utils.now_time()))
                 await log_channel.send(embed=embed)
 
@@ -677,7 +677,7 @@ class Guild:
                 embed = discord.Embed(colour=discord.Colour.dark_orange())
                 embed.add_field(name="Event", value="member_update", inline=False)
                 embed.add_field(name="ID", value=before.id)
-                embed.add_field(name="Name", value=str(before))
+                embed.add_field(name="Name", value=before.mention)
                 if nick_change:
                     embed.add_field(name="Old nickname", value=before.nick, inline=False)
                     embed.add_field(name="New nickname", value=after.nick, inline=False)
@@ -718,7 +718,7 @@ class Guild:
                     embed = discord.Embed(colour=discord.Colour.dark_orange())
                     embed.add_field(name="Event", value="message_delete", inline=False)
                     embed.add_field(name="ID", value=message.id)
-                    embed.add_field(name="Author", value=str(message.author))
+                    embed.add_field(name="Author", value=message.author.mention)
                     embed.add_field(name="Channel", value=message.channel.mention)
                     if message.content:
                         embed.add_field(name="Content", value=f"{message.content[:1000]}" if len(message.content)>1000 else message.content, inline=False)
@@ -745,7 +745,7 @@ class Guild:
                         embed = discord.Embed(colour=discord.Colour.dark_orange())
                         embed.add_field(name="Event", value="message_edit", inline=False)
                         embed.add_field(name="ID", value=before.id)
-                        embed.add_field(name="Author", value=str(before.author))
+                        embed.add_field(name="Author", value=before.author.mention)
                         embed.add_field(name="Channel", value=before.channel.mention)
                         embed.add_field(name="Before", value=f"{before.content[:1000]}..." if len(before.content)>1000 else before.content, inline=False)
                         embed.add_field(name="After", value=f"{after.content[:1000]}..." if len(after.content)>1000 else after.content, inline=False)

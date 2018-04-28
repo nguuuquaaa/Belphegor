@@ -181,7 +181,7 @@ class Weapon(data_type.BaseObject):
         if self.pic_url:
             embed.set_thumbnail(url=self.pic_url)
         rq = self.requirement
-        embed.add_field(name="Requirement", value=f"{emojis[rq['type']]}{rq['value']}")
+        embed.add_field(name="Requirement", value=f"{emojis.get(rq['type'], '')}{rq['value']}" or "?")
         max_atk = self.atk['max']
         embed.add_field(name="ATK", value="\n".join((f"{emojis[e]}{max_atk[e]}" for e in ATK_EMOJIS)))
         for prp in self.properties:
@@ -259,9 +259,12 @@ class PSO2:
         self.last_eq_data = None
         self.daily_order_pattern = bot.db.daily_order_pattern
         self.calendar = build("calendar", "v3", developerKey=token.GOOGLE_CLIENT_API_KEY)
+        self.incoming_events = data_type.Observer()
+        self.boost_remind_forever = weakref.ref(bot.loop.create_task(self.boost_remind()))
 
     def __unload(self):
         self.eq_alert_forever().cancel()
+        self.boost_remind_forever().cancel()
 
     @commands.command(aliases=["c"])
     async def chip(self, ctx, *, name):
@@ -854,30 +857,76 @@ class PSO2:
         results = []
         for item in response.get("items", []):
             title = item.get("summary").lower()
-            if title.startswith(("pso2 day", "arks league")) or title.endswith("boost"):
+            if title.startswith(("pso2 day", "arks league")) or "boost" in title:
                 results.append(item)
+        results.sort(key=lambda x: x["start"]["dateTime"])
         return results
 
     @commands.command(name="boost")
     @checks.owner_only()
     async def cmd_boost(self, ctx):
-        incoming_events = await self.bot.loop.run_in_executor(None, self.get_calendar_events, "pso2emgquest@gmail.com")
+        events = await self.bot.loop.run_in_executor(None, self.get_calendar_events, "pso2emgquest@gmail.com")
+        self.incoming_events.assign(events)
 
         def process_date(i, x):
-            start_date = iso_time_regex.fullmatch(x['start']['dateTime'])
-            end_date = iso_time_regex.fullmatch(x['end']['dateTime'])
+            start_date = iso_time_regex.fullmatch(x["start"]["dateTime"])
+            end_date = iso_time_regex.fullmatch(x["end"]["dateTime"])
             txt = \
                 f"From {start_date.group(4)}:{start_date.group(5)}, {start_date.group(3)}-{start_date.group(2)}\n" \
                 f"To {end_date.group(4)}:{end_date.group(5)}, {end_date.group(3)}-{end_date.group(2)}"
-            return x['summary'], txt, False
+            return x["summary"], txt, False
 
-        paging = utils.Paginator(
-            incoming_events, 10, separator="\n\n",
-            title="Boosto",
-            fields=process_date,
-            footer=utils.jp_time(utils.now_time())
-        )
-        await paging.navigate(ctx)
+        if events:
+            paging = utils.Paginator(
+                events, 10, separator="\n\n",
+                title="Boosto",
+                fields=process_date,
+                footer=utils.jp_time(utils.now_time())
+            )
+            await paging.navigate(ctx)
+        else:
+            await ctx.send("No boost this week, oof.")
+
+    async def boost_remind(self):
+        if not self.incoming_events:
+            events = await self.bot.loop.run_in_executor(None, self.get_calendar_events, "pso2emgquest@gmail.com")
+            self.incoming_events.assign(events)
+
+        while True:
+            self.incoming_events.clear()
+            now = utils.now_time()
+            if self.incoming_events:
+                next_event = self.incoming_events.call("pop", 0)
+
+                start_date = iso_time_regex.fullmatch(next_event["start"]["dateTime"])
+                end_date = iso_time_regex.fullmatch(next_event["end"]["dateTime"])
+                start_time = now.replace(int(start_date.group(1)), int(start_date.group(2)), int(start_date.group(3)), int(start_date.group(4)), int(start_date.group(5)))
+                wait_time = (start_time - now).total_seconds()
+                if wait_time > 900:
+                    try:
+                        await asyncio.wait_for(self.incoming_events.wait(), wait_time-900)
+                    except asyncio.TimeoutError:
+                        pass
+                    else:
+                        continue
+                elif wait_time < 0:
+                    continue
+
+                embed = discord.Embed(
+                    title="(Not) EQ Alert",
+                    description=f"\U0001f4b5 {next_event['summary']}\n"
+                    f"From {start_date.group(4)}:{start_date.group(5)} to {end_date.group(4)}:{end_date.group(5)}",
+                    colour=discord.Colour.red()
+                )
+                async for gd in self.guild_data.find(
+                    {"eq_channel_id": {"$exists": True}},
+                    projection={"_id": False, "eq_channel_id": True}
+                ):
+                    channel = self.bot.get_channel(gd["eq_channel_id"])
+                    if channel:
+                        self.bot.loop.create_task(channel.send(embed=embed))
+            else:
+                await self.incoming_events.wait()
 
 #==================================================================================================================================================
 
