@@ -578,7 +578,7 @@ class PSO2:
             self.bot.session,
             "https://pso2.acf.me.uk/PSO2Alert.json",
             headers={
-                "User-Agent": "PSO2Alert_3.0.5.3",
+                "User-Agent": "PSO2Alert_3.0.5.4",
                 "Connection": "Keep-Alive",
                 "Host": "pso2.acf.me.uk"
             }
@@ -627,23 +627,27 @@ class PSO2:
                 for index, key in enumerate(TIME_LEFT):
                     if data[key]:
                         sched_time = start_time + timedelta(minutes=30*index)
-                        time_left = int(round((sched_time - next_time).total_seconds(), -1))
+                        time_left = int(round((sched_time - now_time).total_seconds(), -1))
                         if time_left == 0:
                             full_desc.append(f"\u2694 **Now**\n   `All ships:` {data[key]}")
-                            if random_eq and index == 2:
-                                full_desc.append(f"\u2694 **Now:**\n{random_eq}")
                         elif time_left > 0:
-                            text = f"\u23f0 **In {utils.seconds_to_text(time_left)}:**\n   `All ships:` {data[key]}"
-                            if random_eq and index == 2:
-                                req_text = f"\u23f0 **In {utils.seconds_to_text(time_left)} minutes:**\n{random_eq}"
                             if time_left in (900, 2700, 6300, 9900):
+                                text = f"\u23f0 **In {utils.seconds_to_text(time_left)}:**\n   `All ships:` {data[key]}"
                                 full_desc.append(text)
-                                if random_eq and index == 2:
+                                if time_left in (2700, 6300):
+                                    simple_desc.append(text)
+                    if index == 2:
+                        if random_eq:
+                            sched_time = start_time + timedelta(hours=1)
+                            time_left = int(round((sched_time - now_time).total_seconds(), -1))
+                            if time_left == 0:
+                                full_desc.append(f"\u2694 **Now:**\n{random_eq}")
+                            elif time_left > 0:
+                                if time_left in (900, 2700, 6300, 9900):
+                                    req_text = f"\u23f0 **In {utils.seconds_to_text(time_left)} minutes:**\n{random_eq}"
                                     full_desc.append(req_text)
-                            if time_left  in (2700, 6300):
-                                simple_desc.append(text)
-                                if random_eq and index == 2:
-                                    simple_desc.append(req_text)
+                                    if time_left in (2700, 6300):
+                                        simple_desc.append(req_text)
 
                 if full_desc:
                     full_embed = discord.Embed(title="EQ Alert", description="\n\n".join(full_desc), colour=discord.Colour.red())
@@ -696,7 +700,7 @@ class PSO2:
         jst = int(data["JST"])
         start_time = now_time.replace(minute=0, second=0) + timedelta(hours=jst-1-now_time.hour)
         ship_gen = (f"Ship{ship_number}" for ship_number in range(1, 11))
-        random_eq = "\n".join((f"`   Ship {ship[4]}:` {data[ship]}" for ship in ship_gen if data[ship]))
+        random_eq = "\n".join((f"`   Ship {ship[4:]}:` {data[ship]}" for ship in ship_gen if data[ship]))
         sched_eq = []
         for index, key in enumerate(TIME_LEFT):
             if data[key]:
@@ -914,8 +918,8 @@ class PSO2:
 
                 embed = discord.Embed(
                     title="(Not) EQ Alert",
-                    description=f"\U0001f4b5 {next_event['summary']}\n"
-                    f"From {start_date.group(4)}:{start_date.group(5)} to {end_date.group(4)}:{end_date.group(5)}",
+                    description=
+                        f"\U0001f4b5 {next_event['summary']}\n   From {start_date.group(4)}:{start_date.group(5)} to {end_date.group(4)}:{end_date.group(5)}",
                     colour=discord.Colour.red()
                 )
                 async for gd in self.guild_data.find(

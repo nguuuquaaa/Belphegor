@@ -844,7 +844,7 @@ class Otogi:
             )
             await paging.navigate(ctx)
         else:
-            embed = discord.Embed(f"Mochi: {player['mochi']}{self.emojis['mochi']}", description="Empty", colour=discord.Colour.orange())
+            embed = discord.Embed(title=f"Mochi: {player['mochi']}{self.emojis['mochi']}", description="Empty", colour=discord.Colour.orange())
             embed.set_author(name=f"{target.display_name}'s box", icon_url=target.avatar_url)
             await ctx.send(embed=embed)
 
