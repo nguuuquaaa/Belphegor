@@ -243,7 +243,7 @@ class PSO2:
             "fire", "ice", "lightning", "wind", "light", "dark",
             "hu", "fi", "ra", "gu", "fo", "te", "br", "bo", "su", "hr",
             "satk", "ratk", "tatk", "ability", "potential",
-            "pa", "saf", "star_0", "star_1", "star_2", "star_3", "star_4"
+            "pa", "saf", "star_0", "star_1", "star_2", "star_3", "star_4", "rappy"
         ):
             self.emojis[emoji_name] = discord.utils.find(lambda e:e.name==emoji_name, test_guild.emojis)
         for emoji_name in WEAPON_SORT:
@@ -860,55 +860,77 @@ class PSO2:
         response = self.calendar.events().list(calendarId=calendar_id, timeMin=time_min).execute()
         results = []
         for item in response.get("items", []):
-            title = item.get("summary").lower()
-            if title.startswith(("pso2 day", "arks league")) or "boost" in title:
-                results.append(item)
+            title = item["summary"].lower()
+            if title.startswith("pso2 day"):
+                item["is_boost_period"] = None
+            elif title.startswith("arks league"):
+                item["is_boost_period"] = False
+            elif "boost" in title:
+                item["is_boost_period"] = True
+            else:
+                continue
+            results.append(item)
         results.sort(key=lambda x: x["start"]["dateTime"])
         return results
 
-    @commands.command(name="boost")
-    @checks.owner_only()
-    async def cmd_boost(self, ctx):
+    async def update_events(self):
         events = await self.bot.loop.run_in_executor(None, self.get_calendar_events, "pso2emgquest@gmail.com")
         self.incoming_events.assign(events)
 
-        def process_date(i, x):
-            start_date = iso_time_regex.fullmatch(x["start"]["dateTime"])
-            end_date = iso_time_regex.fullmatch(x["end"]["dateTime"])
-            txt = \
-                f"From {start_date.group(4)}:{start_date.group(5)}, {start_date.group(3)}-{start_date.group(2)}\n" \
-                f"To {end_date.group(4)}:{end_date.group(5)}, {end_date.group(3)}-{end_date.group(2)}"
-            return x["summary"], txt, False
+    @commands.group(name="boost")
+    async def cmd_boost(self, ctx):
+        '''
+            `>>boost`
+            Display current week's casino boost, PSO2 Day and ARKS League.
+        '''
+        if ctx.invoked_subcommand is None:
+            def process_date(i, x):
+                start_date = iso_time_regex.fullmatch(x["start"]["dateTime"])
+                end_date = iso_time_regex.fullmatch(x["end"]["dateTime"])
+                txt = \
+                    f"From {start_date.group(4)}:{start_date.group(5)}, {start_date.group(3)}-{start_date.group(2)}\n" \
+                    f"To {end_date.group(4)}:{end_date.group(5)}, {end_date.group(3)}-{end_date.group(2)}"
+                return x["summary"], txt, False
 
-        if events:
-            paging = utils.Paginator(
-                events, 10, separator="\n\n",
-                title="Boosto",
-                fields=process_date,
-                footer=utils.jp_time(utils.now_time())
-            )
-            await paging.navigate(ctx)
-        else:
-            await ctx.send("No boost this week, oof.")
+            events = self.incoming_events.item
+            if events:
+                paging = utils.Paginator(
+                    events, 5, separator="\n\n",
+                    title="Boosto",
+                    fields=process_date,
+                    footer=utils.jp_time(utils.now_time())
+                )
+                await paging.navigate(ctx)
+            else:
+                await ctx.send("No boost this week, oof.")
+
+    @cmd_boost.command(name="update", hidden=True)
+    @checks.owner_only()
+    async def cmd_boost_update(self, ctx):
+        await self.update_events()
+        await ctx.confirm()
 
     async def boost_remind(self):
         if not self.incoming_events:
-            events = await self.bot.loop.run_in_executor(None, self.get_calendar_events, "pso2emgquest@gmail.com")
-            self.incoming_events.assign(events)
+            await self.update_events()
 
         while True:
             self.incoming_events.clear()
-            now = utils.now_time()
+            now_time = utils.now_time(utils.jp_timezone)
             if self.incoming_events:
-                next_event = self.incoming_events.call("pop", 0)
+                next_event = self.incoming_events.item[0]
 
                 start_date = iso_time_regex.fullmatch(next_event["start"]["dateTime"])
                 end_date = iso_time_regex.fullmatch(next_event["end"]["dateTime"])
-                start_time = now.replace(int(start_date.group(1)), int(start_date.group(2)), int(start_date.group(3)), int(start_date.group(4)), int(start_date.group(5)))
-                wait_time = (start_time - now).total_seconds()
-                if wait_time > 900:
+                start_time = datetime(
+                    int(start_date.group(1)), int(start_date.group(2)), int(start_date.group(3)),
+                    int(start_date.group(4)), int(start_date.group(5)), 0, 0,
+                    utils.jp_timezone
+                )
+                wait_time = (start_time - now_time).total_seconds()
+                if wait_time > 2700:
                     try:
-                        await asyncio.wait_for(self.incoming_events.wait(), wait_time-900)
+                        await asyncio.wait_for(self.incoming_events.wait(), wait_time-2700)
                     except asyncio.TimeoutError:
                         pass
                     else:
@@ -916,12 +938,20 @@ class PSO2:
                 elif wait_time < 0:
                     continue
 
+                now_time = utils.now_time(utils.jp_timezone)
                 embed = discord.Embed(
                     title="(Not) EQ Alert",
-                    description=
-                        f"\U0001f4b5 {next_event['summary']}\n   From {start_date.group(4)}:{start_date.group(5)} to {end_date.group(4)}:{end_date.group(5)}",
                     colour=discord.Colour.red()
                 )
+                is_boost_period = next_event["is_boost_period"]
+                if is_boost_period is None:
+                    embed.description = f"{self.emojis['rappy']} {next_event['summary']}"
+                    embed.set_image(url="https://i.imgur.com/FV7a52s.jpg")
+                elif is_boost_period is False:
+                    embed.description = f"\U0001f3c6 {next_event['summary']}\n   From {start_date.group(4)}:{start_date.group(5)} to {end_date.group(4)}:{end_date.group(5)}"
+                else:
+                    embed.description = f"\U0001f3b0 {next_event['summary']}\n   From {start_date.group(4)}:{start_date.group(5)} to {end_date.group(4)}:{end_date.group(5)}"
+                embed.set_footer(text=utils.jp_time(now_time))
                 async for gd in self.guild_data.find(
                     {"eq_channel_id": {"$exists": True}},
                     projection={"_id": False, "eq_channel_id": True}
@@ -929,8 +959,14 @@ class PSO2:
                     channel = self.bot.get_channel(gd["eq_channel_id"])
                     if channel:
                         self.bot.loop.create_task(channel.send(embed=embed))
+                self.incoming_events.call("pop", 0)
             else:
-                await self.incoming_events.wait()
+                try:
+                    await asyncio.wait_for(self.incoming_events.wait(), 7200)
+                except asyncio.TimeoutError:
+                    await self.update_events()
+                else:
+                    continue
 
 #==================================================================================================================================================
 

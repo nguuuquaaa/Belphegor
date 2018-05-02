@@ -140,7 +140,8 @@ class Help:
                 "`>>price` - Check item price, quite outdated\n"
                 "Note: Data taken from DB Kakia\n\n"
                 "`>>eq` - Display EQ schedule for the next 3 hours\n"
-                "`>>daily` - Display daily orders/featured quests",
+                "`>>daily` - Display daily orders/featured quests\n"
+                "`>>boost` - Display current week's boost events",
             inline=False
         )
         embed.add_field(
@@ -198,7 +199,7 @@ class Help:
         embed.add_field(
             name="Commands",
             value=
-                "`>>r`, `>>random` - Base command, do nothing\n"
+                "`>>r`, `>>random`\n"
                 "      `d`, `danbooru` - [Danbooru](https://danbooru.donmai.us)\n"
                 "      `s`, `safebooru` - [Safebooru](https://safebooru.org)\n"
                 "      `k`, `konachan` - [Konachan](http://konachan.net)\n"
@@ -222,7 +223,7 @@ class Help:
         embed.add_field(
             name="Commands",
             value=
-                "`>>m`, `>>music` - Base command, do nothing\n"
+                "`>>m`, `>>music`\n"
                 f"      `j`, `join` - Have {ctx.me.display_name} join the voice channel you are\n"
                 "                         currently in and play everything in queue\n"
                 f"      `l`, `leave` - Have {ctx.me.display_name} leave the voice channel\n\n"
@@ -312,7 +313,7 @@ class Help:
         embed.add_field(
             name="Commands",
             value=
-                "`>>remind` - Base command, do nothing\n"
+                "`>>remind`\n"
                 "      `me` - Set a reminder\n"
                 "      `list` - Display all your reminders\n"
                 "      `delete` - Delete a reminder",
@@ -369,7 +370,8 @@ class Help:
                 "`>>g`, `>>google` - Google search\n"
                 "`>>gtrans`, `>>translate` - Google, but translate\n\n"
                 "`>>char` - Get unicode character info.\n"
-                "`>>color`, `>>colour` - Visualize color's code",
+                "`>>color`, `>>colour` - Visualize color's code\n"
+                "`>>choose` - Choose random",
             inline=False
          )
         await ctx.send(embed=embed)
@@ -392,7 +394,7 @@ class Help:
         embed.add_field(
             name="Commands",
             value=
-                "`>>sticker` - Base command, do nothing\n"
+                "`>>sticker`\n"
                 "      `add` - Add a sticker\n"
                 "      `edit` - Edit a sticker\n"
                 "      `delete` - Delete a sticker\n"

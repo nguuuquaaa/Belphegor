@@ -684,6 +684,11 @@ class Misc:
 
     @commands.command(name="choose")
     async def cmd_choose(self, ctx, *, choices):
+        '''
+            `>>choose <choices>`
+            Choose a random item out of <choices>.
+            List of choices is separated by "or".
+        '''
         choices = choices.split(" or ")
         await ctx.send(random.choice(choices))
 
