@@ -32,7 +32,7 @@ class ErrorHandle:
         self.bot.error_hook = self.error_hook
 
     async def on_command_error(self, ctx, error):
-        ignored = (commands.DisabledCommand, commands.CheckFailure, commands.CommandNotFound, commands.UserInputError)
+        ignored = (commands.DisabledCommand, commands.CheckFailure, commands.CommandNotFound, commands.UserInputError, commands.CommandOnCooldown)
         if isinstance(error, commands.CommandInvokeError):
             error = error.original
             prt_err = "".join(traceback.format_exception(type(error), error, error.__traceback__, 5))

@@ -371,7 +371,8 @@ class Help:
                 "`>>gtrans`, `>>translate` - Google, but translate\n\n"
                 "`>>char` - Get unicode character info.\n"
                 "`>>color`, `>>colour` - Visualize color's code\n"
-                "`>>choose` - Choose random",
+                "`>>choose` - Choose random\n"
+                "`>>calc` - Calculator",
             inline=False
          )
         await ctx.send(embed=embed)

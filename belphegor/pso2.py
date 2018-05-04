@@ -644,7 +644,7 @@ class PSO2:
                                 full_desc.append(f"\u2694 **Now:**\n{random_eq}")
                             elif time_left > 0:
                                 if time_left in (900, 2700, 6300, 9900):
-                                    req_text = f"\u23f0 **In {utils.seconds_to_text(time_left)} minutes:**\n{random_eq}"
+                                    req_text = f"\u23f0 **In {utils.seconds_to_text(time_left)}:**\n{random_eq}"
                                     full_desc.append(req_text)
                                     if time_left in (2700, 6300):
                                         simple_desc.append(req_text)
