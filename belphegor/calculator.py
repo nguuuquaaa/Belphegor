@@ -232,7 +232,10 @@ class MathParse:
                 else:
                     raise ParseError("Oi, you put that operator there but didn't put any value before.")
             else:
-                result = value
+                if result:
+                    result = self.OPS["*"](result, value)
+                else:
+                    result = value
 
         return result
 
