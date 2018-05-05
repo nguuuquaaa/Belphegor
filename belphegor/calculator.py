@@ -63,6 +63,7 @@ class MathParse:
         self.last_index = len(self.text) - 1
         self.current_index = 0
         self.current_parse = None
+        self.log_lines = []
 
     def next(self, jump=1):
         self.current_index += jump
@@ -151,6 +152,7 @@ class MathParse:
             return None
 
     def parse_level(self, end=None):
+        self.log_lines.append(f"start level at {self.current_parse}")
         result = None
         n = 0
         sign = None
@@ -185,9 +187,11 @@ class MathParse:
                 sign = None
 
         self.parse_next()
+        self.log_lines.append(f"end level at {self.current_parse}")
         return result
 
     def parse_group(self):
+        self.log_lines.append(f"start group at {self.current_parse}")
         result = None
         last_ops = None
         last_func = None
@@ -237,10 +241,14 @@ class MathParse:
                 else:
                     result = value
 
+        self.log_lines.append(f"end group at {self.current_parse}")
         return result
 
     def result(self):
         return self.parse_level()
+
+    def log(self):
+        return "\n".join(self.log_lines)
 
 #==================================================================================================================================================
 
@@ -267,13 +275,13 @@ class Calculator:
             await ctx.send(e)
         except asyncio.TimeoutError:
             await ctx.send("Result too large.")
-        except:
-            tb = f"```\n{traceback.format_exc()}\n```"
-            if hasattr(self.bot, "error_hook"):
-                await ctx.send("Parsing error.")
-                await self.bot.error_hook.execute(tb)
-            else:
-                print(tb)
+        except Exception as e:
+            await ctx.send("Parsing error.")
+            #l = m.log()
+            #try:
+            #    await self.bot.error_hook.execute(l)
+            #except AttributeError:
+            #    print(l)
         else:
             i = int(r)
             if i == r:
