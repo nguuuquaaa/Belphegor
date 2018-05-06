@@ -9,7 +9,7 @@ import asyncio
 
 #==================================================================================================================================================
 
-assign_regex = re.compile("\s*(\w)[ \t]*\=\s*(.+)")
+assign_regex = re.compile("\s*(\w+)[ \t]*\=\s*(.+)")
 
 #==================================================================================================================================================
 
@@ -305,6 +305,7 @@ class MathParse:
 class Calculator:
     def __init__(self, bot):
         self.bot = bot
+        self.enable_log = False
 
     @commands.command(aliases=["calc"])
     async def calculate(self, ctx, *, stuff):
@@ -330,14 +331,24 @@ class Calculator:
             await ctx.send("Result too large.")
         except:
             await ctx.send("Parsing error.")
-            #l = f"{m.log()}\n{traceback.format_exc()}"
-            #try:
-            #    await self.bot.error_hook.execute(l)
-            #except AttributeError:
-            #    print(l)
+            if self.enable_log:
+                l = f"{m.log()}\n{traceback.format_exc()}"
+                try:
+                    await self.bot.error_hook.execute(l)
+                except AttributeError:
+                    print(l)
         else:
             r = "\n".join(results)
             await ctx.send(f"```\n{r}\n```")
+
+    @commands.command(name="logcalc", aliases=["calclog"], hidden=True)
+    @checks.owner_only()
+    async def calc_log(self, ctx):
+        if self.enable_log:
+            self.enable_log = False
+        else:
+            self.enable_log = True
+        await ctx.confirm()
 
 #==================================================================================================================================================
 
