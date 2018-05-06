@@ -9,6 +9,10 @@ import asyncio
 
 #==================================================================================================================================================
 
+assign_regex = re.compile("\s*(\w)[ \t]*\=\s*(.+)")
+
+#==================================================================================================================================================
+
 class ParseError(Exception):
     pass
 
@@ -59,11 +63,9 @@ class MathParse:
     CLOSED = tuple(c[0] for c in ENCLOSED.values())
 
     def __init__(self, text):
-        self.text = "".join((t for t in text if t not in " \t\n\r"))
-        self.last_index = len(self.text) - 1
-        self.current_index = 0
-        self.current_parse = None
+        self.formulas = text.splitlines()
         self.log_lines = []
+        self.variables = {}
 
     def next(self, jump=1):
         self.current_index += jump
@@ -74,6 +76,11 @@ class MathParse:
             return self.text[ci]
         else:
             return None
+
+    def reset(self):
+        self.last_index = len(self.text) - 1
+        self.current_index = 0
+        self.current_parse = None
 
     def peek_ahead(self, number=1):
         nx = self.current_index
@@ -98,6 +105,8 @@ class MathParse:
         return output("".join(get_it))
 
     def parse_next(self):
+        while self.cur() in (" ", "\t"):
+            self.next()
         n = self.cur()
         if n is None:
             self.current_parse = None
@@ -115,7 +124,7 @@ class MathParse:
                 self.next()
                 self.current_parse = self.OPS[n]
         else:
-            for i in range(1, 5):
+            for i in (4, 3, 2, 1):
                 fn = self.peek_ahead(i)
                 if fn in self.FUNCS:
                     self.next(i)
@@ -124,6 +133,10 @@ class MathParse:
                 elif fn in self.CONSTS:
                     self.next(i)
                     self.current_parse = self.CONSTS[fn]
+                    break
+                elif fn in self.variables:
+                    self.next(i)
+                    self.current_parse = self.variables[fn]
                     break
             else:
                 self.next()
@@ -144,7 +157,7 @@ class MathParse:
             else:
                 p = n
                 self.parse_next()
-            if value == 0 or p * math.log10(value) < 300:
+            if value == 0 or p * math.log10(abs(value)) < 300:
                 return value ** p
             else:
                 raise ParseError("Why you need this large number.")
@@ -245,7 +258,35 @@ class MathParse:
         return result
 
     def result(self):
-        return self.parse_level()
+        results = []
+        for f in self.formulas:
+            m = assign_regex.match(f)
+            if m:
+                for d in m.group(1):
+                    if d not in self.DIGITS:
+                        break
+                else:
+                    raise ParseError("WTF variable name...")
+                self.text = m.group(2)
+            else:
+                self.text = f
+
+            self.reset()
+            r = self.parse_level()
+            i = int(r)
+            if i == r:
+                s = str(i)
+            else:
+                i = r
+                s = f"{r:.10f}".rstrip("0")
+
+            if m:
+                x = m.group(1)
+                self.variables[x] = i
+                results.append(f"{x} = {s}")
+            else:
+                results.append(s)
+        return results
 
     def log(self):
         return "\n".join(self.log_lines)
@@ -259,35 +300,35 @@ class Calculator:
     @commands.command(aliases=["calc"])
     async def calculate(self, ctx, *, stuff):
         '''
-            `>>calc <formula>`
-            Self-explanation.
+            `>>calc <formulas>`
+            Formulas are separated by linebreak. You can codeblock the whole thing for easier on the eyes.
             Acceptable expressions:
              - Operators `+` , `-` , `*` , `/` (true div), `//` (div mod), `%` (mod), `^` (pow), `!` (factorial)
              - Functions `sin`, `cos`, `tan`, `cot`, `log` (base 10), `ln` (natural log), `sqrt` (square root)
              - Constants `e`, `pi`, `π`, `tau`, `τ`
              - Enclosed `()`, `[]`, `{{}}`, `||` (abs), `\u2308 \u2309` (ceil), `\u230a \u230b` (floor)
-
+             - Set a variable to a value (value can be calculable formula) for next calculations
         '''
+        if stuff.startswith("```"):
+            stuff = stuff.partition("\n")[2]
+        stuff = stuff.strip("` \n")
         m = MathParse(stuff)
         try:
-            r = await asyncio.wait_for(self.bot.loop.run_in_executor(None, m.result), 10)
+            results = await asyncio.wait_for(self.bot.loop.run_in_executor(None, m.result), 10)
         except ParseError as e:
             await ctx.send(e)
         except asyncio.TimeoutError:
             await ctx.send("Result too large.")
-        except Exception as e:
+        except:
             await ctx.send("Parsing error.")
-            #l = m.log()
-            #try:
-            #    await self.bot.error_hook.execute(l)
-            #except AttributeError:
-            #    print(l)
+            l = f"{m.log()}\n{traceback.format_exc()}"
+            try:
+                await self.bot.error_hook.execute(l)
+            except AttributeError:
+                print(l)
         else:
-            i = int(r)
-            if i == r:
-                await ctx.send(i)
-            else:
-                await ctx.send(f"{r:.5f}")
+            r = "\n".join(results)
+            await ctx.send(f"```\n{r}\n```")
 
 #==================================================================================================================================================
 

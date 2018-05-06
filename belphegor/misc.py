@@ -432,7 +432,7 @@ class Misc:
             return embed
 
         #simple wiki
-        tag = data.find("div", class_="mod", style="clear:none")
+        tag = data.find(lambda x: x.name=="div" and x.get("class")==["mod"] and x.get("style")=="clear:none")
         if tag:
             embed = discord.Embed(title="Search result:", description=f"{tag.text}\n[{search_results[0].text}]({search_results[0]['href']})", colour=discord.Colour.dark_orange())
             embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[1:5])), inline=False)

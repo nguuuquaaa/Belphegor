@@ -105,12 +105,9 @@ class Admin:
     @commands.command(name="eval", hidden=True)
     @checks.owner_only()
     async def _eval(self, ctx, *, data: str):
-        data = data.strip()
         if data.startswith("```"):
-            data = data.splitlines()[1:]
-        else:
-            data = data.splitlines()
-        data = "\n    ".join(data).strip("` \n")
+            data = data.partition("\n")[2]
+        data = data.strip("` \n")
         code = f"async def func():\n    {data}"
         env = {
             "bot": self.bot,

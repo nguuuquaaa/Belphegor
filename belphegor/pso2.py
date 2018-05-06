@@ -123,7 +123,7 @@ def _match_this(match):
 
 simple_time_regex = re.compile(r"([0-9]{1,2})[-/]([0-9]{1,2})[-/]?([0-9]{2,4})?")
 
-iso_time_regex = re.compile(r"([0-9]{4})\-([0-9]{2})\-([0-9]{2})T([0-9]{2})\:([0-9]{2})\:([0-9]{2})(Z|[+-]([0-9]{2})\:([0-9]{2}))")
+iso_time_regex = re.compile(r"([0-9]{4})\-([0-9]{2})\-([0-9]{2})T([0-9]{2})\:([0-9]{2})\:([0-9]{2}\.?[0-9]{0,6})(Z|[+-]([0-9]{2})\:([0-9]{2}))")
 
 #==================================================================================================================================================
 
@@ -902,7 +902,7 @@ class PSO2:
                 )
                 await paging.navigate(ctx)
             else:
-                await ctx.send("No boost this week, oof.")
+                await ctx.send("No more event until the end of this week, oof.")
 
     @cmd_boost.command(name="update", hidden=True)
     @checks.owner_only()
@@ -936,6 +936,7 @@ class PSO2:
                     else:
                         continue
                 elif wait_time < 0:
+                    self.incoming_events.call("pop", 0)
                     continue
 
                 now_time = utils.now_time(utils.jp_timezone)
@@ -952,6 +953,7 @@ class PSO2:
                 else:
                     embed.description = f"\U0001f3b0 {next_event['summary']}\n   From {start_date.group(4)}:{start_date.group(5)} to {end_date.group(4)}:{end_date.group(5)}"
                 embed.set_footer(text=utils.jp_time(now_time))
+
                 async for gd in self.guild_data.find(
                     {"eq_channel_id": {"$exists": True}},
                     projection={"_id": False, "eq_channel_id": True}
