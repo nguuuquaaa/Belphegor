@@ -109,7 +109,6 @@ class Admin:
         if data.startswith("```"):
             data = data.partition("\n")[2]
         data = data.strip("` \n")
-        print(data)
         code = f"async def func():\n{textwrap.indent(data, '    ')}"
         env = {
             "bot": self.bot,
