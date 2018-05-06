@@ -62,6 +62,8 @@ class MathParse:
 
     CLOSED = tuple(c[0] for c in ENCLOSED.values())
 
+    BUILTIN_NAME_LENS = (4, 3, 2, 1)
+
     def __init__(self, text):
         self.formulas = text.splitlines()
         self.log_lines = []
@@ -81,6 +83,13 @@ class MathParse:
         self.last_index = len(self.text) - 1
         self.current_index = 0
         self.current_parse = None
+        self.name_lens = list(self.BUILTIN_NAME_LENS)
+        if self.variables:
+            for k in self.variables:
+                l = len(k)
+                if l not in self.name_lens:
+                    self.name_lens.append(l)
+            self.name_lens.sort(reverse=True)
 
     def peek_ahead(self, number=1):
         nx = self.current_index
@@ -124,7 +133,7 @@ class MathParse:
                 self.next()
                 self.current_parse = self.OPS[n]
         else:
-            for i in (4, 3, 2, 1):
+            for i in self.name_lens:
                 fn = self.peek_ahead(i)
                 if fn in self.FUNCS:
                     self.next(i)
@@ -321,11 +330,11 @@ class Calculator:
             await ctx.send("Result too large.")
         except:
             await ctx.send("Parsing error.")
-            l = f"{m.log()}\n{traceback.format_exc()}"
-            try:
-                await self.bot.error_hook.execute(l)
-            except AttributeError:
-                print(l)
+            #l = f"{m.log()}\n{traceback.format_exc()}"
+            #try:
+            #    await self.bot.error_hook.execute(l)
+            #except AttributeError:
+            #    print(l)
         else:
             r = "\n".join(results)
             await ctx.send(f"```\n{r}\n```")

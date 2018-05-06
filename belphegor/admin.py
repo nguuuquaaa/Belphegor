@@ -14,6 +14,7 @@ from distutils.dir_util import copy_tree
 import subprocess
 import copy
 import sys
+import textwrap
 
 #==================================================================================================================================================
 
@@ -108,7 +109,8 @@ class Admin:
         if data.startswith("```"):
             data = data.partition("\n")[2]
         data = data.strip("` \n")
-        code = f"async def func():\n    {data}"
+        print(data)
+        code = f"async def func():\n{textwrap.indent(data, '    ')}"
         env = {
             "bot": self.bot,
             "ctx": ctx,
