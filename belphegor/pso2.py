@@ -922,11 +922,10 @@ class PSO2:
 
                 start_date = iso_time_regex.fullmatch(next_event["start"]["dateTime"])
                 end_date = iso_time_regex.fullmatch(next_event["end"]["dateTime"])
-                start_time = datetime(
+                start_time = utils.jp_timezone.localize(datetime(
                     int(start_date.group(1)), int(start_date.group(2)), int(start_date.group(3)),
-                    int(start_date.group(4)), int(start_date.group(5)), 0, 0,
-                    utils.jp_timezone
-                )
+                    int(start_date.group(4)), int(start_date.group(5))
+                ))
                 wait_time = (start_time - now_time).total_seconds()
                 if wait_time > 2700:
                     try:
