@@ -170,6 +170,10 @@ class Tag:
     @tag_cmd.command(name="info")
     @checks.guild_only()
     async def cmd_tag_info(self, ctx, *, name):
+        '''
+            `>>tag info <name>`
+            Display tag info.
+        '''
         data = await self.tag_list.find_one({"guild_id": ctx.guild.id, "name": name})
         if data:
             embed = discord.Embed(title="Info", colour=discord.Colour.blue())

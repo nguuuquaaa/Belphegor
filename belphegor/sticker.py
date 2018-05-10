@@ -171,28 +171,41 @@ class Sticker:
 
     @sticker.command()
     @checks.guild_only()
-    @checks.manager_only()
-    async def prefix(self, ctx, new_prefix):
+    async def prefix(self, ctx, *, new_prefix=None):
         '''
-            `>>sticker prefix <`
+            `>>sticker prefix <optional: prefix>`
+            If <prefix> is provided, set server prefix to it. Server manager only.
+            If <prefix> is not provided, display current server's prefix. Public use.
         '''
-        if new_prefix == "$":
-            self.sticker_regexes.pop(ctx.guild.id, None)
-            await self.guild_data.update_one(
-                {"guild_id": ctx.guild.id},
-                {"$unset": {"sticker_prefix": None}}
-            )
-            await ctx.confirm()
-        elif NO_SPACE_REGEX.fullmatch(new_prefix):
-            self.sticker_regexes[ctx.guild.id] = re.compile(fr"(?<={re.escape(new_prefix)})\w+")
-            await self.guild_data.update_one(
-                {"guild_id": ctx.guild.id},
-                {"$set": {"sticker_prefix": new_prefix}}
-            )
-            await ctx.confirm()
+        if new_prefix is None:
+            guild_data = await self.guild_data.find_one({"guild_id": ctx.guild.id}, projection={"_id": False, "sticker_prefix": True})
+            await ctx.send(f"Prefix is {guild_data.get('sticker_prefix', '$')}")
+        if ctx.channel.permissions_for(ctx.message.author).manage_guild:
+            if new_prefix == "$":
+                self.sticker_regexes.pop(ctx.guild.id, None)
+                await self.guild_data.update_one(
+                    {"guild_id": ctx.guild.id},
+                    {"$unset": {"sticker_prefix": None}}
+                )
+                await ctx.confirm()
+            elif NO_SPACE_REGEX.fullmatch(new_prefix):
+                self.sticker_regexes[ctx.guild.id] = re.compile(fr"(?<={re.escape(new_prefix)})\w+")
+                await self.guild_data.update_one(
+                    {"guild_id": ctx.guild.id},
+                    {"$set": {"sticker_prefix": new_prefix}}
+                )
+                await ctx.confirm()
+            else:
+                await ctx.send(f"Prefix cannot contain spaces.")
+        else:
+            await ctx.send("This action is usable by server managers only.")
 
     @sticker.command(name="info")
     async def cmd_sticker_info(self, ctx, name):
+        '''
+            `>>sticker info <name>`
+            Display sticker info.
+        '''
         data = await self.sticker_list.find_one({"name": name})
         if data:
             embed = discord.Embed(title="Info", colour=discord.Colour.green())

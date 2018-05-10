@@ -172,7 +172,15 @@ class Misc:
         if message.author.bot:
             return
         inp = message.content
-        if inp[:3] in ("/o/", "\\o\\"):
+        if inp == "ping":
+            try:
+                start = utils.now_time()
+                await message.channel.trigger_typing()
+                end = utils.now_time()
+                await message.channel.send(content=f"pong (ws: {int(1000*self.bot.latency)}ms, typing: {int(1000*(end-start).total_seconds())}ms)")
+            except:
+                pass
+        elif inp[:3] in ("/o/", "\\o\\"):
             r = []
             index = 0
             l = len(inp)
@@ -190,12 +198,6 @@ class Misc:
                 await message.channel.send(" ".join(r))
             except:
                 pass
-        elif inp == "ping":
-            try:
-                msg = await message.channel.send("pong")
-                await msg.edit(content=f"pong (ws: {int(1000*self.bot.latency)}ms, edit: {int(1000*(msg.created_at-message.created_at).total_seconds())}ms)")
-            except:
-                pass
 
     @commands.command()
     async def avatar(self, ctx, *, member: discord.Member=None):
@@ -204,8 +206,7 @@ class Misc:
             Show <member>'s avatar.
             If <member> is not specified, show command invoker's instead.
         '''
-        if not member:
-            member = ctx.author
+        member = member or ctx.author
         embed = discord.Embed(title=f"{member.display_name}'s avatar", url=member.avatar_url)
         embed.set_image(url=member.avatar_url_as(static_format="png"))
         await ctx.send(embed=embed)

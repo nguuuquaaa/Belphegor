@@ -215,6 +215,10 @@ class Paginator:
 
         return embed
 
+    async def add_navigate_reactions(self, message):
+        for e in self.navigation:
+            await message.add_reaction(e)
+
     async def navigate(self, ctx, *, timeout=60, target=None):
         _bot = ctx.bot
         _loop = _bot.loop
@@ -224,8 +228,7 @@ class Paginator:
         else:
             embed = next(iter(self.navigation.values()))()
         message = await ctx.send(embed=embed)
-        for e in self.navigation:
-            _loop.create_task(message.add_reaction(e))
+        _loop.create_task(self.add_navigate_reactions(message))
 
         async def try_it(coro):
             try:
