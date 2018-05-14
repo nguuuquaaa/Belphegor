@@ -8,20 +8,38 @@ import re
 import traceback
 import asyncio
 import random
-import collections
 
 #==================================================================================================================================================
 
-assign_regex = re.compile("\s*(\w+)[ \t]*\=\s*(.+)")
+assign_regex = re.compile("\s*(\w+)\s*\=\s*(.+)")
+
+#==================================================================================================================================================
+
+def combination(n, k):
+    t = 1
+    b = 1
+    if n >= k >= 0:
+        for i in range(min(n-k, k)):
+            t *= n - i
+            b *= i + 1
+    else:
+        return 0
+    return t // b
 
 #==================================================================================================================================================
 
 class ParseError(Exception):
     pass
 
+class CommonParseError(Exception):
+    pass
+
 #==================================================================================================================================================
 
 class MathParse:
+    MAX_POWER_LOG = 300
+    MAX_FACTORIAL = 50
+
     DIGITS = tuple(str(i) for i in range(10))
     SIGNS = {
         "+":    1,
@@ -43,6 +61,11 @@ class MathParse:
         "ln":   cmath.log,
         "sqrt": cmath.sqrt,
         "abs":  abs
+    }
+    SPECIAL = {
+        "^":    pow,
+        "!":    math.factorial,
+        "C":    combination
     }
     CONSTS = {
         "e":    cmath.e,
@@ -159,31 +182,45 @@ class MathParse:
 
     def parse_special(self, value):
         self.log_lines.append(f"start special at {self.current_parse}")
-        if self.current_parse == "!":
+        c = self.current_parse
+        if c == "!":
             self.parse_next()
             if isinstance(value, int):
-                if value > 20:
+                if value > self.MAX_FACTORIAL:
                     raise ParseError("Why you need this large number.")
                 elif value < 0:
                     raise ParseError("Can't factorial negative number.")
                 else:
-                    result = math.factorial(value)
+                    result = self.SPECIAL[c](value)
             else:
                 raise ParseError("Can't factorial non-integer.")
-        elif self.current_parse == "^":
+        elif c == "^":
             n = self.parse_next()
             if n in self.ENCLOSED:
-                e = self.ENCLOSED[n]
-                p = e[1](self.parse_level(e[0]))
+                p = self.parse_level()
             else:
                 p = n
                 self.parse_next()
             r = getattr(p, "real", p)
             v = getattr(value, "real", value)
-            if v == 0 or r * math.log10(abs(v)) < 300:
-                result = value ** p
+            if v == 0 or r * math.log10(abs(v)) < self.MAX_POWER_LOG:
+                result = self.SPECIAL[c](value, p)
             else:
                 raise ParseError("Why you need this large number.")
+        elif c == "C":
+            n = self.parse_next()
+            if n in self.ENCLOSED:
+                k = self.parse_level()
+            else:
+                k = n
+                self.parse_next()
+            if isinstance(value, int) and isinstance(k, int):
+                if value > 2 * self.MAX_FACTORIAL:
+                    raise ParseError("Why you need this large number.")
+                else:
+                    result = self.SPECIAL[c](value, k)
+            else:
+                raise ParseError("Can't factorial non-integer.")
         else:
             result = None
         self.log_lines.append(f"end special at {self.current_parse}")
@@ -223,26 +260,32 @@ class MathParse:
     def parse_group(self):
         self.log_lines.append(f"start group at {self.current_parse}")
         result = None
-        last_ops = None
-        last_func = None
+        last_op = None
+        last_funcs = []
         n = True
         while True:
             n = self.current_parse
-            if n in self.SIGNS or n is None or n in self.CLOSED:
-                if last_ops:
-                    raise ParseError("Oi, you put that operator there but didn't put any value after.")
+            if n in self.SIGNS or n in self.CLOSED:
+                if last_op or last_funcs:
+                    raise CommonParseError
                 break
 
-            if n in self.OPS.values():
-                last_ops = n
+            elif n in self.OPS.values():
+                if last_op:
+                    raise CommonParseError
+                else:
+                    last_op = n
                 self.parse_next()
                 continue
+
             elif n in self.FUNCS.values():
-                last_func = n
+                last_funcs.append(n)
                 self.parse_next()
                 continue
+
             elif n in self.ENCLOSED:
                 value = self.parse_level()
+
             else:
                 value = n
                 self.parse_next()
@@ -253,16 +296,17 @@ class MathParse:
                     value = after
                 else:
                     break
-            if last_func:
-                value = last_func(value)
-                last_func = None
+            if last_funcs:
+                for f in reversed(last_funcs):
+                    value = f(value)
+                last_funcs.clear()
 
-            if last_ops:
+            if last_op:
                 if result is not None:
-                    result = last_ops(result, value)
-                    last_ops = None
+                    result = last_op(result, value)
+                    last_op = None
                 else:
-                    raise ParseError("Oi, you put that operator there but didn't put any value before.")
+                    raise CommonParseError
             else:
                 if result is not None:
                     result = self.OPS["*"](result, value)
@@ -286,11 +330,15 @@ class MathParse:
         for f in self.formulas:
             m = assign_regex.match(f)
             if m:
-                for d in m.group(1):
-                    if d not in self.DIGITS:
-                        break
+                var_name = m.group(1)
+                try:
+                    int(var_name)
+                except:
+                    pass
                 else:
                     raise ParseError("WTF variable name...")
+                if var_name in self.FUNCS or var_name in self.SPECIAL or var_name in self.CONSTS:
+                    raise ParseError("Variable name is already taken.")
                 self.text = m.group(2)
             else:
                 self.text = f
@@ -316,7 +364,7 @@ class MathParse:
                 value, s = self.how_to_display(result)
 
             if m:
-                x = m.group(1)
+                x = var_name
                 self.variables[x] = value
                 results.append(f"{x} = {s}")
             else:
@@ -350,10 +398,10 @@ class Calculator:
             Formulas are separated by linebreak. You can codeblock the whole thing for easier on the eyes.
             Acceptable expressions:
              - Operators `+` , `-` , `*` , `/` (true div), `//` (div mod), `%` (mod), `^` (pow), `!` (factorial)
-             - Functions `sin`, `cos`, `tan`, `cot`, `log` (base 10), `ln` (natural log), `sqrt` (square root), `abs` (absolute value)
+             - Functions `sin`, `cos`, `tan`, `cot`, `log` (base 10), `ln` (natural log), `sqrt` (square root), `abs` (absolute value), `nCk` (combination)
              - Constants `e`, `pi`, `π`, `tau`, `τ`, `i` (imaginary)
              - Enclosed `()`, `[]`, `{{}}`, `\u2308 \u2309` (ceil), `\u230a \u230b` (floor)
-             - Set a variable to a value (value can be calculable formula) for next calculations
+             - Set a variable to a value (value can be a calculable formula) for next calculations
         '''
         if stuff.startswith("```"):
             stuff = stuff.partition("\n")[2]
