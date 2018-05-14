@@ -93,7 +93,7 @@ class MathParse:
     BUILTIN_NAME_LENS = (4, 3, 2, 1)
 
     def __init__(self, text):
-        self.formulas = text.splitlines()
+        self.formulas = [t for t in text.splitlines() if t]
         self.log_lines = []
         self.variables = {}
 
@@ -415,6 +415,8 @@ class Calculator:
             await ctx.send("Result too large.")
         except ZeroDivisionError:
             await ctx.send("Division by zero.")
+        except ValueError:
+            await ctx.send("Calculation error. Probably log 0 or something.")
         except:
             await ctx.send(f"Parsing error.\n```\n{m.show_parse_error()}\n```")
             if self.enable_log:
