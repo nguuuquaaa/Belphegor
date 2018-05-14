@@ -2,10 +2,12 @@ import discord
 from discord.ext import commands
 from .utils import checks
 import math
+import cmath
 import operator
 import re
 import traceback
 import asyncio
+import random
 
 #==================================================================================================================================================
 
@@ -32,20 +34,21 @@ class MathParse:
 
     }
     FUNCS = {
-        "sin":  math.sin,
-        "cos":  math.cos,
-        "tan":  math.tan,
-        "cot":  lambda x: 1/math.tan(x),
-        "log":  math.log10,
-        "ln":   math.log,
-        "sqrt": math.sqrt
+        "sin":  cmath.sin,
+        "cos":  cmath.cos,
+        "tan":  cmath.tan,
+        "cot":  lambda x: 1/cmath.tan(x),
+        "log":  cmath.log10,
+        "ln":   cmath.log,
+        "sqrt": cmath.sqrt
     }
     CONSTS = {
-        "e":    math.e,
-        "π":    math.pi,
-        "pi":   math.pi,
-        "τ":    math.tau,
-        "tau":  math.tau
+        "e":    cmath.e,
+        "π":    cmath.pi,
+        "pi":   cmath.pi,
+        "τ":    cmath.tau,
+        "tau":  cmath.tau,
+        "i":    1j
     }
 
     def DO_NOTHING(x):
@@ -153,11 +156,13 @@ class MathParse:
         return self.current_parse
 
     def parse_special(self, value):
+        self.log_lines.append(f"start special at {self.current_parse}")
         if self.current_parse == "!":
             self.parse_next()
             if value > 20:
                 raise ParseError("Why you need this large number.")
-            return math.factorial(value)
+            result = math.factorial(value)
+            return
         elif self.current_parse == "^":
             n = self.parse_next()
             if n in self.ENCLOSED:
@@ -166,18 +171,22 @@ class MathParse:
             else:
                 p = n
                 self.parse_next()
-            if value == 0 or p * math.log10(abs(value)) < 300:
-                return value ** p
+            r = getattr(p, "real", p)
+            v = getattr(value, "real", value)
+            if v == 0 or r * math.log10(abs(v)) < 300:
+                result = value ** p
             else:
                 raise ParseError("Why you need this large number.")
         else:
-            return None
+            result = None
+        self.log_lines.append(f"end special at {self.current_parse}")
+        return result
 
     def parse_level(self, end=None):
         self.log_lines.append(f"start level at {self.current_parse}")
         result = None
         n = 0
-        sign = None
+        sign = 1
         self.parse_next()
         while True:
             n = self.current_parse
@@ -189,24 +198,13 @@ class MathParse:
             elif n in self.SIGNS:
                 if sign:
                     sign = sign * self.SIGNS[n]
-                else:
-                    sign = self.SIGNS[n]
                 self.parse_next()
-            elif n in self.ENCLOSED:
-                e = self.ENCLOSED[n]
-                if result is None:
-                    result = e[1](self.parse_level(e[0]))
-                else:
-                    result = result + sign * e[1](self.parse_level(e[0]))
             else:
                 if result is None:
-                    if sign:
-                        result = sign * self.parse_group()
-                    else:
-                        result = self.parse_group()
+                    result = sign * self.parse_group()
                 else:
                     result = result + sign * self.parse_group()
-                sign = None
+                sign = 1
 
         self.parse_next()
         self.log_lines.append(f"end level at {self.current_parse}")
@@ -246,7 +244,6 @@ class MathParse:
                     value = after
                 else:
                     break
-
             if last_func:
                 value = last_func(value)
                 last_func = None
@@ -266,6 +263,15 @@ class MathParse:
         self.log_lines.append(f"end group at {self.current_parse}")
         return result
 
+    def how_to_display(self, number):
+        value = int(round(number))
+        if cmath.isclose(value, number, rel_tol=1e-10):
+            s = str(value)
+        else:
+            value = number
+            s = f"{value:.10f}".rstrip("0").rstrip(".")
+        return value, s
+
     def result(self):
         results = []
         for f in self.formulas:
@@ -281,17 +287,25 @@ class MathParse:
                 self.text = f
 
             self.reset()
-            r = self.parse_level()
-            i = int(r)
-            if i == r:
-                s = str(i)
+            result = self.parse_level()
+            if isinstance(result, complex):
+                r, rstr = self.how_to_display(result.real)
+                i, istr = self.how_to_display(result.imag)
+                if i == 0:
+                    value = r
+                    s = rstr
+                elif r == 0:
+                    value = 0
+                    s = f"{istr}i"
+                else:
+                    value = r + i * 1j
+                    s = f"{rstr}+{istr}i"
             else:
-                i = r
-                s = f"{r:.10f}".rstrip("0")
+                value, s = self.how_to_display(result)
 
             if m:
                 x = m.group(1)
-                self.variables[x] = i
+                self.variables[x] = value
                 results.append(f"{x} = {s}")
             else:
                 results.append(s)
@@ -315,7 +329,7 @@ class Calculator:
             Acceptable expressions:
              - Operators `+` , `-` , `*` , `/` (true div), `//` (div mod), `%` (mod), `^` (pow), `!` (factorial)
              - Functions `sin`, `cos`, `tan`, `cot`, `log` (base 10), `ln` (natural log), `sqrt` (square root)
-             - Constants `e`, `pi`, `π`, `tau`, `τ`
+             - Constants `e`, `pi`, `π`, `tau`, `τ`, `i` (imaginary)
              - Enclosed `()`, `[]`, `{{}}`, `||` (abs), `\u2308 \u2309` (ceil), `\u230a \u230b` (floor)
              - Set a variable to a value (value can be calculable formula) for next calculations
         '''
@@ -329,6 +343,8 @@ class Calculator:
             await ctx.send(e)
         except asyncio.TimeoutError:
             await ctx.send("Result too large.")
+        except ZeroDivisionError:
+            await ctx.send("Division by zero.")
         except:
             await ctx.send("Parsing error.")
             if self.enable_log:

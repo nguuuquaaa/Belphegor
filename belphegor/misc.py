@@ -15,6 +15,7 @@ import aiohttp
 from PIL import Image
 import traceback
 import collections
+import time
 
 #==================================================================================================================================================
 
@@ -174,10 +175,10 @@ class Misc:
         inp = message.content
         if inp == "ping":
             try:
-                start = utils.now_time()
+                start = time.perf_counter()
                 await message.channel.trigger_typing()
-                end = utils.now_time()
-                await message.channel.send(content=f"pong (ws: {int(1000*self.bot.latency)}ms, typing: {int(1000*(end-start).total_seconds())}ms)")
+                end = time.perf_counter()
+                await message.channel.send(content=f"pong (ws: {int(1000*self.bot.latency)}ms, typing: {int(1000*(end-start))}ms)")
             except:
                 pass
         elif inp[:3] in ("/o/", "\\o\\"):
