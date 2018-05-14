@@ -159,10 +159,15 @@ class MathParse:
         self.log_lines.append(f"start special at {self.current_parse}")
         if self.current_parse == "!":
             self.parse_next()
-            if value > 20:
-                raise ParseError("Why you need this large number.")
-            result = math.factorial(value)
-            return
+            if isinstance(value, int):
+                if value > 20:
+                    raise ParseError("Why you need this large number.")
+                elif value < 0:
+                    raise ParseError("Can't factorial negative number.")
+                else:
+                    result = math.factorial(value)
+            else:
+                raise ParseError("Can't factorial non-int number.")
         elif self.current_parse == "^":
             n = self.parse_next()
             if n in self.ENCLOSED:
@@ -249,13 +254,13 @@ class MathParse:
                 last_func = None
 
             if last_ops:
-                if result:
+                if result is not None:
                     result = last_ops(result, value)
                     last_ops = None
                 else:
                     raise ParseError("Oi, you put that operator there but didn't put any value before.")
             else:
-                if result:
+                if result is not None:
                     result = self.OPS["*"](result, value)
                 else:
                     result = value
@@ -265,7 +270,7 @@ class MathParse:
 
     def how_to_display(self, number):
         value = int(round(number))
-        if cmath.isclose(value, number, rel_tol=1e-10):
+        if cmath.isclose(value, number, rel_tol=1e-10, abs_tol=1e-10):
             s = str(value)
         else:
             value = number
@@ -299,7 +304,10 @@ class MathParse:
                     s = f"{istr}i"
                 else:
                     value = r + i * 1j
-                    s = f"{rstr}+{istr}i"
+                    if i > 0:
+                        s = f"{rstr}+{istr}i"
+                    else:
+                        s = f"{rstr}{istr}"
             else:
                 value, s = self.how_to_display(result)
 
