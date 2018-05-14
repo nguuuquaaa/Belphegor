@@ -40,7 +40,8 @@ class MathParse:
         "cot":  lambda x: 1/cmath.tan(x),
         "log":  cmath.log10,
         "ln":   cmath.log,
-        "sqrt": cmath.sqrt
+        "sqrt": cmath.sqrt,
+        "abs":  abs
     }
     CONSTS = {
         "e":    cmath.e,
@@ -55,10 +56,10 @@ class MathParse:
         return x
 
     ENCLOSED = {
+        None:       (None, DO_NOTHING),
         "(":        (")", DO_NOTHING),
         "[":        ("]", DO_NOTHING),
         "{":        ("}", DO_NOTHING),
-        "|":        ("|", abs),
         "\u2308":   ("\u2309", math.ceil),
         "\u230a":   ("\u230b", math.floor)
     }
@@ -122,7 +123,7 @@ class MathParse:
         n = self.cur()
         if n is None:
             self.current_parse = None
-        elif n in self.DIGITS:
+        elif n in self.DIGITS or n == ".":
             self.current_parse = self.parse_number()
         elif n in self.OPS:
             if n == "/":
@@ -187,11 +188,12 @@ class MathParse:
         self.log_lines.append(f"end special at {self.current_parse}")
         return result
 
-    def parse_level(self, end=None):
+    def parse_level(self):
         self.log_lines.append(f"start level at {self.current_parse}")
         result = None
-        n = 0
         sign = 1
+        start = self.current_parse
+        end, func = self.ENCLOSED[start]
         self.parse_next()
         while True:
             n = self.current_parse
@@ -205,12 +207,14 @@ class MathParse:
                     sign = sign * self.SIGNS[n]
                 self.parse_next()
             else:
+                r = sign * self.parse_group()
                 if result is None:
-                    result = sign * self.parse_group()
+                    result = r
                 else:
-                    result = result + sign * self.parse_group()
+                    result = result + r
                 sign = 1
 
+        result = func(result)
         self.parse_next()
         self.log_lines.append(f"end level at {self.current_parse}")
         return result
@@ -237,15 +241,14 @@ class MathParse:
                 self.parse_next()
                 continue
             elif n in self.ENCLOSED:
-                e = self.ENCLOSED[n]
-                value = e[1](self.parse_level(e[0]))
+                value = self.parse_level()
             else:
                 value = n
                 self.parse_next()
 
             while True:
                 after = self.parse_special(value)
-                if after:
+                if after is not None:
                     value = after
                 else:
                     break
@@ -336,9 +339,9 @@ class Calculator:
             Formulas are separated by linebreak. You can codeblock the whole thing for easier on the eyes.
             Acceptable expressions:
              - Operators `+` , `-` , `*` , `/` (true div), `//` (div mod), `%` (mod), `^` (pow), `!` (factorial)
-             - Functions `sin`, `cos`, `tan`, `cot`, `log` (base 10), `ln` (natural log), `sqrt` (square root)
+             - Functions `sin`, `cos`, `tan`, `cot`, `log` (base 10), `ln` (natural log), `sqrt` (square root), `abs` (absolute value)
              - Constants `e`, `pi`, `π`, `tau`, `τ`, `i` (imaginary)
-             - Enclosed `()`, `[]`, `{{}}`, `||` (abs), `\u2308 \u2309` (ceil), `\u230a \u230b` (floor)
+             - Enclosed `()`, `[]`, `{{}}`, `\u2308 \u2309` (ceil), `\u230a \u230b` (floor)
              - Set a variable to a value (value can be calculable formula) for next calculations
         '''
         if stuff.startswith("```"):
