@@ -167,7 +167,7 @@ class MathParse:
                 else:
                     result = math.factorial(value)
             else:
-                raise ParseError("Can't factorial non-int number.")
+                raise ParseError("Can't factorial non-integer.")
         elif self.current_parse == "^":
             n = self.parse_next()
             if n in self.ENCLOSED:
@@ -305,9 +305,9 @@ class MathParse:
                 else:
                     value = r + i * 1j
                     if i > 0:
-                        s = f"{rstr}+{istr}i"
+                        s = f"{rstr} + {istr}i"
                     else:
-                        s = f"{rstr}{istr}"
+                        s = f"{rstr} - {istr.lstrip('-')}i"
             else:
                 value, s = self.how_to_display(result)
 
