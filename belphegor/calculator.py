@@ -8,6 +8,7 @@ import re
 import traceback
 import asyncio
 import random
+import collections
 
 #==================================================================================================================================================
 
@@ -37,7 +38,7 @@ class MathParse:
         "sin":  cmath.sin,
         "cos":  cmath.cos,
         "tan":  cmath.tan,
-        "cot":  lambda x: 1/cmath.tan(x),
+        "cot":  lambda x: cmath.cos(x)/cmath.sin(x),
         "log":  cmath.log10,
         "ln":   cmath.log,
         "sqrt": cmath.sqrt,
@@ -325,6 +326,16 @@ class MathParse:
     def log(self):
         return "\n".join(self.log_lines)
 
+    def show_parse_error(self):
+        end_index = self.current_index
+        start_index = max(end_index - 50, 0)
+        s = self.text[start_index:end_index]
+        if len(s) < 50:
+            r = f"{s}\u032d"
+        else:
+            r = f"...{s}\u032d"
+        return r
+
 #==================================================================================================================================================
 
 class Calculator:
@@ -357,7 +368,7 @@ class Calculator:
         except ZeroDivisionError:
             await ctx.send("Division by zero.")
         except:
-            await ctx.send("Parsing error.")
+            await ctx.send(f"Parsing error.\n```\n{m.show_parse_error()}\n```")
             if self.enable_log:
                 l = f"{m.log()}\n{traceback.format_exc()}"
                 try:
