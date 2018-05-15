@@ -8,10 +8,7 @@ import re
 import traceback
 import asyncio
 import random
-
-#==================================================================================================================================================
-
-assign_regex = re.compile("\s*(\w+)\s*\=\s*(.+)")
+import collections
 
 #==================================================================================================================================================
 
@@ -36,7 +33,7 @@ class CommonParseError(Exception):
 
 #==================================================================================================================================================
 
-class MathParse:
+class BaseParse:
     MAX_POWER_LOG = 300
     MAX_FACTORIAL = 50
 
@@ -90,12 +87,15 @@ class MathParse:
 
     CLOSED = tuple(c[0] for c in ENCLOSED.values())
 
-    BUILTIN_NAME_LENS = (4, 3, 2, 1)
+    BUILTINS = (OPS, FUNCS, SPECIAL, CONSTS)
 
-    def __init__(self, text):
-        self.formulas = [t for t in text.splitlines() if t]
+    def __init__(self):
         self.log_lines = []
-        self.variables = {}
+        self.name_lens = []
+        self.user_variables = {}
+        self.user_functions = {}
+        self.signals = [",", ";"]
+        self.things_to_check = (*self.BUILTINS, self.user_functions, self.user_variables)
 
     def next(self, jump=1):
         self.current_index += jump
@@ -111,13 +111,13 @@ class MathParse:
         self.last_index = len(self.text) - 1
         self.current_index = 0
         self.current_parse = None
-        self.name_lens = list(self.BUILTIN_NAME_LENS)
-        if self.variables:
-            for k in self.variables:
+        self.name_lens.clear()
+        for kind in self.things_to_check:
+            for k in kind:
                 l = len(k)
                 if l not in self.name_lens:
                     self.name_lens.append(l)
-            self.name_lens.sort(reverse=True)
+        self.name_lens.sort(reverse=True)
 
     def peek_ahead(self, number=1):
         nx = self.current_index
@@ -149,41 +149,27 @@ class MathParse:
             self.current_parse = None
         elif n in self.DIGITS or n == ".":
             self.current_parse = self.parse_number()
-        elif n in self.OPS:
-            if n == "/":
-                if self.peek_ahead(2) == "//":
-                    self.next(2)
-                    self.current_parse = self.OPS["//"]
-                else:
-                    self.next()
-                    self.current_parse = self.OPS["/"]
-            else:
-                self.next()
-                self.current_parse = self.OPS[n]
         else:
             for i in self.name_lens:
                 fn = self.peek_ahead(i)
-                if fn in self.FUNCS:
-                    self.next(i)
-                    self.current_parse = self.FUNCS[fn]
-                    break
-                elif fn in self.CONSTS:
-                    self.next(i)
-                    self.current_parse = self.CONSTS[fn]
-                    break
-                elif fn in self.variables:
-                    self.next(i)
-                    self.current_parse = self.variables[fn]
-                    break
+                for kind in self.things_to_check:
+                    if fn in kind:
+                        self.next(i)
+                        self.current_parse = kind[fn]
+                        break
+                else:
+                    continue
+                break
             else:
-                self.next()
                 self.current_parse = n
+                self.next()
+        self.log_lines.append(f"parsed {self.current_parse}")
         return self.current_parse
 
     def parse_special(self, value):
         self.log_lines.append(f"start special at {self.current_parse}")
         c = self.current_parse
-        if c == "!":
+        if c == self.SPECIAL["!"]:
             self.parse_next()
             if isinstance(value, int):
                 if value > self.MAX_FACTORIAL:
@@ -191,10 +177,10 @@ class MathParse:
                 elif value < 0:
                     raise ParseError("Can't factorial negative number.")
                 else:
-                    result = self.SPECIAL[c](value)
+                    result = c(value)
             else:
                 raise ParseError("Can't factorial non-integer.")
-        elif c == "^":
+        elif c == self.SPECIAL["^"]:
             n = self.parse_next()
             if n in self.ENCLOSED:
                 p = self.parse_level()
@@ -204,10 +190,10 @@ class MathParse:
             r = getattr(p, "real", p)
             v = getattr(value, "real", value)
             if v == 0 or r * math.log10(abs(v)) < self.MAX_POWER_LOG:
-                result = self.SPECIAL[c](value, p)
+                result = c(value, p)
             else:
                 raise ParseError("Why you need this large number.")
-        elif c == "C":
+        elif c == self.SPECIAL["C"]:
             n = self.parse_next()
             if n in self.ENCLOSED:
                 k = self.parse_level()
@@ -218,7 +204,7 @@ class MathParse:
                 if value > 2 * self.MAX_FACTORIAL:
                     raise ParseError("Why you need this large number.")
                 else:
-                    result = self.SPECIAL[c](value, k)
+                    result = c(value, k)
             else:
                 raise ParseError("Can't factorial non-integer.")
         else:
@@ -235,10 +221,9 @@ class MathParse:
         self.parse_next()
         while True:
             n = self.current_parse
-
             if n == end:
                 break
-            elif n is None and end is not None:
+            elif n in self.CLOSED and n != end:
                 raise ParseError("No closing bracket.")
             elif n in self.SIGNS:
                 if sign:
@@ -265,7 +250,9 @@ class MathParse:
         n = True
         while True:
             n = self.current_parse
-            if n in self.SIGNS or n in self.CLOSED:
+            print(n, self.signals)
+            print(n in self.signals)
+            if n in self.SIGNS or n in self.CLOSED or n in self.signals:
                 if last_op or last_funcs:
                     raise CommonParseError
                 break
@@ -283,6 +270,10 @@ class MathParse:
                 self.parse_next()
                 continue
 
+            elif n in self.user_functions.values():
+                args = self.parse_func_args()
+                value = n(args)
+
             elif n in self.ENCLOSED:
                 value = self.parse_level()
 
@@ -296,6 +287,7 @@ class MathParse:
                     value = after
                 else:
                     break
+
             if last_funcs:
                 for f in reversed(last_funcs):
                     value = f(value)
@@ -316,6 +308,77 @@ class MathParse:
         self.log_lines.append(f"end group at {self.current_parse}")
         return result
 
+    def parse_func_args(self):
+        self.log_lines.append(f"start func args at {self.current_parse}")
+        start = self.parse_next()
+        if start != "(":
+            raise CommonParseError
+
+        self.parse_next()
+        result = []
+        sign = 1
+        cur = None
+
+        while True:
+            n = self.current_parse
+            if n == ")":
+                result.append(cur)
+                break
+            elif n in self.CLOSED and n != ")":
+                raise ParseError("No closing bracket.")
+            elif n in self.SIGNS:
+                if sign:
+                    sign = sign * self.SIGNS[n]
+                self.parse_next()
+            elif n in self.signals:
+                result.append(cur)
+                cur = None
+                sign = 1
+                self.parse_next()
+            else:
+                r = sign * self.parse_group()
+                if cur is None:
+                    cur = r
+                else:
+                    cur = cur + r
+                sign = 1
+
+        self.parse_next()
+        self.log_lines.append(f"end func args at {self.current_parse}")
+        return result
+
+#==================================================================================================================================================
+
+class MathFunction(BaseParse):
+    def __init__(self, text, args, variables, functions):
+        super().__init__()
+        self.text = text.partition("\n")[0]
+        self.args = collections.OrderedDict((k, None) for k in args)
+        self.user_variables.update(variables)
+        self.user_functions.update(functions)
+        self.things_to_check = (*self.things_to_check, self.args)
+
+    def __call__(self, args):
+        for i, a in enumerate(self.args):
+            self.args[a] = args[i]
+        self.reset()
+        result = self.parse_level()
+        for a in self.args:
+            self.args[a] = None
+        return result
+
+#==================================================================================================================================================
+
+class MathParse(BaseParse):
+    VAR_REGEX = re.compile(r"\s*(\w+)\s*")
+    FUNC_REGEX = re.compile(r"\s*(\w+)\s*[,;]?\s*")
+
+    def __init__(self, text):
+        super().__init__()
+        self.formulas = [t for t in text.splitlines() if t]
+        if len(self.formulas) > 20:
+            raise ParseError("Oi, don't do that many calculations in one go.")
+
     def how_to_display(self, number):
         value = int(round(number))
         if cmath.isclose(value, number, rel_tol=1e-10, abs_tol=1e-10):
@@ -328,18 +391,47 @@ class MathParse:
     def result(self):
         results = []
         for f in self.formulas:
-            m = assign_regex.match(f)
-            if m:
-                var_name = m.group(1)
-                try:
-                    int(var_name)
-                except:
-                    pass
+            stuff = f.partition("=")
+            if stuff[1]:
+                m = self.VAR_REGEX.fullmatch(stuff[0])
+                if m:
+                    var_name = m.group(0)
+                    try:
+                        int(var_name)
+                    except:
+                        pass
+                    else:
+                        raise ParseError("WTF variable name...")
+
+                    if var_name in self.FUNCS or var_name in self.SPECIAL or var_name in self.CONSTS:
+                        raise ParseError("Variable name is already taken.")
+                    else:
+                        self.text = stuff[2]
                 else:
-                    raise ParseError("WTF variable name...")
-                if var_name in self.FUNCS or var_name in self.SPECIAL or var_name in self.CONSTS:
-                    raise ParseError("Variable name is already taken.")
-                self.text = m.group(2)
+                    proc = stuff[0].partition("(")
+                    raw_args = proc[2].rstrip(") \t")
+                    args = self.FUNC_REGEX.findall(raw_args)
+                    if args:
+                        for a in args:
+                            try:
+                                int(a)
+                            except:
+                                pass
+                            else:
+                                raise ParseError("WTF argument name...")
+
+                            if a in self.FUNCS or a in self.SPECIAL or a in self.CONSTS:
+                                raise ParseError(f"Don't use {a} as argument.")
+                        else:
+                            func = MathFunction(stuff[2], args, variables=self.user_variables, functions=self.user_functions)
+                            func_name = proc[0].strip()
+                            self.user_functions[func_name] = func
+                            da = ", ".join(args)
+                            results.append(f"Registered {func_name}({da})")
+                            continue
+
+                    else:
+                        raise ParseError("Your argument list is fucked.")
             else:
                 self.text = f
 
@@ -363,9 +455,9 @@ class MathParse:
             else:
                 value, s = self.how_to_display(result)
 
-            if m:
+            if stuff[1]:
                 x = var_name
-                self.variables[x] = value
+                self.user_variables[x] = value
                 results.append(f"{x} = {s}")
             else:
                 results.append(s)
@@ -389,7 +481,15 @@ class MathParse:
 class Calculator:
     def __init__(self, bot):
         self.bot = bot
-        self.enable_log = False
+        try:
+            self.enable_log = bot.enable_calc_log
+        except AttributeError:
+            self.enable_log = False
+        else:
+            del bot.enable_calc_log
+
+    def __unload(self):
+        self.bot.enable_calc_log = self.enable_log
 
     @commands.command(aliases=["calc"])
     async def calculate(self, ctx, *, stuff):
@@ -417,6 +517,8 @@ class Calculator:
             await ctx.send("Division by zero.")
         except ValueError:
             await ctx.send("Calculation error. Probably log 0 or something.")
+        except OverflowError:
+            await ctx.send("Input number too big. U sure need this one?")
         except:
             await ctx.send(f"Parsing error.\n```\n{m.show_parse_error()}\n```")
             if self.enable_log:
@@ -434,9 +536,10 @@ class Calculator:
     async def calc_log(self, ctx):
         if self.enable_log:
             self.enable_log = False
+            await ctx.deny()
         else:
             self.enable_log = True
-        await ctx.confirm()
+            await ctx.confirm()
 
 #==================================================================================================================================================
 
