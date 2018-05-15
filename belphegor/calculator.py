@@ -431,7 +431,7 @@ class MathParse(BaseParse):
                             continue
 
                     else:
-                        raise ParseError("Your argument list is fucked.")
+                        raise ParseError("Your argument list is bad and you should feel bad.")
             else:
                 self.text = f
 
@@ -502,6 +502,7 @@ class Calculator:
              - Constants `e`, `pi`, `π`, `tau`, `τ`, `i` (imaginary)
              - Enclosed `()`, `[]`, `{{}}`, `\u2308 \u2309` (ceil), `\u230a \u230b` (floor)
              - Set a variable to a value (value can be a calculable formula) for next calculations
+             - Define a function. User functions must be in `func_name(arg1, arg2...)` format, both at defining and using.
         '''
         if stuff.startswith("```"):
             stuff = stuff.partition("\n")[2]
