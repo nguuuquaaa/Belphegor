@@ -46,8 +46,7 @@ class BaseParse:
         "*":    operator.mul,
         "/":    operator.truediv,
         "//":   operator.floordiv,
-        "%":    operator.mod,
-
+        "%":    operator.mod
     }
     FUNCS = {
         "sin":  cmath.sin,
@@ -61,6 +60,7 @@ class BaseParse:
     }
     SPECIAL = {
         "^":    pow,
+        "**":   pow,
         "!":    math.factorial,
         "C":    combination
     }
@@ -70,7 +70,9 @@ class BaseParse:
         "pi":   math.pi,
         "τ":    math.tau,
         "tau":  math.tau,
-        "i":    1j
+        "i":    1j,
+        "inf":  float("inf"),
+        "∞":    float("inf")
     }
 
     def DO_NOTHING(x):
@@ -189,7 +191,7 @@ class BaseParse:
                 self.parse_next()
             r = getattr(p, "real", p)
             v = getattr(value, "real", value)
-            if v == 0 or r * math.log10(abs(v)) < self.MAX_POWER_LOG:
+            if v == 0 or v == self.CONSTS["inf"] or r == self.CONSTS["inf"] or r * math.log10(abs(v)) < self.MAX_POWER_LOG:
                 result = c(value, p)
             else:
                 raise ParseError("Why you need this large number.")
@@ -378,6 +380,13 @@ class MathParse(BaseParse):
             raise ParseError("Oi, don't do that many calculations in one go.")
 
     def how_to_display(self, number):
+        if number == float("nan"):
+            return number, "NotNumber"
+        elif number == self.CONSTS["inf"]:
+            return number, "∞"
+        elif number == -self.CONSTS["inf"]:
+            return number, "-∞"
+
         value = int(round(number))
         if cmath.isclose(value, number, rel_tol=1e-10, abs_tol=1e-10):
             s = str(value)
@@ -399,7 +408,7 @@ class MathParse(BaseParse):
 
                     for kind in (self.FUNCS, self.CONSTS, self.SPECIAL, self.user_functions):
                         if var_name in kind:
-                            raise ParseError("Variable name is already taken.")
+                            raise ParseError(f"Name {var_name} is already taken.")
                     else:
                         self.text = stuff[2]
                 else:
@@ -423,7 +432,7 @@ class MathParse(BaseParse):
                                     raise ParseError("WTF function name...")
                                 for kind in (self.FUNCS, self.CONSTS, self.SPECIAL, self.user_variables):
                                     if func_name in kind:
-                                        raise ParseError(f"Function name is already taken.")
+                                        raise ParseError(f"Name {func_name} is already taken.")
                                 self.user_functions[func_name] = func
                                 da = ", ".join(args)
                                 results.append(f"Registered {func_name}({da})")
@@ -499,7 +508,7 @@ class Calculator:
             Acceptable expressions:
              - Operators `+` , `-` , `*` , `/` (true div), `//` (div mod), `%` (mod), `^` (pow), `!` (factorial)
              - Functions `sin`, `cos`, `tan`, `cot`, `log` (base 10), `ln` (natural log), `sqrt` (square root), `abs` (absolute value), `nCk` (combination)
-             - Constants `e`, `pi`, `π`, `tau`, `τ`, `i` (imaginary)
+             - Constants `e`, `pi`, `π`, `tau`, `τ`, `i` (imaginary), `inf` or `∞` (infinity, use at your own risk)
              - Enclosed `()`, `[]`, `{{}}`, `\u2308 \u2309` (ceil), `\u230a \u230b` (floor)
              - Set a variable to a value (value can be a calculable formula) for next calculations
              - Define a function. User functions must be in `func_name(arg1, arg2...)` format, both at defining and using.
@@ -517,7 +526,7 @@ class Calculator:
         except ZeroDivisionError:
             await ctx.send("Division by zero.")
         except ValueError:
-            await ctx.send("Calculation error. Probably log 0 or something.")
+            await ctx.send(f"Calculation error. Probably incomprehensible calculation involved ∞ or something.")
         except OverflowError:
             await ctx.send("Input number too big. U sure need this one?")
         except:

@@ -9,7 +9,7 @@ import copy
 
 def to_int(any_obj, base=10, *, default=None):
     try:
-        return int(any_obj, 10)
+        return int(any_obj, base)
     except:
         return default
 
