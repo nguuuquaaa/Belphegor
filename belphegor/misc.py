@@ -130,9 +130,12 @@ class Misc:
                     check=lambda r,u: u.id==ctx.author.id and r.emoji in possible_reactions and r.message.id==message.id,
                     timeout=30
                 )
-            except:
+            except asyncio.TimeoutError:
                 embed.description = "\"I'm tir..e...d.....zzzz...........\""
-                await message.clear_reactions()
+                try:
+                    await message.clear_reactions()
+                except:
+                    pass
                 await message.edit(embed=embed)
                 break
             roll = random.randint(0,2)
@@ -140,11 +143,17 @@ class Misc:
             if value == 3:
                 embed.title = ""
                 embed.description = "\"No more jankenpon? Yay!!!\""
-                await message.clear_reactions()
+                try:
+                    await message.clear_reactions()
+                except:
+                    pass
                 await message.edit(embed=embed)
                 break
             else:
-                await message.remove_reaction(reaction, user)
+                try:
+                    await message.remove_reaction(reaction, user)
+                except:
+                    pass
                 if (value - roll) % 3 == 0:
                     record["draw"] += 1
                     streak = f"{streak}d"
@@ -578,7 +587,10 @@ class Misc:
                 result[r.emoji] = r.count
         embed.set_footer(text="Poll ended.")
         await message.edit(embed=embed)
-        await message.clear_reactions()
+        try:
+            await message.clear_reactions()
+        except:
+            pass
         max_result = []
         max_number = max(result.values())
         for key, value in result.items():

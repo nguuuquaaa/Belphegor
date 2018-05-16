@@ -396,11 +396,7 @@ class MathParse(BaseParse):
                 m = self.VAR_REGEX.fullmatch(stuff[0])
                 if m:
                     var_name = m.group(0)
-                    try:
-                        int(var_name)
-                    except:
-                        pass
-                    else:
+                    if var_name[0] in self.DIGITS:
                         raise ParseError("WTF variable name...")
 
                     if var_name in self.FUNCS or var_name in self.SPECIAL or var_name in self.CONSTS:
@@ -413,11 +409,7 @@ class MathParse(BaseParse):
                     args = self.FUNC_REGEX.findall(raw_args)
                     if args:
                         for a in args:
-                            try:
-                                int(a)
-                            except:
-                                pass
-                            else:
+                            if a[0] in self.DIGITS:
                                 raise ParseError("WTF argument name...")
 
                             if a in self.FUNCS or a in self.SPECIAL or a in self.CONSTS:
