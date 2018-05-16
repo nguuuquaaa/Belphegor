@@ -7,9 +7,9 @@ import copy
 
 #==================================================================================================================================================
 
-def to_int(any_obj, *, default=None):
+def to_int(any_obj, base=10, *, default=None):
     try:
-        return int(any_obj)
+        return int(any_obj, 10)
     except:
         return default
 

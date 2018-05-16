@@ -65,11 +65,11 @@ class BaseParse:
         "C":    combination
     }
     CONSTS = {
-        "e":    cmath.e,
-        "π":    cmath.pi,
-        "pi":   cmath.pi,
-        "τ":    cmath.tau,
-        "tau":  cmath.tau,
+        "e":    math.e,
+        "π":    math.pi,
+        "pi":   math.pi,
+        "τ":    math.tau,
+        "tau":  math.tau,
         "i":    1j
     }
 
@@ -416,15 +416,20 @@ class MathParse(BaseParse):
                                     raise ParseError(f"Don't use {a} as argument, it's already taken.")
                         else:
                             func = MathFunction(stuff[2], args, variables=self.user_variables, functions=self.user_functions)
-                            func_name = proc[0].strip()
-                            for kind in (self.FUNCS, self.CONSTS, self.SPECIAL, self.user_variables):
-                                if func_name in kind:
-                                    raise ParseError(f"Function name is already taken.")
-                            self.user_functions[func_name] = func
-                            da = ", ".join(args)
-                            results.append(f"Registered {func_name}({da})")
-                            continue
-
+                            mf = self.VAR_REGEX.fullmatch(proc[0])
+                            if mf:
+                                func_name = mf.group(1)
+                                if func_name[0] in self.DIGITS:
+                                    raise ParseError("WTF function name...")
+                                for kind in (self.FUNCS, self.CONSTS, self.SPECIAL, self.user_variables):
+                                    if func_name in kind:
+                                        raise ParseError(f"Function name is already taken.")
+                                self.user_functions[func_name] = func
+                                da = ", ".join(args)
+                                results.append(f"Registered {func_name}({da})")
+                                continue
+                            else:
+                                raise ParseError("Your function name is bad and you should feel bad.")
                     else:
                         raise ParseError("Your argument list is bad and you should feel bad.")
             else:

@@ -706,6 +706,56 @@ class Misc:
         choices = choices.split(" or ")
         await ctx.send(random.choice(choices))
 
+    @commands.command(name="embed")
+    async def cmd_embed(self, ctx, *, data):
+        data = data.splitlines()
+        kwargs = {"fields": []}
+        for item in data:
+            p = item.partition("=")
+            k = p[0].strip()
+            v = p[2].strip().encode("utf-8").decode("unicode_escape")
+            if k == "field":
+                kwargs["fields"].append(v.split("||"))
+            else:
+                kwargs[k] = v
+
+        Empty = discord.Embed.Empty
+        embed = discord.Embed(
+            title=kwargs.get("title") or Empty,
+            description=kwargs.get("description") or Empty,
+            url=kwargs.get("url") or Empty,
+            colour=utils.to_int(kwargs.get("colour"), 16) or Empty,
+        )
+
+        author = kwargs.get("author")
+        if author:
+            embed.set_author(name=author, url=kwargs.get("author_url") or Empty, icon_url=kwargs.get("author_icon") or Empty)
+
+        thumbnail = kwargs.get("thumbnail")
+        if thumbnail:
+            embed.set_thumbnail(url=thumbnail)
+
+        image = kwargs.get("image")
+        if image:
+            embed.set_image(url=image)
+
+        footer = kwargs.get("footer")
+        if footer:
+            embed.set_footer(text=footer)
+
+        fields = kwargs["fields"]
+        if len(fields) > 25:
+            return await ctx.send("Too many fields.")
+        for f in fields:
+            if len(f) > 1:
+                if len(f[0]) > 0 and len(f[1]) > 0:
+                    embed.add_field(name=f[0].strip(), value=f[1].strip(), inline=utils.get_element(f, 2, default="true").strip() in ("True", 1, "true", "inline"))
+
+        try:
+            await ctx.send(embed=embed)
+        except Exception as e:
+            await ctx.send(e)
+
 #==================================================================================================================================================
 
 def setup(bot):
