@@ -163,7 +163,7 @@ class BaseParse:
             else:
                 self.current_parse = n
                 self.next()
-        self.log_lines.append(f"parsed {self.current_parse}")
+        self.log_lines.append(f"parsed {type(self.current_parse)}: {self.current_parse}")
         return self.current_parse
 
     def parse_special(self, value):
@@ -250,8 +250,6 @@ class BaseParse:
         n = True
         while True:
             n = self.current_parse
-            print(n, self.signals)
-            print(n in self.signals)
             if n in self.SIGNS or n in self.CLOSED or n in self.signals:
                 if last_op or last_funcs:
                     raise CommonParseError
@@ -395,12 +393,13 @@ class MathParse(BaseParse):
             if stuff[1]:
                 m = self.VAR_REGEX.fullmatch(stuff[0])
                 if m:
-                    var_name = m.group(0)
+                    var_name = m.group(1)
                     if var_name[0] in self.DIGITS:
                         raise ParseError("WTF variable name...")
 
-                    if var_name in self.FUNCS or var_name in self.SPECIAL or var_name in self.CONSTS:
-                        raise ParseError("Variable name is already taken.")
+                    for kind in self.things_to_check:
+                        if var_name in kind:
+                            raise ParseError("Variable name is already taken.")
                     else:
                         self.text = stuff[2]
                 else:
@@ -412,8 +411,9 @@ class MathParse(BaseParse):
                             if a[0] in self.DIGITS:
                                 raise ParseError("WTF argument name...")
 
-                            if a in self.FUNCS or a in self.SPECIAL or a in self.CONSTS:
-                                raise ParseError(f"Don't use {a} as argument.")
+                            for kind in self.things_to_check:
+                                if a in kind:
+                                    raise ParseError(f"Don't use {a} as argument, it's already taken.")
                         else:
                             func = MathFunction(stuff[2], args, variables=self.user_variables, functions=self.user_functions)
                             func_name = proc[0].strip()
@@ -499,8 +499,8 @@ class Calculator:
         if stuff.startswith("```"):
             stuff = stuff.partition("\n")[2]
         stuff = stuff.strip("` \n")
-        m = MathParse(stuff)
         try:
+            m = MathParse(stuff)
             results = await asyncio.wait_for(self.bot.loop.run_in_executor(None, m.result), 10)
         except ParseError as e:
             await ctx.send(e)
