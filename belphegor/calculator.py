@@ -397,7 +397,7 @@ class MathParse(BaseParse):
                     if var_name[0] in self.DIGITS:
                         raise ParseError("WTF variable name...")
 
-                    for kind in self.things_to_check:
+                    for kind in (self.FUNCS, self.CONSTS, self.SPECIAL, self.user_functions):
                         if var_name in kind:
                             raise ParseError("Variable name is already taken.")
                     else:
@@ -411,12 +411,15 @@ class MathParse(BaseParse):
                             if a[0] in self.DIGITS:
                                 raise ParseError("WTF argument name...")
 
-                            for kind in self.things_to_check:
+                            for kind in (self.FUNCS, self.CONSTS, self.SPECIAL, self.user_variables):
                                 if a in kind:
                                     raise ParseError(f"Don't use {a} as argument, it's already taken.")
                         else:
                             func = MathFunction(stuff[2], args, variables=self.user_variables, functions=self.user_functions)
                             func_name = proc[0].strip()
+                            for kind in (self.FUNCS, self.CONSTS, self.SPECIAL, self.user_variables):
+                                if func_name in kind:
+                                    raise ParseError(f"Function name is already taken.")
                             self.user_functions[func_name] = func
                             da = ", ".join(args)
                             results.append(f"Registered {func_name}({da})")
