@@ -526,7 +526,7 @@ class Calculator:
         except ZeroDivisionError:
             await ctx.send("Division by zero.")
         except ValueError:
-            await ctx.send(f"Calculation error. Probably incomprehensible calculation involved ∞ or something.")
+            await ctx.send("Calculation error. Probably incomprehensible calculation involved ∞ or something.")
         except OverflowError:
             await ctx.send("Input number too big. U sure need this one?")
         except:

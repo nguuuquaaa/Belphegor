@@ -87,6 +87,7 @@ class Misc:
         self.jankenpon_record = bot.db.jankenpon_record
         self.google_regex = re.compile(r"\<input name\=\"rlz\" value\=\"([a-zA-Z0-9_])\" type\=\"hidden\">")
         self.google_lock = asyncio.Lock()
+        self.owo = {"/o/": "\\o\\", "\\o\\": "/o/", "\\o/": "/o\\", "/o\\": "\\o/"}
 
     def quote(self, streak):
         if streak.endswith("ddd"):
@@ -190,17 +191,14 @@ class Misc:
                 await message.channel.send(content=f"pong (ws: {int(1000*self.bot.latency)}ms, typing: {int(1000*(end-start))}ms)")
             except:
                 pass
-        elif inp[:3] in ("/o/", "\\o\\"):
+        elif inp[:3] in self.owo:
             r = []
             index = 0
             l = len(inp)
             while index < l:
                 current = inp[index:index+3]
-                if current == "\\o\\":
-                    r.append("/o/")
-                    index += 3
-                elif current == "/o/":
-                    r.append("\\o\\")
+                if current in self.owo:
+                    r.append(self.owo[current])
                     index += 3
                 else:
                     index += 1

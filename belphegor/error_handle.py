@@ -21,8 +21,9 @@ class ErrorHandle:
 
         async def new_on_error(event, *args, **kwargs):
             etype, e, etb = sys.exc_info()
-            prt_err = "".join(traceback.format_exception(etype, e, etb, 5))
-            await self.error_hook.execute(f"```\nIgnoring exception in event {event}:\n{prt_err}\n```")
+            if isinstance(e, discord.Forbidden):
+                prt_err = "".join(traceback.format_exception(etype, e, etb, 5))
+                await self.error_hook.execute(f"```\nIgnoring exception in event {event}:\n{prt_err}\n```")
 
         self.bot.on_error = new_on_error
 
@@ -32,7 +33,7 @@ class ErrorHandle:
         self.bot.error_hook = self.error_hook
 
     async def on_command_error(self, ctx, error):
-        ignored = (commands.DisabledCommand, commands.CheckFailure, commands.CommandNotFound, commands.UserInputError, commands.CommandOnCooldown)
+        ignored = (commands.DisabledCommand, commands.CheckFailure, commands.CommandNotFound, commands.UserInputError, commands.CommandOnCooldown, discord.Forbidden)
         if isinstance(error, commands.CommandInvokeError):
             error = error.original
             prt_err = "".join(traceback.format_exception(type(error), error, error.__traceback__, 5))
@@ -41,7 +42,7 @@ class ErrorHandle:
         elif isinstance(error, commands.MissingRequiredArgument):
             await ctx.send("Argument missing. You sure read command description in detail?", delete_after=30)
         elif isinstance(error, commands.BadArgument):
-            await ctx.send("Bad arguments. You sure read command description in detail?", delete_after=30)
+            await ctx.send("Bad arguments. You sure read command description?", delete_after=30)
         elif isinstance(error, ignored):
             pass
         else:
