@@ -21,7 +21,7 @@ class ErrorHandle:
 
         async def new_on_error(event, *args, **kwargs):
             etype, e, etb = sys.exc_info()
-            if isinstance(e, discord.Forbidden):
+            if not isinstance(e, discord.Forbidden):
                 prt_err = "".join(traceback.format_exception(etype, e, etb, 5))
                 await self.error_hook.execute(f"```\nIgnoring exception in event {event}:\n{prt_err}\n```")
 
@@ -45,6 +45,8 @@ class ErrorHandle:
             await ctx.send("Bad arguments. You sure read command description?", delete_after=30)
         elif isinstance(error, ignored):
             pass
+        elif isinstance(error, OverflowError):
+            await ctx.send("Input number too big. You sure really need it?")
         else:
             prt_err = "".join(traceback.format_exception(type(error), error, None))
             await self.error_hook.execute(f"```\nIgnoring exception in command {ctx.command}:\n{prt_err}\n```")

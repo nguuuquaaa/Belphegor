@@ -23,9 +23,9 @@ class Remind:
 
     async def check_till_eternity(self):
         while True:
+            self.active.clear()
             cur = self.event_list.find().sort("event_time").limit(1)
             result = await cur.to_list(length=1)
-            self.active.clear()
             if not result:
                 await self.active.wait()
             else:
@@ -81,6 +81,7 @@ class Remind:
         '''
         try:
             remind_text, wait_time = utils.extract_time(remind_text)
+            event_time = now_time + wait_time
         except OverflowError:
             return await ctx.send("Time too large.")
         else:
@@ -88,7 +89,7 @@ class Remind:
         if seconds > 0:
             now_time = utils.now_time()
             new_event = {
-                "event_time": now_time + wait_time,
+                "event_time": event_time,
                 "wait_time": seconds,
                 "author_id": ctx.author.id,
                 "channel_id": ctx.channel.id,

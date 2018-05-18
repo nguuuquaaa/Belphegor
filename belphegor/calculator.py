@@ -506,7 +506,7 @@ class Calculator:
             `>>calc <formulas>`
             Formulas are separated by linebreak. You can codeblock the whole thing for easier on the eyes.
             Acceptable expressions:
-             - Operators `+` , `-` , `*` , `/` (true div), `//` (div mod), `%` (mod), `^` (pow), `!` (factorial)
+             - Operators `+` , `-` , `*` , `/` (true div), `//` (div mod), `%` (mod), `^` or `**` (pow), `!` (factorial)
              - Functions `sin`, `cos`, `tan`, `cot`, `log` (base 10), `ln` (natural log), `sqrt` (square root), `abs` (absolute value), `nCk` (combination)
              - Constants `e`, `pi`, `π`, `tau`, `τ`, `i` (imaginary), `inf` or `∞` (infinity, use at your own risk)
              - Enclosed `()`, `[]`, `{{}}`, `\u2308 \u2309` (ceil), `\u230a \u230b` (floor)
