@@ -220,12 +220,18 @@ class Misc:
         await ctx.send(embed=embed)
 
     @commands.command()
-    async def dice(self, ctx, max_side: int, number_of_dices: int):
+    async def dice(self, ctx, dice_type):
         '''
-            `>>dice <max_side> <number_of_dices>`
-            Roll dices.
-            <max_side> must be between 4 and 120 and <number_of_dices> must be between 1 and 100.
+            `>>dice ndM`
+            Roll dices, with max side M and number of dices n.
+            Max side must be between 4 and 120 and number of dices must be between 1 and 100.
         '''
+        d = dice_type.partition("d")
+        try:
+            max_side = int(d[2])
+            number_of_dices = int(d[0])
+        except:
+            return await ctx.send("Must be in ndM format.")
         if 120 >= max_side > 3 and 0 < number_of_dices <= 100:
             rng = board_game.Dices(max_side, number_of_dices)
             roll_result = rng.roll()
@@ -235,7 +241,7 @@ class Misc:
                 .format(", ".join((str(r) for r in roll_result)), "\n".join((f"{i: 4d} │{counter[i]: 4d}" for i in range(1, max_side+1))))
             )
         else:
-            await ctx.send("Max side must be between 4 and 120 and number of dices must be between 1 and 100")
+            await ctx.send("Max side must be between 4 and 120 and number of dices must be between 1 and 100.")
 
     @commands.command()
     async def fancy(self, ctx, *, textin: str):

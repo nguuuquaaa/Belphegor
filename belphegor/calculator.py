@@ -9,6 +9,7 @@ import traceback
 import asyncio
 import random
 import collections
+import numpy
 
 #==================================================================================================================================================
 
@@ -37,7 +38,6 @@ class BaseParse:
     MAX_POWER_LOG = 300
     MAX_FACTORIAL = 50
 
-    DIGITS = tuple(str(i) for i in range(10))
     SIGNS = {
         "+":    1,
         "-":    -1
@@ -49,14 +49,17 @@ class BaseParse:
         "%":    operator.mod
     }
     FUNCS = {
-        "sin":  cmath.sin,
-        "cos":  cmath.cos,
-        "tan":  cmath.tan,
-        "cot":  lambda x: cmath.cos(x)/cmath.sin(x),
-        "log":  cmath.log10,
-        "ln":   cmath.log,
-        "sqrt": cmath.sqrt,
-        "abs":  abs
+        "sin":      cmath.sin,
+        "cos":      cmath.cos,
+        "tan":      cmath.tan,
+        "cot":      lambda x: cmath.cos(x)/cmath.sin(x),
+        "arcsin":   math.asin,
+        "arccos":   math.acos,
+        "arctan":   math.atan,
+        "log":      cmath.log10,
+        "ln":       cmath.log,
+        "sqrt":     cmath.sqrt,
+        "abs":      abs
     }
     SPECIAL = {
         "^":    pow,
@@ -91,6 +94,11 @@ class BaseParse:
 
     BUILTINS = (OPS, FUNCS, SPECIAL, CONSTS)
 
+    WHITESPACES = (
+        "\u0009", "\u000a", "\u000b", "\u000c", "\u000d", "\u0020", "\u0085", "\u00a0", "\u1680", "\u2000", "\u2001", "\u2002", "\u2003",
+        "\u2004", "\u2005", "\u2006", "\u2007", "\u2008", "\u2009", "\u200a", "\u200b", "\u2028", "\u2029", "\u202f", "\u205f", "\u3000"
+    )
+
     def __init__(self):
         self.log_lines = []
         self.name_lens = []
@@ -121,36 +129,66 @@ class BaseParse:
                     self.name_lens.append(l)
         self.name_lens.sort(reverse=True)
 
+    def set_base(self, base):
+        self.base = base
+        if base == 2:
+            self.base_str = "bin: "
+            self.strfmt = "b"
+            self.max_power = self.MAX_POWER_LOG * math.log2(10)
+            self.digits = ("0", "1")
+        elif base == 8:
+            self.base_str = "oct: "
+            self.strfmt = "o"
+            self.max_power = self.MAX_POWER_LOG * 3 * math.log2(10)
+            self.digits = ("0", "1", "2", "3", "4", "5", "6", "7")
+        elif base == 10:
+            self.base_str = ""
+            self.strfmt = "d"
+            self.max_power = self.MAX_POWER_LOG
+            self.digits = ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9")
+        elif base == 16:
+            self.base_str = "hex: "
+            self.strfmt = "x"
+            self.max_power = self.MAX_POWER_LOG * 4 * math.log2(10)
+            self.digits = ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f")
+
     def peek_ahead(self, number=1):
         nx = self.current_index
         return self.text[nx:nx+number]
 
     def parse_number(self):
         get_it = []
-        output = int
+        is_int = True
         while True:
             n = self.cur()
             if n == ".":
-                if output is int:
-                    output = float
-                    get_it.append(n)
+                if self.base == 10:
+                    if is_int:
+                        is_int = False
+                        get_it.append(n)
+                    else:
+                        raise ParseError("Not a number.")
                 else:
-                    raise ParseError("Not a number.")
-            elif n in self.DIGITS:
+                    raise ParseError("Float is not allow in non-decimal mode.")
+            elif n in self.digits:
                 get_it.append(n)
+            elif n in self.WHITESPACES:
+                pass
             else:
                 break
             self.next()
-        return output("".join(get_it))
+        n = "".join(get_it)
+        if is_int:
+            return int(n, self.base)
+        else:
+            return float(n)
 
     def parse_next(self):
-        while self.cur() in (" ", "\t"):
+        while self.cur() in self.WHITESPACES:
             self.next()
         n = self.cur()
         if n is None:
             self.current_parse = None
-        elif n in self.DIGITS or n == ".":
-            self.current_parse = self.parse_number()
         else:
             for i in self.name_lens:
                 fn = self.peek_ahead(i)
@@ -163,8 +201,11 @@ class BaseParse:
                     continue
                 break
             else:
-                self.current_parse = n
-                self.next()
+                if n in self.digits or n == ".":
+                    self.current_parse = self.parse_number()
+                else:
+                    self.current_parse = n
+                    self.next()
         self.log_lines.append(f"parsed {type(self.current_parse)}: {self.current_parse}")
         return self.current_parse
 
@@ -175,7 +216,7 @@ class BaseParse:
             self.parse_next()
             if isinstance(value, int):
                 if value > self.MAX_FACTORIAL:
-                    raise ParseError("Why you need this large number.")
+                    raise ParseError(f"Limit for factorial is {self.MAX_FACTORIAL}!")
                 elif value < 0:
                     raise ParseError("Can't factorial negative number.")
                 else:
@@ -191,10 +232,10 @@ class BaseParse:
                 self.parse_next()
             r = getattr(p, "real", p)
             v = getattr(value, "real", value)
-            if v == 0 or v == self.CONSTS["inf"] or r == self.CONSTS["inf"] or r * math.log10(abs(v)) < self.MAX_POWER_LOG:
+            if v == 0 or v == self.CONSTS["inf"] or r == self.CONSTS["inf"] or r * math.log10(abs(v)) < self.max_power:
                 result = c(value, p)
             else:
-                raise ParseError("Why you need this large number.")
+                raise ParseError(f"Limit for power in base {self.base} is 10^{self.max_power}")
         elif c == self.SPECIAL["C"]:
             n = self.parse_next()
             if n in self.ENCLOSED:
@@ -204,7 +245,7 @@ class BaseParse:
                 self.parse_next()
             if isinstance(value, int) and isinstance(k, int):
                 if value > 2 * self.MAX_FACTORIAL:
-                    raise ParseError("Why you need this large number.")
+                    raise ParseError(f"Limit for combination is n <= {2*self.MAX_FACTORIAL}")
                 else:
                     result = c(value, k)
             else:
@@ -350,15 +391,18 @@ class BaseParse:
 #==================================================================================================================================================
 
 class MathFunction(BaseParse):
-    def __init__(self, text, args, variables, functions):
+    def __init__(self, text, args, variables, functions, base):
         super().__init__()
         self.text = text.partition("\n")[0]
         self.args = collections.OrderedDict((k, None) for k in args)
         self.user_variables.update(variables)
         self.user_functions.update(functions)
         self.things_to_check = (*self.things_to_check, self.args)
+        self.set_base(base)
 
     def __call__(self, args):
+        if len(args) != len(self.args):
+            raise ParseError("Number of arguments does not match.")
         for i, a in enumerate(self.args):
             self.args[a] = args[i]
         self.reset()
@@ -372,6 +416,13 @@ class MathFunction(BaseParse):
 class MathParse(BaseParse):
     VAR_REGEX = re.compile(r"\s*(\w+)\s*")
     FUNC_REGEX = re.compile(r"\s*(\w+)\s*[,;]?\s*")
+
+    BASE_TRANS = {
+        "bin:": 2,
+        "oct:": 8,
+        "dec:": 10,
+        "hex:": 16
+    }
 
     def __init__(self, text):
         super().__init__()
@@ -389,7 +440,7 @@ class MathParse(BaseParse):
 
         value = int(round(number))
         if cmath.isclose(value, number, rel_tol=1e-10, abs_tol=1e-10):
-            s = str(value)
+            s = f"{value:{self.strfmt}}"
         else:
             value = number
             s = f"{value:.10f}".rstrip("0").rstrip(".")
@@ -398,13 +449,19 @@ class MathParse(BaseParse):
     def result(self):
         results = []
         for f in self.formulas:
+            s = f[:4]
+            if s in self.BASE_TRANS:
+                self.set_base(self.BASE_TRANS[s])
+                f = f[4:]
+            else:
+                self.set_base(10)
             stuff = f.partition("=")
             if stuff[1]:
                 m = self.VAR_REGEX.fullmatch(stuff[0])
                 if m:
                     var_name = m.group(1)
-                    if var_name[0] in self.DIGITS:
-                        raise ParseError("WTF variable name...")
+                    if var_name[0] in self.digits:
+                        raise ParseError("Variable name should not start with digit.")
 
                     for kind in (self.FUNCS, self.CONSTS, self.SPECIAL, self.user_functions):
                         if var_name in kind:
@@ -417,19 +474,19 @@ class MathParse(BaseParse):
                     args = self.FUNC_REGEX.findall(raw_args)
                     if args:
                         for a in args:
-                            if a[0] in self.DIGITS:
-                                raise ParseError("WTF argument name...")
+                            if a[0] in self.digits:
+                                raise ParseError("Argument name should not start with digit.")
 
                             for kind in (self.FUNCS, self.CONSTS, self.SPECIAL, self.user_variables):
                                 if a in kind:
                                     raise ParseError(f"Don't use {a} as argument, it's already taken.")
                         else:
-                            func = MathFunction(stuff[2], args, variables=self.user_variables, functions=self.user_functions)
+                            func = MathFunction(stuff[2], args, variables=self.user_variables, functions=self.user_functions, base=self.base)
                             mf = self.VAR_REGEX.fullmatch(proc[0])
                             if mf:
                                 func_name = mf.group(1)
-                                if func_name[0] in self.DIGITS:
-                                    raise ParseError("WTF function name...")
+                                if func_name[0] in self.digits:
+                                    raise ParseError("Function name should not start with digit.")
                                 for kind in (self.FUNCS, self.CONSTS, self.SPECIAL, self.user_variables):
                                     if func_name in kind:
                                         raise ParseError(f"Name {func_name} is already taken.")
@@ -440,36 +497,39 @@ class MathParse(BaseParse):
                             else:
                                 raise ParseError("Your function name is bad and you should feel bad.")
                     else:
-                        raise ParseError("Your argument list is bad and you should feel bad.")
+                        raise ParseError("Bad definition detected.")
             else:
                 self.text = f
 
             self.reset()
             result = self.parse_level()
             if isinstance(result, complex):
-                r, rstr = self.how_to_display(result.real)
-                i, istr = self.how_to_display(result.imag)
-                if i == 0:
-                    value = r
-                    s = rstr
-                elif r == 0:
-                    value = 0
-                    s = f"{istr}i"
-                else:
-                    value = r + i * 1j
-                    if i > 0:
-                        s = f"{rstr} + {istr}i"
+                if self.base == 10:
+                    r, rstr = self.how_to_display(result.real)
+                    i, istr = self.how_to_display(result.imag)
+                    if i == 0:
+                        value = r
+                        s = rstr
+                    elif r == 0:
+                        value = i * 1j
+                        s = f"{istr}i"
                     else:
-                        s = f"{rstr} - {istr.lstrip('-')}i"
+                        value = r + i * 1j
+                        if i > 0:
+                            s = f"{rstr} + {istr}i"
+                        else:
+                            s = f"{rstr} - {istr.lstrip('-')}i"
+                else:
+                    raise ParseError("Complex number is not allowed in non-decimal mode.")
             else:
                 value, s = self.how_to_display(result)
 
             if stuff[1]:
                 x = var_name
                 self.user_variables[x] = value
-                results.append(f"{x} = {s}")
+                results.append(f"{self.base_str}{x} = {s}")
             else:
-                results.append(s)
+                results.append(f"{self.base_str}{s}")
         return results
 
     def log(self):
