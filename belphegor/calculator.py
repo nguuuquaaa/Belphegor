@@ -62,7 +62,8 @@ class BaseParse:
         "log":      cmath.log10,
         "ln":       cmath.log,
         "sqrt":     cmath.sqrt,
-        "abs":      abs
+        "abs":      abs,
+        "sgn":      numpy.sign
     }
     SPECIAL = {
         "^":    pow,
@@ -570,7 +571,7 @@ class Calculator:
             Formulas are separated by linebreak. You can codeblock the whole thing for easier on the eyes.
             Acceptable expressions:
              - Operators `+` , `-` , `*` , `/` (true div), `//` (div mod), `%` (mod), `^` or `**` (pow), `!` (factorial)
-             - Functions `sin`, `cos`, `tan`, `cot`, `arcsin` or `asin`, `arccos` or `acos`, `arctan` or `atan`, `log` (base 10), `ln` (natural log), `sqrt` (square root), `abs` (absolute value), `nCk` (combination)
+             - Functions `sin`, `cos`, `tan`, `cot`, `arcsin` or `asin`, `arccos` or `acos`, `arctan` or `atan`, `log` (base 10), `ln` (natural log), `sqrt` (square root), `abs` (absolute value), `nCk` (combination), sgn (sign function)
              - Constants `e`, `pi`, `π`, `tau`, `τ`, `i` (imaginary), `inf` or `∞` (infinity, use at your own risk)
              - Enclosed `()`, `[]`, `{{}}`, `\u2308 \u2309` (ceil), `\u230a \u230b` (floor)
              - Set a variable to a value (value can be a calculable formula) for next calculations
