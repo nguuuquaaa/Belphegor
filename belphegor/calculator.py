@@ -53,8 +53,11 @@ class BaseParse:
         "cos":      cmath.cos,
         "tan":      cmath.tan,
         "cot":      lambda x: cmath.cos(x)/cmath.sin(x),
+        "asin":     math.asin,
         "arcsin":   math.asin,
+        "acos":     math.acos,
         "arccos":   math.acos,
+        "atan":     math.atan,
         "arctan":   math.atan,
         "log":      cmath.log10,
         "ln":       cmath.log,
@@ -567,11 +570,12 @@ class Calculator:
             Formulas are separated by linebreak. You can codeblock the whole thing for easier on the eyes.
             Acceptable expressions:
              - Operators `+` , `-` , `*` , `/` (true div), `//` (div mod), `%` (mod), `^` or `**` (pow), `!` (factorial)
-             - Functions `sin`, `cos`, `tan`, `cot`, `log` (base 10), `ln` (natural log), `sqrt` (square root), `abs` (absolute value), `nCk` (combination)
+             - Functions `sin`, `cos`, `tan`, `cot`, `arcsin` or `asin`, `arccos` or `acos`, `arctan` or `atan`, `log` (base 10), `ln` (natural log), `sqrt` (square root), `abs` (absolute value), `nCk` (combination)
              - Constants `e`, `pi`, `π`, `tau`, `τ`, `i` (imaginary), `inf` or `∞` (infinity, use at your own risk)
              - Enclosed `()`, `[]`, `{{}}`, `\u2308 \u2309` (ceil), `\u230a \u230b` (floor)
              - Set a variable to a value (value can be a calculable formula) for next calculations
-             - Define a function. User functions must be in `func_name(arg1, arg2...)` format, both at defining and using.
+             - Define a function. User functions must be in `func_name(arg1, arg2...)` format, both at defining and using
+             - Binary/octal/hexadecimal mode. Put `bin:`, `oct:`, `hex:` at the start to use that mode in current line. Default to decimal (`dec:`) mode (well of course)
         '''
         if stuff.startswith("```"):
             stuff = stuff.partition("\n")[2]
