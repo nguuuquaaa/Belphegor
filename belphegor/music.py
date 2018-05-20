@@ -1,7 +1,6 @@
 import discord
 from discord.ext import commands
 import asyncio
-import pafy
 from . import utils
 from .utils import config, token, data_type, checks
 from apiclient.discovery import build
@@ -16,11 +15,28 @@ import re
 from pymongo import ReturnDocument
 import copy
 import weakref
+import youtube_dl
+import functools
 
 #==================================================================================================================================================
 
 youtube_match = re.compile(r"(?:https?\:\/\/)?(?:www\.)?(?:youtube(?:-nocookie)?\.com\/\S*[^\w\s-]|youtu\.be\/)([\w-]{11})(?:[^\w\s-]|$)")
 MAX_PLAYLIST_SIZE = 1000
+
+ytdl_format_options = {
+    "format": "bestaudio/best",
+    "noplaylist": True,
+    "nocheckcertificate": True,
+    "ignoreerrors": False,
+    "logtostderr": False,
+    "quiet": True,
+    "no_warnings": True,
+    "default_search": "auto",
+    "source_address": "0.0.0.0"
+}
+
+ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
+ytdl_extract_info = functools.partial(ytdl.extract_info, download=False)
 
 #==================================================================================================================================================
 
@@ -90,32 +106,45 @@ class Song:
         self.url = url
         self.default_volume = 1.0
         self.index = index
-        self.duration = "00:00:00"
+        self.duration = "?"
         self.music = None
 
     def raw_update(self):
         try:
-            video = pafy.new(self.url)
+            data, f = self.get_stream()
         except OSError:
             return
-        for a in video.audiostreams:
-            if a.bitrate == "128k":
-                audio = a
-                break
-        else:
-            audio = video.getbestaudio()
-        try:
-            url = audio.url
-        except AttributeError:
-            url = video.streams[-1].url
-        self.duration = video.duration
+        if data.get("duration"):
+            d = data["duration"]
+            self.duration = f"{d//3600:02}:{d%3600//60:02}:{d%60:02}"
         self.music = discord.PCMVolumeTransformer(
             FFmpegWithBuffer(
-                url,
-                before_options="-hide_banner -loglevel panic -reconnect 1"
+                f["url"],
+                before_options="-hide_banner -nostats -loglevel 0 -reconnect 1"
             ),
             volume=self.default_volume
         )
+
+    def get_stream(self):
+        data = ytdl_extract_info(self.url)
+        if not data["formats"]:
+            return None
+        audios = []
+        others = []
+        for f in data["formats"]:
+            if f.get("abr"):
+                audios.append(f)
+            else:
+                others.append(f)
+        audios.sort(key=lambda x: x["abr"], reverse=True)
+        others.sort(key=lambda x: x.get("tbr", 0), reverse=True)
+        f = {}
+        for a in audios:
+            if 72 < a["abr"] < f.get("abr", 9999):
+                f = a
+        if not f:
+            f = utils.get_element(others, lambda x: 144 < x.get("height", 0) < 720, default=utils.get_element(others, 0))
+        return data, f
 
     def info(self):
         if self.music:
@@ -337,10 +366,11 @@ class Music:
         self.bot = bot
         self.playlist_data = bot.db.music_playlist_data
         self.music_players = {}
-        locale.setlocale(locale.LC_ALL, '')
+        locale.setlocale(locale.LC_ALL, "")
         self.youtube = build("youtube", "v3", developerKey=token.GOOGLE_CLIENT_API_KEY)
         self.yt_lock = asyncio.Lock()
         self.mp_lock = asyncio.Lock()
+        self.ytdl_lock = asyncio.Lock()
 
     def __unload(self):
         for mp in self.music_players.values():
@@ -490,8 +520,19 @@ class Music:
                 return await i.navigate(ctx)
             else:
                 return await ctx.send(embed=i)
+
         if 1 + len(music_player.queue) > MAX_PLAYLIST_SIZE:
             return await ctx.send("Too many entries.")
+
+        if name.startswith(("http://", "https://")):
+            d = await self.bot.run_in_lock(self.ytdl_lock, ytdl_extract_info, name)
+            if d["formats"]:
+                await music_player.queue.put(Song(ctx.message.author, d["title"], d["webpage_url"]))
+                await ctx.send(f"Added **{d['title']}** to queue.")
+            else:
+                await ctx.send("Song not found.")
+            return
+
         results = await self.bot.run_in_lock(self.yt_lock, self.youtube_search, name)
         stuff = "\n\n".join([
             f"`{i+1}:` **[{utils.discord_escape(v['snippet']['title'])}](https://youtu.be/{v['id']['videoId']})**\n      By: {v['snippet']['channelTitle']}"
@@ -719,8 +760,7 @@ class Music:
         await music_player.queue.put_many(items)
         await ctx.send(f"Added {len(items)} songs to queue{add_text}.")
 
-    def youtube_video_info(self, url):
-        video_id = youtube_match.match(url).group(1)
+    def youtube_video_info(self, video_id):
         result = self.youtube.videos().list(part='snippet,contentDetails,statistics', id=video_id).execute()
         video = result["items"][0]
         return video
@@ -749,7 +789,11 @@ class Music:
             else:
                 return await ctx.send("Position out of range.")
             url = song.url
-        video = await self.bot.run_in_lock(self.yt_lock, self.youtube_video_info, url)
+        m = youtube_match.match(url)
+        if not m:
+            return await ctx.send("Info can only be used with youtube url.")
+
+        video = await self.bot.run_in_lock(self.yt_lock, self.youtube_video_info, m.group(1))
         snippet = video["snippet"]
         stat = video["statistics"]
         description = utils.unifix(snippet.get("description", "None")).strip()

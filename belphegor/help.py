@@ -378,6 +378,7 @@ class Help:
             command = self.bot.get_command(command_name)
             if command:
                 if not command.hidden:
+                    usage = command.help
                     embed = discord.Embed(colour=discord.Colour.teal())
                     embed.add_field(name="Parent command", value=f"`{command.full_parent_name}`" if command.full_parent_name else "None")
                     embed.add_field(name="Name", value=f"`{command.name}`")
@@ -400,10 +401,17 @@ class Help:
                     )
                     if command.help:
                         usage = command.help.partition("\n")
-                        usage = f"``{usage[0]}``\n{usage[2]}".format(ctx.me.display_name)
+                        things = usage[2].split("\n\n\n")
+                        if len(things) > 1:
+                            first = f"``{usage[0]}``\n{things[0]}".format(ctx.me.display_name)
+                            embed.add_field(name="Usage", value=first, inline=False)
+                            for thing in things[1:]:
+                                embed.add_field(name="\u200b", value=thing, inline=False)
+                        else:
+                            usage = f"``{usage[0]}``\n{usage[2]}".format(ctx.me.display_name)
+                            embed.add_field(name="Usage", value=usage, inline=False)
                     else:
-                        usage = "Not yet documented."
-                    embed.add_field(name="Usage", value=usage, inline=False)
+                        embed.add_field(name="Usage", value="Not yet documented.", inline=False)
                     await ctx.send(embed=embed)
                 else:
                     await ctx.send(f"Command `{command_name}` isn't available to public.")

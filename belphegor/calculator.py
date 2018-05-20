@@ -34,6 +34,28 @@ class CommonParseError(Exception):
 
 #==================================================================================================================================================
 
+class Sigma:
+    MAX_RANGE = 100
+
+    def __init__(self, func, from_, to_):
+        if to_ > from_:
+            self.delta = 1
+        else:
+            self.delta = -1
+        if abs(to_ - from_) > self.MAX_RANGE:
+            raise ParseError("Sigma max range is {self.MAX_RANGE}.")
+        self.func = func
+        self.from_ = from_
+        self.to_ = to_
+
+    def __call__(self, args):
+        result = 0
+        for index in range(self.from_, self.to_+self.delta, self.delta):
+            result += self.func((index, *args))
+        return result
+
+#==================================================================================================================================================
+
 class BaseParse:
     MAX_POWER_LOG = 300
     MAX_FACTORIAL = 50
@@ -63,13 +85,18 @@ class BaseParse:
         "ln":       cmath.log,
         "sqrt":     cmath.sqrt,
         "abs":      abs,
+        "sign":     numpy.sign,
         "sgn":      numpy.sign
     }
-    SPECIAL = {
+    SPECIAL_OPS = {
         "^":    pow,
         "**":   pow,
         "!":    math.factorial,
         "C":    combination
+    }
+    SPECIAL_FUNCS = {
+        "sigma":    Sigma,
+        "Σ":        Sigma
     }
     CONSTS = {
         "e":    math.e,
@@ -82,21 +109,21 @@ class BaseParse:
         "∞":    float("inf")
     }
 
-    def DO_NOTHING(x):
+    def do_nothing(x):
         return x
 
     ENCLOSED = {
-        None:       (None, DO_NOTHING),
-        "(":        (")", DO_NOTHING),
-        "[":        ("]", DO_NOTHING),
-        "{":        ("}", DO_NOTHING),
+        None:       (None, do_nothing),
+        "(":        (")", do_nothing),
+        "[":        ("]", do_nothing),
+        "{":        ("}", do_nothing),
         "\u2308":   ("\u2309", math.ceil),
         "\u230a":   ("\u230b", math.floor)
     }
 
     CLOSED = tuple(c[0] for c in ENCLOSED.values())
 
-    BUILTINS = (OPS, FUNCS, SPECIAL, CONSTS)
+    BUILTINS = (OPS, FUNCS, SPECIAL_OPS, SPECIAL_FUNCS, CONSTS)
 
     WHITESPACES = (
         "\u0009", "\u000a", "\u000b", "\u000c", "\u000d", "\u0020", "\u0085", "\u00a0", "\u1680", "\u2000", "\u2001", "\u2002", "\u2003",
@@ -120,6 +147,10 @@ class BaseParse:
             return self.text[ci]
         else:
             return None
+
+    def peek_ahead(self, number=1):
+        nx = self.current_index
+        return self.text[nx:nx+number]
 
     def reset(self):
         self.last_index = len(self.text) - 1
@@ -155,10 +186,6 @@ class BaseParse:
             self.strfmt = "x"
             self.max_power = self.MAX_POWER_LOG * 4 * math.log2(10)
             self.digits = ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f")
-
-    def peek_ahead(self, number=1):
-        nx = self.current_index
-        return self.text[nx:nx+number]
 
     def parse_number(self):
         get_it = []
@@ -211,12 +238,24 @@ class BaseParse:
                     self.current_parse = n
                     self.next()
         self.log_lines.append(f"parsed {type(self.current_parse)}: {self.current_parse}")
+        if self.base != 10 and not isinstance(self.current_parse, int):
+            raise ParseError("Non-integer is not allowed in non-decimal mode.")
         return self.current_parse
 
+    def log_this(kind):
+        def wrap(func):
+            def f(self, *args, **kwargs):
+                self.log_lines.append(f"start {kind} at {self.current_parse}")
+                ret = func(self, *args, **kwargs)
+                self.log_lines.append(f"end {kind} at {self.current_parse}")
+                return ret
+            return f
+        return wrap
+
+    @log_this("special")
     def parse_special(self, value):
-        self.log_lines.append(f"start special at {self.current_parse}")
         c = self.current_parse
-        if c == self.SPECIAL["!"]:
+        if c == self.SPECIAL_OPS["!"]:
             self.parse_next()
             if isinstance(value, int):
                 if value > self.MAX_FACTORIAL:
@@ -227,7 +266,7 @@ class BaseParse:
                     result = c(value)
             else:
                 raise ParseError("Can't factorial non-integer.")
-        elif c == self.SPECIAL["^"]:
+        elif c == self.SPECIAL_OPS["^"]:
             n = self.parse_next()
             if n in self.ENCLOSED:
                 p = self.parse_level()
@@ -240,7 +279,7 @@ class BaseParse:
                 result = c(value, p)
             else:
                 raise ParseError(f"Limit for power in base {self.base} is 10^{self.max_power}")
-        elif c == self.SPECIAL["C"]:
+        elif c == self.SPECIAL_OPS["C"]:
             n = self.parse_next()
             if n in self.ENCLOSED:
                 k = self.parse_level()
@@ -256,11 +295,10 @@ class BaseParse:
                 raise ParseError("Can't factorial non-integer.")
         else:
             result = None
-        self.log_lines.append(f"end special at {self.current_parse}")
         return result
 
+    @log_this("level")
     def parse_level(self):
-        self.log_lines.append(f"start level at {self.current_parse}")
         result = None
         sign = 1
         start = self.current_parse
@@ -270,7 +308,7 @@ class BaseParse:
             n = self.current_parse
             if n == end:
                 break
-            elif n in self.CLOSED and n != end:
+            elif n in self.CLOSED:
                 raise ParseError("No closing bracket.")
             elif n in self.SIGNS:
                 if sign:
@@ -286,11 +324,10 @@ class BaseParse:
 
         result = func(result)
         self.parse_next()
-        self.log_lines.append(f"end level at {self.current_parse}")
         return result
 
+    @log_this("group")
     def parse_group(self):
-        self.log_lines.append(f"start group at {self.current_parse}")
         result = None
         last_op = None
         last_funcs = []
@@ -314,6 +351,12 @@ class BaseParse:
                 last_funcs.append(n)
                 self.parse_next()
                 continue
+
+            if n in self.SPECIAL_FUNCS.values():
+                if n is Sigma:
+                    sigma = self.parse_sigma()
+                    args = self.parse_func_args()
+                    value = sigma(args)
 
             elif n in self.user_functions.values():
                 args = self.parse_func_args()
@@ -350,11 +393,10 @@ class BaseParse:
                 else:
                     result = value
 
-        self.log_lines.append(f"end group at {self.current_parse}")
         return result
 
+    @log_this("func args")
     def parse_func_args(self):
-        self.log_lines.append(f"start func args at {self.current_parse}")
         start = self.parse_next()
         if start != "(":
             raise CommonParseError
@@ -367,15 +409,21 @@ class BaseParse:
         while True:
             n = self.current_parse
             if n == ")":
-                result.append(cur)
-                break
-            elif n in self.CLOSED and n != ")":
+                if cur is None:
+                    if len(result) > 0:
+                        raise CommonParseError
+                else:
+                    result.append(cur)
+                    break
+            elif n in self.CLOSED:
                 raise ParseError("No closing bracket.")
             elif n in self.SIGNS:
                 if sign:
                     sign = sign * self.SIGNS[n]
                 self.parse_next()
             elif n in self.signals:
+                if cur is None:
+                    raise CommonParseError
                 result.append(cur)
                 cur = None
                 sign = 1
@@ -389,20 +437,67 @@ class BaseParse:
                 sign = 1
 
         self.parse_next()
-        self.log_lines.append(f"end func args at {self.current_parse}")
         return result
+
+    @log_this("sigma")
+    def parse_sigma(self):
+        start = self.parse_next()
+        if start != "(":
+            raise CommonParseError
+
+        func = self.parse_next()
+        if func not in self.user_functions.values():
+            raise CommonParseError
+
+        n = self.parse_next()
+        if n not in self.signals:
+            raise CommonParseError
+
+        self.parse_next()
+        from_to = []
+        sign = 1
+        cur = None
+
+        while True:
+            n = self.current_parse
+            if n == ")":
+                from_to.append(cur)
+                break
+            elif n in self.CLOSED:
+                raise ParseError("No closing bracket.")
+            elif n in self.SIGNS:
+                if sign:
+                    sign = sign * self.SIGNS[n]
+                self.parse_next()
+            elif n in self.signals:
+                from_to.append(cur)
+                cur = None
+                sign = 1
+                self.parse_next()
+            else:
+                r = sign * self.parse_group()
+                if cur is None:
+                    cur = r
+                else:
+                    cur = cur + r
+                sign = 1
+
+        if self.current_parse != ")" or len(from_to) != 2:
+            raise CommonParseError
+
+        return Sigma(func, from_to[0], from_to[1])
 
 #==================================================================================================================================================
 
 class MathFunction(BaseParse):
-    def __init__(self, text, args, variables, functions, base):
+    def __init__(self, text, args, *, variables, functions, base):
         super().__init__()
-        self.text = text.partition("\n")[0]
-        self.args = collections.OrderedDict((k, None) for k in args)
         self.user_variables.update(variables)
         self.user_functions.update(functions)
-        self.things_to_check = (*self.things_to_check, self.args)
         self.set_base(base)
+        self.text = text.partition("\n")[0]
+        self.args = collections.OrderedDict((k, None) for k in args)
+        self.things_to_check = (*self.things_to_check, self.args)
 
     def __call__(self, args):
         if len(args) != len(self.args):
@@ -411,8 +506,6 @@ class MathFunction(BaseParse):
             self.args[a] = args[i]
         self.reset()
         result = self.parse_level()
-        for a in self.args:
-            self.args[a] = None
         return result
 
 #==================================================================================================================================================
@@ -430,7 +523,7 @@ class MathParse(BaseParse):
 
     def __init__(self, text):
         super().__init__()
-        self.formulas = [t for t in text.splitlines() if t]
+        self.formulas = [t.strip() for t in text.splitlines()]
         if len(self.formulas) > 20:
             raise ParseError("Oi, don't do that many calculations in one go.")
 
@@ -453,6 +546,9 @@ class MathParse(BaseParse):
     def result(self):
         results = []
         for f in self.formulas:
+            if not f:
+                results.append(f)
+                continue
             s = f[:4]
             if s in self.BASE_TRANS:
                 self.set_base(self.BASE_TRANS[s])
@@ -467,7 +563,7 @@ class MathParse(BaseParse):
                     if var_name[0] in self.digits:
                         raise ParseError("Variable name should not start with digit.")
 
-                    for kind in (self.FUNCS, self.CONSTS, self.SPECIAL, self.user_functions):
+                    for kind in (*self.BUILTINS, self.user_functions):
                         if var_name in kind:
                             raise ParseError(f"Name {var_name} is already taken.")
                     else:
@@ -481,7 +577,7 @@ class MathParse(BaseParse):
                             if a[0] in self.digits:
                                 raise ParseError("Argument name should not start with digit.")
 
-                            for kind in (self.FUNCS, self.CONSTS, self.SPECIAL, self.user_variables):
+                            for kind in (*self.BUILTINS, self.user_variables):
                                 if a in kind:
                                     raise ParseError(f"Don't use {a} as argument, it's already taken.")
                         else:
@@ -491,7 +587,7 @@ class MathParse(BaseParse):
                                 func_name = mf.group(1)
                                 if func_name[0] in self.digits:
                                     raise ParseError("Function name should not start with digit.")
-                                for kind in (self.FUNCS, self.CONSTS, self.SPECIAL, self.user_variables):
+                                for kind in (*self.BUILTINS, self.user_variables):
                                     if func_name in kind:
                                         raise ParseError(f"Name {func_name} is already taken.")
                                 self.user_functions[func_name] = func
@@ -569,18 +665,26 @@ class Calculator:
         '''
             `>>calc <formulas>`
             Formulas are separated by linebreak. You can codeblock the whole thing for easier on the eyes.
-            Acceptable expressions:
+
+            **Acceptable expressions:**
              - Operators `+` , `-` , `*` , `/` (true div), `//` (div mod), `%` (mod), `^` or `**` (pow), `!` (factorial)
-             - Functions `sin`, `cos`, `tan`, `cot`, `arcsin` or `asin`, `arccos` or `acos`, `arctan` or `atan`, `log` (base 10), `ln` (natural log), `sqrt` (square root), `abs` (absolute value), `nCk` (combination), sgn (sign function)
+             - Functions `sin`, `cos`, `tan`, `cot`, `arcsin` or `asin`, `arccos` or `acos`, `arctan` or `atan`, `log` (base 10), `ln` (natural log), `sqrt` (square root), `abs` (absolute value), `nCk` (combination), `sign` or `sgn` (sign function)
              - Constants `e`, `pi`, `π`, `tau`, `τ`, `i` (imaginary), `inf` or `∞` (infinity, use at your own risk)
              - Enclosed `()`, `[]`, `{{}}`, `\u2308 \u2309` (ceil), `\u230a \u230b` (floor)
              - Set a variable to a value (value can be a calculable formula) for next calculations
              - Define a function. User functions must be in `func_name(arg1, arg2...)` format, both at defining and using
              - Binary/octal/hexadecimal mode. Put `bin:`, `oct:`, `hex:` at the start to use that mode in current line. Default to decimal (`dec:`) mode (well of course)
+
+
+             - Special function `sigma` or `Σ` (sum)
+                Format: `sigma(function_name, from, to)(arguments minus counter)`
+                function_name is the name of a user-defined function that take counter as first argument.
+                Sigma function will automate the counter increase (and only the counter), which is why you have to provide the rest of the arguments.
         '''
         if stuff.startswith("```"):
             stuff = stuff.partition("\n")[2]
         stuff = stuff.strip("` \n")
+        l = ""
         try:
             m = MathParse(stuff)
             results = await asyncio.wait_for(self.bot.loop.run_in_executor(None, m.result), 10)
@@ -596,15 +700,17 @@ class Calculator:
             await ctx.send("Input number too big. U sure need this one?")
         except:
             await ctx.send(f"Parsing error.\n```\n{m.show_parse_error()}\n```")
+            l = traceback.format_exc()
+        else:
+            r = "\n".join(results)
+            await ctx.send(f"```\n{r}\n```")
+        finally:
             if self.enable_log:
-                l = f"{m.log()}\n{traceback.format_exc()}"
+                l = f"{m.log()}\n{l}"
                 try:
                     await self.bot.error_hook.execute(l)
                 except AttributeError:
                     print(l)
-        else:
-            r = "\n".join(results)
-            await ctx.send(f"```\n{r}\n```")
 
     @commands.command(name="logcalc", aliases=["calclog"], hidden=True)
     @checks.owner_only()
