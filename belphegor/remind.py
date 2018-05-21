@@ -79,6 +79,7 @@ class Remind:
             Set a reminder.
             Use ~~machine~~human-readable time format to set timer, i.e `in 10h` or `10 days 5 hours`.
         '''
+        now_time = utils.now_time()
         try:
             remind_text, wait_time = utils.extract_time(remind_text)
             event_time = now_time + wait_time
@@ -87,7 +88,6 @@ class Remind:
         else:
             seconds = wait_time.total_seconds()
         if seconds > 0:
-            now_time = utils.now_time()
             new_event = {
                 "event_time": event_time,
                 "wait_time": seconds,

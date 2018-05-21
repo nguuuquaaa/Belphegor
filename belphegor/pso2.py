@@ -65,6 +65,7 @@ WEAPON_URLS = {
 }
 WEAPON_SORT = tuple(WEAPON_URLS.keys())
 SSA_SLOTS = {
+    "Tier 2":               ["s1", "s2"],
     "Tier 3":               ["s1", "s2", "s3"],
     "Tier 4":               ["s1", "s2", "s3", "s4"],
     "S Class Ability 1":    ["s1"],
@@ -502,8 +503,10 @@ class PSO2:
             try:
                 category_weapons = await self.bot.loop.run_in_executor(None, self.weapon_parse, category, bytes_)
             except:
-                return await ctx.send(f"Error parsing CATEGORY_DICT[category].")
-            weapons.extend(category_weapons)
+                await ctx.send(f"Error parsing {CATEGORY_DICT[category]}.")
+                raise
+            else:
+                weapons.extend(category_weapons)
         await self.weapon_list.delete_many({"category": {"$in": tuple(urls.keys())}})
         await self.weapon_list.insert_many(weapons)
         await msg.edit(content="Done.")
@@ -745,9 +748,13 @@ class PSO2:
         units = []
         for category, url in urls.items():
             bytes_ = await utils.fetch(self.bot.session, url)
-            category_units = await self.bot.loop.run_in_executor(None, self.unit_parse, category, bytes_)
-            units.extend(category_units)
-            print(f"Done parsing {CATEGORY_DICT[category]}.")
+            try:
+                category_units = await self.bot.loop.run_in_executor(None, self.unit_parse, category, bytes_)
+            except:
+                await ctx.send(f"Error parsing {CATEGORY_DICT[category]}.")
+                raise
+            else:
+                units.extend(category_units)
         await self.unit_list.delete_many({"category": {"$in": tuple(urls.keys())}})
         await self.unit_list.insert_many(units)
         print("Done everything.")

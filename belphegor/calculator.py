@@ -10,6 +10,7 @@ import asyncio
 import random
 import collections
 import numpy
+import time
 
 #==================================================================================================================================================
 
@@ -43,7 +44,9 @@ class Sigma:
         else:
             self.delta = -1
         if abs(to_ - from_) > self.MAX_RANGE:
-            raise ParseError("Sigma max range is {self.MAX_RANGE}.")
+            raise ParseError(f"Sigma max range is {self.MAX_RANGE}.")
+        if func.sigma:
+            raise ParseError("Nested sigma is not accepted.")
         self.func = func
         self.from_ = from_
         self.to_ = to_
@@ -51,7 +54,8 @@ class Sigma:
     def __call__(self, args):
         result = 0
         for index in range(self.from_, self.to_+self.delta, self.delta):
-            result += self.func((index, *args))
+            ret = self.func((index, *args))
+            result += ret
         return result
 
 #==================================================================================================================================================
@@ -246,7 +250,12 @@ class BaseParse:
         def wrap(func):
             def f(self, *args, **kwargs):
                 self.log_lines.append(f"start {kind} at {self.current_parse}")
-                ret = func(self, *args, **kwargs)
+                try:
+                    ret = func(self, *args, **kwargs)
+                except Exception as e:
+                    if not hasattr(e, "target"):
+                        e.target = self
+                    raise e
                 self.log_lines.append(f"end {kind} at {self.current_parse}")
                 return ret
             return f
@@ -414,7 +423,7 @@ class BaseParse:
                         raise CommonParseError
                 else:
                     result.append(cur)
-                    break
+                break
             elif n in self.CLOSED:
                 raise ParseError("No closing bracket.")
             elif n in self.SIGNS:
@@ -487,6 +496,31 @@ class BaseParse:
 
         return Sigma(func, from_to[0], from_to[1])
 
+    def log(self):
+        return "\n".join(self.log_lines)
+
+    def show_parse_error(self):
+        end_index = self.current_index
+        start_index = max(end_index - 50, 0)
+        s = self.text[start_index:end_index]
+        if len(s) < 50:
+            r = f"{s}\u032d"
+        else:
+            r = f"...{s}\u032d"
+        return r
+
+#==================================================================================================================================================
+
+class NoValue:
+    def __init__(self, var):
+        self.var = var
+
+    def __repr__(self):
+        return "NoValue"
+
+    def __str__(self):
+        return "No value"
+
 #==================================================================================================================================================
 
 class MathFunction(BaseParse):
@@ -495,18 +529,54 @@ class MathFunction(BaseParse):
         self.user_variables.update(variables)
         self.user_functions.update(functions)
         self.set_base(base)
-        self.text = text.partition("\n")[0]
-        self.args = collections.OrderedDict((k, None) for k in args)
+        self.text = text.partition("\n")[0].strip()
+        self.args = collections.OrderedDict((k, NoValue(k)) for k in args)
         self.things_to_check = (*self.things_to_check, self.args)
+
+        self.sigma = False
+        self.tokens = []
+        self.reset()
+        while True:
+            n = self.parse_next()
+            if n is None:
+                break
+            else:
+                if n is Sigma:
+                    self.sigma = True
+                self.tokens.append((n, self.current_index))
+        self.parse_next = self.next_token
+
+    def next_token(self):
+        try:
+            n = next(self.token_iter)
+        except StopIteration:
+            self.current_parse = None
+        else:
+            self.current_index = n[1]
+            v = n[0]
+            if isinstance(v, NoValue):
+                self.current_parse = self.args[v.var]
+            else:
+                self.current_parse = v
+        finally:
+            return self.current_parse
 
     def __call__(self, args):
         if len(args) != len(self.args):
             raise ParseError("Number of arguments does not match.")
         for i, a in enumerate(self.args):
             self.args[a] = args[i]
-        self.reset()
+
+        self.current_parse = None
+        self.token_iter = iter(self.tokens)
         result = self.parse_level()
         return result
+
+    def __repr__(self):
+        return "MathFunction"
+
+    def __str__(self):
+        return f"MathFunction({self.text})"
 
 #==================================================================================================================================================
 
@@ -632,19 +702,6 @@ class MathParse(BaseParse):
                 results.append(f"{self.base_str}{s}")
         return results
 
-    def log(self):
-        return "\n".join(self.log_lines)
-
-    def show_parse_error(self):
-        end_index = self.current_index
-        start_index = max(end_index - 50, 0)
-        s = self.text[start_index:end_index]
-        if len(s) < 50:
-            r = f"{s}\u032d"
-        else:
-            r = f"...{s}\u032d"
-        return r
-
 #==================================================================================================================================================
 
 class Calculator:
@@ -686,24 +743,25 @@ class Calculator:
         stuff = stuff.strip("` \n")
         l = ""
         try:
+            start = time.perf_counter()
             m = MathParse(stuff)
-            results = await asyncio.wait_for(self.bot.loop.run_in_executor(None, m.result), 10)
+            results = await self.bot.loop.run_in_executor(None, m.result)
+            end = time.perf_counter()
         except ParseError as e:
             await ctx.send(e)
-        except asyncio.TimeoutError:
-            await ctx.send("Result too large.")
         except ZeroDivisionError:
             await ctx.send("Division by zero.")
         except ValueError:
             await ctx.send("Calculation error. Probably incomprehensible calculation involved ∞ or something.")
         except OverflowError:
             await ctx.send("Input number too big. U sure need this one?")
-        except:
-            await ctx.send(f"Parsing error.\n```\n{m.show_parse_error()}\n```")
+        except Exception as e:
+            target = getattr(e, "target", m)
+            await ctx.send(f"Parsing error.\n```\n{target.show_parse_error()}\n```")
             l = traceback.format_exc()
         else:
             r = "\n".join(results)
-            await ctx.send(f"```\n{r}\n```")
+            await ctx.send(f"Result in {1000*(end-start):.2f}ms\n```\n{r}\n```")
         finally:
             if self.enable_log:
                 l = f"{m.log()}\n{l}"

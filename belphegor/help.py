@@ -70,8 +70,7 @@ class Help:
             name="None-commands",
             value=
                 "`ping` - pong\n"
-                "`\o\` - /o/\n"
-                "`/o/` - \\o\\\n",
+                "`\\o\\` `/o/` `/o\\` `\\o/` - `/o/` `\\o\\` `\\o/` `/o\\`\n",
             inline=False
         )
         base_embed.set_footer(text="Default prefix: >> or bot mention")
@@ -378,7 +377,6 @@ class Help:
             command = self.bot.get_command(command_name)
             if command:
                 if not command.hidden:
-                    usage = command.help
                     embed = discord.Embed(colour=discord.Colour.teal())
                     embed.add_field(name="Parent command", value=f"`{command.full_parent_name}`" if command.full_parent_name else "None")
                     embed.add_field(name="Name", value=f"`{command.name}`")
