@@ -291,12 +291,16 @@ class Misc:
             script.decompose()
 
         search_results = []
-        for tag in data.find_all(lambda x: x.name=="div" and x.get("class")==["g"] and len(x.attrs)==1):
+        all_tags = data.find_all(lambda x: x.name=="div" and x.get("class")==["g"] and len(x.attrs)==1)
+        for tag in all_tags:
             a = tag.find("a")
             a["href"] = utils.safe_url(a["href"])
             search_results.append(a)
             if len(search_results) > 4:
                 break
+
+        if not search_results:
+            return None
 
         #video
         tag = data.find("div", class_="FGpTBd")
@@ -485,7 +489,6 @@ class Misc:
             async with ctx.typing():
                 params = {
                     "q": quote(search),
-                    "oq": quote(search),
                     "safe": "active",
                     "lr": "lang_en",
                     "hl": "en"
@@ -759,6 +762,30 @@ class Misc:
             await ctx.send(embed=embed)
         except Exception as e:
             await ctx.send(e)
+
+    @commands.group(name="quote", invoke_without_command=True)
+    @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
+    async def cmd_quote(self, ctx, msg_id: int):
+        message = await ctx.get_message(msg_id)
+        if message:
+            embed = discord.Embed(title=f"ID: {msg_id}", description=message.content)
+            embed.set_author(name=message.author.display_name, icon_url=message.author.avatar_url)
+            embed.set_footer(text=utils.format_time(message.created_at))
+            await ctx.send(embed=embed)
+        else:
+            await ctx.send("Can't find message.")
+
+    @cmd_quote.command(name="raw")
+    @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
+    async def cmd_quote_raw(self, ctx, msg_id: int):
+        message = await ctx.get_message(msg_id)
+        if message:
+            embed = discord.Embed(title=f"ID: {msg_id}", description=utils.split_page(message.content, 2000, safe_mode=True)[0])
+            embed.set_author(name=message.author.display_name, icon_url=message.author.avatar_url)
+            embed.set_footer(text=utils.format_time(message.created_at))
+            await ctx.send(embed=embed)
+        else:
+            await ctx.send("Can't find message.")
 
 #==================================================================================================================================================
 

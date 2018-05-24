@@ -54,8 +54,7 @@ class Sigma:
     def __call__(self, args):
         result = 0
         for index in range(self.from_, self.to_+self.delta, self.delta):
-            ret = self.func((index, *args))
-            result += ret
+            result += self.func((index, *args))
         return result
 
 #==================================================================================================================================================
@@ -79,24 +78,27 @@ class BaseParse:
         "cos":      cmath.cos,
         "tan":      cmath.tan,
         "cot":      lambda x: cmath.cos(x)/cmath.sin(x),
-        "asin":     math.asin,
-        "arcsin":   math.asin,
-        "acos":     math.acos,
-        "arccos":   math.acos,
-        "atan":     math.atan,
-        "arctan":   math.atan,
+        "asin":     cmath.asin,
+        "arcsin":   cmath.asin,
+        "acos":     cmath.acos,
+        "arccos":   cmath.acos,
+        "atan":     cmath.atan,
+        "arctan":   cmath.atan,
         "log":      cmath.log10,
         "ln":       cmath.log,
         "sqrt":     cmath.sqrt,
         "abs":      abs,
         "sign":     numpy.sign,
-        "sgn":      numpy.sign
+        "sgn":      numpy.sign,
+        "gcd":      math.gcd,
+        "gcf":      math.gcd
     }
     SPECIAL_OPS = {
         "^":    pow,
         "**":   pow,
         "!":    math.factorial,
-        "C":    combination
+        "C":    combination,
+        "°":    math.radians
     }
     SPECIAL_FUNCS = {
         "sigma":    Sigma,
@@ -261,11 +263,29 @@ class BaseParse:
             return f
         return wrap
 
+    @log_this("next value")
+    def parse_next_value(self):
+        n = self.current_parse
+        if n in self.FUNCS.values():
+            result = self.parse_function()
+        elif n in self.user_functions.values():
+            self.parse_next()
+            args = self.parse_func_args()
+            result = n(args)
+        elif n is Sigma:
+            result = self.parse_sigma()
+        elif n in self.ENCLOSED:
+            result = self.parse_level()
+        else:
+            result = n
+            self.parse_next()
+        result = self.parse_special(result)
+        return result
+
     @log_this("special")
     def parse_special(self, value):
         c = self.current_parse
         if c == self.SPECIAL_OPS["!"]:
-            self.parse_next()
             if isinstance(value, int):
                 if value > self.MAX_FACTORIAL:
                     raise ParseError(f"Limit for factorial is {self.MAX_FACTORIAL}!")
@@ -275,13 +295,10 @@ class BaseParse:
                     result = c(value)
             else:
                 raise ParseError("Can't factorial non-integer.")
+            self.parse_next()
         elif c == self.SPECIAL_OPS["^"]:
-            n = self.parse_next()
-            if n in self.ENCLOSED:
-                p = self.parse_level()
-            else:
-                p = n
-                self.parse_next()
+            self.parse_next()
+            p = self.parse_next_value()
             r = getattr(p, "real", p)
             v = getattr(value, "real", value)
             if v == 0 or v == self.CONSTS["inf"] or r == self.CONSTS["inf"] or r * math.log10(abs(v)) < self.max_power:
@@ -289,21 +306,23 @@ class BaseParse:
             else:
                 raise ParseError(f"Limit for power in base {self.base} is 10^{self.max_power}")
         elif c == self.SPECIAL_OPS["C"]:
-            n = self.parse_next()
-            if n in self.ENCLOSED:
-                k = self.parse_level()
-            else:
-                k = n
-                self.parse_next()
+            self.parse_next()
+            k = self.parse_next_value()
             if isinstance(value, int) and isinstance(k, int):
                 if value > 2 * self.MAX_FACTORIAL:
                     raise ParseError(f"Limit for combination is n <= {2*self.MAX_FACTORIAL}")
                 else:
                     result = c(value, k)
             else:
-                raise ParseError("Can't factorial non-integer.")
+                raise ParseError("Can't combination non-integer.")
+        elif c == self.SPECIAL_OPS["°"]:
+            if isinstance(value, complex):
+                raise ParseError("Degree can't be complex number.")
+            else:
+                result = c(value)
+            self.parse_next()
         else:
-            result = None
+            result = value
         return result
 
     @log_this("level")
@@ -339,12 +358,11 @@ class BaseParse:
     def parse_group(self):
         result = None
         last_op = None
-        last_funcs = []
         n = True
         while True:
             n = self.current_parse
             if n in self.SIGNS or n in self.CLOSED or n in self.signals:
-                if last_op or last_funcs:
+                if last_op:
                     raise CommonParseError
                 break
 
@@ -356,39 +374,8 @@ class BaseParse:
                 self.parse_next()
                 continue
 
-            elif n in self.FUNCS.values():
-                last_funcs.append(n)
-                self.parse_next()
-                continue
-
-            if n in self.SPECIAL_FUNCS.values():
-                if n is Sigma:
-                    sigma = self.parse_sigma()
-                    args = self.parse_func_args()
-                    value = sigma(args)
-
-            elif n in self.user_functions.values():
-                args = self.parse_func_args()
-                value = n(args)
-
-            elif n in self.ENCLOSED:
-                value = self.parse_level()
-
             else:
-                value = n
-                self.parse_next()
-
-            while True:
-                after = self.parse_special(value)
-                if after is not None:
-                    value = after
-                else:
-                    break
-
-            if last_funcs:
-                for f in reversed(last_funcs):
-                    value = f(value)
-                last_funcs.clear()
+                value = self.parse_next_value()
 
             if last_op:
                 if result is not None:
@@ -404,9 +391,21 @@ class BaseParse:
 
         return result
 
+    @log_this("function")
+    def parse_function(self):
+        f = self.current_parse
+        n = self.parse_next()
+        if n in self.ENCLOSED:
+            args = self.parse_func_args()
+            result = f(*args)
+        else:
+            value = self.parse_next_value()
+            result = f(value)
+        return result
+
     @log_this("func args")
     def parse_func_args(self):
-        start = self.parse_next()
+        start = self.current_parse
         if start != "(":
             raise CommonParseError
 
@@ -494,7 +493,11 @@ class BaseParse:
         if self.current_parse != ")" or len(from_to) != 2:
             raise CommonParseError
 
-        return Sigma(func, from_to[0], from_to[1])
+        sigma = Sigma(func, from_to[0], from_to[1])
+        self.parse_next()
+        args = self.parse_func_args()
+
+        return sigma(args)
 
     def log(self):
         return "\n".join(self.log_lines)
@@ -519,7 +522,7 @@ class NoValue:
         return "NoValue"
 
     def __str__(self):
-        return "No value"
+        return f"{self.var} = NoValue"
 
 #==================================================================================================================================================
 
@@ -725,7 +728,7 @@ class Calculator:
 
             **Acceptable expressions:**
              - Operators `+` , `-` , `*` , `/` (true div), `//` (div mod), `%` (mod), `^` or `**` (pow), `!` (factorial)
-             - Functions `sin`, `cos`, `tan`, `cot`, `arcsin` or `asin`, `arccos` or `acos`, `arctan` or `atan`, `log` (base 10), `ln` (natural log), `sqrt` (square root), `abs` (absolute value), `nCk` (combination), `sign` or `sgn` (sign function)
+             - Functions `sin`, `cos`, `tan`, `cot`, `arcsin` or `asin`, `arccos` or `acos`, `arctan` or `atan`, `log` (base 10), `ln` (natural log), `sqrt` (square root), `abs` (absolute value), `nCk` (combination), `sign` or `sgn` (sign function), `gcd` or `gcf` (greatest common divisor/factor)
              - Constants `e`, `pi`, `π`, `tau`, `τ`, `i` (imaginary), `inf` or `∞` (infinity, use at your own risk)
              - Enclosed `()`, `[]`, `{{}}`, `\u2308 \u2309` (ceil), `\u230a \u230b` (floor)
              - Set a variable to a value (value can be a calculable formula) for next calculations

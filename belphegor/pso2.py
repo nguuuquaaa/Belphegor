@@ -869,12 +869,15 @@ class PSO2:
         for item in response.get("items", []):
             title = item["summary"].lower()
             if title.startswith("pso2 day"):
-                item["is_boost_period"] = None
+                item["boost_type"] = "rappy"
             elif title.startswith("arks league"):
-                item["is_boost_period"] = False
+                item["boost_type"] = "league"
+            elif "eq" in title:
+                item["boost_type"] = "eq"
             elif "boost" in title:
-                item["is_boost_period"] = True
+                item["boost_type"] = "casino"
             else:
+                item["boost_type"] = None
                 continue
             results.append(item)
         results.sort(key=lambda x: x["start"]["dateTime"])
@@ -950,14 +953,18 @@ class PSO2:
                     title="(Not) EQ Alert",
                     colour=discord.Colour.red()
                 )
-                is_boost_period = next_event["is_boost_period"]
-                if is_boost_period is None:
+                boost_type = next_event["boost_type"]
+                if boost_type == "rappy":
                     embed.description = f"{self.emojis['rappy']} {next_event['summary']}"
                     embed.set_image(url="https://i.imgur.com/FV7a52s.jpg")
-                elif is_boost_period is False:
+                elif boost_type == "league":
                     embed.description = f"\U0001f3c6 {next_event['summary']}\n   From {start_date.group(4)}:{start_date.group(5)} to {end_date.group(4)}:{end_date.group(5)}"
-                else:
+                elif boost_type == "casino":
                     embed.description = f"\U0001f3b0 {next_event['summary']}\n   From {start_date.group(4)}:{start_date.group(5)} to {end_date.group(4)}:{end_date.group(5)}"
+                elif boost_type == "eq":
+                    embed.description = f"\u2694 {next_event['summary']}\n   At {start_date.group(4)}:{start_date.group(5)}"
+                else:
+                    embed.description = f"{next_event['summary']}\n   From {start_date.group(4)}:{start_date.group(5)} to {end_date.group(4)}:{end_date.group(5)}"
                 embed.set_footer(text=utils.jp_time(now_time))
 
                 async for gd in self.guild_data.find(
