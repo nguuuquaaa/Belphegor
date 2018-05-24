@@ -11,6 +11,7 @@ import random
 import collections
 import numpy
 import time
+import functools
 
 #==================================================================================================================================================
 
@@ -25,6 +26,47 @@ def combination(n, k):
         return 0
     return t // b
 
+def greatest_common_factor(*args):
+    if len(args) < 2:
+        raise CommonParseError
+    else:
+        if not isinstance(args[0], int):
+            raise ParseError("Can't calculate greatest common factor of non-integers.")
+
+        result = abs(args[0])
+        for i in range(1, len(args)):
+            if not isinstance(args[i], int):
+                raise ParseError("Can't calculate greatest common factor of non-integers.")
+            b = abs(args[i])
+            result = math.gcd(result, b)
+
+        return result
+
+def least_common_multiple(*args):
+    if len(args) < 2:
+        raise CommonParseError
+    else:
+        if not isinstance(args[0], int):
+            raise ParseError("Can't calculate least common multiple of non-integers.")
+
+        result = abs(args[0])
+        for i in range(1, len(args)):
+            if not isinstance(args[i], int):
+                raise ParseError("Can't calculate least common multiple of non-integers.")
+            b = abs(args[i])
+            result = result * b // math.gcd(result, b)
+
+        return result
+
+def to_real_number(func):
+    @functools.wraps(func)
+    def do_func(*args):
+        result = func(*args)
+        if getattr(result, "imag", 0) == 0:
+            result = getattr(result, "real", result)
+        return result
+    return do_func
+
 #==================================================================================================================================================
 
 class ParseError(Exception):
@@ -36,7 +78,7 @@ class CommonParseError(Exception):
 #==================================================================================================================================================
 
 class Sigma:
-    MAX_RANGE = 100
+    MAX_RANGE = 1000
 
     def __init__(self, func, from_, to_):
         if to_ > from_:
@@ -74,24 +116,25 @@ class BaseParse:
         "%":    operator.mod
     }
     FUNCS = {
-        "sin":      cmath.sin,
-        "cos":      cmath.cos,
-        "tan":      cmath.tan,
-        "cot":      lambda x: cmath.cos(x)/cmath.sin(x),
-        "asin":     cmath.asin,
-        "arcsin":   cmath.asin,
-        "acos":     cmath.acos,
-        "arccos":   cmath.acos,
-        "atan":     cmath.atan,
-        "arctan":   cmath.atan,
-        "log":      cmath.log10,
-        "ln":       cmath.log,
-        "sqrt":     cmath.sqrt,
+        "sin":      to_real_number(cmath.sin),
+        "cos":      to_real_number(cmath.cos),
+        "tan":      to_real_number(cmath.tan),
+        "cot":      to_real_number(lambda x: cmath.cos(x)/cmath.sin(x)),
+        "asin":     to_real_number(cmath.asin),
+        "arcsin":   to_real_number(cmath.asin),
+        "acos":     to_real_number(cmath.acos),
+        "arccos":   to_real_number(cmath.acos),
+        "atan":     to_real_number(cmath.atan),
+        "arctan":   to_real_number(cmath.atan),
+        "log":      to_real_number(cmath.log10),
+        "ln":       to_real_number(cmath.log),
+        "sqrt":     to_real_number(cmath.sqrt),
         "abs":      abs,
         "sign":     numpy.sign,
         "sgn":      numpy.sign,
-        "gcd":      math.gcd,
-        "gcf":      math.gcd
+        "gcd":      greatest_common_factor,
+        "gcf":      greatest_common_factor,
+        "lcm":      least_common_multiple
     }
     SPECIAL_OPS = {
         "^":    pow,
@@ -728,17 +771,17 @@ class Calculator:
 
             **Acceptable expressions:**
              - Operators `+` , `-` , `*` , `/` (true div), `//` (div mod), `%` (mod), `^` or `**` (pow), `!` (factorial)
-             - Functions `sin`, `cos`, `tan`, `cot`, `arcsin` or `asin`, `arccos` or `acos`, `arctan` or `atan`, `log` (base 10), `ln` (natural log), `sqrt` (square root), `abs` (absolute value), `nCk` (combination), `sign` or `sgn` (sign function), `gcd` or `gcf` (greatest common divisor/factor)
+             - Functions `sin`, `cos`, `tan`, `cot`, `arcsin` or `asin`, `arccos` or `acos`, `arctan` or `atan`, `log` (base 10), `ln` (natural log), `sqrt` (square root), `abs` (absolute value), `nCk` (combination), `sign` or `sgn` (sign function), `gcd` or `gcf` (greatest common divisor/factor), `lcm` (least common multiple)
              - Constants `e`, `pi`, `π`, `tau`, `τ`, `i` (imaginary), `inf` or `∞` (infinity, use at your own risk)
              - Enclosed `()`, `[]`, `{{}}`, `\u2308 \u2309` (ceil), `\u230a \u230b` (floor)
-             - Set a variable to a value (value can be a calculable formula) for next calculations
-             - Define a function. User functions must be in `func_name(arg1, arg2...)` format, both at defining and using
              - Binary/octal/hexadecimal mode. Put `bin:`, `oct:`, `hex:` at the start to use that mode in current line. Default to decimal (`dec:`) mode (well of course)
 
 
+             - Set a variable to a value (value can be a calculable formula) for next calculations
+             - Define a function. User functions must be in `func_name(arg1, arg2...)` format, both at defining and using
              - Special function `sigma` or `Σ` (sum)
                 Format: `sigma(function_name, from, to)(arguments minus counter)`
-                function_name is the name of a user-defined function that take counter as first argument.
+                `function_name` is the name of a user-defined function that take counter as first argument.
                 Sigma function will automate the counter increase (and only the counter), which is why you have to provide the rest of the arguments.
         '''
         if stuff.startswith("```"):

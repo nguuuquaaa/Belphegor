@@ -401,10 +401,9 @@ class Help:
                         usage = command.help.partition("\n")
                         things = usage[2].split("\n\n\n")
                         if len(things) > 1:
-                            first = f"``{usage[0]}``\n{things[0]}".format(ctx.me.display_name)
-                            embed.add_field(name="Usage", value=first, inline=False)
+                            embed.add_field(name="Usage", value=f"``{usage[0]}``\n{things[0]}".format(ctx.me.display_name), inline=False)
                             for thing in things[1:]:
-                                embed.add_field(name="\u200b", value=thing, inline=False)
+                                embed.add_field(name="\u200b", value=f"\u200b{thing}", inline=False)
                         else:
                             usage = f"``{usage[0]}``\n{usage[2]}".format(ctx.me.display_name)
                             embed.add_field(name="Usage", value=usage, inline=False)
@@ -528,7 +527,7 @@ class Help:
         perms.speak = True
         perms.use_voice_activation = True
         perms.external_emojis = True
-        await ctx.send(discord.utils.oauth_url(ctx.me.id, perms))
+        await ctx.send(f"<{discord.utils.oauth_url(ctx.me.id, perms)}>")
 
     @commands.command()
     async def source(self, ctx, *, cmd_name=None):
