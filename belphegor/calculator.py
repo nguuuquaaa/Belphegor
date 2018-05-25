@@ -77,6 +77,18 @@ class CommonParseError(Exception):
 
 #==================================================================================================================================================
 
+class NoValue:
+    def __init__(self, var):
+        self.var = var
+
+    def __repr__(self):
+        return "NoValue"
+
+    def __str__(self):
+        return f"{self.var} = NoValue"
+
+#==================================================================================================================================================
+
 class Sigma:
     MAX_RANGE = 1000
 
@@ -93,10 +105,10 @@ class Sigma:
         self.from_ = from_
         self.to_ = to_
 
-    def __call__(self, args):
+    def __call__(self):
         result = 0
         for index in range(self.from_, self.to_+self.delta, self.delta):
-            result += self.func((index, *args))
+            result += self.func((index,))
         return result
 
 #==================================================================================================================================================
@@ -155,7 +167,8 @@ class BaseParse:
         "tau":  math.tau,
         "i":    1j,
         "inf":  float("inf"),
-        "∞":    float("inf")
+        "∞":    float("inf"),
+        "None": NoValue(None)
     }
 
     def do_nothing(x):
@@ -172,6 +185,8 @@ class BaseParse:
 
     CLOSED = tuple(c[0] for c in ENCLOSED.values())
 
+    SIGNALS = (",", ";")
+
     BUILTINS = (OPS, FUNCS, SPECIAL_OPS, SPECIAL_FUNCS, CONSTS)
 
     WHITESPACES = (
@@ -184,7 +199,6 @@ class BaseParse:
         self.name_lens = []
         self.user_variables = {}
         self.user_functions = {}
-        self.signals = [",", ";"]
         self.things_to_check = (*self.BUILTINS, self.user_functions, self.user_variables)
 
     def next(self, jump=1):
@@ -404,7 +418,7 @@ class BaseParse:
         n = True
         while True:
             n = self.current_parse
-            if n in self.SIGNS or n in self.CLOSED or n in self.signals:
+            if n in self.SIGNS or n in self.CLOSED or n in self.SIGNALS:
                 if last_op:
                     raise CommonParseError
                 break
@@ -472,7 +486,7 @@ class BaseParse:
                 if sign:
                     sign = sign * self.SIGNS[n]
                 self.parse_next()
-            elif n in self.signals:
+            elif n in self.SIGNALS:
                 if cur is None:
                     raise CommonParseError
                 result.append(cur)
@@ -492,16 +506,16 @@ class BaseParse:
 
     @log_this("sigma")
     def parse_sigma(self):
-        start = self.parse_next()
-        if start != "(":
+        n = self.parse_next()
+        if n != "(":
             raise CommonParseError
 
-        func = self.parse_next()
-        if func not in self.user_functions.values():
+        var = self.parse_next()
+        if not isinstance(var, NoValue):
             raise CommonParseError
 
         n = self.parse_next()
-        if n not in self.signals:
+        if n not in self.SIGNALS:
             raise CommonParseError
 
         self.parse_next()
@@ -520,7 +534,7 @@ class BaseParse:
                 if sign:
                     sign = sign * self.SIGNS[n]
                 self.parse_next()
-            elif n in self.signals:
+            elif n in self.SIGNALS:
                 from_to.append(cur)
                 cur = None
                 sign = 1
@@ -536,11 +550,33 @@ class BaseParse:
         if self.current_parse != ")" or len(from_to) != 2:
             raise CommonParseError
 
+        n = self.parse_next()
+        if n != "(":
+            raise CommonParseError
+
+        parens = 1
+        start_index = self.current_index
+        while True:
+            n = self.parse_next()
+            if n is None:
+                raise ParseError("No closing bracket.")
+            elif n == "(":
+                parens += 1
+                continue
+            elif n == ")":
+                parens -= 1
+                if parens == 0:
+                    end_index = self.current_index
+                    break
+            else:
+                continue
+
+        func_text = self.text[start_index:end_index-1]
+        func = MathFunction(func_text, (var.var,), variables=self.user_variables, functions=self.user_functions, base=self.base)
         sigma = Sigma(func, from_to[0], from_to[1])
         self.parse_next()
-        args = self.parse_func_args()
 
-        return sigma(args)
+        return sigma()
 
     def log(self):
         return "\n".join(self.log_lines)
@@ -557,27 +593,17 @@ class BaseParse:
 
 #==================================================================================================================================================
 
-class NoValue:
-    def __init__(self, var):
-        self.var = var
-
-    def __repr__(self):
-        return "NoValue"
-
-    def __str__(self):
-        return f"{self.var} = NoValue"
-
-#==================================================================================================================================================
-
 class MathFunction(BaseParse):
     def __init__(self, text, args, *, variables, functions, base):
+        if not text:
+            raise CommonParseError
         super().__init__()
         self.user_variables.update(variables)
+        self.user_variables.update({k: NoValue(k) for k in args})
         self.user_functions.update(functions)
         self.set_base(base)
         self.text = text.partition("\n")[0].strip()
-        self.args = collections.OrderedDict((k, NoValue(k)) for k in args)
-        self.things_to_check = (*self.things_to_check, self.args)
+        self.args = args
 
         self.sigma = False
         self.tokens = []
@@ -601,7 +627,7 @@ class MathFunction(BaseParse):
             self.current_index = n[1]
             v = n[0]
             if isinstance(v, NoValue):
-                self.current_parse = self.args[v.var]
+                self.current_parse = self.user_variables.get(v.var, v)
             else:
                 self.current_parse = v
         finally:
@@ -611,7 +637,7 @@ class MathFunction(BaseParse):
         if len(args) != len(self.args):
             raise ParseError("Number of arguments does not match.")
         for i, a in enumerate(self.args):
-            self.args[a] = args[i]
+            self.user_variables[a] = args[i]
 
         self.current_parse = None
         self.token_iter = iter(self.tokens)
@@ -684,11 +710,18 @@ class MathParse(BaseParse):
                             raise ParseError(f"Name {var_name} is already taken.")
                     else:
                         self.text = stuff[2]
+                        if self.text.strip() == "None":
+                            x = var_name
+                            self.user_variables[x] = NoValue(x)
+                            results.append(f"Defined {x}")
+                            continue
                 else:
                     proc = stuff[0].partition("(")
                     raw_args = proc[2].rstrip(") \t")
                     args = self.FUNC_REGEX.findall(raw_args)
-                    if args:
+                    if raw_args and not args:
+                        raise ParseError("Bad definition detected.")
+                    else:
                         for a in args:
                             if a[0] in self.digits:
                                 raise ParseError("Argument name should not start with digit.")
@@ -708,12 +741,10 @@ class MathParse(BaseParse):
                                         raise ParseError(f"Name {func_name} is already taken.")
                                 self.user_functions[func_name] = func
                                 da = ", ".join(args)
-                                results.append(f"Registered {func_name}({da})")
+                                results.append(f"Defined {func_name}({da})")
                                 continue
                             else:
                                 raise ParseError("Your function name is bad and you should feel bad.")
-                    else:
-                        raise ParseError("Bad definition detected.")
             else:
                 self.text = f
 
@@ -728,9 +759,15 @@ class MathParse(BaseParse):
                         s = rstr
                     elif r == 0:
                         value = i * 1j
+                        if i == 1:
+                            istr = ""
+                        elif i == -1:
+                            istr = "-"
                         s = f"{istr}i"
                     else:
                         value = r + i * 1j
+                        if i == 1 or i == -1:
+                            istr = ""
                         if i > 0:
                             s = f"{rstr} + {istr}i"
                         else:
@@ -780,9 +817,8 @@ class Calculator:
              - Set a variable to a value (value can be a calculable formula) for next calculations
              - Define a function. User functions must be in `func_name(arg1, arg2...)` format, both at defining and using
              - Special function `sigma` or `Σ` (sum)
-                Format: `sigma(function_name, from, to)(arguments minus counter)`
-                `function_name` is the name of a user-defined function that take counter as first argument.
-                Sigma function will automate the counter increase (and only the counter), which is why you have to provide the rest of the arguments.
+                Format: `sigma(counter, from, to)(formula)`
+                You need to define counter as a wildcard via `counter = None` prior to the sigma function.
         '''
         if stuff.startswith("```"):
             stuff = stuff.partition("\n")[2]
