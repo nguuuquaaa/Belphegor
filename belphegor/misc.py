@@ -723,7 +723,7 @@ class Misc:
         choices = choices.split(" or ")
         await ctx.send(random.choice(choices))
 
-    @commands.command(name="embed")
+    @commands.command(name="embed", hidden=True)
     async def cmd_embed(self, ctx, *, data):
         data = data.splitlines()
         kwargs = {"fields": []}
@@ -776,6 +776,10 @@ class Misc:
     @commands.group(name="quote", invoke_without_command=True)
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     async def cmd_quote(self, ctx, msg_id: int):
+        '''
+            `>>quote <message ID>`
+            Display message.
+        '''
         message = await ctx.get_message(msg_id)
         if message:
             embed = discord.Embed(title=f"ID: {msg_id}", description=message.content)
@@ -788,6 +792,10 @@ class Misc:
     @cmd_quote.command(name="raw")
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     async def cmd_quote_raw(self, ctx, msg_id: int):
+        '''
+            `>>quote raw <message ID>`
+            Display message with escaped characters.
+        '''
         message = await ctx.get_message(msg_id)
         if message:
             embed = discord.Embed(title=f"ID: {msg_id}", description=utils.split_page(message.content, 2000, safe_mode=True)[0])
@@ -808,19 +816,31 @@ class Misc:
         return "\n".join(t)
 
     @commands.group(invoke_without_command=True)
-    async def ascii(self, ctx, user: discord.User=None):
+    async def ascii(self, ctx, member: discord.Member=None):
+        '''
+            `>>ascii <optional: member>`
+            ASCII art of member avatar.
+            If no member is specified, use your avatar.
+        '''
         await ctx.trigger_typing()
-        target = user or ctx.author
+        target = member or ctx.author
         bytes_ = await self.bot.fetch(target.avatar_url)
         text = self.to_ascii(bytes_, 64, 30)
         await ctx.send(f"```\n{text}\n```")
 
-    @ascii.command(name="big", aliases=["biggur"])
-    async def big_ascii(self, ctx, user: discord.User=None, width=128):
+    @ascii.command(name="big", aliases=["bigger", "biggur"])
+    async def big_ascii(self, ctx, member: discord.Member=None, width=256):
+        '''
+            `>>ascii big <optional: member> <optional: width>`
+            ASCII art of member avatar with bigger size in txt file.
+            If no member is specified, use your avatar. Default width is 256.
+        '''
         await ctx.trigger_typing()
-        target = user or ctx.author
+        target = member or ctx.author
         if width > 1024:
             return await ctx.send("Width should be 1024 or less.")
+        elif width < 64:
+            return await ctx.send("Width should be 64 or more.")
         bytes_ = await self.bot.fetch(target.avatar_url)
         text = await self.bot.loop.run_in_executor(None, self.to_ascii, bytes_, width, width//2)
         await ctx.send(file=discord.File(text.encode("utf-8"), filename=f"ascii_{len(text)}_chars.txt"))

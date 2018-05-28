@@ -357,7 +357,9 @@ class Help:
                 "`>>char` - Get unicode character info.\n"
                 "`>>color`, `>>colour` - Visualize color's code\n"
                 "`>>choose` - Choose random\n"
-                "`>>calc` - Calculator",
+                "`>>calc` - Calculator\n"
+                "`>>ascii` - ASCII art"
+                "      `biggur` - Biggur ASCII art",
             inline=False
         )
         paging.set_action("\u2699", lambda: misc_embed)

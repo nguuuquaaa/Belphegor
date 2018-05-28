@@ -144,44 +144,57 @@ class AAImageProcessing:
             outer_border = (int(aaxy[0]-half_aawidth), int(aaxy[1]-half_aawidth), int(aaxy[2]+half_aawidth), int(aaxy[3]+half_aawidth))
             inner_border = (int(aaxy[0]+half_aawidth), int(aaxy[1]+half_aawidth), int(aaxy[2]-half_aawidth), int(aaxy[3]-half_aawidth))
 
-            figure = Image.new("RGBA", self.size, (0, 0, 0, 0))
-            mask = Image.new("L", self.size, 0)
+            if not explode:
+                figure = Image.new("RGBA", self.size, (0, 0, 0, 0))
+                mask = Image.new("L", self.size, 0)
+                draw = (
+                    (ImageDraw.Draw(figure), adjust_alpha(outline, 255), lambda f: adjust_alpha(f, 255)),
+                    (ImageDraw.Draw(mask), data_type.get_element(outline, 3, default=255), lambda f: data_type.get_element(f, 3, default=255))
+                )
 
-            draw = (
-                (ImageDraw.Draw(figure), adjust_alpha(outline, 255), lambda f: adjust_alpha(f, 255)),
-                (ImageDraw.Draw(mask), data_type.get_element(outline, 3, default=255), lambda f: data_type.get_element(f, 3, default=255))
-            )
+                for value in draw:
+                    ccl = cutlist.copy()
+                    last_angle = ccl.pop(0)[0]
+                    start_angle = last_angle
+                    dr = value[0]
+                    o = value[1]
+                    f = value[2]
 
-            for value in draw:
+                    for i, c in enumerate(ccl):
+                        current_angle = c[0]
+                        fill = c[1]
+                        dr.pieslice(outer_border, last_angle, current_angle, fill=o)
+                        dr.pieslice(inner_border, last_angle, current_angle, fill=f(fill))
+                        last_angle = current_angle
+
+                    for c in ccl:
+                        current_angle = c[0]
+                        fill = c[1]
+                        arc_end = (int(center[0]+math.cos(math.radians(current_angle))*half_size[0]), int(center[1]+math.sin(math.radians(current_angle))*half_size[1]))
+                        dr.line((arc_end, int_center), width=aawidth, fill=o)
+
+                    if (last_angle - start_angle) % 360 < 0.01:
+                        arc_start = (int(center[0]+math.cos(math.radians(start_angle))*half_size[0]), int(center[1]+math.sin(math.radians(start_angle))*half_size[1]))
+                        arc_end = (int(center[0]+math.cos(math.radians(last_angle))*half_size[0]), int(center[1]+math.sin(math.radians(last_angle))*half_size[1]))
+                        dr.ellipse((int(arc_start[0]-half_aawidth), int(arc_start[1]-half_aawidth), int(arc_start[0]+half_aawidth), int(arc_start[1]+half_aawidth)), fill=o)
+                        dr.ellipse((int(arc_end[0]-half_aawidth), int(arc_end[1]-half_aawidth), int(arc_end[0]+half_aawidth), int(arc_end[1]+half_aawidth)), fill=o)
+
+                    dr.ellipse((int(center[0]-half_aawidth), int(center[1]-half_aawidth), int(center[0]+half_aawidth), int(center[1]+half_aawidth)), fill=o)
+
+                self.image.paste(figure, (0, 0), mask)
+            else:
                 ccl = cutlist.copy()
                 last_angle = ccl.pop(0)[0]
                 start_angle = last_angle
-                dr = value[0]
-                o = value[1]
-                f = value[2]
-
-                for c in ccl:
+                for i, c in enumerate(ccl):
                     current_angle = c[0]
                     fill = c[1]
-                    dr.pieslice(outer_border, last_angle, current_angle, fill=o)
-                    dr.pieslice(inner_border, last_angle, current_angle, fill=f(fill))
+                    delta_angle = current_angle - last_angle
+                    if delta_angle > 0:
+                        delta = (math.cos(math.radians(delta_angle/2+last_angle))*explode[i], math.sin(math.radians(delta_angle/2+last_angle))*explode[i])
+                        current_xy = (xy[0]+delta[0], xy[1]+delta[1], xy[2]+delta[0], xy[3]+delta[1])
+                        self.draw_pieslice(current_xy, last_angle, current_angle, fill=fill, outline=outline, outline_width=outline_width)
                     last_angle = current_angle
-
-                for c in ccl:
-                    current_angle = c[0]
-                    fill = c[1]
-                    arc_end = (int(center[0]+math.cos(math.radians(current_angle))*half_size[0]), int(center[1]+math.sin(math.radians(current_angle))*half_size[1]))
-                    dr.line((arc_end, int_center), width=aawidth, fill=o)
-
-                if (last_angle - start_angle) % 360 < 0.01:
-                    arc_start = (int(center[0]+math.cos(math.radians(start_angle))*half_size[0]), int(center[1]+math.sin(math.radians(start_angle))*half_size[1]))
-                    arc_end = (int(center[0]+math.cos(math.radians(last_angle))*half_size[0]), int(center[1]+math.sin(math.radians(last_angle))*half_size[1]))
-                    dr.ellipse((int(arc_start[0]-half_aawidth), int(arc_start[1]-half_aawidth), int(arc_start[0]+half_aawidth), int(arc_start[1]+half_aawidth)), fill=o)
-                    dr.ellipse((int(arc_end[0]-half_aawidth), int(arc_end[1]-half_aawidth), int(arc_end[0]+half_aawidth), int(arc_end[1]+half_aawidth)), fill=o)
-
-                dr.ellipse((int(center[0]-half_aawidth), int(center[1]-half_aawidth), int(center[0]+half_aawidth), int(center[1]+half_aawidth)), fill=o)
-
-            self.image.paste(figure, (0, 0), mask)
 
     def draw_text(self, xy, txt, **kwargs):
         aa = self.aa
@@ -212,7 +225,7 @@ def adjust_alpha(inp, alpha):
     if inp:
         return (inp[0], inp[1], inp[2], alpha)
 
-async def pie_chart(data, *, unit="counts", background=(255, 255, 255, 0), text_color=(255, 255, 255, 255), outline=None, scale=1, aa=4, loop=None):
+async def pie_chart(data, *, unit="counts", background=(255, 255, 255, 0), text_color=(255, 255, 255, 255), outline=None, scale=1, aa=4, explode=None, outline_width=4, loop=None):
     def drawing():
         number_of_fields = len(data)
         number_of_items = sum((d["count"] for d in data))
@@ -247,7 +260,8 @@ async def pie_chart(data, *, unit="counts", background=(255, 255, 255, 0), text_
             (40, 40, 460, 460),
             cutlist,
             outline=outline,
-            outline_width=5,
+            outline_width=outline_width,
+            explode=explode
         )
         image_draw.draw_text(
             (560, 30+number_of_fields*60),
