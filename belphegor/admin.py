@@ -88,21 +88,6 @@ class Admin:
 
     @commands.command(hidden=True)
     @checks.owner_only()
-    async def autoreimport(self, ctx, module_name):
-        module_names = [name for name in sys.modules if name.startswith(module_name)]
-        for name in module_names:
-            del sys.modules[name]
-        try:
-            importlib.import_module(module_name)
-        except:
-            traceback.print_exc()
-            await ctx.deny()
-        else:
-            print(f"Reimported {module_name}")
-            await ctx.confirm()
-
-    @commands.command(hidden=True)
-    @checks.owner_only()
     async def status(self, ctx, *, stuff):
         data = stuff.partition(" ")
         await self.bot.change_presence(activity=discord.Activity(type=getattr(discord.ActivityType, data[0]), name=data[2]))
@@ -121,9 +106,7 @@ class Admin:
     @commands.command(name="eval", hidden=True)
     @checks.owner_only()
     async def _eval(self, ctx, *, data: str):
-        if data.startswith("```"):
-            data = data.partition("\n")[2]
-        data = data.strip("` \n")
+        data = utils.clean_codeblock(data)
         code = f"async def func():\n{textwrap.indent(data, '    ')}"
         env = {
             "bot": self.bot,
@@ -132,7 +115,6 @@ class Admin:
             "commands": commands,
             "utils": utils
         }
-        env.update(locals())
         try:
             exec(code, env)
         except Exception as e:

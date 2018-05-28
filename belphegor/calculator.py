@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from . import utils
 from .utils import checks
 import math
 import cmath
@@ -146,7 +147,9 @@ class BaseParse:
         "sgn":      numpy.sign,
         "gcd":      greatest_common_factor,
         "gcf":      greatest_common_factor,
-        "lcm":      least_common_multiple
+        "lcm":      least_common_multiple,
+        "max":      max,
+        "min":      min
     }
     SPECIAL_OPS = {
         "^":    pow,
@@ -807,9 +810,9 @@ class Calculator:
             Formulas are separated by linebreak. You can codeblock the whole thing for easier on the eyes.
 
             **Acceptable expressions:**
-             - Operators `+` , `-` , `*` , `/` (true div), `//` (div mod), `%` (mod), `^` or `**` (pow), `!` (factorial)
-             - Functions `sin`, `cos`, `tan`, `cot`, `arcsin` or `asin`, `arccos` or `acos`, `arctan` or `atan`, `log` (base 10), `ln` (natural log), `sqrt` (square root), `abs` (absolute value), `nCk` (combination), `sign` or `sgn` (sign function), `gcd` or `gcf` (greatest common divisor/factor), `lcm` (least common multiple)
-             - Constants `e`, `pi`, `π`, `tau`, `τ`, `i` (imaginary), `inf` or `∞` (infinity, use at your own risk)
+             - Operators `+` , `-` , `*` , `/` (true div), `//` (div mod), `%` (mod), `^`|`**` (pow), `!` (factorial)
+             - Functions `sin`, `cos`, `tan`, `cot`, `arcsin`|`asin`, `arccos`|`acos`, `arctan`|`atan`, `log` (base 10), `ln` (natural log), `sqrt` (square root), `abs` (absolute value), `nCk` (combination), `sign`|`sgn` (sign function), `gcd`|`gcf` (greatest common divisor/factor), `lcm` (least common multiple), `max`, `min`
+             - Constants `e`, `pi`|`π`, `tau`|`τ`, `i` (imaginary), `inf`|`∞` (infinity, use at your own risk)
              - Enclosed `()`, `[]`, `{{}}`, `\u2308 \u2309` (ceil), `\u230a \u230b` (floor)
              - Binary/octal/hexadecimal mode. Put `bin:`, `oct:`, `hex:` at the start to use that mode in current line. Default to decimal (`dec:`) mode (well of course)
 
@@ -818,11 +821,9 @@ class Calculator:
              - Define a function. User functions must be in `func_name(arg1, arg2...)` format, both at defining and using
              - Special function `sigma` or `Σ` (sum)
                 Format: `sigma(counter, from, to)(formula)`
-                You need to define counter as a wildcard via `counter = None` prior to the sigma function.
+                Due to how parser works, counter must be a wildcard defined by `counter = None` prior to the sigma function.
         '''
-        if stuff.startswith("```"):
-            stuff = stuff.partition("\n")[2]
-        stuff = stuff.strip("` \n")
+        stuff = utils.clean_codeblock(stuff)
         l = ""
         try:
             start = time.perf_counter()

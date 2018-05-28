@@ -135,3 +135,9 @@ def progress_bar(rate, length=2):
     bf = "\u2588" * int(rate*10*length)
     c = "\u2591"
     return f"Progress: {bf:{c}<{10*length}} {rate*100:.2f}%"
+
+def clean_codeblock(text):
+    if text.startswith("```"):
+        text = text.partition("\n")[2]
+    text = text.strip("` \n")
+    return text

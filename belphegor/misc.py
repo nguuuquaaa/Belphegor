@@ -74,6 +74,10 @@ QUOTES = {
         "(attemp to logout to reset the game)"
     ]
 }
+ASCII = "@%#*+=-:. "
+#ASCII = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\|()1{}[]?-_+~<>i!lI;:,\"^'.     "
+#ASCII = "@&B9#SGHMh352AXsri;:,. "
+RANGE = 256 / len(ASCII)
 
 #==================================================================================================================================================
 
@@ -323,10 +327,18 @@ class Misc:
             #timezone convert
             zone_data = g_container.find("div", class_="sL6Rbf")
             if zone_data:
-                text = zone_data.get_text().strip()
+                text = []
+                for stuff in zone_data.find_all(True, recursive=False):
+                    table = stuff.find("table")
+                    if table:
+                        for tr in table.find_all(True, recursive=False):
+                            text.append(tr.get_text())
+                    else:
+                        text.append(stuff.get_text().strip())
+                outtxt = "\n".join(text)
                 embed = discord.Embed(
                     title="Search result:",
-                    description=f"**Timezone**\n{text}",
+                    description=f"**Timezone**\n{outtxt}",
                     colour=discord.Colour.dark_orange()
                 )
                 if search_results:
@@ -486,30 +498,28 @@ class Misc:
             There's a 10-second cooldown per user.
         '''
         async with self.google_lock:
-            async with ctx.typing():
-                params = {
-                    "q": quote(search),
-                    "safe": "active",
-                    "lr": "lang_en",
-                    "hl": "en"
-                }
-                if ctx.channel.is_nsfw():
-                    params.pop("safe")
-                bytes_ = await self.bot.fetch("https://www.google.com/search", params=params)
-                result = await self.bot.loop.run_in_executor(None, self.parse_google, bytes_)
-                if isinstance(result, discord.Embed):
-                    return await ctx.send(embed=result)
-                elif isinstance(result, str):
-                    return await ctx.send(result)
-                elif not result:
-                    return await ctx.send("No result found.")
-                elif isinstance(result, list):
-                    pass
-                else:
-                    return await ctx.send("I-it's not an error I tell ya! It's a feature!")
-
-        paging = utils.Paginator(result, render=False)
-        await paging.navigate(ctx)
+            await ctx.trigger_typing()
+            params = {
+                "q": quote(search),
+                "safe": "active",
+                "lr": "lang_en",
+                "hl": "en"
+            }
+            if ctx.channel.is_nsfw():
+                params.pop("safe")
+            bytes_ = await self.bot.fetch("https://www.google.com/search", params=params)
+            result = await self.bot.loop.run_in_executor(None, self.parse_google, bytes_)
+            if isinstance(result, discord.Embed):
+                await ctx.send(embed=result)
+            elif isinstance(result, str):
+                await ctx.send(result)
+            elif not result:
+                await ctx.send("Google blocked me reeeeeeeeeeeeeeeeeeeeeeee")
+            elif isinstance(result, list):
+                paging = utils.Paginator(result, render=False)
+                await paging.navigate(ctx)
+            else:
+                await ctx.send("I-it's not an error I tell ya! It's a feature!")
 
     @google.error
     async def google_error(self, ctx, error):
@@ -526,21 +536,21 @@ class Misc:
             There's a 10-second cooldown per user.
         '''
         async with self.google_lock:
-            async with ctx.typing():
-                params = {
-                    "tl": "en",
-                    "hl": "en",
-                    "sl": "auto",
-                    "ie": "UTF-8",
-                    "q": quote(search)
-                }
-                bytes_ = await self.bot.fetch("http://translate.google.com/m", params=params)
-                data = BS(bytes_.decode("utf-8"), "lxml")
-                tag = data.find("div", class_="t0")
-                embed = discord.Embed(colour=discord.Colour.dark_orange())
-                embed.add_field(name="Detect", value=search)
-                embed.add_field(name="English", value=tag.get_text())
-                await ctx.send(embed=embed)
+            await ctx.trigger_typing()
+            params = {
+                "tl": "en",
+                "hl": "en",
+                "sl": "auto",
+                "ie": "UTF-8",
+                "q": quote(search)
+            }
+            bytes_ = await self.bot.fetch("http://translate.google.com/m", params=params)
+            data = BS(bytes_.decode("utf-8"), "lxml")
+            tag = data.find("div", class_="t0")
+            embed = discord.Embed(colour=discord.Colour.dark_orange())
+            embed.add_field(name="Detect", value=search)
+            embed.add_field(name="English", value=tag.get_text())
+            await ctx.send(embed=embed)
 
     @gtrans.error
     async def gtrans_error(self, ctx, error):
@@ -786,6 +796,34 @@ class Misc:
             await ctx.send(embed=embed)
         else:
             await ctx.send("Can't find message.")
+
+    def to_ascii(self, image_bytes, width, height):
+        raw = Image.open(BytesIO(image_bytes))
+        image = raw.resize((width, height)).convert("L")
+
+        pixels = image.getdata()
+        chars = [ASCII[int(p/RANGE)] for p in pixels]
+
+        t = ["".join(chars[i:i+width]) for i in range(0, len(chars), width)]
+        return "\n".join(t)
+
+    @commands.group(invoke_without_command=True)
+    async def ascii(self, ctx, user: discord.User=None):
+        await ctx.trigger_typing()
+        target = user or ctx.author
+        bytes_ = await self.bot.fetch(target.avatar_url)
+        text = self.to_ascii(bytes_, 64, 30)
+        await ctx.send(f"```\n{text}\n```")
+
+    @ascii.command(name="big", aliases=["biggur"])
+    async def big_ascii(self, ctx, user: discord.User=None, width=128):
+        await ctx.trigger_typing()
+        target = user or ctx.author
+        if width > 1024:
+            return await ctx.send("Width should be 1024 or less.")
+        bytes_ = await self.bot.fetch(target.avatar_url)
+        text = await self.bot.loop.run_in_executor(None, self.to_ascii, bytes_, width, width//2)
+        await ctx.send(file=discord.File(text.encode("utf-8"), filename=f"ascii_{len(text)}_chars.txt"))
 
 #==================================================================================================================================================
 
