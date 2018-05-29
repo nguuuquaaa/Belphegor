@@ -75,8 +75,6 @@ QUOTES = {
     ]
 }
 ASCII = "@%#*+=-:. "
-#ASCII = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\|()1{}[]?-_+~<>i!lI;:,\"^'.     "
-#ASCII = "@&B9#SGHMh352AXsri;:,. "
 RANGE = 256 / len(ASCII)
 
 #==================================================================================================================================================
@@ -730,7 +728,10 @@ class Misc:
         for item in data:
             p = item.partition("=")
             k = p[0].strip()
-            v = p[2].strip().encode("utf-8").decode("unicode_escape")
+            try:
+                v = p[2].strip().encode("raw_unicode_escape").decode("unicode_escape")
+            except:
+                return await ctx.send("Unicode coding error.")
             if k == "field":
                 kwargs["fields"].append(v.split("||"))
             else:

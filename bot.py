@@ -34,7 +34,6 @@ class Belphegor(commands.Bot):
         self.bot_lock = asyncio.Lock()
         self.initial_extensions = kwargs.get("initial_extensions", config.all_extensions)
         self.restart_flag = False
-        self.reload_needed = [sys.modules[__name__]]
 
     async def get_prefix(self, message):
         prefixes = {f"<@{self.user.id}> ", f"<@!{self.user.id}> "}
@@ -228,3 +227,9 @@ class Belphegor(commands.Bot):
 
     async def download(self, url, path, **kwargs):
         return await utils.download(self.session, url, path, **kwargs)
+
+    def do_after(self, coro, wait_time):
+        async def things_to_do():
+            await asyncio.sleep(wait_time)
+            await coro
+        self.loop.create_task(things_to_do())

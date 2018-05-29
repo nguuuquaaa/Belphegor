@@ -7,6 +7,14 @@ import inspect
 
 #==================================================================================================================================================
 
+async def try_it(coro):
+    try:
+        await coro
+    except:
+        pass
+
+#==================================================================================================================================================
+
 class Everyone:
     def __bool__(self):
         return True
@@ -229,12 +237,6 @@ class Paginator:
             embed = next(iter(self.navigation.values()))()
         message = await ctx.send(embed=embed)
         _loop.create_task(self.add_navigate_reactions(message))
-
-        async def try_it(coro):
-            try:
-                await coro
-            except:
-                pass
 
         try:
             while True:

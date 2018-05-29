@@ -135,15 +135,16 @@ class Remind:
         '''
         self_events = [ev async for ev in self.event_list.find({"author_id": ctx.author.id}).sort("event_time")]
         if 0 < position <= len(self_events):
+            ev = self_events[position-1]
             sentences = {
                 "initial":  "Delet this?",
-                "yes":      "Deleted.",
+                "yes":      f"Deleted \"{ev['text']}\".",
                 "no":       "Cancelled deleting.",
                 "timeout":  "Timeout, cancelled deleting."
             }
             check = await ctx.yes_no_prompt(sentences)
             if check:
-                await self.event_list.delete_one({"_id": self_events[position-1]["_id"]})
+                await self.event_list.delete_one({"_id": ev["_id"]})
         else:
             await ctx.send("Position out of range.")
 

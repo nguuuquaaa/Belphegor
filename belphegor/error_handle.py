@@ -33,8 +33,10 @@ class ErrorHandle:
         self.bot.error_hook = self.error_hook
 
     async def on_command_error(self, ctx, error):
-        ignored = (commands.DisabledCommand, commands.CheckFailure, commands.CommandNotFound, commands.UserInputError, commands.CommandOnCooldown, discord.Forbidden)
-        if isinstance(error, commands.CommandInvokeError):
+        ignored = (commands.DisabledCommand, commands.CommandNotFound, commands.UserInputError, commands.CommandOnCooldown, discord.Forbidden)
+        if isinstance(error, commands.CheckFailure):
+            await ctx.send(error, delete_after=30)
+        elif isinstance(error, commands.CommandInvokeError):
             error = error.original
             prt_err = "".join(traceback.format_exception(type(error), error, error.__traceback__, 5))
             await ctx.send("Unexpected error. Oops (ᵒ ڡ <)๑⌒☆", delete_after=30)

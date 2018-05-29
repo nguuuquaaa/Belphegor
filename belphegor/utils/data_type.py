@@ -78,7 +78,7 @@ class BelphegorContext(commands.Context):
         if delete_mode:
             _loop.create_task(message.delete())
         else:
-            _loop.create_task(message.clear_reactions())
+            _loop.create_task(paginator.try_it(message.clear_reactions()))
         return result
 
     async def search(self, name, pool, *, cls=BaseObject, colour=None, atts=["id"], name_att, emoji_att=None, prompt=None, sort={}):

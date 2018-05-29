@@ -618,7 +618,7 @@ class Guild:
                 await welcome_channel.send(welcome_message.format(name=member.display_name, mention=member.mention, server=member.guild.name, guild=member.guild.name))
             welcome_rule = guild_data.get("welcome_rule")
             if welcome_rule:
-                await utils.do_after(member.send(welcome_rule.format(server=member.guild.name)), 5)
+                await self.bot.do_after(member.send(welcome_rule.format(server=member.guild.name)), 5)
             autorole_type = guild_data.get("autorole_type", None)
             if autorole_type == 1:
                 role = discord.utils.find(lambda r: r.id==guild_data["autorole_id"], guild.roles)

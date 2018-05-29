@@ -4,6 +4,7 @@ import logging
 import importlib
 import asyncio
 import bot
+import sys
 
 try:
     import uvloop
@@ -22,5 +23,8 @@ if __name__ == "__main__":
             break
         else:
             asyncio.set_event_loop(asyncio.new_event_loop())
-            for m in belphybot.reload_needed:
-                importlib.reload(m)
+            to_be_deleted = [m for m in sys.modules if m.startswith("belphegor")]
+            for m in to_be_deleted:
+                del sys.modules[m]
+            importlib.reload(bot)
+
