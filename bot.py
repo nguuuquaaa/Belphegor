@@ -67,12 +67,12 @@ class Belphegor(commands.Bot):
             traceback.print_exception(type(error), error, None, file=sys.stderr)
 
     async def on_ready(self):
-        print('Logged in as')
+        print("Logged in as")
         print(self.user.name)
         print(self.user.id)
-        print('------')
+        print("------")
         await asyncio.sleep(5)
-        await self.change_presence(activity=discord.Game(name='with Chronos-senpai'))
+        await self.change_presence(activity=discord.Game(name="with Chronos-senpai"))
 
     def create_task_and_count(self, coro):
         self.counter += 1
@@ -95,7 +95,7 @@ class Belphegor(commands.Bot):
                 run_func = functools.partial(item, *args, **kwargs)
                 return await self.loop.run_in_executor(None, run_func)
         else:
-            raise Exception("Wat. You serious?")
+            raise TypeError("Wat. You serious?")
 
     async def logout(self):
         await self.session.close()
@@ -103,7 +103,7 @@ class Belphegor(commands.Bot):
         print("Logging out...")
         while self.counter > 0:
             await asyncio.sleep(0.1)
-        await asyncio.sleep(1)
+        await asyncio.sleep(3)
 
     def block_or_not(self, ctx):
         author_id = ctx.author.id
@@ -112,7 +112,7 @@ class Belphegor(commands.Bot):
 
         if author_id in self.blocked_user_ids:
             self.loop.create_task(ctx.send("Omae wa mou blocked.", delete_after=30))
-            checks.do_after(ctx.message.delete(), 30)
+            self.do_after(ctx.message.delete(), 30)
             return False
 
         blocked_data = self.disabled_data.get(guild_id)
@@ -122,29 +122,29 @@ class Belphegor(commands.Bot):
 
             if blocked_data.get("disabled_bot_guild", False):
                 self.loop.create_task(ctx.send("Command usage is disabled in this server.", delete_after=30))
-                checks.do_after(ctx.message.delete(), 30)
+                self.do_after(ctx.message.delete(), 30)
                 return False
             if channel_id in blocked_data.get("disabled_bot_channel", EMPTY_SET):
                 self.loop.create_task(ctx.send("Command usage is disabled in this channel.", delete_after=30))
-                checks.do_after(ctx.message.delete(), 30)
+                self.do_after(ctx.message.delete(), 30)
                 return False
             if author_id in blocked_data.get("disabled_bot_member", EMPTY_SET):
                 self.loop.create_task(ctx.send("You are forbidden from using bot commands in this server.", delete_after=30))
-                checks.do_after(ctx.message.delete(), 30)
+                self.do_after(ctx.message.delete(), 30)
                 return False
 
             cmd_name = ctx.command.qualified_name
             if cmd_name in blocked_data.get("disabled_command_guild", EMPTY_SET):
                 self.loop.create_task(ctx.send("This command is disabled in this server.", delete_after=30))
-                checks.do_after(ctx.message.delete(), 30)
+                self.do_after(ctx.message.delete(), 30)
                 return False
             if (cmd_name, channel_id) in blocked_data.get("disabled_command_channel", EMPTY_SET):
                 self.loop.create_task(ctx.send("This command is disabled in this channel.", delete_after=30))
-                checks.do_after(ctx.message.delete(), 30)
+                self.do_after(ctx.message.delete(), 30)
                 return False
             if (cmd_name, author_id) in blocked_data.get("disabled_command_member", EMPTY_SET):
                 self.loop.create_task(ctx.send("You are forbidden from using this command in this server.", delete_after=30))
-                checks.do_after(ctx.message.delete(), 30)
+                self.do_after(ctx.message.delete(), 30)
                 return False
         return True
 
@@ -231,5 +231,8 @@ class Belphegor(commands.Bot):
     def do_after(self, coro, wait_time):
         async def things_to_do():
             await asyncio.sleep(wait_time)
-            await coro
+            try:
+                await coro
+            except:
+                pass
         self.loop.create_task(things_to_do())
