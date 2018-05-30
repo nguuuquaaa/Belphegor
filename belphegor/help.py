@@ -358,7 +358,7 @@ class Help:
                 "`>>color`, `>>colour` - Visualize color's code\n"
                 "`>>choose` - Choose random\n"
                 "`>>calc` - Calculator\n"
-                "`>>ascii` - ASCII art"
+                "`>>ascii` - ASCII art\n"
                 "      `biggur` - Biggur ASCII art",
             inline=False
         )
@@ -532,22 +532,37 @@ class Help:
         await ctx.send(f"<{discord.utils.oauth_url(ctx.me.id, perms)}>")
 
     @commands.command()
-    async def source(self, ctx, *, cmd_name=None):
+    async def source(self, ctx, *, name=None):
         '''
             `>>source <command>`
             Get source code of <command>.
             Shamelessly copy from R. Danny.
         '''
         base_url = "https://github.com/nguuuquaaa/Belphegor"
-        if not cmd_name:
+        if not name:
             return await ctx.send(f"<{base_url}>")
-        cmd = self.bot.get_command(cmd_name)
-        if not cmd:
-            return await ctx.send(f"Command {cmd_name} doesn't exist.")
-
-        src = cmd.callback.__code__
-        lines, firstlineno = inspect.getsourcelines(src)
-        location = os.path.relpath(src.co_filename).replace('\\', '/')
+        cmd = self.bot.get_command(name)
+        if cmd:
+            src = cmd.callback.__code__
+            rpath = src.co_filename
+        else:
+            obj = sys.modules["belphegor"]
+            for n in name.split("."):
+                obj = getattr(obj, n, None)
+                if not obj:
+                    return await ctx.send(f"Can't find {name}")
+            else:
+                try:
+                    src = obj.__code__
+                except AttributeError:
+                    src = obj
+                finally:
+                    rpath = inspect.getfile(src)
+        try:
+            lines, firstlineno = inspect.getsourcelines(src)
+        except:
+            return await ctx.send(f"{name} is not a function or class name")
+        location = os.path.relpath(rpath).replace('\\', '/')
         final_url = f"<{base_url}/tree/master/{location}#L{firstlineno}-L{firstlineno + len(lines) - 1}>"
         await ctx.send(final_url)
 

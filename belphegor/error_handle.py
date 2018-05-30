@@ -33,7 +33,7 @@ class ErrorHandle:
         self.bot.error_hook = self.error_hook
 
     async def on_command_error(self, ctx, error):
-        ignored = (commands.DisabledCommand, commands.CommandNotFound, commands.UserInputError, commands.CommandOnCooldown, discord.Forbidden)
+        ignored = (commands.DisabledCommand, commands.CommandNotFound, commands.UserInputError, commands.CommandOnCooldown)
         if isinstance(error, commands.CheckFailure):
             await ctx.send(error, delete_after=30)
         elif isinstance(error, commands.CommandInvokeError):
@@ -49,6 +49,11 @@ class ErrorHandle:
             pass
         elif isinstance(error, OverflowError):
             await ctx.send("Input number too big. You sure really need it?")
+        elif isinstance(error, discord.Forbidden):
+            try:
+                await ctx.send(f"I don't have enough permissions to do that.")
+            except:
+                pass
         else:
             prt_err = "".join(traceback.format_exception(type(error), error, None))
             await self.error_hook.execute(f"```\nIgnoring exception in command {ctx.command}:\n{prt_err}\n```")
