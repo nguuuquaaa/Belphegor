@@ -235,12 +235,12 @@ class BaseParse:
         if base == 2:
             self.base_str = "bin: "
             self.strfmt = "b"
-            self.max_power = self.MAX_POWER_LOG * math.log2(10)
+            self.max_power = self.MAX_POWER_LOG * math.log10(2)
             self.digits = ("0", "1")
         elif base == 8:
             self.base_str = "oct: "
             self.strfmt = "o"
-            self.max_power = self.MAX_POWER_LOG * 3 * math.log2(10)
+            self.max_power = self.MAX_POWER_LOG * math.log10(8)
             self.digits = ("0", "1", "2", "3", "4", "5", "6", "7")
         elif base == 10:
             self.base_str = ""
@@ -250,7 +250,7 @@ class BaseParse:
         elif base == 16:
             self.base_str = "hex: "
             self.strfmt = "x"
-            self.max_power = self.MAX_POWER_LOG * 4 * math.log2(10)
+            self.max_power = self.MAX_POWER_LOG * math.log10(16)
             self.digits = ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f")
 
     def parse_number(self):
@@ -304,8 +304,6 @@ class BaseParse:
                     self.current_parse = n
                     self.next()
         self.log_lines.append(f"parsed {type(self.current_parse)}: {self.current_parse}")
-        if self.base != 10 and not isinstance(self.current_parse, int):
-            raise ParseError("Non-integer is not allowed in non-decimal mode.")
         return self.current_parse
 
     def log_this(kind):
@@ -364,7 +362,7 @@ class BaseParse:
             if v == 0 or v == self.CONSTS["inf"] or r == self.CONSTS["inf"] or r * math.log10(abs(v)) < self.max_power:
                 result = c(value, p)
             else:
-                raise ParseError(f"Limit for power in base {self.base} is 10^{self.max_power}")
+                raise ParseError(f"Limit for power in base {self.base} is 10^{int(self.max_power)}")
         elif c == self.SPECIAL_OPS["C"]:
             self.parse_next()
             k = self.parse_next_value()
@@ -656,8 +654,8 @@ class MathFunction(BaseParse):
 #==================================================================================================================================================
 
 class MathParse(BaseParse):
-    VAR_REGEX = re.compile(r"\s*(\w+)\s*")
-    FUNC_REGEX = re.compile(r"\s*(\w+)\s*[,;]?\s*")
+    NAME_REGEX = re.compile(r"\s*(\w+)\s*")
+    DLMT_REGEX = re.compile("|".join((re.escape(s) for s in BaseParse.SIGNALS)))
 
     BASE_TRANS = {
         "bin:": 2,
@@ -665,6 +663,8 @@ class MathParse(BaseParse):
         "dec:": 10,
         "hex:": 16
     }
+
+    MAX_VALUE = 10 ** 1000
 
     def __init__(self, text):
         super().__init__()
@@ -674,14 +674,16 @@ class MathParse(BaseParse):
 
     def how_to_display(self, number):
         if number == float("nan"):
-            return number, "NotNumber"
+            return number, "Not a number"
         elif number == self.CONSTS["inf"]:
-            return number, "∞"
+            return number, "+∞"
         elif number == -self.CONSTS["inf"]:
             return number, "-∞"
 
+        if number > self.MAX_VALUE:
+            raise OverflowError
         value = int(round(number))
-        if cmath.isclose(value, number, rel_tol=1e-10, abs_tol=1e-10):
+        if abs(number - value) < 1e-10:
             s = f"{value:{self.strfmt}}"
         else:
             value = number
@@ -700,54 +702,60 @@ class MathParse(BaseParse):
                 f = f[4:]
             else:
                 self.set_base(10)
-            stuff = f.partition("=")
+            stuff = f.rpartition("=")
             if stuff[1]:
-                m = self.VAR_REGEX.fullmatch(stuff[0])
+                m = self.NAME_REGEX.match(stuff[0])
                 if m:
                     var_name = m.group(1)
                     if var_name[0] in self.digits:
-                        raise ParseError("Variable name should not start with digit.")
+                        raise ParseError("Name should not start with digit.")
 
                     for kind in (*self.BUILTINS, self.user_functions):
                         if var_name in kind:
                             raise ParseError(f"Name {var_name} is already taken.")
-                    else:
+
+                    the_rest = stuff[0][len(m.group(0)):].strip()
+                    if not the_rest:
+
+                        #variable definition
                         self.text = stuff[2]
                         if self.text.strip() == "None":
                             x = var_name
                             self.user_variables[x] = NoValue(x)
                             results.append(f"Defined {x}")
                             continue
-                else:
-                    proc = stuff[0].partition("(")
-                    raw_args = proc[2].rstrip(") \t")
-                    args = self.FUNC_REGEX.findall(raw_args)
-                    if raw_args and not args:
-                        raise ParseError("Bad definition detected.")
-                    else:
-                        for a in args:
-                            if a[0] in self.digits:
-                                raise ParseError("Argument name should not start with digit.")
-
-                            for kind in (*self.BUILTINS, self.user_variables):
-                                if a in kind:
-                                    raise ParseError(f"Don't use {a} as argument, it's already taken.")
                         else:
-                            func = MathFunction(stuff[2], args, variables=self.user_variables, functions=self.user_functions, base=self.base)
-                            mf = self.VAR_REGEX.fullmatch(proc[0])
-                            if mf:
-                                func_name = mf.group(1)
-                                if func_name[0] in self.digits:
-                                    raise ParseError("Function name should not start with digit.")
-                                for kind in (*self.BUILTINS, self.user_variables):
-                                    if func_name in kind:
-                                        raise ParseError(f"Name {func_name} is already taken.")
-                                self.user_functions[func_name] = func
-                                da = ", ".join(args)
-                                results.append(f"Defined {func_name}({da})")
-                                continue
-                            else:
-                                raise ParseError("Your function name is bad and you should feel bad.")
+                            pass
+                    elif the_rest[0] == "(" and the_rest[-1] == ")":
+
+                        #function definition
+                        raw_text = the_rest[1:-1].strip()
+                        args = []
+                        if raw_text:
+                            raw_args = self.DLMT_REGEX.split(raw_text)
+                            for ra in raw_args:
+                                ma = self.NAME_REGEX.fullmatch(ra)
+                                if not ma:
+                                    raise ParseError(f"Argument name \"{utils.discord_escape(ra.strip())}\" is not accepted.")
+                                else:
+                                    a = ma.group(1)
+                                    if a[0] in self.digits:
+                                        raise ParseError(f"Argument name should not start with digit.")
+                                    for kind in (*self.BUILTINS, self.user_variables):
+                                        if a in kind:
+                                            raise ParseError(f"Don't use \"{utils.discord_escape(a)}\" as argument, it's already taken.")
+                                    args.append(a)
+
+                        func = MathFunction(stuff[2], args, variables=self.user_variables, functions=self.user_functions, base=self.base)
+                        self.user_functions[var_name] = func
+                        da = ", ".join(args)
+                        results.append(f"Defined {var_name}({da})")
+                        continue
+                    else:
+                        raise ParseError("Don't put strange symbol in var/func definition.")
+
+                else:
+                    raise ParseError(f"Bad definition detected.")
             else:
                 self.text = f
 
@@ -837,7 +845,7 @@ class Calculator:
         except ValueError:
             await ctx.send("Calculation error. Probably incomprehensible calculation involved ∞ or something.")
         except OverflowError:
-            await ctx.send("Input number too big. U sure need this one?")
+            await ctx.send("IO number too big. U sure need this one?")
         except Exception as e:
             target = getattr(e, "target", m)
             await ctx.send(f"Parsing error.\n```\n{target.show_parse_error()}\n```")
