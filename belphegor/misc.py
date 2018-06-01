@@ -841,7 +841,7 @@ class Misc:
     async def big_ascii(self, ctx, member: discord.Member=None, width=256):
         '''
             `>>ascii big <optional: member> <optional: width>`
-            Bigger size ASCII art of member avatar in txt file.
+            Bigger size ASCII art of member avatar, send as txt file due to discord 2000 characters limit.
             If no member is specified, use your avatar. Default width is 256.
         '''
         await ctx.trigger_typing()

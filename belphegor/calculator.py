@@ -85,38 +85,37 @@ class NoValue:
     def __repr__(self):
         return "NoValue"
 
-    def __str__(self):
-        return f"{self.var} = NoValue"
-
 #==================================================================================================================================================
 
-class Sigma:
-    MAX_RANGE = 1000
+class Reduce:
+    MAX_RANGE = 100
 
-    def __init__(self, func, from_, to_):
+    def __init__(self, kind, func, from_, to_):
         if to_ > from_:
             self.delta = 1
         else:
             self.delta = -1
         if abs(to_ - from_) > self.MAX_RANGE:
             raise ParseError(f"Sigma max range is {self.MAX_RANGE}.")
-        if func.sigma:
-            raise ParseError("Nested sigma is not accepted.")
+        if func.reduce:
+            raise ParseError("Nested reduce/sigma is not accepted.")
+        self.kind = kind
         self.func = func
         self.from_ = from_
         self.to_ = to_
 
     def __call__(self):
-        result = 0
-        for index in range(self.from_, self.to_+self.delta, self.delta):
-            result += self.func((index,))
+        result = functools.reduce(self.kind, (self.func(k) for k in range(self.from_, self.to_+self.delta, self.delta)))
         return result
+
+class Sigma(Reduce):
+    MAX_RANGE = 1000
 
 #==================================================================================================================================================
 
 class BaseParse:
     MAX_POWER_LOG = 300
-    MAX_FACTORIAL = 50
+    MAX_FACTORIAL = 100
 
     SIGNS = {
         "+":    1,
@@ -160,7 +159,8 @@ class BaseParse:
     }
     SPECIAL_FUNCS = {
         "sigma":    Sigma,
-        "Σ":        Sigma
+        "Σ":        Sigma,
+        "reduce":   Reduce
     }
     CONSTS = {
         "e":    math.e,
@@ -329,9 +329,9 @@ class BaseParse:
         elif n in self.user_functions.values():
             self.parse_next()
             args = self.parse_func_args()
-            result = n(args)
-        elif n is Sigma:
-            result = self.parse_sigma()
+            result = n(*args)
+        elif n in self.SPECIAL_FUNCS.values():
+            result = self.parse_reduce(n)
         elif n in self.ENCLOSED:
             result = self.parse_level()
         else:
@@ -354,6 +354,7 @@ class BaseParse:
             else:
                 raise ParseError("Can't factorial non-integer.")
             self.parse_next()
+            result = self.parse_special(result)
         elif c == self.SPECIAL_OPS["^"]:
             self.parse_next()
             p = self.parse_next_value()
@@ -379,6 +380,7 @@ class BaseParse:
             else:
                 result = c(value)
             self.parse_next()
+            result = self.parse_special(result)
         else:
             result = value
         return result
@@ -505,11 +507,21 @@ class BaseParse:
         self.parse_next()
         return result
 
-    @log_this("sigma")
-    def parse_sigma(self):
+    @log_this("reduce")
+    def parse_reduce(self, type=Sigma):
         n = self.parse_next()
         if n != "(":
             raise CommonParseError
+
+        if type is Reduce:
+            kind = self.parse_next()
+            if kind not in self.FUNCS.values() and kind not in self.user_functions.values():
+                raise CommonParseError
+            n = self.parse_next()
+            if n not in self.SIGNALS:
+                raise CommonParseError
+        elif type is Sigma:
+            kind = operator.add
 
         var = self.parse_next()
         if not isinstance(var, NoValue):
@@ -574,10 +586,10 @@ class BaseParse:
 
         func_text = self.text[start_index:end_index-1]
         func = MathFunction(func_text, (var.var,), variables=self.user_variables, functions=self.user_functions, base=self.base)
-        sigma = Sigma(func, from_to[0], from_to[1])
+        reduce = type(kind, func, from_to[0], from_to[1])
         self.parse_next()
 
-        return sigma()
+        return reduce()
 
     def log(self):
         return "\n".join(self.log_lines)
@@ -606,7 +618,7 @@ class MathFunction(BaseParse):
         self.text = text.partition("\n")[0].strip()
         self.args = args
 
-        self.sigma = False
+        self.reduce = False
         self.tokens = []
         self.reset()
         while True:
@@ -614,8 +626,8 @@ class MathFunction(BaseParse):
             if n is None:
                 break
             else:
-                if n is Sigma:
-                    self.sigma = True
+                if n in self.SPECIAL_FUNCS.values():
+                    self.reduce = True
                 self.tokens.append((n, self.current_index))
         self.parse_next = self.next_token
 
@@ -634,7 +646,7 @@ class MathFunction(BaseParse):
         finally:
             return self.current_parse
 
-    def __call__(self, args):
+    def __call__(self, *args):
         if len(args) != len(self.args):
             raise ParseError("Number of arguments does not match.")
         for i, a in enumerate(self.args):
@@ -664,7 +676,7 @@ class MathParse(BaseParse):
         "hex:": 16
     }
 
-    MAX_VALUE = 10 ** 1000
+    MAX_VALUE = 10 ** 300
 
     def __init__(self, text):
         super().__init__()
@@ -827,9 +839,13 @@ class Calculator:
 
              - Set a variable to a value (value can be a calculable formula) for next calculations
              - Define a function. User functions must be in `func_name(arg1, arg2...)` format, both at defining and using
-             - Special function `sigma` or `Σ` (sum)
+             - Special function `sigma`|`Σ` (sum)
                 Format: `sigma(counter, from, to)(formula)`
                 Due to how parser works, counter must be a wildcard defined by `counter = None` prior to the sigma function.
+             - Special function `reduce` (cumulate)
+                Format: `reduce(function, counter, from, to)(formula)`
+                It's like sigma, but use `function` instead of sum.
+                `function` can be either builtin or user-defined, but must take exactly 2 arguments.
         '''
         stuff = utils.clean_codeblock(stuff)
         l = ""
