@@ -214,7 +214,7 @@ class Misc:
         '''
             `>>avatar <optional: member>`
             Show <member>'s avatar.
-            If <member> is not specified, show command invoker's instead.
+            If <member> is not specified, show your avatar instead.
         '''
         member = member or ctx.author
         embed = discord.Embed(title=f"{member.display_name}'s avatar", url=member.avatar_url)
