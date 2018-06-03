@@ -42,7 +42,7 @@ class ErrorHandle:
             await ctx.send("Unexpected error. Oops (ᵒ ڡ <)๑⌒☆", delete_after=30)
             await self.error_hook.execute(f"```\nIgnoring exception in command {ctx.command}:\n{prt_err}\n```")
         elif isinstance(error, commands.MissingRequiredArgument):
-            await ctx.send("Argument missing. You sure read command description in detail?", delete_after=30)
+            await ctx.send("Argument missing. You sure know what this command does?", delete_after=30)
         elif isinstance(error, commands.BadArgument):
             await ctx.send("Bad arguments. You sure read command description?", delete_after=30)
         elif isinstance(error, ignored):

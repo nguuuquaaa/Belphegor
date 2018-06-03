@@ -99,7 +99,7 @@ class Reduce:
         else:
             self.delta = -1
         if abs(to_ - from_) > self.MAX_RANGE:
-            raise ParseError(f"Sigma max range is {self.MAX_RANGE}.")
+            raise ParseError(f"{self.__class__.__name__} max range is {self.MAX_RANGE}.")
         if func.reduce:
             raise ParseError("Nested reduce/sigma is not accepted.")
         self.kind = kind
@@ -826,6 +826,12 @@ class Calculator:
     def __unload(self):
         self.bot.enable_calc_log = self.enable_log
 
+    def time_stuff(self, func):
+        start = time.perf_counter()
+        ret = func()
+        end = time.perf_counter()
+        return ret, end-start
+
     @commands.command(aliases=["calc"])
     async def calculate(self, ctx, *, stuff):
         '''
@@ -853,10 +859,8 @@ class Calculator:
         stuff = utils.clean_codeblock(stuff)
         l = ""
         try:
-            start = time.perf_counter()
             m = MathParse(stuff)
-            results = await self.bot.loop.run_in_executor(None, m.result)
-            end = time.perf_counter()
+            results, time_taken = await self.bot.loop.run_in_executor(None, self.time_stuff, m.result)
         except ParseError as e:
             await ctx.send(e)
         except ZeroDivisionError:
@@ -871,7 +875,7 @@ class Calculator:
             l = traceback.format_exc()
         else:
             r = "\n".join(results)
-            await ctx.send(f"Result in {1000*(end-start):.2f}ms\n```\n{r}\n```")
+            await ctx.send(f"Result in {1000*(time_taken):.2f}ms\n```\n{r}\n```")
         finally:
             if self.enable_log:
                 l = f"{m.log()}\n{l}"

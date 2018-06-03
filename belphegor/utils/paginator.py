@@ -231,6 +231,12 @@ class Paginator:
         _bot = ctx.bot
         _loop = _bot.loop
         target = target or ctx.author
+        if ctx.channel.permissions_for(ctx.me).manage_messages:
+            event = "reaction_add"
+            handle_reaction = lambda m, r, u: _loop.create_task(try_it(m.remove_reaction(r, u)))
+        else:
+            event = "reaction_add_or_remove"
+            handle_reaction = lambda m, r, u: None
         if self.container:
             embed = self.render()
         else:
@@ -242,7 +248,7 @@ class Paginator:
             while True:
                 try:
                     reaction, user = await _bot.wait_for(
-                        "reaction_add",
+                        event,
                         check=lambda r, u: target==u and r.emoji in self.navigation and r.message.id==message.id,
                         timeout=timeout
                     )
@@ -253,7 +259,7 @@ class Paginator:
                     embed = await embed
                 if embed:
                     await message.edit(embed=embed)
-                    _loop.create_task(try_it(message.remove_reaction(reaction, user)))
+                    handle_reaction(message, reaction, user)
                 else:
                     return
         except asyncio.CancelledError:
