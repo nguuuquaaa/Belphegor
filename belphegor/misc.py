@@ -12,7 +12,7 @@ import json
 from urllib.parse import quote
 from io import BytesIO
 import aiohttp
-from PIL import Image
+from PIL import Image, ImageFilter, ImageDraw, ImageFont
 import traceback
 import collections
 import time
@@ -79,6 +79,36 @@ RANGE = 256 / len(ASCII)
 
 #==================================================================================================================================================
 
+def get_ascii(pixels, width):
+    t = ("".join(("@" if p else " " for p in pixels[i:i+width])) for i in range(0, len(pixels), width))
+    return "\n".join(t)
+
+#==================================================================================================================================================
+
+class CharImage:
+    def __init__(self, char, *, font, weight=None):
+        self.char = char
+        self.image = Image.new("L", (8, 16), 0)
+        draw = ImageDraw.Draw(self.image)
+        draw.text((0, 0), char, font=font, fill=255)
+        self.weight = weight or 1
+        self.raw = [1 if i > 127 else 0 for i in self.image.getdata()]
+
+    def compare(self, other):
+        rating = 0
+        inverse_rating = 0
+        raw = self.raw
+        for x in range(8):
+            for y in range(16):
+                char_value = raw[x+8*y]
+                other_value = other[x+8*y]
+                rating += char_value * other_value
+                inverse_rating += char_value * (1 - other_value)
+        rating = (rating - self.INVERSE_WEIGHT * inverse_rating) * self.weight
+        return rating
+
+#==================================================================================================================================================
+
 class Misc:
     '''
     Stuff that makes no difference if they aren't there.
@@ -90,6 +120,7 @@ class Misc:
         self.google_regex = re.compile(r"\<input name\=\"rlz\" value\=\"([a-zA-Z0-9_])\" type\=\"hidden\">")
         self.google_lock = asyncio.Lock()
         self.owo = {"/o/": "\\o\\", "\\o\\": "/o/", "\\o/": "/o\\", "/o\\": "\\o/"}
+        self.setup_ascii_chars()
 
     def quote(self, streak):
         if streak.endswith("ddd"):
@@ -821,7 +852,7 @@ class Misc:
         pixels = image.getdata()
         chars = [ASCII[int(p/RANGE)] for p in pixels]
 
-        t = ["".join(chars[i:i+width]) for i in range(0, len(chars), width)]
+        t = ("".join(chars[i:i+width]) for i in range(0, len(chars), width))
         return "\n".join(t)
 
     @commands.group(invoke_without_command=True)
@@ -853,6 +884,133 @@ class Misc:
         bytes_ = await self.bot.fetch(target.avatar_url)
         text = await self.bot.loop.run_in_executor(None, self.to_ascii, bytes_, width, width//2)
         await ctx.send(file=discord.File(text.encode("utf-8"), filename=f"ascii_{len(text)}_chars.txt"))
+
+    @ascii.command(name="block")
+    async def ascii_block(self, ctx, member: discord.Member=None):
+        '''
+            `>>ascii block <optional: member>`
+            Block-ASCII art of member avatar.
+            If no member is specified, use your avatar.
+        '''
+        target = member or ctx.author
+        bytes_ = await self.bot.fetch(target.avatar_url)
+
+        def do_stuff():
+            image = Image.open(BytesIO(bytes_))
+
+            height = 30
+            width = 64
+            proc = image.resize((width, 2*height)).convert("L")
+
+            pixels = proc.getdata()
+            output = []
+            for i in range(height):
+                for j in range(width):
+                    upper = 255 - pixels[i*2*width+j]
+                    lower = 255 - pixels[(i*2+1)*width+j]
+                    if upper-lower>=128:
+                        output.append("▀")
+                    elif lower-upper>=128:
+                        output.append("▄")
+                    else:
+                        if upper+lower>=320:
+                            output.append("█")
+                        elif upper+lower>=256:
+                            output.append("▓")
+                        elif upper+lower>=192:
+                            output.append("▒")
+                        elif upper+lower>=96:
+                            output.append("░")
+                        else:
+                            output.append(" ")
+
+            t = ("".join(output[i:i+width]) for i in range(0, len(output), width))
+            return "\n".join(t)
+
+        result = await self.bot.loop.run_in_executor(None, do_stuff)
+        await ctx.send(f"```\n{result}\n```")
+
+    def setup_ascii_chars(self):
+        CharImage.INVERSE_WEIGHT = 5
+        self.chars = {}
+        font = ImageFont.truetype(f"{config.DATA_PATH}/font/consola.ttf", 16)
+        for i in range(32, 127):
+            c = chr(i)
+            self.chars[c] = CharImage(c, font=font)
+        self.chars["\\"].weight = 2
+        self.chars["/"].weight = 2
+        self.chars["_"].weight = 2
+        self.chars["-"].weight = 2
+        self.chars["<"].weight = 1.3
+        self.chars[">"].weight = 1.3
+        self.chars["|"].weight = 1.8
+        self.chars["("].weight = 1.4
+        self.chars[")"].weight = 1.4
+        self.chars[","].weight = 0.7
+        self.chars[";"].weight = 0.7
+        self.chars["["].weight = 0.6
+        self.chars["]"].weight = 0.6
+        self.chars["~"].weight = 0.6
+        self.chars["`"].weight = 0
+        self.chars.pop("{")
+        self.chars.pop("}")
+        self.chars.pop("&")
+        self.chars.pop("$")
+        self.chars.pop("@")
+        self.chars["!"].weight = 0.2
+        for i in range(ord("a"), ord("z")+1):
+            self.chars[chr(i)].weight = -1
+        for i in range(ord("0"), ord("9")+1):
+            self.chars[chr(i)].weight = -1
+        for i in range(ord("A"), ord("Z")+1):
+            self.chars[chr(i)].weight = 0.5
+        self.chars = {c: im for c, im in self.chars.items() if im.weight>0}
+
+    def get_best_match(self, image):
+        best_weight = -float("inf")
+        best_char = None
+        for c, im in self.chars.items():
+            weight = im.compare(image)
+            if weight > best_weight:
+                best_weight = weight
+                best_char = c
+        return best_char
+
+    @ascii.command(name="edge")
+    @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
+    async def ascii_edge(self, ctx, member: discord.Member=None, threshold=32):
+        '''
+            `>>ascii edge <optional: member> <optional: threshold>`
+            Edge-detection ASCII art of member avatar.
+            If no member is specified, use your avatar.
+            Less threshold, more character. Default threshold is 32.
+            Has 10s cooldown due to heavy processing (someone gives me good algorithm pls).
+        '''
+        await ctx.trigger_typing()
+        target = member or ctx.author
+        bytes_ = await self.bot.fetch(target.avatar_url)
+
+        def do_stuff():
+            image = Image.open(BytesIO(bytes_)).resize((512, 480)).filter(ImageFilter.FIND_EDGES).convert("L").filter(ImageFilter.GaussianBlur(radius=2))
+            height = 30
+            width = 64
+            raw = []
+            pixels = [1 if p > threshold else 0 for p in image.getdata()]
+
+            total = []
+            for y in range(height):
+                for x in range(width):
+                    cut = []
+                    for j in range(16):
+                        for i in range(8):
+                            cut.append(pixels[x*8+i+(y*16+j)*512])
+                    raw.append(self.get_best_match(cut))
+
+            t = ("".join(raw[i:i+width]) for i in range(0, len(raw), width))
+            return "\n".join(t)
+
+        result= await self.bot.loop.run_in_executor(None, do_stuff)
+        await ctx.send(f"```\n{result}\n```")
 
 #==================================================================================================================================================
 
