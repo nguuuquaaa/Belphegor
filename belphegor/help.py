@@ -359,7 +359,9 @@ class Help:
                 "`>>choose` - Choose random\n"
                 "`>>calc` - Calculator\n"
                 "`>>ascii` - ASCII art\n"
-                "      `biggur` - Biggur ASCII art",
+                "      `biggur` - Biggur ASCII art\n"
+                "      `block` - Block ASCII art\n"
+                "      `edge` - Edge-detection ASCII art",
             inline=False
         )
         paging.set_action("\u2699", lambda: misc_embed)
