@@ -883,7 +883,7 @@ class Misc:
     async def ascii_block(self, ctx, member: discord.Member=None):
         '''
             `>>ascii block <optional: member>`
-            Block-ASCII art of member avatar.
+            Block ~~unicode~~ ASCII art of member avatar.
             If no member is specified, use your avatar.
         '''
         target = member or ctx.author
@@ -945,41 +945,36 @@ class Misc:
         self.chars["["].weight = 0.6
         self.chars["]"].weight = 0.6
         self.chars["~"].weight = 0.6
-        self.chars["`"].weight = 0
+        self.chars.pop("`")
         self.chars.pop("{")
         self.chars.pop("}")
         self.chars.pop("&")
         self.chars.pop("$")
         self.chars.pop("@")
+        self.chars.pop("#")
         self.chars["!"].weight = 0.2
         for i in range(ord("a"), ord("z")+1):
             self.chars[chr(i)].weight = -1
         for i in range(ord("0"), ord("9")+1):
             self.chars[chr(i)].weight = -1
         for i in range(ord("A"), ord("Z")+1):
-            self.chars[chr(i)].weight = 0.5
+            self.chars[chr(i)].weight = 0.8
         self.chars = {c: im for c, im in self.chars.items() if im.weight>0}
-
-    def get_best_match(self, image):
-        best_weight = -float("inf")
-        best_char = None
-        for c, im in self.chars.items():
-            weight = im.compare(image)
-            if weight > best_weight:
-                best_weight = weight
-                best_char = c
-        return best_char
 
     @ascii.command(name="edge")
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
-    async def ascii_edge(self, ctx, member: discord.Member=None, threshold=32):
+    async def ascii_edge(self, ctx, member: discord.Member=None, threshold: int=32):
         '''
             `>>ascii edge <optional: member> <optional: threshold>`
             Edge-detection ASCII art of member avatar.
             If no member is specified, use your avatar.
-            Less threshold, more character. Default threshold is 32.
-            Has 10s cooldown due to heavy processing (someone gives me good algorithm pls).
+            Less threshold, more character. Default threshold is 32. Maximum threshold is 255.
+            Has 10s cooldown due to heavy processing (someone give me good algorithm pls).
         '''
+        if threshold > 255:
+            return await ctx.send("Threshold is too big.")
+        elif threshold <= 0:
+            return await ctx.send("Threshold should be a positive number.")
         await ctx.trigger_typing()
         target = member or ctx.author
         bytes_ = await self.bot.fetch(target.avatar_url)
@@ -990,15 +985,21 @@ class Misc:
             width = 64
             raw = []
             pixels = [1 if p > threshold else 0 for p in image.getdata()]
+            inf = -float("inf")
+            chars = self.chars
 
             total = []
             for y in range(height):
                 for x in range(width):
-                    cut = []
-                    for j in range(16):
-                        for i in range(8):
-                            cut.append(pixels[x*8+i+(y*16+j)*512])
-                    raw.append(self.get_best_match(cut))
+                    cut = [pixels[x*8+i+(y*16+j)*512] for j in range(16) for i in range(8)]
+                    best_weight = inf
+                    best_char = None
+                    for c, im in chars.items():
+                        weight = im.compare(cut)
+                        if weight > best_weight:
+                            best_weight = weight
+                            best_char = c
+                    raw.append(best_char)
 
             t = ("".join(raw[i:i+width]) for i in range(0, len(raw), width))
             return "\n".join(t)

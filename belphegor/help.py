@@ -358,8 +358,8 @@ class Help:
                 "`>>color`, `>>colour` - Visualize color's code\n"
                 "`>>choose` - Choose random\n"
                 "`>>calc` - Calculator\n"
-                "`>>ascii` - ASCII art\n"
-                "      `biggur` - Biggur ASCII art\n"
+                "`>>ascii` - Grayscale ASCII art\n"
+                "      `biggur` - Biggur grayscale ASCII art\n"
                 "      `block` - Block ASCII art\n"
                 "      `edge` - Edge-detection ASCII art",
             inline=False
