@@ -76,26 +76,28 @@ QUOTES = {
 }
 ASCII = "@%#*+=-:. "
 RANGE = 256 / len(ASCII)
+CHAR_SIZE = (8, 16)
 
 #==================================================================================================================================================
 
 class CharImage:
     def __init__(self, char, *, font, weight=None):
-        self.char = char
-        self.image = Image.new("L", (8, 16), 0)
-        draw = ImageDraw.Draw(self.image)
+        image = Image.new("L", CHAR_SIZE, 0)
+        draw = ImageDraw.Draw(image)
         draw.text((0, 0), char, font=font, fill=255)
         self.weight = weight or 1
-        self.raw = [1 if i > 127 else 0 for i in self.image.getdata()]
+        self.raw = [1 if i > 127 else 0 for i in image.getdata()]
 
     def compare(self, other):
         rating = 0
         inverse_rating = 0
         raw = self.raw
-        for x in range(8):
-            for y in range(16):
-                char_value = raw[x+8*y]
-                other_value = other[x+8*y]
+        char_width, char_height = CHAR_SIZE
+        total = char_width * char_height
+        for x in range(char_width):
+            for y in range(0, total, char_width):
+                char_value = raw[x+y]
+                other_value = other[x+y]
                 rating += char_value * other_value
                 inverse_rating += char_value * (1 - other_value)
         rating = (rating - self.INVERSE_WEIGHT * inverse_rating) * self.weight
@@ -927,10 +929,13 @@ class Misc:
     def setup_ascii_chars(self):
         CharImage.INVERSE_WEIGHT = 5
         self.chars = {}
-        font = ImageFont.truetype(f"{config.DATA_PATH}/font/consola.ttf", 16)
-        for i in range(32, 127):
-            c = chr(i)
+        font = ImageFont.truetype(f"{config.DATA_PATH}/font/consola.ttf", CHAR_SIZE[1])
+        for c in [
+            " ", "'", "(", ")", "*", "+", ",", "-", ".", "/", ":", ";", "<", "=", ">", "?", "A", "C", "D", "H", "I",
+            "J", "K", "L", "M", "N", "O", "S", "T", "U", "V", "W", "X", "Y", "Z", "[", "\\", "]", "^", "_", "|", "~"
+        ]:
             self.chars[c] = CharImage(c, font=font)
+
         self.chars["\\"].weight = 2
         self.chars["/"].weight = 2
         self.chars["_"].weight = 2
@@ -940,26 +945,13 @@ class Misc:
         self.chars["|"].weight = 1.8
         self.chars["("].weight = 1.4
         self.chars[")"].weight = 1.4
-        self.chars[","].weight = 0.7
         self.chars[";"].weight = 0.7
         self.chars["["].weight = 0.6
         self.chars["]"].weight = 0.6
         self.chars["~"].weight = 0.6
-        self.chars.pop("`")
-        self.chars.pop("{")
-        self.chars.pop("}")
-        self.chars.pop("&")
-        self.chars.pop("$")
-        self.chars.pop("@")
-        self.chars.pop("#")
-        self.chars["!"].weight = 0.2
-        for i in range(ord("a"), ord("z")+1):
-            self.chars[chr(i)].weight = -1
-        for i in range(ord("0"), ord("9")+1):
-            self.chars[chr(i)].weight = -1
-        for i in range(ord("A"), ord("Z")+1):
-            self.chars[chr(i)].weight = 0.8
-        self.chars = {c: im for c, im in self.chars.items() if im.weight>0}
+
+        for c in ["A", "C", "D", "H", "I", "J", "K", "L", "M", "N", "O", "S", "T", "U", "V", "W", "X", "Y", "Z"]:
+            self.chars[c].weight = 0.6
 
     @ascii.command(name="edge")
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
@@ -980,18 +972,22 @@ class Misc:
         bytes_ = await self.bot.fetch(target.avatar_url)
 
         def do_stuff():
-            image = Image.open(BytesIO(bytes_)).resize((512, 480)).filter(ImageFilter.FIND_EDGES).convert("L").filter(ImageFilter.GaussianBlur(radius=2))
-            height = 30
             width = 64
+            height = 30
+            char_width, char_height = CHAR_SIZE
+            full_width = width * char_width
+            full_height = height * char_height
+
+            start = time.perf_counter()
+            image = Image.open(BytesIO(bytes_)).resize((full_width, full_height)).convert("L").filter(ImageFilter.FIND_EDGES).filter(ImageFilter.GaussianBlur(radius=2))
             raw = []
             pixels = [1 if p > threshold else 0 for p in image.getdata()]
             inf = -float("inf")
             chars = self.chars
 
-            total = []
-            for y in range(height):
-                for x in range(width):
-                    cut = [pixels[x*8+i+(y*16+j)*512] for j in range(16) for i in range(8)]
+            for y in range(0, full_height, char_height):
+                for x in range(0, full_width, char_width):
+                    cut = [pixels[x+i+(y+j)*full_width] for j in range(char_height) for i in range(char_width)]
                     best_weight = inf
                     best_char = None
                     for c, im in chars.items():
@@ -1000,12 +996,13 @@ class Misc:
                             best_weight = weight
                             best_char = c
                     raw.append(best_char)
+            end = time.perf_counter()
 
             t = ("".join(raw[i:i+width]) for i in range(0, len(raw), width))
-            return "\n".join(t)
+            return "\n".join(t), end-start
 
-        result= await self.bot.loop.run_in_executor(None, do_stuff)
-        await ctx.send(f"```\n{result}\n```")
+        result, time_taken = await self.bot.loop.run_in_executor(None, do_stuff)
+        await ctx.send(f"Result in {time_taken*1000:.2f}ms```\n{result}\n```")
 
 #==================================================================================================================================================
 
