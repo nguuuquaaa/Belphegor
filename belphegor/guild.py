@@ -286,10 +286,10 @@ class Guild:
         '''
             `>>set welcomemessage <message>`
             Set custom welcome message.
-            You can use `{name}` for member name, `{mention}` for member mention, `{server}` for server name, `{{` and `}}` for literal { and } character.
+            You can use `{name}` for member name, `{mention}` for member mention, `{server}` for server name, `\{` and `\}` for literal { and } character.
         '''
         try:
-            content = f"Welcome message will be displayed as:\n{text}".format(name=ctx.author.display_name, mention=ctx.author.mention, server=ctx.guild.name)
+            content = utils.str_format(f"Welcome message will be displayed as:\n{text}", name=ctx.author.display_name, mention=ctx.author.mention, server=ctx.guild.name)
         except:
             await ctx.send("Format error. You sure read the instruction?")
         else:
@@ -303,17 +303,17 @@ class Guild:
             Unset custom welcome message and use the default one instead.
         '''
         await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$unset": {"welcome_message": None}})
-        await ctx.send(f"Welcome message will be displayed as:\n{DEFAULT_WELCOME}".format(name=ctx.author.display_name, mention=ctx.author.mention, server=ctx.guild.name))
+        await ctx.send(utils.str_format(f"Welcome message will be displayed as:\n{DEFAULT_WELCOME}", name=ctx.author.display_name, mention=ctx.author.mention, server=ctx.guild.name))
 
     @cmd_set.command(name="dmrule", aliases=["rule"])
     async def set_dm_rule(self, ctx, *, text):
         '''
             `>>set dmrule <message>`
             Set message that will be DM'ed to new member.
-            Use `{server}` for server name, `{{` and `}}` for literal { and } character.
+            Use `{server}` for server name, `\{` and `\}` for literal { and } character.
         '''
         try:
-            content = f"Newcomer will be messaged:\n{text}".format(server=ctx.guild.name)
+            content = utils.str_format(f"Newcomer will be messaged:\n{text}", server=ctx.guild.name)
         except:
             await ctx.send("Format error. You sure read the instruction?")
         else:
@@ -361,7 +361,7 @@ class Guild:
         msg = await ctx.send(
             "Do you want to set a custom response?\n"
             "You can use `{name}` and `{mention}` for member name and mention respectively, `{role}` for role name and `{server}` for server name"
-            ", `{{` and `}}` for literal { and } character.\n"
+            ", `\{` and `\}` for literal { and } character.\n"
             "Type `no` to skip."
         )
         while True:
@@ -374,7 +374,7 @@ class Guild:
             else:
                 response = message.content
                 try:
-                    test_response = response.format(name=message.author.name, mention=message.author.mention, role=role.name, server=message.guild.name)
+                    test_response = utils.str_format(response, name=message.author.name, mention=message.author.mention, role=role.name, server=message.guild.name)
                 except:
                     await ctx.send("Beep bop, format error. Please try again.")
                 else:
@@ -584,7 +584,7 @@ class Guild:
             response = guild_data["autorole_response"]
             if response:
                 await message.channel.send(
-                    response.format(name=message.author.name, mention=message.author.mention, role=role.name, server=message.guild.name),
+                    utils.str_format(response, name=message.author.name, mention=message.author.mention, role=role.name, server=message.guild.name),
                     delete_after=30 if guild_data.get("autorole_response_delete", True) else None
                 )
             await message.delete()
@@ -615,10 +615,10 @@ class Guild:
             welcome_channel = guild.get_channel(guild_data.get("welcome_channel_id"))
             if welcome_channel:
                 welcome_message = guild_data.get("welcome_message", DEFAULT_WELCOME)
-                await welcome_channel.send(welcome_message.format(name=member.display_name, mention=member.mention, server=member.guild.name, guild=member.guild.name))
+                await welcome_channel.send(utils.str_format(welcome_message, name=member.display_name, mention=member.mention, server=member.guild.name, guild=member.guild.name))
             welcome_rule = guild_data.get("welcome_rule")
             if welcome_rule:
-                await self.bot.do_after(member.send(welcome_rule.format(server=member.guild.name)), 5)
+                await self.bot.do_after(member.send(utils.str_format(welcome_rule, server=member.guild.name)), 5)
             autorole_type = guild_data.get("autorole_type", None)
             if autorole_type == 1:
                 role = discord.utils.find(lambda r: r.id==guild_data["autorole_id"], guild.roles)

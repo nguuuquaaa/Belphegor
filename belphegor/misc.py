@@ -930,10 +930,10 @@ class Misc:
         CharImage.INVERSE_WEIGHT = 5
         self.chars = {}
         font = ImageFont.truetype(f"{config.DATA_PATH}/font/consola.ttf", CHAR_SIZE[1])
-        for c in [
+        for c in (
             " ", "'", "(", ")", "*", "+", ",", "-", ".", "/", ":", ";", "<", "=", ">", "?", "A", "C", "D", "H", "I",
             "J", "K", "L", "M", "N", "O", "S", "T", "U", "V", "W", "X", "Y", "Z", "[", "\\", "]", "^", "_", "|", "~"
-        ]:
+        ):
             self.chars[c] = CharImage(c, font=font)
 
         self.chars["\\"].weight = 2
@@ -950,7 +950,7 @@ class Misc:
         self.chars["]"].weight = 0.6
         self.chars["~"].weight = 0.6
 
-        for c in ["A", "C", "D", "H", "I", "J", "K", "L", "M", "N", "O", "S", "T", "U", "V", "W", "X", "Y", "Z"]:
+        for c in ("A", "C", "D", "H", "I", "J", "K", "L", "M", "N", "O", "S", "T", "U", "V", "W", "X", "Y", "Z"):
             self.chars[c].weight = 0.6
 
     @ascii.command(name="edge")
