@@ -716,27 +716,30 @@ class Misc:
         '''
             `>>pyfuck <code>`
             Oh look, that fuckery is actually runable python code!
-            Return a python program written with only 9 characters `e x c ( ) " % + =` that is equivalent to <code>.
+            Return a python program written with only 9 characters `e x c ( ) " % + <` that is equivalent to <code>.
             And yep, no newline.
         '''
-        data = data.strip()
-        char_group = ["e", "x", "c", "%", "+", "=", "(", ")"]
-        if data.startswith("```"):
-            data = data.splitlines()[1:]
-        else:
-            data = data.splitlines()
-        data = "\n".join(data).strip("` \n")
+        data = utils.clean_codeblock(data)
+        char_group = ("e", "x", "c", "%", "+", "<", "(", ")")
+        one = lambda: f"(\"\"<\"{random.choice(char_group)}\")"
         pf = []
         for char in data:
             if char in char_group:
                 pf.append(f"\"{char}\"")
             else:
-                l = ord(char)
-                i = "+".join(["(()==())"]*l)
-                pf.append(f"\"%c\"%({i})")
+                base = f"{ord(char):b}"
+                l = len(base)
+                gr = []
+                for i, v in enumerate(base):
+                    if v == "1":
+                        g = "<<".join((one() for j in range(l-i)))
+                        if g:
+                            gr.append(f"({g})")
+                number = "+".join(gr)
+                pf.append(f"\"%c\"%({number})")
         code = "+".join(pf)
         code = f"exec({code})"
-        await ctx.send(file=discord.File(code.encode("utf-8"), filename="fuckthis.py"))
+        await ctx.send(file=discord.File(code.encode("utf-8"), filename="fuck_this.py"))
 
     @commands.command(name="choose")
     async def cmd_choose(self, ctx, *, choices):
