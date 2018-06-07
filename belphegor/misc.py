@@ -733,13 +733,15 @@ class Misc:
                 for i, v in enumerate(base):
                     if v == "1":
                         g = "<<".join((one() for j in range(l-i)))
-                        if g:
-                            gr.append(f"({g})")
+                        gr.append(f"({g})")
                 number = "+".join(gr)
                 pf.append(f"\"%c\"%({number})")
         code = "+".join(pf)
         code = f"exec({code})"
-        await ctx.send(file=discord.File(code.encode("utf-8"), filename="fuck_this.py"))
+        if len(code) < 2000:
+            await ctx.send(code)
+        else:
+            await ctx.send(file=discord.File(code.encode("utf-8"), filename="fuck_this.py"))
 
     @commands.command(name="choose")
     async def cmd_choose(self, ctx, *, choices):

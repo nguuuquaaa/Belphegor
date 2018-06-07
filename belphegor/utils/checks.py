@@ -4,15 +4,18 @@ import asyncio
 
 #==================================================================================================================================================
 
-class NSFW(commands.CheckFailure):
+class CheckFailure(commands.CheckFailure):
     pass
 
-class CertainGuild(commands.CheckFailure):
+class NSFW(CheckFailure):
+    pass
+
+class CertainGuild(CheckFailure):
     def __init__(self, guild_id, *args):
         self.guild_id = guild_id
         super().__init__(*args)
 
-class MissingPerms(commands.CheckFailure):
+class MissingPerms(CheckFailure):
     def __init__(self, perms, *args):
         self.perms = perms
         super().__init__(*args)

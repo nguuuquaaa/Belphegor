@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from .utils import config
+from .utils import config, checks
 import sys
 import traceback
 
@@ -35,7 +35,8 @@ class ErrorHandle:
     async def on_command_error(self, ctx, error):
         ignored = (commands.DisabledCommand, commands.CommandNotFound, commands.UserInputError, commands.CommandOnCooldown)
         if isinstance(error, commands.CheckFailure):
-            await ctx.send(error, delete_after=30)
+            if isinstance(error, checks.CheckFailure):
+                await ctx.send(error, delete_after=30)
         elif isinstance(error, commands.CommandInvokeError):
             error = error.original
             prt_err = "".join(traceback.format_exception(type(error), error, error.__traceback__, 5))
