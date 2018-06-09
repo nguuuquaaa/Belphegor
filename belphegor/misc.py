@@ -86,20 +86,14 @@ class CharImage:
         draw = ImageDraw.Draw(image)
         draw.text((0, 0), char, font=font, fill=255)
         self.weight = weight or 1
-        self.raw = [1 if i > 127 else 0 for i in image.getdata()]
+        self.raw = tuple(1 if i > 127 else 0 for i in image.getdata())
 
     def compare(self, other):
         rating = 0
         inverse_rating = 0
-        raw = self.raw
-        char_width, char_height = CHAR_SIZE
-        total = char_width * char_height
-        for x in range(char_width):
-            for y in range(0, total, char_width):
-                char_value = raw[x+y]
-                other_value = other[x+y]
-                rating += char_value * other_value
-                inverse_rating += char_value * (1 - other_value)
+        for char_value, other_value in zip(self.raw, other):
+            rating += char_value * other_value
+            inverse_rating += char_value * (1 - other_value)
         rating = (rating - self.INVERSE_WEIGHT * inverse_rating) * self.weight
         return rating
 
@@ -391,7 +385,6 @@ class Misc:
                 if search_results:
                     embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[:4])), inline=False)
                 return embed
-
 
         #wiki
         tag = data.find("div", class_="knowledge-panel")
@@ -932,7 +925,7 @@ class Misc:
         await ctx.send(f"```\n{result}\n```")
 
     def setup_ascii_chars(self):
-        CharImage.INVERSE_WEIGHT = 5
+        CharImage.INVERSE_WEIGHT = 4
         self.chars = {}
         font = ImageFont.truetype(f"{config.DATA_PATH}/font/consola.ttf", CHAR_SIZE[1])
         for c in (
@@ -970,8 +963,8 @@ class Misc:
         '''
         if threshold > 255:
             return await ctx.send("Threshold is too big.")
-        elif threshold <= 0:
-            return await ctx.send("Threshold should be a positive number.")
+        elif threshold < 0:
+            return await ctx.send("Threshold should be a non-negative number.")
         await ctx.trigger_typing()
         target = member or ctx.author
         bytes_ = await self.bot.fetch(target.avatar_url)
@@ -986,16 +979,18 @@ class Misc:
             start = time.perf_counter()
             image = Image.open(BytesIO(bytes_)).resize((full_width, full_height)).convert("L").filter(ImageFilter.FIND_EDGES).filter(ImageFilter.GaussianBlur(radius=2))
             raw = []
-            pixels = [1 if p > threshold else 0 for p in image.getdata()]
+            pixels = tuple(1 if p > threshold else 0 for p in image.getdata())
             inf = -float("inf")
-            chars = self.chars
+            chars = self.chars.items()
+            range_height = range(char_height)
+            range_width = range(char_width)
 
             for y in range(0, full_height, char_height):
                 for x in range(0, full_width, char_width):
-                    cut = [pixels[x+i+(y+j)*full_width] for j in range(char_height) for i in range(char_width)]
+                    cut = tuple(pixels[x+i+(y+j)*full_width] for j in range_height for i in range_width)
                     best_weight = inf
                     best_char = None
-                    for c, im in chars.items():
+                    for c, im in chars:
                         weight = im.compare(cut)
                         if weight > best_weight:
                             best_weight = weight
@@ -1003,7 +998,7 @@ class Misc:
                     raw.append(best_char)
             end = time.perf_counter()
 
-            t = ("".join(raw[i:i+width]) for i in range(0, len(raw), width))
+            t = ("".join(raw[i:i+width]) for i in range(0, width*height, width))
             return "\n".join(t), end-start
 
         result, time_taken = await self.bot.loop.run_in_executor(None, do_stuff)
