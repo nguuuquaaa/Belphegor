@@ -305,14 +305,17 @@ class RandomImage:
             if not ctx.message.attachments:
                 msg = await ctx.send("You want sauce of what? Post the dang url or upload the dang pic here.")
                 try:
-                    message = await self.bot.wait_for("message", check=lambda m: m.author.id==ctx.author.id and m.attachments or m.content, timeout=120)
+                    message = await self.bot.wait_for("message", check=lambda m: m.author.id==ctx.author.id and (m.attachments or m.content), timeout=120)
                 except asyncio.TimeoutError:
                     return await msg.edit("That's it, I'm not waiting anymore.")
+                finally:
+                    await msg.delete()
+            else:
+                message = ctx.message
             if message.attachments:
                 url = message.attachments[0].url
             else:
                 url = message.content
-            await msg.delete()
         if not url.startswith(("http://", "https://")):
             return await ctx.send("Invalid url.")
         async with ctx.typing():
