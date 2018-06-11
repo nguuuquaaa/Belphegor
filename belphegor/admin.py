@@ -173,7 +173,7 @@ class Admin:
         else:
             await ctx.send("Nothing found.")
 
-    @commands.command(hidden=True, aliases=["invoke"])
+    @commands.command(hidden=True, aliases=["sudo"])
     @checks.owner_only()
     async def force(self, ctx, *, cmd):
         msg = copy.copy(ctx.message)

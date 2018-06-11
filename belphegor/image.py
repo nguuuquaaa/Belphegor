@@ -308,7 +308,7 @@ class RandomImage:
                     message = await self.bot.wait_for("message", check=lambda m: m.author.id==ctx.author.id and (m.attachments or m.content), timeout=120)
                 except asyncio.TimeoutError:
                     return await msg.edit("That's it, I'm not waiting anymore.")
-                finally:
+                else:
                     await msg.delete()
             else:
                 message = ctx.message
@@ -318,62 +318,62 @@ class RandomImage:
                 url = message.content
         if not url.startswith(("http://", "https://")):
             return await ctx.send("Invalid url.")
-        async with ctx.typing():
-            payload = aiohttp.FormData()
-            payload.add_field("file", b"", filename="", content_type="application/octet-stream")
-            payload.add_field("url", url)
-            payload.add_field("frame", "1")
-            payload.add_field("hide", "0")
-            payload.add_field("database", "999")
-            async with self.bot.session.post("https://saucenao.com/search.php", headers={"User-Agent": config.USER_AGENT}, data=payload) as response:
-                bytes_ = await response.read()
-            data = BS(bytes_.decode("utf-8"), "lxml")
-            result = []
-            hidden_result = []
-            for tag in data.find_all(lambda x: x.name=="div" and x.get("class") in [["result"], ["result", "hidden"]] and not x.get("id")):
-                content = tag.find("td", class_="resulttablecontent")
-                title_tag = content.find("div", class_="resulttitle")
-                if title_tag:
-                    for br in title_tag.find_all("br"):
-                        br.replace_with("\n")
-                    title = title_tag.get_text().strip().splitlines()[0]
-                else:
-                    result_content = tag.find("div", class_="resultcontent")
-                    for br in result_content.find_all("br"):
-                        br.replace_with("\n")
-                    title = utils.get_element(result_content.get_text().strip().splitlines(), 0, default="No title")
-                similarity = content.find("div", class_="resultsimilarityinfo").text
-                content_url = content.find("a", class_="linkify")
-                if not content_url:
-                    content_url = content.find("div", class_="resultmiscinfo").find("a")
-                if content_url:
-                    r = {"title": title, "similarity": similarity, "url": content_url["href"]}
-                else:
-                    r = {"title": title, "similarity": similarity, "url": ""}
-                if "hidden" in tag["class"]:
-                    hidden_result.append(r)
-                else:
-                    result.append(r)
-            if result:
-                embed = discord.Embed(
-                    title="Sauce found?",
-                    description="\n".join((f"[{r['title']} ({r['similarity']})]({r['url']})" for r in result))
-                )
-                embed.set_footer(text="Powered by https://saucenao.com")
-                await ctx.send(embed=embed)
+        await ctx.trigger_typing()
+        payload = aiohttp.FormData()
+        payload.add_field("file", b"", filename="", content_type="application/octet-stream")
+        payload.add_field("url", url)
+        payload.add_field("frame", "1")
+        payload.add_field("hide", "0")
+        payload.add_field("database", "999")
+        async with self.bot.session.post("https://saucenao.com/search.php", headers={"User-Agent": config.USER_AGENT}, data=payload) as response:
+            bytes_ = await response.read()
+        data = BS(bytes_.decode("utf-8"), "lxml")
+        result = []
+        hidden_result = []
+        for tag in data.find_all(lambda x: x.name=="div" and x.get("class") in [["result"], ["result", "hidden"]] and not x.get("id")):
+            content = tag.find("td", class_="resulttablecontent")
+            title_tag = content.find("div", class_="resulttitle")
+            if title_tag:
+                for br in title_tag.find_all("br"):
+                    br.replace_with("\n")
+                title = title_tag.get_text().strip().splitlines()[0]
             else:
-                msg = await ctx.send("No result found.")
-                if hidden_result:
-                    sentences = {"initial":  "Do you want to show low similarity results?"}
-                    result = await ctx.yes_no_prompt(sentences, delete_mode=True)
-                    if result:
-                        await msg.delete()
-                        embed = discord.Embed(
-                            title="Low similarity results:",
-                            description="\n".join((f"[{r['title']} ({r['similarity']})]({r['url']})" for r in hidden_result))
-                        )
-                        embed.set_footer(text="Powered by https://saucenao.com")
-                        await ctx.send(embed=embed)
+                result_content = tag.find("div", class_="resultcontent")
+                for br in result_content.find_all("br"):
+                    br.replace_with("\n")
+                title = utils.get_element(result_content.get_text().strip().splitlines(), 0, default="No title")
+            similarity = content.find("div", class_="resultsimilarityinfo").text
+            content_url = content.find("a", class_="linkify")
+            if not content_url:
+                content_url = content.find("div", class_="resultmiscinfo").find("a")
+            if content_url:
+                r = {"title": title, "similarity": similarity, "url": content_url["href"]}
+            else:
+                r = {"title": title, "similarity": similarity, "url": ""}
+            if "hidden" in tag["class"]:
+                hidden_result.append(r)
+            else:
+                result.append(r)
+        if result:
+            embed = discord.Embed(
+                title="Sauce found?",
+                description="\n".join((f"[{r['title']} ({r['similarity']})]({r['url']})" for r in result))
+            )
+            embed.set_footer(text="Powered by https://saucenao.com")
+            await ctx.send(embed=embed)
+        else:
+            msg = await ctx.send("No result found.")
+            if hidden_result:
+                sentences = {"initial":  "Do you want to show low similarity results?"}
+                result = await ctx.yes_no_prompt(sentences, delete_mode=True)
+                if result:
+                    await msg.delete()
+                    embed = discord.Embed(
+                        title="Low similarity results:",
+                        description="\n".join((f"[{r['title']} ({r['similarity']})]({r['url']})" for r in hidden_result))
+                    )
+                    embed.set_footer(text="Powered by https://saucenao.com")
+                    await ctx.send(embed=embed)
 
 #==================================================================================================================================================
 

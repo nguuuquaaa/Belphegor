@@ -122,7 +122,7 @@ jp_timezone = timezone("Asia/Tokyo")
 def jp_time(dt_obj):
     return dt_obj.astimezone(jp_timezone).strftime("%a, %Y-%m-%d at %I:%M:%S %p, UTC%z (Tokyo/Japan)")
 
-discord_regex = re.compile(r"[*_\[\]~`\\]")
+discord_regex = re.compile(r"[*_\[\]~`\\<>]")
 
 def discord_escape(any_string):
     return discord_regex.sub(lambda m: f"\\{m.group(0)}", any_string)

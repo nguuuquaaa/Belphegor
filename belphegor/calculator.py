@@ -102,17 +102,23 @@ class Reduce:
             raise ParseError(f"{self.__class__.__name__} max range is {self.MAX_RANGE}.")
         if func.reduce:
             raise ParseError("Nested reduce/sigma is not accepted.")
+        if isinstance(from_, int) and isinstance(to_, int):
+            pass
+        else:
+            raise ParseError("From/to must be integers.")
         self.kind = kind
         self.func = func
         self.from_ = from_
         self.to_ = to_
 
     def __call__(self):
-        result = functools.reduce(self.kind, (self.func(k) for k in range(self.from_, self.to_+self.delta, self.delta)))
-        return result
+        return functools.reduce(self.kind, (self.func(k) for k in range(self.from_, self.to_+self.delta, self.delta)))
 
 class Sigma(Reduce):
     MAX_RANGE = 1000
+
+    def __call__(self):
+        return sum(self.func(k) for k in range(self.from_, self.to_+self.delta, self.delta))
 
 #==================================================================================================================================================
 
