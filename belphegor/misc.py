@@ -284,13 +284,12 @@ class Misc:
         await ctx.send("Go away.")
 
     @commands.group(invoke_without_command=True)
-    async def say(self, ctx, *, something):
+    async def say(self, ctx, *, something: commands.clean_content):
         '''
             `>>say <text goes here>`
             Echo text.
         '''
-        if ctx.invoked_subcommand is None:
-            await ctx.send(something)
+        await ctx.send(something)
 
     @say.command(aliases=["hello",], name="hi")
     async def say_hi(self, ctx):
