@@ -16,6 +16,10 @@ import functools
 
 #==================================================================================================================================================
 
+EPSILON = 1e-10
+
+#==================================================================================================================================================
+
 def combination(n, k):
     t = 1
     b = 1
@@ -63,10 +67,29 @@ def to_real_number(func):
     @functools.wraps(func)
     def do_func(*args):
         result = func(*args)
-        if getattr(result, "imag", 0) == 0:
+        if abs(getattr(result, "imag", 0)) < EPSILON:
             result = getattr(result, "real", result)
         return result
     return do_func
+
+def cube_root(number):
+    if isinstance(number, complex):
+        r, phi = cmath.polar(number)
+        roots = []
+        for i in range(3):
+            cur = (phi + 2 * math.pi * i) / 3
+            v = cmath.rect(r**(1/3), cur)
+            if r * abs(math.sin(cur)) < EPSILON:
+                return v
+            else:
+                roots.append(v)
+        else:
+            return roots[0]
+    else:
+        if number >= 0:
+            return number**(1/3)
+        else:
+            return -(-number)**(1/3)
 
 #==================================================================================================================================================
 
@@ -86,7 +109,7 @@ class NoValue:
         return "NoValue"
 
     def __str__(self):
-        return f"{self.var} = NoValue"
+        return self.var
 
 #==================================================================================================================================================
 
@@ -150,6 +173,7 @@ class BaseParse:
         "log":      to_real_number(cmath.log10),
         "ln":       to_real_number(cmath.log),
         "sqrt":     to_real_number(cmath.sqrt),
+        "cbrt":     to_real_number(cube_root),
         "abs":      abs,
         "sign":     numpy.sign,
         "sgn":      numpy.sign,
@@ -704,7 +728,7 @@ class MathParse(BaseParse):
         if number > self.MAX_VALUE:
             raise OverflowError
         value = int(round(number))
-        if abs(number - value) < 1e-10:
+        if abs(number - value) < EPSILON:
             s = f"{value:{self.strfmt}}"
         else:
             value = number
@@ -714,7 +738,7 @@ class MathParse(BaseParse):
     def result(self):
         results = []
         for f in self.formulas:
-            if not f:
+            if not f or f[0] == "#":
                 results.append(f)
                 continue
             s = f[:4]
@@ -861,6 +885,7 @@ class Calculator:
                 Format: `reduce(function, counter, from, to)(formula)`
                 It's like sigma, but use `function` instead of sum.
                 `function` can be either builtin or user-defined, but must take exactly 2 arguments.
+             - Line that starts with `#` is comment
         '''
         stuff = utils.clean_codeblock(stuff)
         l = ""
@@ -899,6 +924,49 @@ class Calculator:
         else:
             self.enable_log = True
             await ctx.confirm()
+
+    @commands.group()
+    async def solve(self, ctx):
+        if ctx.invoked_subcommand is None:
+            pass
+
+    @solve.command(aliases=["quad", "2nd"])
+    async def quadratic(self, ctx, *, stuff):
+        stuff = utils.clean_codeblock(stuff)
+        m = MathParse(
+            f"{stuff}\na = a\nb = b\nc = c\n\n"
+            "Δ = b^2 - 4ac\n\n"
+            "x1 = (-b + sqrt(Δ))/(2a)\n"
+            "x2 = (-b - sqrt(Δ))/(2a)"
+        )
+        try:
+            results, time_taken = await self.bot.loop.run_in_executor(None, self.time_stuff, m.result)
+        except:
+            return await ctx.send("Calculation error. Please double check your input.")
+        r = "\n".join(results[-8:])
+        r = f"ax^2 + bx + c = 0\n{r}"
+        await ctx.send(f"Result in {1000*(time_taken):.2f}ms\n```\n{r}\n```")
+
+    @solve.command(aliases=["3rd"])
+    async def cubic(self, ctx, *, stuff):
+        stuff = utils.clean_codeblock(stuff)
+        m = MathParse(
+            f"{stuff}\nζ1 = -1/2 + sqrt(3)/2 * i\nζ2 = -1/2 - sqrt(3)/2 * i\na = a\nb = b\nc = c\nd = d\n\n"
+            "Δ0 = b^2 - 3ac\n"
+            "Δ1 = 2b^3 - 9abc + 27a^2*d\n"
+            "C1 = cbrt((Δ1 + sqrt(Δ1^2 - 4Δ0^3))/2)\n"
+            "C2 = cbrt((Δ1 - sqrt(Δ1^2 - 4Δ0^3))/2)\n\n"
+            "x1 = -(b + C1 + C2)/(3a)\n"
+            "x2 = -(b + C1 * ζ1 + C2 / ζ1)/(3a)\n"
+            "x3 = -(b + C1 * ζ2 + C2 / ζ2)/(3a)"
+        )
+        try:
+            results, time_taken = await self.bot.loop.run_in_executor(None, self.time_stuff, m.result)
+        except:
+            return await ctx.send("Calculation error. Please double check your input.")
+        r = "\n".join(results[-13:])
+        r = f"ax^3 + bx^2 + cx + d = 0\n{r}"
+        await ctx.send(f"Result in {1000*(time_taken):.2f}ms\n```\n{r}\n```")
 
 #==================================================================================================================================================
 

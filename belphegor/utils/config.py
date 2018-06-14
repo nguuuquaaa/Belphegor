@@ -33,5 +33,6 @@ all_extensions = [
     "belphegor.tag",
     "belphegor.sticker",
     "belphegor.game",
-    "belphegor.calculator"
+    "belphegor.calculator",
+    "belphegor.dbots"
 ]

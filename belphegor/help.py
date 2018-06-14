@@ -469,7 +469,7 @@ class Help:
             desc.append(f"[`{c['sha'][:7]}`]({c['html_url']}) {c['commit']['message']}{dt}")
         embed = discord.Embed(colour=discord.Colour.blue())
         embed.add_field(name="Lastest changes", value="\n".join(desc), inline=False)
-        embed.add_field(name="Owner", value=owner.mention if owner in ctx.guild.members else str(owner))
+        embed.add_field(name="Owner", value=owner.mention if owner in getattr(ctx.guild, "members", ()) else str(owner))
         v = sys.version_info
         embed.add_field(name="Written in", value=f"{self.emojis['python']} {v.major}.{v.minor}.{v.micro}")
         embed.add_field(name="Library", value="[discord.py\\[rewrite\\]](https://github.com/Rapptz/discord.py/tree/rewrite)")

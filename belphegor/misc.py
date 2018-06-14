@@ -16,6 +16,7 @@ from PIL import Image, ImageFilter, ImageDraw, ImageFont
 import traceback
 import collections
 import time
+import copy
 
 #==================================================================================================================================================
 
@@ -202,18 +203,21 @@ class Misc:
             {"$set": {"win": record["win"], "draw": record["draw"], "lose": record["lose"]}}
         )
 
+    async def ping(self, target):
+        try:
+            start = time.perf_counter()
+            await target.trigger_typing()
+            end = time.perf_counter()
+            await target.send(content=f"pong (ws: {int(1000*self.bot.latency)}ms, typing: {int(1000*(end-start))}ms)")
+        except:
+            pass
+
     async def on_message(self, message):
         if message.author.bot:
             return
         inp = message.content
         if inp == "ping":
-            try:
-                start = time.perf_counter()
-                await message.channel.trigger_typing()
-                end = time.perf_counter()
-                await message.channel.send(content=f"pong (ws: {int(1000*self.bot.latency)}ms, typing: {int(1000*(end-start))}ms)")
-            except:
-                pass
+            await self.ping(message.channel)
         elif inp[:3] in self.owo:
             r = []
             index = 0
@@ -1002,6 +1006,10 @@ class Misc:
 
         result, time_taken = await self.bot.loop.run_in_executor(None, do_stuff)
         await ctx.send(f"Result in {time_taken*1000:.2f}ms```\n{result}\n```")
+
+    @commands.command(name="ping")
+    async def cmd_ping(self, ctx):
+        await self.ping(ctx)
 
 #==================================================================================================================================================
 
