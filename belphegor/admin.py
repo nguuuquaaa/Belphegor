@@ -181,6 +181,14 @@ class Admin:
         new_ctx = await self.bot.get_context(msg, cls=data_type.BelphegorContext)
         await new_ctx.reinvoke()
 
+    @commands.command(hidden=True, aliases=["impersonate"])
+    @checks.owner_only()
+    async def runas(self, ctx, member: discord.Member, *, cmd):
+        msg = copy.copy(ctx.message)
+        msg.content = f"{ctx.me.mention} {cmd}"
+        msg.author = member
+        await self.bot.process_commands(msg)
+
     @commands.command(hidden=True)
     @checks.owner_only()
     async def changeavatar(self, ctx, *, img_url):

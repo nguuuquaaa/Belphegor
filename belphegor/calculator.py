@@ -91,6 +91,12 @@ def cube_root(number):
         else:
             return -(-number)**(1/3)
 
+def conjugate(number):
+    if isinstance(number, complex):
+        return number.conjugate()
+    else:
+        return number
+
 #==================================================================================================================================================
 
 class ParseError(Exception):
@@ -181,7 +187,8 @@ class BaseParse:
         "gcf":      greatest_common_factor,
         "lcm":      least_common_multiple,
         "max":      max,
-        "min":      min
+        "min":      min,
+        "conj":     conjugate
     }
     SPECIAL_OPS = {
         "^":    pow,
@@ -393,7 +400,7 @@ class BaseParse:
             p = self.parse_next_value()
             r = getattr(p, "real", p)
             v = getattr(value, "real", value)
-            if v == 0 or v == self.CONSTS["inf"] or r == self.CONSTS["inf"] or r * math.log10(abs(v)) < self.max_power:
+            if v == 0 or v == self.CONSTS["inf"] or r == self.CONSTS["inf"] or r * math.log10(abs(value)) < self.max_power:
                 result = c(value, p)
             else:
                 raise ParseError(f"Limit for power in base {self.base} is 10^{int(self.max_power)}")
@@ -714,7 +721,7 @@ class MathParse(BaseParse):
     def __init__(self, text):
         super().__init__()
         self.formulas = [t.strip() for t in text.splitlines()]
-        if len(self.formulas) > 20:
+        if len(self.formulas) > 30:
             raise ParseError("Oi, don't do that many calculations in one go.")
 
     def how_to_display(self, number):
@@ -870,7 +877,7 @@ class Calculator:
 
             **Acceptable expressions:**
              - Operators `+` , `-` , `*` , `/` (true div), `//` (div mod), `%` (mod), `^`|`**` (pow), `!` (factorial)
-             - Functions `sin`, `cos`, `tan`, `cot`, `arcsin`|`asin`, `arccos`|`acos`, `arctan`|`atan`, `log` (base 10), `ln` (natural log), `sqrt` (square root), `abs` (absolute value), `nCk` (combination), `sign`|`sgn` (sign function), `gcd`|`gcf` (greatest common divisor/factor), `lcm` (least common multiple), `max`, `min`
+             - Functions `sin`, `cos`, `tan`, `cot`, `arcsin`|`asin`, `arccos`|`acos`, `arctan`|`atan`, `log` (base 10), `ln` (natural log), `sqrt` (square root), `cbrt` (cube root), `abs` (absolute value), `nCk` (combination), `sign`|`sgn` (sign function), `gcd`|`gcf` (greatest common divisor/factor), `lcm` (least common multiple), `max`, `min`
              - Constants `e`, `pi`|`π`, `tau`|`τ`, `i` (imaginary), `inf`|`∞` (infinity, use at your own risk)
              - Enclosed `()`, `[]`, `{{}}`, `\u2308 \u2309` (ceil), `\u230a \u230b` (floor)
              - Binary/octal/hexadecimal mode. Put `bin:`, `oct:`, `hex:` at the start to use that mode in current line. Default to decimal (`dec:`) mode (well of course)
@@ -927,31 +934,71 @@ class Calculator:
 
     @commands.group()
     async def solve(self, ctx):
+        '''
+            `>>solve`
+            Does nothing actually. This is just the base command.
+        '''
         if ctx.invoked_subcommand is None:
             pass
 
     @solve.command(aliases=["quad", "2nd"])
     async def quadratic(self, ctx, *, stuff):
+        '''
+            `>>solve quadratic <formulas>`
+            Solve quadratic (degree 2) polinominal equation.
+            This is an extension of the calculate command. It provides premade solution formulas.
+            Input is a serial of formulas that defined `a`, `b` and `c` (as in the equation `ax^2 + bx + c = 0`). Default to 0 if not defined.
+        '''
         stuff = utils.clean_codeblock(stuff)
-        m = MathParse(
-            f"{stuff}\na = a\nb = b\nc = c\n\n"
+        input = MathParse(stuff)
+        try:
+            r, input_time = await self.bot.loop.run_in_executor(None, self.time_stuff, input.result)
+        except:
+            return await ctx.send("Calculation error. Please double check your input.")
+        else:
+            coefficients = {i: input.user_variables.get(i, 0) for i in ("a", "b", "c", "d")}
+            if coefficients["a"] == 0:
+                return await ctx.send("Coefficient `a` must be non-zero.")
+        solution = MathParse(
+            "a = a\n"
+            "b = b\n"
+            "c = c\n\n"
             "Δ = b^2 - 4ac\n\n"
             "x1 = (-b + sqrt(Δ))/(2a)\n"
             "x2 = (-b - sqrt(Δ))/(2a)"
         )
-        try:
-            results, time_taken = await self.bot.loop.run_in_executor(None, self.time_stuff, m.result)
-        except:
-            return await ctx.send("Calculation error. Please double check your input.")
+        solution.user_variables.update(coefficients)
+        results, solution_time = await self.bot.loop.run_in_executor(None, self.time_stuff, solution.result)
         r = "\n".join(results[-8:])
         r = f"ax^2 + bx + c = 0\n{r}"
+        time_taken = input_time + solution_time
         await ctx.send(f"Result in {1000*(time_taken):.2f}ms\n```\n{r}\n```")
 
     @solve.command(aliases=["3rd"])
     async def cubic(self, ctx, *, stuff):
+        '''
+            `>>solve cubic <formulas>`
+            Solve quadratic (degree 3) polinominal equation.
+            This is an extension of the calculate command. It provides premade solution formulas.
+            Input is a serial of formulas that defined `a`, `b`, `c` and `d` (as in the equation `ax^3 + bx^2 + cx + d = 0`). Default to 0 if not defined.
+        '''
         stuff = utils.clean_codeblock(stuff)
-        m = MathParse(
-            f"{stuff}\nζ1 = -1/2 + sqrt(3)/2 * i\nζ2 = -1/2 - sqrt(3)/2 * i\na = a\nb = b\nc = c\nd = d\n\n"
+        input = MathParse(stuff)
+        try:
+            r, input_time = await self.bot.loop.run_in_executor(None, self.time_stuff, input.result)
+        except:
+            return await ctx.send("Calculation error. Please double check your input.")
+        else:
+            coefficients = {i: input.user_variables.get(i, 0) for i in ("a", "b", "c", "d")}
+            if coefficients["a"] == 0:
+                return await ctx.send("Coefficient `a` must be non-zero.")
+        solution = MathParse(
+            "ζ1 = -1/2 + sqrt(3)/2 * i\n"
+            "ζ2 = -1/2 - sqrt(3)/2 * i\n"
+            "a = a\n"
+            "b = b\n"
+            "c = c\n"
+            "d = d\n\n"
             "Δ0 = b^2 - 3ac\n"
             "Δ1 = 2b^3 - 9abc + 27a^2*d\n"
             "C1 = cbrt((Δ1 + sqrt(Δ1^2 - 4Δ0^3))/2)\n"
@@ -960,12 +1007,11 @@ class Calculator:
             "x2 = -(b + C1 * ζ1 + C2 / ζ1)/(3a)\n"
             "x3 = -(b + C1 * ζ2 + C2 / ζ2)/(3a)"
         )
-        try:
-            results, time_taken = await self.bot.loop.run_in_executor(None, self.time_stuff, m.result)
-        except:
-            return await ctx.send("Calculation error. Please double check your input.")
+        solution.user_variables.update(coefficients)
+        results, solution_time = await self.bot.loop.run_in_executor(None, self.time_stuff, solution.result)
         r = "\n".join(results[-13:])
         r = f"ax^3 + bx^2 + cx + d = 0\n{r}"
+        time_taken = input_time + solution_time
         await ctx.send(f"Result in {1000*(time_taken):.2f}ms\n```\n{r}\n```")
 
 #==================================================================================================================================================

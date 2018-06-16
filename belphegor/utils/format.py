@@ -142,6 +142,6 @@ def clean_codeblock(text):
     text = text.strip("` \n")
     return text
 
-_format_regex = re.compile(r"(?<!\\)\{([^\\]+)\}")
+_format_regex = re.compile(r"(?<!\\)\{([^\\]+?)\}")
 def str_format(text, **kwargs):
     return _format_regex.sub(lambda m: kwargs[m.group(1)], text)

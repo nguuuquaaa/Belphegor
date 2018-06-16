@@ -51,18 +51,16 @@ class Help:
                 "      \U0001f5bc Image search/random\n"
                 "      \U0001f3b5 Music\n"
                 "      \U0001f4d4 Role/server-related stuff\n"
-                "      \u23f0 Reminder\n"
-                "      \U0001f3f7 Text shortcut\n"
-                "      \U0001f389 Custom image reactions\n"
+                "      \U0001f3f7 Tag and sticker\n"
                 "      \u2699 Miscellaneous commands\n\n"
-                "You can also use `>>help <command name>` to get command usage",
+                "You can also use `>>help <full command name>` to get command usage",
             inline=False
         )
         base_embed.add_field(
             name="Other",
             value=
                 "`>>invite` - Invite link\n"
-                "`>>stats` - Bot info\n"
+                "`>>stats`, `>>about` - Bot info\n"
                 "`>>feedback` - Feedback anything\n",
             inline=False
         )
@@ -156,7 +154,7 @@ class Help:
         game_embed.add_field(
             name="Games",
             value=
-                "`>>monopoly` - Play monopoly [Currently not available]\n"
+                "~~`>>monopoly` - Play monopoly~~ (I'm lazy okay)\n"
                 "`>>cangua` - Play co ca ngua",
             inline=False
         )
@@ -274,26 +272,17 @@ class Help:
         )
         paging.set_action("\U0001f4d4", lambda: guild_embed)
 
-        #remind
-        remind_embed = discord.Embed(title="\u23f0 Reminder", description="Schedule to ping you after a certain time.", colour=discord.Colour.teal())
-        remind_embed.add_field(
-            name="Commands",
-            value=
-                "`>>remind`\n"
-                "      `me` - Set a reminder\n"
-                "      `list` - Display all your reminders\n"
-                "      `delete` - Delete a reminder",
-            inline=False
-        )
-        paging.set_action("\u23f0", lambda: remind_embed)
-
-        #tag
+        #tag & sticker
         tag_embed = discord.Embed(
-            title="\U0001f3f7 Tag",
+            title="\U0001f3f7 Tag and sticker",
             description=
-                "Shortcut text.\n"
+                "A tag is a shortcut text.\n"
                 "Sometimes you want to copy-paste a goddamn long guide or so (it sucks), but you can just put into a tag with short name then call it later.\n"
-                "Tags are server-specific.",
+                "Tags are server-specific.\n\n"
+                "A sticker is just a fancy tag specialized around image.\n"
+                "Use $stickername anywhere admidst message to trigger sticker send.\n"
+                "Only one sticker shows up per message.\n"
+                "Sticker is universal server-wise.",
             colour=discord.Colour.teal()
         )
         tag_embed.add_field(
@@ -303,42 +292,24 @@ class Help:
                 "      `create` - Create a tag\n"
                 "      `alias` - Create an alias to another tag\n"
                 "      `edit` - Edit a tag\n"
-                "      `delete` - Delete a tag\n\n"
+                "      `delete` - Delete a tag\n"
                 "      `info` - Tag info\n"
                 "      `find` - Find tags\n"
                 "      `list` - All tags by member\n"
-                "      `all` - All tags of server\n",
-            inline=False
-        )
-        paging.set_action("\U0001f3f7", lambda: tag_embed)
-
-        #sticker
-        sticker_cog = self.bot.get_cog("Sticker")
-        sticker_embed = discord.Embed(
-            title="\U0001f389 Sticker",
-            description=
-                "Send a reaction image.\n"
-                "Use $stickername anywhere admidst message to trigger sticker send.\n"
-                "Only one sticker shows up per message.\n"
-                "Sticker is universal server-wise.",
-            colour=discord.Colour.teal()
-        )
-        sticker_embed.add_field(
-            name="Commands",
-            value=
+                "      `all` - All tags of current server\n\n"
                 "`>>sticker`\n"
                 "      `add` - Add a sticker\n"
                 "      `edit` - Edit a sticker\n"
-                "      `delete` - Delete a sticker\n\n"
+                "      `delete` - Delete a sticker\n"
                 "      `info` - Sticker info\n"
                 "      `find` - Find stickers\n"
-                "      `list` - All stickers by member\n\n"
-                "      `prefix` - Set server custom sticker prefix\n"
+                "      `list` - All stickers by member\n"
+                "      `prefix` - Check/set server custom sticker prefix\n"
                 "      `ban` - Ban a sticker in current server\n"
                 "      `unban` - Unban a sticker in current server",
             inline=False
         )
-        paging.set_action("\U0001f389", lambda: sticker_embed)
+        paging.set_action("\U0001f3f7", lambda: tag_embed)
 
         #misc
         misc_embed = discord.Embed(title="\u2699 Miscellaneous", description="Pretty much self-explanatory.", colour=discord.Colour.teal())
@@ -350,14 +321,21 @@ class Help:
                 "`>>poll` - Make a poll\n\n"
                 "`>>fancy` - Fancilize a sentence\n"
                 "`>>glitch` - Z̜͍̊ă̤̥ḷ̐́ģͮ͛ò̡͞ ͥ̉͞ť͔͢e̸̷̅x̠ͯͧt̰̱̾\n"
-                "      `m` - ĜþŞ¶ōÙđĔł ĝĖĘ Ùľ© ¼Ħâ Ŗėēů®³ĸ¤²\n\n"
+                "      `m`, `meaningless` - ĜþŞ¶ōÙđĔł ĝĖĘ Ùľ© ¼Ħâ Ŗėēů®³ĸ¤²\n\n"
                 "`>>avatar` - Get your or a user avatar\n"
                 "`>>g`, `>>google` - Google search\n"
-                "`>>gtrans`, `>>translate` - Google, but translate\n\n"
+                "`>>gtrans`, `>>translate` - Google, but translate\n"
+                "`>>remind`\n"
+                "      `me` - Set a reminder\n"
+                "      `list` - Display all your reminders\n"
+                "      `delete` - Delete a reminder\n\n"
                 "`>>char` - Get unicode character info.\n"
                 "`>>color`, `>>colour` - Visualize color's code\n"
                 "`>>choose` - Choose random\n"
                 "`>>calc` - Calculator\n"
+                "`>>solve`\n"
+                "      `quad` - Solve degree 2 polynominal equation\n"
+                "      `cubic` - Solve degree 3 polynominal equation\n"
                 "`>>ascii` - Grayscale ASCII art\n"
                 "      `biggur` - Biggur grayscale ASCII art\n"
                 "      `block` - Block ASCII art\n"
