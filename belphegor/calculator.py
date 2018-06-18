@@ -75,23 +75,17 @@ def to_real_number(func):
 def nth_root(deg, number):
     if isinstance(deg, int):
         if deg > 1:
-            if isinstance(number, complex):
-                r, phi = cmath.polar(number)
-                roots = []
-                for i in range(deg):
-                    cur = (phi + 2 * math.pi * i) / deg
-                    v = cmath.rect(r**(1/deg), cur)
-                    if r * abs(math.sin(cur)) < EPSILON:
-                        return v.real
-                    else:
-                        roots.append(v)
+            r, phi = cmath.polar(number)
+            roots = []
+            for i in range(deg):
+                cur = (phi + 2 * math.pi * i) / deg
+                v = cmath.rect(r**(1/deg), cur)
+                if abs(v.imag) < EPSILON:
+                    return v.real
                 else:
-                    return roots[0]
+                    roots.append(v)
             else:
-                if number >= 0:
-                    return number**(1/deg)
-                else:
-                    return -(-number)**(1/deg)
+                return roots[0]
         else:
             raise ParseError("Degree should be greater than 1.")
     else:
