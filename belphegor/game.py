@@ -94,9 +94,9 @@ class Game:
         target = member or ctx.author
         current_game = await self.get_game(target)
         if current_game:
-            await ctx.send(f"{member.display_name} is participating in {game.name} in {game.channel.guild.name}.")
+            await ctx.send(f"{target.display_name} is participating in {game.name} in {game.channel.guild.name}.")
         else:
-            await ctx.send(f"{member.display_name} is not participating in any game.")
+            await ctx.send(f"{target.display_name} is not participating in any game.")
 
     @commands.command()
     @checks.guild_only()

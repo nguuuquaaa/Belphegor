@@ -72,24 +72,33 @@ def to_real_number(func):
         return result
     return do_func
 
-def cube_root(number):
-    if isinstance(number, complex):
-        r, phi = cmath.polar(number)
-        roots = []
-        for i in range(3):
-            cur = (phi + 2 * math.pi * i) / 3
-            v = cmath.rect(r**(1/3), cur)
-            if r * abs(math.sin(cur)) < EPSILON:
-                return v
+def nth_root(deg, number):
+    if isinstance(deg, int):
+        if deg > 1:
+            if isinstance(number, complex):
+                r, phi = cmath.polar(number)
+                roots = []
+                for i in range(deg):
+                    cur = (phi + 2 * math.pi * i) / deg
+                    v = cmath.rect(r**(1/deg), cur)
+                    if r * abs(math.sin(cur)) < EPSILON:
+                        return v.real
+                    else:
+                        roots.append(v)
+                else:
+                    return roots[0]
             else:
-                roots.append(v)
+                if number >= 0:
+                    return number**(1/deg)
+                else:
+                    return -(-number)**(1/deg)
         else:
-            return roots[0]
+            raise ParseError("Degree should be greater than 1.")
     else:
-        if number >= 0:
-            return number**(1/3)
-        else:
-            return -(-number)**(1/3)
+        raise ParseError("Degree should be an integer.")
+
+def cube_root(number):
+    return nth_root(3, number)
 
 def conjugate(number):
     if isinstance(number, complex):
@@ -179,7 +188,8 @@ class BaseParse:
         "log":      to_real_number(cmath.log10),
         "ln":       to_real_number(cmath.log),
         "sqrt":     to_real_number(cmath.sqrt),
-        "cbrt":     to_real_number(cube_root),
+        "cbrt":     cube_root,
+        "root":     nth_root,
         "abs":      abs,
         "sign":     numpy.sign,
         "sgn":      numpy.sign,
@@ -877,7 +887,7 @@ class Calculator:
 
             **Acceptable expressions:**
              - Operators `+` , `-` , `*` , `/` (true div), `//` (div mod), `%` (mod), `^`|`**` (pow), `!` (factorial)
-             - Functions `sin`, `cos`, `tan`, `cot`, `arcsin`|`asin`, `arccos`|`acos`, `arctan`|`atan`, `log` (base 10), `ln` (natural log), `sqrt` (square root), `cbrt` (cube root), `abs` (absolute value), `nCk` (combination), `sign`|`sgn` (sign function), `gcd`|`gcf` (greatest common divisor/factor), `lcm` (least common multiple), `max`, `min`
+             - Functions `sin`, `cos`, `tan`, `cot`, `arcsin`|`asin`, `arccos`|`acos`, `arctan`|`atan`, `log` (base 10), `ln` (natural log), `sqrt` (square root), `cbrt` (cube root), `root` (nth root), `abs` (absolute value), `nCk` (combination), `sign`|`sgn` (sign function), `gcd`|`gcf` (greatest common divisor/factor), `lcm` (least common multiple), `max`, `min`
              - Constants `e`, `pi`|`π`, `tau`|`τ`, `i` (imaginary), `inf`|`∞` (infinity, use at your own risk)
              - Enclosed `()`, `[]`, `{{}}`, `\u2308 \u2309` (ceil), `\u230a \u230b` (floor)
              - Binary/octal/hexadecimal mode. Put `bin:`, `oct:`, `hex:` at the start to use that mode in current line. Default to decimal (`dec:`) mode (well of course)

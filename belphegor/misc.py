@@ -770,7 +770,7 @@ class Misc:
             title=kwargs.get("title") or Empty,
             description=kwargs.get("description") or Empty,
             url=kwargs.get("url") or Empty,
-            colour=utils.to_int(kwargs.get("colour"), 16) or Empty,
+            colour=utils.to_int(kwargs.get("colour", kwargs.get("color")), 16) or Empty,
         )
 
         author = kwargs.get("author")
