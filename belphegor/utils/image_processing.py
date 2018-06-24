@@ -6,6 +6,10 @@ import math
 
 #==================================================================================================================================================
 
+ANGLE_EPSILON = 0.001
+
+#==================================================================================================================================================
+
 class AAImageProcessing:
     def __init__(self, pred, *, background=(255, 255, 255, 0), aa=4):
         if isinstance(pred, (tuple, list)):
@@ -118,11 +122,12 @@ class AAImageProcessing:
 
                 dr.pieslice(outer_border, start, end, fill=o)
                 dr.pieslice(inner_border, start, end, fill=f)
-                dr.line((int_center, arc_start), width=aawidth, fill=o)
-                dr.line((int_center, arc_end), width=aawidth, fill=o)
-                dr.ellipse((int(center[0]-half_aawidth), int(center[1]-half_aawidth), int(center[0]+half_aawidth), int(center[1]+half_aawidth)), fill=o)
-                dr.ellipse((int(arc_start[0]-half_aawidth), int(arc_start[1]-half_aawidth), int(arc_start[0]+half_aawidth), int(arc_start[1]+half_aawidth)), fill=o)
-                dr.ellipse((int(arc_end[0]-half_aawidth), int(arc_end[1]-half_aawidth), int(arc_end[0]+half_aawidth), int(arc_end[1]+half_aawidth)), fill=o)
+                if (end - start) % 360 >= ANGLE_EPSILON:
+                    dr.line((int_center, arc_start), width=aawidth, fill=o)
+                    dr.line((int_center, arc_end), width=aawidth, fill=o)
+                    dr.ellipse((int(center[0]-half_aawidth), int(center[1]-half_aawidth), int(center[0]+half_aawidth), int(center[1]+half_aawidth)), fill=o)
+                    dr.ellipse((int(arc_start[0]-half_aawidth), int(arc_start[1]-half_aawidth), int(arc_start[0]+half_aawidth), int(arc_start[1]+half_aawidth)), fill=o)
+                    dr.ellipse((int(arc_end[0]-half_aawidth), int(arc_end[1]-half_aawidth), int(arc_end[0]+half_aawidth), int(arc_end[1]+half_aawidth)), fill=o)
 
             self.image.paste(figure, (0, 0), mask)
 
@@ -167,19 +172,18 @@ class AAImageProcessing:
                         dr.pieslice(inner_border, last_angle, current_angle, fill=f(fill))
                         last_angle = current_angle
 
-                    for c in ccl:
-                        current_angle = c[0]
-                        fill = c[1]
-                        arc_end = (int(center[0]+math.cos(math.radians(current_angle))*half_size[0]), int(center[1]+math.sin(math.radians(current_angle))*half_size[1]))
-                        dr.line((arc_end, int_center), width=aawidth, fill=o)
-
-                    if (last_angle - start_angle) % 360 < 0.01:
+                    if (ccl[0][0] - start_angle) % 360 < ANGLE_EPSILON:
                         arc_start = (int(center[0]+math.cos(math.radians(start_angle))*half_size[0]), int(center[1]+math.sin(math.radians(start_angle))*half_size[1]))
                         arc_end = (int(center[0]+math.cos(math.radians(last_angle))*half_size[0]), int(center[1]+math.sin(math.radians(last_angle))*half_size[1]))
                         dr.ellipse((int(arc_start[0]-half_aawidth), int(arc_start[1]-half_aawidth), int(arc_start[0]+half_aawidth), int(arc_start[1]+half_aawidth)), fill=o)
                         dr.ellipse((int(arc_end[0]-half_aawidth), int(arc_end[1]-half_aawidth), int(arc_end[0]+half_aawidth), int(arc_end[1]+half_aawidth)), fill=o)
-
-                    dr.ellipse((int(center[0]-half_aawidth), int(center[1]-half_aawidth), int(center[0]+half_aawidth), int(center[1]+half_aawidth)), fill=o)
+                    else:
+                        for c in ccl:
+                            current_angle = c[0]
+                            fill = c[1]
+                            arc_end = (int(center[0]+math.cos(math.radians(current_angle))*half_size[0]), int(center[1]+math.sin(math.radians(current_angle))*half_size[1]))
+                            dr.line((arc_end, int_center), width=aawidth, fill=o)
+                        dr.ellipse((int(center[0]-half_aawidth), int(center[1]-half_aawidth), int(center[0]+half_aawidth), int(center[1]+half_aawidth)), fill=o)
 
                 self.image.paste(figure, (0, 0), mask)
             else:
@@ -190,7 +194,7 @@ class AAImageProcessing:
                     current_angle = c[0]
                     fill = c[1]
                     delta_angle = current_angle - last_angle
-                    if delta_angle > 0:
+                    if delta_angle >= ANGLE_EPSILON:
                         delta = (math.cos(math.radians(delta_angle/2+last_angle))*explode[i], math.sin(math.radians(delta_angle/2+last_angle))*explode[i])
                         current_xy = (xy[0]+delta[0], xy[1]+delta[1], xy[2]+delta[0], xy[3]+delta[1])
                         self.draw_pieslice(current_xy, last_angle, current_angle, fill=fill, outline=outline, outline_width=outline_width)
@@ -250,9 +254,14 @@ async def pie_chart(data, *, unit="counts", background=(255, 255, 255, 0), text_
                 font=font,
                 fill=text_color
             )
+            count = item["count"]
+            if isinstance(count, int):
+                s = count
+            else:
+                s = f"{count:.2f}"
             image_draw.draw_text(
                 (560, 55+index*60),
-                f"{item['count']} {unit} - {100*item['count']/number_of_items:.2f}%",
+                f"{s} {unit} - {100*count/number_of_items:.2f}%",
                 font=font,
                 fill=text_color
             )
@@ -263,9 +272,14 @@ async def pie_chart(data, *, unit="counts", background=(255, 255, 255, 0), text_
             outline_width=outline_width,
             explode=explode
         )
+
+        if isinstance(number_of_items, int):
+            s = number_of_items
+        else:
+            s = f"{number_of_items:.2f}"
         image_draw.draw_text(
             (560, 30+number_of_fields*60),
-            f"Total: {number_of_items} {unit}",
+            f"Total: {s} {unit}",
             font=big_font,
             fill=text_color
         )

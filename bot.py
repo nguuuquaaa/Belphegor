@@ -34,6 +34,7 @@ class Belphegor(commands.Bot):
         self.bot_lock = asyncio.Lock()
         self.initial_extensions = kwargs.get("initial_extensions", config.all_extensions)
         self.restart_flag = False
+        self.saved_stuff = {}
 
     async def get_prefix(self, message):
         prefixes = {f"<@{self.user.id}> ", f"<@!{self.user.id}> "}

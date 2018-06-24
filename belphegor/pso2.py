@@ -256,8 +256,9 @@ class PSO2:
         ):
             self.emojis[emoji_name] = discord.utils.find(lambda e:e.name==emoji_name, test_guild_2.emojis)
         self.emojis["set_effect"] = self.emojis["rear"]
-        self.eq_alert_forever = weakref.ref(bot.loop.create_task(self.eq_alert()))
         self.last_eq_data = None
+        self.api_data = {}
+        self.eq_alert_forever = weakref.ref(bot.loop.create_task(self.eq_alert()))
         self.daily_order_pattern = bot.db.daily_order_pattern
         self.calendar = build("calendar", "v3", developerKey=token.GOOGLE_CLIENT_API_KEY)
         self.incoming_events = data_type.Observer()
@@ -576,33 +577,29 @@ class PSO2:
         '''
         await ctx.send(utils.jp_time(utils.now_time()))
 
-    async def check_for_updates(self):
-        bytes_ = await utils.fetch(
-            self.bot.session,
-            "https://pso2.acf.me.uk/PSO2Alert.json",
+    async def check_for_new_version(self):
+        bytes_ = await self.bot.fetch(
+            "https://pso2.acf.me.uk/PSO2Alert/PSO2Alert.json",
             headers={
-                "User-Agent": "PSO2Alert_3.0.5.4",
+                "User-Agent": "PSO2Alert",
                 "Connection": "Keep-Alive",
                 "Host": "pso2.acf.me.uk"
             }
         )
         data = json.loads(bytes_)[0]
-        return data
+        self.api_data["version"] = data["Version"]
+        self.api_data["url"] = data["API"]
+        self.api_data["headers"] = {"User-Agent": f"PSO2.Alert.v{data['Version']} nguuuquaaa_eq_service", "Host": "pso2.acf.me.uk"}
 
     async def eq_alert(self):
         _loop = self.bot.loop
-        acf_headers = {
-            "User-Agent": "PSO2Alert",
-            "Host": "pso2.acf.me.uk"
-        }
         async def try_it(coro):
             try:
                 await coro
             except:
                 pass
         try:
-            initial_data = await self.check_for_updates()
-            print(f"Latest PSO2 Alert version: {initial_data['Version']}")
+            await self.check_for_new_version()
             while True:
                 now_time = utils.now_time()
                 if now_time.minute < 45:
@@ -616,7 +613,7 @@ class PSO2:
                 now_time = utils.now_time()
                 if now_time.minute != next_time.minute:
                     await asyncio.sleep((next_time - now_time).total_seconds())
-                bytes_ = await utils.fetch(self.bot.session, initial_data["API"], headers=acf_headers)
+                bytes_ = await self.bot.fetch(self.api_data["url"], headers=self.api_data["headers"])
                 data = json.loads(bytes_)[0]
                 self.last_eq_data = data
                 now_time = utils.now_time(utils.jp_timezone)
@@ -696,7 +693,7 @@ class PSO2:
             Display eq schedule for the next 3 hours.
         '''
         if not self.last_eq_data:
-            bytes_ = await utils.fetch(self.bot.session, "https://pso2.acf.me.uk/api/eq.json", headers={"User-Agent": "PSO2Alert", "Host": "pso2.acf.me.uk"})
+            bytes_ = await self.bot.fetch(self.api_data["url"], headers=self.api_data["headers"])
             self.last_eq_data = json.loads(bytes_)[0]
         data = self.last_eq_data
         now_time = utils.now_time(utils.jp_timezone)
