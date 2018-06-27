@@ -3,6 +3,7 @@ from io import BytesIO
 from . import config, data_type
 import asyncio
 import math
+import random
 
 #==================================================================================================================================================
 
@@ -29,6 +30,7 @@ class AAImageProcessing:
             self.size = self.original_size
 
         self.draw = ImageDraw.Draw(self.image)
+        self.fonts = {}
 
     def set_base_image(self, image):
         aasize = self.size
@@ -43,9 +45,17 @@ class AAImageProcessing:
 
         self.image = image.resize(aasize, resample=Image.LANCZOS, box=border)
 
+    def add_font(self, name, *args, size, **kwargs):
+        self.fonts[name] = ImageFont.truetype(*args, size*self.aa, **kwargs)
+
     def save(self, fp, *, format, scale=1, **params):
         im = self.image.resize((int(self.original_size[0]*scale), int(self.original_size[1]*scale)), resample=Image.LANCZOS)
         im.save(fp, format=format, **params)
+
+    def text_size(self, text, *, font, **kwargs):
+        font = self.fonts[font]
+        aaw, aah = self.draw.textsize(text, font=font, **kwargs)
+        return int(aaw/self.aa), int(aah/self.aa)
 
     def draw_point(self, xy, *, fill=None, width=1):
         aa = self.aa
@@ -200,10 +210,11 @@ class AAImageProcessing:
                         self.draw_pieslice(current_xy, last_angle, current_angle, fill=fill, outline=outline, outline_width=outline_width)
                     last_angle = current_angle
 
-    def draw_text(self, xy, txt, **kwargs):
+    def draw_text(self, xy, txt, *, font, **kwargs):
         aa = self.aa
         aaxy = tuple(aa*i for i in xy)
-        self.draw.text(aaxy, txt, **kwargs)
+        font = self.fonts[font]
+        self.draw.text(aaxy, txt, font=font, **kwargs)
 
     def circle_paste(self, im, xy):
         aa = self.aa
@@ -236,22 +247,22 @@ async def pie_chart(data, *, unit="counts", background=(255, 255, 255, 0), text_
         if number_of_items == 0:
             return None
         height = max(500, 70+60*number_of_fields)
-        image_draw = AAImageProcessing((800, height), background=background, aa=aa)
-        font = ImageFont.truetype(f"{config.DATA_PATH}/font/arial.ttf", 20*aa)
-        big_font = ImageFont.truetype(f"{config.DATA_PATH}/font/arialbd.ttf", 20*aa)
+        image = AAImageProcessing((800, height), background=background, aa=aa)
+        image.add_font("normal", f"{config.DATA_PATH}/font/arial.ttf", size=20)
+        image.add_font("bold", f"{config.DATA_PATH}/font/arialbd.ttf", size=20)
         cutlist = [(-90, None)]
         current_angle = -90
         for index, item in enumerate(data):
             current_angle = current_angle + 360 * item["count"] / number_of_items
             cutlist.append((current_angle, item["color"]))
-            image_draw.draw_rectangle(
+            image.draw_rectangle(
                 (525, 27+index*60, 550, 52+index*60),
                 fill=adjust_alpha(item["color"], 255)
             )
-            image_draw.draw_text(
+            image.draw_text(
                 (560, 30+index*60),
                 item["name"],
-                font=font,
+                font="normal",
                 fill=text_color
             )
             count = item["count"]
@@ -259,13 +270,13 @@ async def pie_chart(data, *, unit="counts", background=(255, 255, 255, 0), text_
                 s = count
             else:
                 s = f"{count:.2f}"
-            image_draw.draw_text(
+            image.draw_text(
                 (560, 55+index*60),
                 f"{s} {unit} - {100*count/number_of_items:.2f}%",
-                font=font,
+                font="normal",
                 fill=text_color
             )
-        image_draw.draw_pie_chart(
+        image.draw_pie_chart(
             (40, 40, 460, 460),
             cutlist,
             outline=outline,
@@ -277,14 +288,88 @@ async def pie_chart(data, *, unit="counts", background=(255, 255, 255, 0), text_
             s = number_of_items
         else:
             s = f"{number_of_items:.2f}"
-        image_draw.draw_text(
+        image.draw_text(
             (560, 30+number_of_fields*60),
             f"Total: {s} {unit}",
-            font=big_font,
+            font="bold",
             fill=text_color
         )
         bytes_io = BytesIO()
-        image_draw.save(bytes_io, format="png", scale=scale)
+        image.save(bytes_io, format="png", scale=scale)
+        return bytes_io.getvalue()
+
+    _loop = loop or asyncio.get_event_loop()
+    return await _loop.run_in_executor(None, drawing)
+
+async def line_chart(
+    data, *, title=None, unit_y="amount", unit_x="time", background=(255, 255, 255, 0), text_color=(255, 255, 255, 255),
+    axis_color=(150, 150, 150, 255), axis_text_color=(215, 215, 215, 255), scale=1, aa=4, loop=None
+):
+    def drawing():
+        number_of_fields = len(data)
+        image = AAImageProcessing((720, 400+number_of_fields//2*28), background=background, aa=aa)
+        image.add_font("normal", f"{config.DATA_PATH}/font/arial.ttf", size=18)
+        image.add_font("axis", f"{config.DATA_PATH}/font/arial.ttf", size=12)
+        max_count = max((max(s["count"].values()) for s in data))
+        digits = -3
+        while max_count >= 10**digits:
+            digits += 1
+        if max_count < 2*10**(digits-1):
+            digits -= 2
+        else:
+            digits -= 1
+        each = 10**digits
+        separator_count = 1
+        while separator_count*each <= max_count:
+            separator_count += 1
+
+        #draw axis
+        image.draw_line((50, 10, 50, 350, 670, 350), fill=axis_color)
+        image.draw_line((45, 20, 50, 10, 55, 20), fill=axis_color)
+        image.draw_line((660, 345, 670, 350, 660, 355), fill=axis_color)
+        width, height = image.text_size(unit_y, font="axis")
+        image.draw_text((44-width, 4), unit_y, font="axis", fill=axis_text_color)
+        width, height = image.text_size(unit_x, font="axis")
+        image.draw_text((665, 352), unit_x, font="axis", fill=axis_text_color)
+        for i in range(1, separator_count+1):
+            v = 350 - i / separator_count * 300
+            image.draw_line((45, v, 55, v), fill=axis_color)
+            txt = str(each*i)
+            width, height = image.text_size(txt, font="axis")
+            image.draw_text((42-width, v-height/2-1), txt, font="axis", fill=axis_text_color)
+
+        keys = data[0]["count"].keys()
+
+        for i, k in enumerate(keys):
+            h = 50 + (i + 1) * 25
+            image.draw_line((h, 345, h, 355), fill=axis_color)
+            txt = str(k)
+            width, height = image.text_size(txt, font="axis")
+            image.draw_text((h-12.5-width/2, 355), txt, font="axis", fill=axis_text_color)
+
+        #draw lines
+        for item in data:
+            xy = []
+            for i, k in enumerate(keys):
+                value = item["count"][i]
+                xy.append(37.5+(i+1)*25)
+                xy.append(350 - value / separator_count / each * 300)
+            image.draw_line(xy, fill=item["color"], width=2)
+
+        #draw legends
+        for i, item in enumerate(data):
+            x = i % 2 * 300 + 100
+            y = i // 2 * 28 + 390
+            line_xy = tuple(i for j in range(5) for i in (x+5*j, y+random.randrange(20)))
+            image.draw_line(line_xy, fill=item["color"], width=2)
+            image.draw_text((x+25, y+1), item["name"], font="normal", fill=text_color)
+
+        if title:
+            width, height = image.text_size(title, font="normal")
+            image.draw_text((650-width, 10), title, font="normal", fill=text_color)
+
+        bytes_io = BytesIO()
+        image.save(bytes_io, format="png", scale=scale)
         return bytes_io.getvalue()
 
     _loop = loop or asyncio.get_event_loop()
