@@ -8,7 +8,7 @@ import collections
 
 #==================================================================================================================================================
 
-ANGLE_EPSILON = 0.001
+EPSILON = 0.01
 
 #==================================================================================================================================================
 
@@ -166,7 +166,7 @@ class AAImageProcessing:
 
                 dr.pieslice(outer_border, start, end, fill=o)
                 dr.pieslice(inner_border, start, end, fill=f)
-                if (end - start) % 360 >= ANGLE_EPSILON:
+                if (end - start) % 360 >= EPSILON:
                     dr.line((int_center, arc_start), width=aawidth, fill=o)
                     dr.line((int_center, arc_end), width=aawidth, fill=o)
                     dr.ellipse(
@@ -234,7 +234,7 @@ class AAImageProcessing:
                         dr.pieslice(inner_border, last_angle, current_angle, fill=f(fill))
                         last_angle = current_angle
 
-                    if (ccl[0][0] - start_angle) % 360 < ANGLE_EPSILON:
+                    if (ccl[0][0] - start_angle) % 360 < EPSILON:
                         arc_start = (int(center[0]+math.cos(math.radians(start_angle))*half_size[0]), int(center[1]+math.sin(math.radians(start_angle))*half_size[1]))
                         arc_end = (int(center[0]+math.cos(math.radians(last_angle))*half_size[0]), int(center[1]+math.sin(math.radians(last_angle))*half_size[1]))
                         dr.ellipse(
@@ -280,7 +280,7 @@ class AAImageProcessing:
                     current_angle = c[0]
                     fill = c[1]
                     delta_angle = current_angle - last_angle
-                    if delta_angle >= ANGLE_EPSILON:
+                    if delta_angle >= EPSILON:
                         delta = (math.cos(math.radians(delta_angle/2+last_angle))*explode[i], math.sin(math.radians(delta_angle/2+last_angle))*explode[i])
                         current_xy = (xy[0]+delta[0], xy[1]+delta[1], xy[2]+delta[0], xy[3]+delta[1])
                         self.draw_pieslice(current_xy, last_angle, current_angle, fill=fill, outline=outline, outline_width=outline_width)
@@ -550,14 +550,14 @@ async def stacked_area_chart(
         #calculate marks
         max_count = max((max(s["count"].values()) for s in data))
         digits = -3
-        while max_count > 10**digits:
+        while max_count > 10**digits + EPSILON:
             digits += 1
         digits -= 1
 
         each = 10**digits
         item = 0
         y_keys = []
-        while item < max_count:
+        while item + EPSILON < max_count:
             item += each
             y_keys.append(item)
 

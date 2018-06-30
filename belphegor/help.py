@@ -262,12 +262,9 @@ class Help:
         guild_embed.add_field(
             name="Info",
             value=
-                "`>>server`\n"
-                "      `info` - Display server info\n"
-                "      `prefix` - Display server (custom) prefixes\n"
-                "      `icon` - Server icon\n"
-                "`>>role`\n"
-                "      `info` - Display role info",
+                "`>>prefix` - Display server prefixes\n"
+                "`>>serverinfo` - Display server info\n"
+                "`>>roleinfo` - Display role info",
             inline=False
         )
         paging.set_action("\U0001f4d4", lambda: guild_embed)

@@ -1031,39 +1031,21 @@ class Guild:
                 if e in self.banned_emojis:
                     await reaction.message.remove_reaction(reaction, user)
 
-    @commands.group(name="guild", aliases=["server"])
-    async def cmd_guild(self, ctx):
-        '''
-            `>>server`
-            Base command. Does nothing by itself, but with subcommands can be used to view server info.
-        '''
-        pass
-
-    @cmd_guild.command(name="prefix")
+    @commands.command(name="prefix")
     async def guild_prefix(self, ctx):
         '''
-            `>>server prefix`
+            `>>prefix`
             Display all server prefixes.
         '''
         prefixes = list(await self.bot.get_prefix(ctx.message))
+        prefixes.remove(f"<@!{ctx.me.id}> ")
         prefixes.sort()
-        desc = "\n".join((f"{i+1}. {p}" for i, p in enumerate(prefixes)))
-        await ctx.send(embed=discord.Embed(title=f"Prefixes for {ctx.guild.name}", description=f"```fix\n{desc}\n```"))
+        await ctx.send(embed=discord.Embed(title=f"Prefixes for {ctx.guild.name}", description="\n".join((f"{i+1}. {p}" for i, p in enumerate(prefixes)))))
 
-    @cmd_guild.command(name="icon")
-    async def guild_icon(self, ctx):
+    @commands.command(aliases=["serverinfo"])
+    async def guildinfo(self, ctx):
         '''
-            `>>server icon`
-            Display server icon.
-        '''
-        embed = discord.Embed(title=f"{ctx.guild.name}'s icon")
-        embed.set_image(url=ctx.guild.icon_url_as(format="png"))
-        await ctx.send(embed=embed)
-
-    @cmd_guild.command(name="info")
-    async def guild_info(self, ctx):
-        '''
-            `>>server info`
+            `>>serverinfo`
             Display server info.
         '''
         guild = ctx.guild
@@ -1079,16 +1061,12 @@ class Guild:
         embed.add_field(name="Roles", value=", ".join((r.name for r in guild.roles)), inline=False)
         await ctx.send(embed=embed)
 
-    @commands.group(name="role")
-    async def cmd_role(self, ctx):
+    @commands.command()
+    async def roleinfo(self, ctx, *, name):
         '''
-            `>>role`
-            Base command. Does nothing.
+            `>>roleinfo <name>`
+            Display role info. Name is case-insensitive.
         '''
-        pass
-
-    @cmd_role.command(name="info")
-    async def cmd_role_info(self, ctx, *, name):
         role = discord.utils.find(lambda r: r.name.lower()==name.lower(), ctx.guild.roles)
         if not role:
             return await ctx.send(f"No role name {name} found.")

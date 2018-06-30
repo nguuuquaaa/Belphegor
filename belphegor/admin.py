@@ -101,6 +101,9 @@ class Admin:
     @commands.command(hidden=True)
     @checks.owner_only()
     async def logout(self, ctx):
+        exp = self.bot.get_cog("Statistics")
+        if exp:
+            await cog.update_all()
         await self.bot.logout()
 
     @commands.command(name="eval", hidden=True)
