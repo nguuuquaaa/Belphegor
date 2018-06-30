@@ -70,7 +70,8 @@ SSA_SLOTS = {
     "Tier 4":               ["s1", "s2", "s3", "s4"],
     "S Class Ability 1":    ["s1"],
     "S Class Ability 2":    ["s2"],
-    "S Class Ability 3":    ["s3"]
+    "S Class Ability 3":    ["s3"],
+    "S Class Ability 4":    ["s4"]
 }
 DEF_EMOJIS = ("sdef", "rdef", "tdef")
 RESIST_EMOJIS = ("s_res", "r_res", "t_res")
@@ -471,7 +472,7 @@ class PSO2:
                     if t:
                         cur = {"type": t}
                     else:
-                        weapon["ssa_slots"] = SSA_SLOTS[a]
+                        weapon["ssa_slots"].extend(SSA_SLOTS.get(a, ()))
                 elif child.name == "span":
                     cur["name"] = utils.unifix(child.get_text())
                     cur["description"] = utils.unifix(no_html_regex.sub(_match_this, html.unescape(child["data-simple-tooltip"])))

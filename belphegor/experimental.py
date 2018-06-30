@@ -73,6 +73,18 @@ class Statistics:
     def __unload(self):
         self.bot.saved_stuff["all_users"] = self.all_users
 
+    async def update_all(self):
+        reqs = []
+        for user_id, member_stats in self.all_users.items():
+            m = self.bot.get_guild(member_stats.guild_ids[0]).get_member(user_id)
+            items = member_stats.process_status(m.status.value, update=True)
+            reqs.append(pymongo.UpdateOne(
+                {"user_id": m.id},
+                {"$push": {"status": {"$each": items}}, "$setOnInsert": {"user_id": m.id}},
+                upsert=True
+            ))
+        await self.user_data.bulk_write(reqs)
+
     async def update(self, member):
         member_stats = self.all_users[member.id]
         items = member_stats.process_status(member.status.value, update=True)
@@ -145,12 +157,9 @@ class Statistics:
         await ctx.send(file=discord.File(bytes_, "statuses.png"))
 
     async def fetch_total_status(self, member):
-        now = utils.now_time()
         member_data = [s async for s in self.user_data.aggregate([
             {
-                "$match": {
-                    "user_id": member.id
-                }
+                "$match": {"user_id": member.id}
             },
             {
                 "$unwind": "$status"
@@ -171,6 +180,8 @@ class Statistics:
             {"name": "idle", "count": 0, "color": discord.Colour.orange().to_rgba()},
             {"name": "offline", "count": 0, "color": discord.Colour.light_grey().to_rgba()}
         )
+
+        now = utils.now_time()
         for item in statuses:
             data = utils.get_element(member_data, lambda x: x["_id"]==item["name"])
             if data:
@@ -233,6 +244,37 @@ class Statistics:
         title = f"{target.name}'s hourly status (offset {offset:+d})"
         bytes_ = await utils.line_chart(statuses, unit_y="hours", unit_x="time\nof day", title=title, loop=self.bot.loop)
         await ctx.send(file=discord.File(bytes_, filename="line_status.png"))
+
+    @commands.command()
+    @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
+    async def areastatus(self, ctx, member: discord.Member=None, offset: int=0):
+        await ctx.trigger_typing()
+        offset = (offset + 12) % 24 - 12
+        target = member or ctx.author
+        statuses = await self.fetch_hourly_status(target, offset=offset)
+
+        #transform to percentage
+        x_keys = statuses[0]["count"].keys()
+        totals = collections.OrderedDict(((key, sum((item["count"][key] for item in statuses))) for key in x_keys))
+        draw_data = []
+        accumulate = {}
+        for d in statuses:
+            item = {"name": d["name"], "color": d["color"]}
+            count = collections.OrderedDict()
+            for key, value in d["count"].items():
+                count[key] = value / totals[key] * 100 + accumulate.get(key, 0)
+            item["count"] = count
+            draw_data.append(item)
+            accumulate = count
+
+        #draw
+        title = f"{target.name}'s hourly status (offset {offset:+d})"
+        try:
+            bytes_ = await utils.stacked_area_chart(draw_data, unit_y="%", unit_x="time\nof day", title=title, loop=self.bot.loop)
+        except ZeroDivisionError:
+            await ctx.send("I need at least 1 day worth of data to perform this command.")
+        else:
+            await ctx.send(file=discord.File(bytes_, filename="area_status.png"))
 
 #==================================================================================================================================================
 
