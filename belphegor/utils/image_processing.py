@@ -234,42 +234,40 @@ class AAImageProcessing:
                         dr.pieslice(inner_border, last_angle, current_angle, fill=f(fill))
                         last_angle = current_angle
 
-                    if (ccl[0][0] - start_angle) % 360 < EPSILON:
-                        arc_start = (int(center[0]+math.cos(math.radians(start_angle))*half_size[0]), int(center[1]+math.sin(math.radians(start_angle))*half_size[1]))
-                        arc_end = (int(center[0]+math.cos(math.radians(last_angle))*half_size[0]), int(center[1]+math.sin(math.radians(last_angle))*half_size[1]))
-                        dr.ellipse(
-                            (
-                                math.ceil(arc_start[0]-half_aawidth),
-                                math.ceil(arc_start[1]-half_aawidth),
-                                math.floor(arc_start[0]+half_aawidth),
-                                math.floor(arc_start[1]+half_aawidth)
-                            ),
-                            fill=o
-                        )
-                        dr.ellipse(
-                            (
-                                math.ceil(arc_end[0]-half_aawidth),
-                                math.ceil(arc_end[1]-half_aawidth),
-                                math.floor(arc_end[0]+half_aawidth),
-                                math.floor(arc_end[1]+half_aawidth)
-                            ),
-                            fill=o
-                        )
-                    else:
+                    if len(ccl) > 1:
+                        current_angle = start_angle
+                        full = False
                         for c in ccl:
-                            current_angle = c[0]
+                            if (abs(c[0] - current_angle) % 360) < EPSILON:
+                                if abs(abs(c[0] - current_angle) - 360) < EPSILON:
+                                    full = True
+                                    break
+                                else:
+                                    continue
+                            else:
+                                current_angle = c[0]
                             fill = c[1]
                             arc_end = (int(center[0]+math.cos(math.radians(current_angle))*half_size[0]), int(center[1]+math.sin(math.radians(current_angle))*half_size[1]))
                             dr.line((arc_end, int_center), width=aawidth, fill=o)
-                        dr.ellipse(
-                            (
-                                math.ceil(center[0]-half_aawidth),
-                                math.ceil(center[1]-half_aawidth),
-                                math.floor(center[0]+half_aawidth),
-                                math.floor(center[1]+half_aawidth)
-                            ),
-                            fill=o
-                        )
+                            dr.ellipse(
+                                (
+                                    math.ceil(arc_end[0]-half_aawidth),
+                                    math.ceil(arc_end[1]-half_aawidth),
+                                    math.floor(arc_end[0]+half_aawidth),
+                                    math.floor(arc_end[1]+half_aawidth)
+                                ),
+                                fill=o
+                            )
+                        if full:
+                            dr.ellipse(
+                                (
+                                    math.ceil(center[0]-half_aawidth),
+                                    math.ceil(center[1]-half_aawidth),
+                                    math.floor(center[0]+half_aawidth),
+                                    math.floor(center[1]+half_aawidth)
+                                ),
+                                fill=o
+                            )
 
                 self.image.paste(figure, (0, 0), mask)
             else:

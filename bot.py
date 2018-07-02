@@ -37,15 +37,15 @@ class Belphegor(commands.Bot):
         self.saved_stuff = {}
 
     async def get_prefix(self, message):
-        prefixes = {f"<@{self.user.id}> ", f"<@!{self.user.id}> "}
+        prefixes = [f"<@{self.user.id}> ", f"<@!{self.user.id}> "]
         if message.guild:
             gp = self.guild_prefixes.get(message.guild.id)
         else:
             gp = None
         if gp:
-            prefixes.update(gp)
+            prefixes.extend(gp)
         else:
-            prefixes.update(self.default_prefix)
+            prefixes.extend(self.default_prefix)
         return prefixes
 
     async def process_commands(self, message):
@@ -152,6 +152,7 @@ class Belphegor(commands.Bot):
     async def load(self):
         async for guild_data in self.db.guild_data.find({"prefixes": {"$exists": True, "$ne": []}}, projection={"_id": -1, "guild_id": 1, "prefixes": 1}):
             if guild_data["prefixes"]:
+                guild_data["prefixes"].sort(reverse=True)
                 self.guild_prefixes[guild_data["guild_id"]] = guild_data["prefixes"]
 
         bot_data = await self.db.belphegor_config.find_one({"category": "block"})

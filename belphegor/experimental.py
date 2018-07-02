@@ -32,6 +32,8 @@ class MemberStats:
 
         start_hour = (start - BEGINNING).total_seconds() / 3600
         end_hour = (end - BEGINNING).total_seconds() / 3600
+        if end_hour - start_hour > 720:
+            start_hour = end_hour - 720
 
         first_mark = int(start_hour)
         last_mark = int(end_hour)
@@ -73,26 +75,31 @@ class Statistics:
     def __unload(self):
         self.bot.saved_stuff["all_users"] = self.all_users
 
-    async def update_all(self):
-        reqs = []
-        for user_id, member_stats in self.all_users.items():
-            m = self.bot.get_guild(member_stats.guild_ids[0]).get_member(user_id)
-            items = member_stats.process_status(m.status.value, update=True)
-            reqs.append(pymongo.UpdateOne(
+    def get_update_requests(self, member_stats):
+        m = self.bot.get_guild(member_stats.guild_ids[0]).get_member(member_stats.id)
+        items = member_stats.process_status(m.status.value, update=True)
+        last_mark = items[-1]["mark"]
+        reqs = [
+            pymongo.UpdateOne(
+                {"user_id": m.id},
+                {"$pull": {"status": {"mark": {"$lt": last_mark-720}}}}
+            ),
+            pymongo.UpdateOne(
                 {"user_id": m.id},
                 {"$push": {"status": {"$each": items}}, "$setOnInsert": {"user_id": m.id}},
                 upsert=True
-            ))
-        await self.user_data.bulk_write(reqs)
+            )
+        ]
+        return reqs
+
+    async def update_all(self):
+        reqs = []
+        for member_stats in self.all_users.values():
+            await self.user_data.bulk_write(self.get_update_requests(member_stats))
 
     async def update(self, member):
         member_stats = self.all_users[member.id]
-        items = member_stats.process_status(member.status.value, update=True)
-        await self.user_data.update_one(
-            {"user_id": member.id},
-            {"$push": {"status": {"$each": items}}, "$setOnInsert": {"user_id": member.id}},
-            upsert=True
-        )
+        await self.user_data.bulk_write(self.get_update_requests(member_stats))
 
     async def on_member_join(self, member):
         if member.id in self.all_users:
@@ -157,12 +164,23 @@ class Statistics:
         await ctx.send(file=discord.File(bytes_, "statuses.png"))
 
     async def fetch_total_status(self, member):
+        now = utils.now_time()
+        mark = int((now - BEGINNING).total_seconds() / 3600)
         member_data = [s async for s in self.user_data.aggregate([
             {
                 "$match": {"user_id": member.id}
             },
             {
                 "$unwind": "$status"
+            },
+            {
+                "$redact": {
+                    "$cond": {
+                        "if": {"$lt": ["$status.mark", mark-720]},
+                        "then": "$$PRUNE",
+                        "else": "$$KEEP"
+                    }
+                }
             },
             {
                 "$group": {
@@ -181,7 +199,7 @@ class Statistics:
             {"name": "offline", "count": 0, "color": discord.Colour.light_grey().to_rgba()}
         )
 
-        now = utils.now_time()
+
         for item in statuses:
             data = utils.get_element(member_data, lambda x: x["_id"]==item["name"])
             if data:
@@ -200,12 +218,23 @@ class Statistics:
         await ctx.send(file=discord.File(bytes_, filename="pie_status.png"))
 
     async def fetch_hourly_status(self, member, *, offset):
+        now = utils.now_time()
+        mark = int((now - BEGINNING).total_seconds() / 3600)
         member_data = [s async for s in self.user_data.aggregate([
             {
                 "$match": {"user_id": member.id}
             },
             {
                 "$unwind": "$status"
+            },
+            {
+                "$redact": {
+                    "$cond": {
+                        "if": {"$lt": ["$status.mark", mark-720]},
+                        "then": "$$PRUNE",
+                        "else": "$$KEEP"
+                    }
+                }
             },
             {
                 "$group": {

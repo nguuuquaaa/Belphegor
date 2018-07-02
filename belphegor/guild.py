@@ -465,13 +465,16 @@ class Guild:
             Limit 10 custom prefixes per server.
         '''
         current = self.bot.guild_prefixes.get(ctx.guild.id, [])
-        if prefix not in current:
+        if prefix in current:
+            await ctx.send("This prefix is already used.")
+        else:
             if len(current) >= 10:
                 return await ctx.send("Too many prefixes.")
             current.append(prefix)
+            current.sort(reverse=True)
             self.bot.guild_prefixes[ctx.guild.id] = current
             await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$addToSet": {"prefixes": prefix}, "$setOnInsert": {"guild_id": ctx.guild.id}}, upsert=True)
-        await ctx.confirm()
+            await ctx.confirm()
 
     @cmd_prefix.error
     async def cmd_prefix_error(self, ctx, error):
@@ -493,7 +496,7 @@ class Guild:
         try:
             current.remove(prefix)
         except:
-            pass
+            await ctx.deny()
         else:
             await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$pull": {"prefixes": prefix}})
         finally:
@@ -1037,9 +1040,8 @@ class Guild:
             `>>prefix`
             Display all server prefixes.
         '''
-        prefixes = list(await self.bot.get_prefix(ctx.message))
+        prefixes = await self.bot.get_prefix(ctx.message)
         prefixes.remove(f"<@!{ctx.me.id}> ")
-        prefixes.sort()
         await ctx.send(embed=discord.Embed(title=f"Prefixes for {ctx.guild.name}", description="\n".join((f"{i+1}. {p}" for i, p in enumerate(prefixes)))))
 
     @commands.command(aliases=["serverinfo"])
