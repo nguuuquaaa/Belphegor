@@ -86,7 +86,7 @@ class Statistics:
             ),
             pymongo.UpdateOne(
                 {"user_id": m.id},
-                {"$push": {"status": {"$each": items}}, "$setOnInsert": {"user_id": m.id}},
+                {"$push": {"status": {"$each": items}}, "$setOnInsert": {"user_id": m.id, "timezone": 0}},
                 upsert=True
             )
         ]
@@ -198,7 +198,6 @@ class Statistics:
             {"name": "idle", "count": 0, "color": discord.Colour.orange().to_rgba()},
             {"name": "offline", "count": 0, "color": discord.Colour.light_grey().to_rgba()}
         )
-
 
         for item in statuses:
             data = utils.get_element(member_data, lambda x: x["_id"]==item["name"])
