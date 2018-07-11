@@ -258,7 +258,7 @@ class AAImageProcessing:
                                 ),
                                 fill=o
                             )
-                        if full:
+                        if not full:
                             dr.ellipse(
                                 (
                                     math.ceil(center[0]-half_aawidth),
@@ -417,13 +417,16 @@ def get_border(xy, epsilon=1):
             max_y = y
     return (math.floor(min_x)-epsilon, math.floor(min_y)-epsilon, math.ceil(max_x)+epsilon, math.ceil(max_y)+epsilon)
 
-async def pie_chart(data, *, unit="counts", background=(255, 255, 255, 0), text_color=(255, 255, 255, 255), outline=None, scale=1, aa=4, explode=None, outline_width=4, loop=None):
+async def pie_chart(
+    data, *, title=None, unit="counts", background=(255, 255, 255, 0), text_color=(255, 255, 255, 255),
+    outline=None, scale=1, aa=4, explode=None, outline_width=4, loop=None
+):
     def drawing():
         number_of_fields = len(data)
         number_of_items = sum((d["count"] for d in data))
         if number_of_items == 0:
             return None
-        height = max(500, 70+60*number_of_fields)
+        height = max(530, 70+60*number_of_fields)
         image = AAImageProcessing((800, height), background=background, aa=aa)
         image.add_font("normal", f"{config.DATA_PATH}/font/arialunicodems.ttf", size=20)
         image.add_font("bold", f"{config.DATA_PATH}/font/arialbd.ttf", size=20)
@@ -471,6 +474,9 @@ async def pie_chart(data, *, unit="counts", background=(255, 255, 255, 0), text_
             font="bold",
             fill=text_color
         )
+        if title:
+            width, height = image.text_size(title, font="bold")
+            image.draw_text((250-width/2, 500), title, font="bold")
         bytes_io = BytesIO()
         image.save(bytes_io, format="png", scale=scale)
         return bytes_io.getvalue()
@@ -490,7 +496,7 @@ async def line_chart(
 
         #calculate marks and draw axis
         max_count = max((max(s["count"].values()) for s in data))
-        digits = -3
+        digits = -1
         while max_count > 10**digits:
             digits += 1
         digits -= 1
@@ -547,7 +553,7 @@ async def stacked_area_chart(
 
         #calculate marks
         max_count = max((max(s["count"].values()) for s in data))
-        digits = -3
+        digits = -1
         while max_count > 10**digits + EPSILON:
             digits += 1
         digits -= 1
@@ -612,7 +618,7 @@ async def bar_chart(
 
         #calculate marks and draw axis
         max_count = max((max(s["count"].values()) for s in data))
-        digits = -3
+        digits = -1
         while max_count > 10**digits:
             digits += 1
         digits -= 1

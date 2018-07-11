@@ -394,12 +394,15 @@ class Misc:
         if tag:
             title = tag.find("div", class_="d1rFIf").div.text
             desc = tag.find('div', class_='kno-rdesc')
-            url_tag = desc.find("a")
-            if url_tag:
-                url = f"\n[{url_tag.text}]({utils.safe_url(url_tag['href'])})"
+            if desc:
+                url_tag = desc.find("a")
+                if url_tag:
+                    url = f"\n[{url_tag.text}]({utils.safe_url(url_tag['href'])})"
+                else:
+                    url = ""
+                description = f"**{title}**\n{desc.find('span').text.replace('MORE', '').replace('…', '')}{url}"
             else:
-                url = ""
-            description = f"**{title}**\n{desc.find('span').text.replace('MORE', '').replace('…', '')}{url}"
+                description = f"**{title}**"
             embed = discord.Embed(title="Search result:", description=description, colour=discord.Colour.dark_orange())
             embed.add_field(name="See also:", value='\n\n'.join((f"[{utils.discord_escape(t.text)}]({t['href']})" for t in search_results[:4])), inline=True)
             return embed
@@ -516,6 +519,7 @@ class Misc:
         '''
             `>>google <query>`
             Google search.
+            Safe search is enabled in non-nsfw channels and disabled in nsfw channels.
             There's a 10-second cooldown per user.
         '''
         async with self.google_lock:
@@ -535,7 +539,7 @@ class Misc:
             elif isinstance(result, str):
                 await ctx.send(result)
             elif not result:
-                await ctx.send("Google blocked me reeeeeeeeeeeeeeeeeeeeeeee")
+                await ctx.send("No result found.\nEither query yields nothing or Google blocked me (REEEEEEEEEEEEEEEEEEEEEEEE)")
             elif isinstance(result, list):
                 paging = utils.Paginator(result, render=False)
                 await paging.navigate(ctx)

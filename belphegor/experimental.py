@@ -18,6 +18,11 @@ BEGINNING = datetime(2018, 6, 19, 0, 0, 0, tzinfo=pytz.utc)
 
 #==================================================================================================================================================
 
+class WTFException(Exception):
+    pass
+
+#==================================================================================================================================================
+
 class MemberStats:
     __slots__ = ("id", "guild_ids", "last_updated")
 
@@ -51,6 +56,7 @@ class MemberStats:
         return items
 
 #==================================================================================================================================================
+
 class Statistics:
     def __init__(self, bot):
         self.bot = bot
@@ -75,8 +81,18 @@ class Statistics:
     def __unload(self):
         self.bot.saved_stuff["all_users"] = self.all_users
 
-    def get_update_requests(self, member_stats):
-        m = self.bot.get_guild(member_stats.guild_ids[0]).get_member(member_stats.id)
+    def get_update_requests(self, member_stats, member=None):
+        if member:
+            m = member
+        else:
+            for gid in member_stats.guild_ids:
+                g = self.bot.get_guild(gid)
+                m = g.get_member(member_stats.id)
+                if m:
+                    break
+            else:
+                return None
+
         items = member_stats.process_status(m.status.value, update=True)
         last_mark = items[-1]["mark"]
         reqs = [
@@ -95,11 +111,15 @@ class Statistics:
     async def update_all(self):
         reqs = []
         for member_stats in self.all_users.values():
-            await self.user_data.bulk_write(self.get_update_requests(member_stats))
+            reqs = self.get_update_requests(member_stats)
+            if reqs:
+                await self.user_data.bulk_write(reqs)
 
     async def update(self, member):
         member_stats = self.all_users[member.id]
-        await self.user_data.bulk_write(self.get_update_requests(member_stats))
+        reqs = self.get_update_requests(member_stats, member)
+        if reqs:
+            await self.user_data.bulk_write(reqs)
 
     async def on_member_join(self, member):
         if member.id in self.all_users:
@@ -130,7 +150,8 @@ class Statistics:
 
     async def on_member_update(self, before, after):
         if before.status != after.status and before.guild.id == self.all_users[before.id].guild_ids[0]:
-            await self.update(before)
+            if before:
+                await self.update(before)
 
     @commands.command()
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
@@ -152,7 +173,7 @@ class Statistics:
         maxi = 3
         maxv = float("inf")
 
-        for i in range(3):
+        for i in range(4):
             v = statuses[i]["count"]
             if 0 < v < maxv:
                 explode[maxi] = 0
@@ -160,7 +181,10 @@ class Statistics:
                 maxi = i
                 maxv = v
 
-        bytes_ = await utils.pie_chart(statuses, unit="members", outline=(0, 0, 0, 0), explode=explode, outline_width=10, loop=self.bot.loop)
+        bytes_ = await utils.pie_chart(
+            statuses, title=f"{ctx.guild.name}'s current status", unit="members",
+            outline=(0, 0, 0, 0), explode=explode, outline_width=10, loop=self.bot.loop
+        )
         await ctx.send(file=discord.File(bytes_, "statuses.png"))
 
     async def fetch_total_status(self, member):
@@ -212,36 +236,55 @@ class Statistics:
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     async def piestatus(self, ctx, member: discord.Member=None):
         await ctx.trigger_typing()
-        statuses = await self.fetch_total_status(member or ctx.author)
-        bytes_ = await utils.pie_chart(statuses, unit="hours", outline=(0, 0, 0, 0), outline_width=10, loop=self.bot.loop)
+        target = member or ctx.author
+        statuses = await self.fetch_total_status(target)
+        bytes_ = await utils.pie_chart(statuses, title=f"{target.display_name}'s total status", unit="hours", outline=(0, 0, 0, 0), outline_width=10, loop=self.bot.loop)
         await ctx.send(file=discord.File(bytes_, filename="pie_status.png"))
 
     async def fetch_hourly_status(self, member, *, offset):
         now = utils.now_time()
         mark = int((now - BEGINNING).total_seconds() / 3600)
-        member_data = [s async for s in self.user_data.aggregate([
+        if offset is None:
+            offset = "$timezone"
+        raw_data = [s async for s in self.user_data.aggregate([
             {
                 "$match": {"user_id": member.id}
             },
             {
-                "$unwind": "$status"
-            },
-            {
-                "$redact": {
-                    "$cond": {
-                        "if": {"$lt": ["$status.mark", mark-720]},
-                        "then": "$$PRUNE",
-                        "else": "$$KEEP"
-                    }
-                }
-            },
-            {
-                "$group": {
-                    "_id": {"stt": "$status.stt", "mark": {"$mod": [{"$add": ["$status.mark", offset]}, 24]}},
-                    "dur": {"$sum": "$status.dur"}
+                "$facet": {
+                    "data": [
+                        {
+                            "$unwind": "$status"
+                        },
+                        {
+                            "$redact": {
+                                "$cond": {
+                                    "if": {"$lt": ["$status.mark", mark-720]},
+                                    "then": "$$PRUNE",
+                                    "else": "$$KEEP"
+                                }
+                            }
+                        },
+                        {
+                            "$group": {
+                                "_id": {"stt": "$status.stt", "mark": {"$mod": [{"$add": ["$status.mark", offset]}, 24]}},
+                                "dur": {"$sum": "$status.dur"}
+                            }
+                        }
+                    ],
+                    "timezone": [
+                        {"$project": {"_id": False, "timezone": "$timezone"}}
+                    ]
                 }
             }
-        ])]
+        ])][0]
+        member_data = raw_data["data"]
+        if isinstance(offset, str):
+            r = raw_data["timezone"]
+            if r:
+                offset = r[0]["timezone"]
+            else:
+                offset = 0
 
         statuses = (
             {"name": "online", "count": collections.OrderedDict(((i, 0) for i in range(24))), "color": discord.Colour.green().to_rgba()},
@@ -260,26 +303,41 @@ class Statistics:
                 for inst in processed_stt:
                     item["count"][(inst["mark"]+offset)%24] += inst["dur"]
 
-        return statuses
+        return offset, statuses
+
+    def better_offset(self, offset):
+        return (offset + 11) % 24 - 11
 
     @commands.command()
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
-    async def linestatus(self, ctx, member: discord.Member=None, offset: int=0):
+    async def linestatus(self, ctx, member: discord.Member=None, offset=None):
         await ctx.trigger_typing()
-        offset = (offset + 12) % 24 - 12
+        if offset is not None:
+            try:
+                offset = int(offset)
+            except:
+                return await ctx.send("Offset should be an integer.")
+            else:
+                offset = self.better_offset(offset)
         target = member or ctx.author
-        statuses = await self.fetch_hourly_status(target, offset=offset)
-        title = f"{target.name}'s hourly status (offset {offset:+d})"
+        offset, statuses = await self.fetch_hourly_status(target, offset=offset)
+        title = f"{target.display_name}'s hourly status (offset {offset:+d})"
         bytes_ = await utils.line_chart(statuses, unit_y="hours", unit_x="time\nof day", title=title, loop=self.bot.loop)
         await ctx.send(file=discord.File(bytes_, filename="line_status.png"))
 
     @commands.command()
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
-    async def areastatus(self, ctx, member: discord.Member=None, offset: int=0):
+    async def areastatus(self, ctx, member: discord.Member=None, offset=None):
         await ctx.trigger_typing()
-        offset = (offset + 12) % 24 - 12
+        if offset is not None:
+            try:
+                offset = int(offset)
+            except:
+                return await ctx.send("Offset should be an integer.")
+            else:
+                offset = self.better_offset(offset)
         target = member or ctx.author
-        statuses = await self.fetch_hourly_status(target, offset=offset)
+        offset, statuses = await self.fetch_hourly_status(target, offset=offset)
 
         #transform to percentage
         x_keys = statuses[0]["count"].keys()
@@ -296,13 +354,20 @@ class Statistics:
             accumulate = count
 
         #draw
-        title = f"{target.name}'s hourly status (offset {offset:+d})"
+        title = f"{target.display_name}'s hourly status (offset {offset:+d})"
         try:
             bytes_ = await utils.stacked_area_chart(draw_data, unit_y="%", unit_x="time\nof day", title=title, loop=self.bot.loop)
         except ZeroDivisionError:
             await ctx.send("I need at least 1 day worth of data to perform this command.")
         else:
             await ctx.send(file=discord.File(bytes_, filename="area_status.png"))
+
+    @commands.command()
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+    async def timezone(self, ctx, offset: int):
+        offset = self.better_offset(offset)
+        await self.user_data.update_one({"user_id": ctx.author.id}, {"$set": {"timezone": offset}})
+        await ctx.send(f"Default offset has been set to {offset:+d}")
 
 #==================================================================================================================================================
 
