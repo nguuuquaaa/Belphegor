@@ -522,29 +522,30 @@ class Misc:
             Safe search is enabled in non-nsfw channels and disabled in nsfw channels.
             There's a 10-second cooldown per user.
         '''
+        await ctx.trigger_typing()
+        params = {
+            "q": quote(search),
+            "safe": "active",
+            "lr": "lang_en",
+            "hl": "en"
+        }
+        if ctx.channel.is_nsfw():
+            params.pop("safe")
         async with self.google_lock:
-            await ctx.trigger_typing()
-            params = {
-                "q": quote(search),
-                "safe": "active",
-                "lr": "lang_en",
-                "hl": "en"
-            }
-            if ctx.channel.is_nsfw():
-                params.pop("safe")
             bytes_ = await self.bot.fetch("https://www.google.com/search", params=params)
-            result = await self.bot.loop.run_in_executor(None, self.parse_google, bytes_)
-            if isinstance(result, discord.Embed):
-                await ctx.send(embed=result)
-            elif isinstance(result, str):
-                await ctx.send(result)
-            elif not result:
-                await ctx.send("No result found.\nEither query yields nothing or Google blocked me (REEEEEEEEEEEEEEEEEEEEEEEE)")
-            elif isinstance(result, list):
-                paging = utils.Paginator(result, render=False)
-                await paging.navigate(ctx)
-            else:
-                await ctx.send("I-it's not an error I tell ya! It's a feature!")
+
+        result = await self.bot.loop.run_in_executor(None, self.parse_google, bytes_)
+        if isinstance(result, discord.Embed):
+            await ctx.send(embed=result)
+        elif isinstance(result, str):
+            await ctx.send(result)
+        elif not result:
+            await ctx.send("No result found.\nEither query yields nothing or Google blocked me (REEEEEEEEEEEEEEEEEEEEEEEE)")
+        elif isinstance(result, list):
+            paging = utils.Paginator(result, render=False)
+            await paging.navigate(ctx)
+        else:
+            await ctx.send("I-it's not an error I tell ya! It's a feature!")
 
     @google.error
     async def google_error(self, ctx, error):
@@ -560,22 +561,23 @@ class Misc:
             Input is automatically detected, output is English.
             There's a 10-second cooldown per user.
         '''
+        await ctx.trigger_typing()
+        params = {
+            "tl": "en",
+            "hl": "en",
+            "sl": "auto",
+            "ie": "UTF-8",
+            "q": quote(search)
+        }
         async with self.google_lock:
-            await ctx.trigger_typing()
-            params = {
-                "tl": "en",
-                "hl": "en",
-                "sl": "auto",
-                "ie": "UTF-8",
-                "q": quote(search)
-            }
             bytes_ = await self.bot.fetch("http://translate.google.com/m", params=params)
-            data = BS(bytes_.decode("utf-8"), "lxml")
-            tag = data.find("div", class_="t0")
-            embed = discord.Embed(colour=discord.Colour.dark_orange())
-            embed.add_field(name="Detect", value=search)
-            embed.add_field(name="English", value=tag.get_text())
-            await ctx.send(embed=embed)
+
+        data = BS(bytes_.decode("utf-8"), "lxml")
+        tag = data.find("div", class_="t0")
+        embed = discord.Embed(colour=discord.Colour.dark_orange())
+        embed.add_field(name="Detect", value=search)
+        embed.add_field(name="English", value=tag.get_text())
+        await ctx.send(embed=embed)
 
     @gtrans.error
     async def gtrans_error(self, ctx, error):
@@ -799,7 +801,7 @@ class Misc:
         for f in fields:
             if len(f) > 1:
                 if len(f[0]) > 0 and len(f[1]) > 0:
-                    embed.add_field(name=f[0].strip(), value=f[1].strip(), inline=utils.get_element(f, 2, default="true").strip() in ("True", 1, "true", "inline"))
+                    embed.add_field(name=f[0].strip(), value=f[1].strip(), inline=utils.get_element(f, 2, default="true").strip() in ("True", "1", "true", "inline"))
 
         try:
             await ctx.send(embed=embed)
