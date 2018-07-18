@@ -149,13 +149,24 @@ class Statistics:
                 self.all_users.pop(member.id)
 
     async def on_member_update(self, before, after):
-        if before.status != after.status and before.guild.id == self.all_users[before.id].guild_ids[0]:
-            if before:
-                await self.update(before)
+        if before.status != after.status:
+            try:
+                m = self.all_users[before.id]
+            except KeyError:
+                m = MemberStats(id=before.id, guild_ids=[before.guild.id], last_updated=utils.now_time())
+                self.all_users[before.id] = m
+            else:
+                if before.guild.id == m.guild_ids[0]:
+                    if before:
+                        await self.update(before)
 
     @commands.command()
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     async def guildstatus(self, ctx):
+        '''
+           `>>guildstatus`
+            Display pie chart showing current guild status.
+        '''
         await ctx.trigger_typing()
         statuses = (
             {"name": "online", "count": 0, "color": discord.Colour.green().to_rgba()},
@@ -235,6 +246,11 @@ class Statistics:
     @commands.command()
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     async def piestatus(self, ctx, member: discord.Member=None):
+        '''
+           `>>piestatus <optional: member>`
+            Display pie chart showing total status of target member.
+            Default member is command invoker.
+        '''
         await ctx.trigger_typing()
         target = member or ctx.author
         statuses = await self.fetch_total_status(target)
@@ -311,6 +327,11 @@ class Statistics:
     @commands.command()
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     async def linestatus(self, ctx, member: discord.Member=None, offset=None):
+        '''
+           `>>linestatus <optional: member> <optional: offset>`
+            Display line chart showing hourly status of target member.
+            Default member is command invoker. Default offset target's pre-set timezone, or 0 if not set.
+        '''
         await ctx.trigger_typing()
         if offset is not None:
             try:
@@ -328,6 +349,11 @@ class Statistics:
     @commands.command()
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     async def areastatus(self, ctx, member: discord.Member=None, offset=None):
+        '''
+           `>>areastatus <optional: member> <optional: offset>`
+            Display stacked area chart showing hourly status percentage of target member.
+            Default member is command invoker. Default offset target's pre-set timezone, or 0 if not set.
+        '''
         await ctx.trigger_typing()
         if offset is not None:
             try:
@@ -365,6 +391,10 @@ class Statistics:
     @commands.command()
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     async def timezone(self, ctx, offset: int):
+        '''
+           `>>timezone <offset>`
+            Set default offset.
+        '''
         offset = self.better_offset(offset)
         await self.user_data.update_one({"user_id": ctx.author.id}, {"$set": {"timezone": offset}})
         await ctx.send(f"Default offset has been set to {offset:+d}")

@@ -962,18 +962,23 @@ class Misc:
 
     @ascii.command(name="edge")
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
-    async def ascii_edge(self, ctx, member: discord.Member=None, threshold: int=32):
+    async def ascii_edge(self, ctx, member: discord.Member=None, threshold: int=32, blur: int=2):
         '''
-            `>>ascii edge <optional: member> <optional: threshold>`
+            `>>ascii edge <optional: member> <optional: threshold> <optional: blur>`
             Edge-detection ASCII art of member avatar.
             If no member is specified, use your avatar.
-            Less threshold, more character. Default threshold is 32. Maximum threshold is 255.
+            Less threshold, more dense. Default threshold is 32. Maximum threshold is 255.
+            Less blur, more sharp. Default blur is 2. Maximum blur is 10.
             Has 10s cooldown due to heavy processing (someone give me good algorithm pls).
         '''
         if threshold > 255:
             return await ctx.send("Threshold is too big.")
         elif threshold < 0:
             return await ctx.send("Threshold should be a non-negative number.")
+        if blur > 10:
+            return await ctx.send("Blur value is too big.")
+        elif blur < 0:
+            return await ctx.send("Blur value should be a non-negative number.")
         await ctx.trigger_typing()
         target = member or ctx.author
         bytes_ = await self.bot.fetch(target.avatar_url)
@@ -986,7 +991,9 @@ class Misc:
             full_height = height * char_height
 
             start = time.perf_counter()
-            image = Image.open(BytesIO(bytes_)).resize((full_width, full_height)).convert("L").filter(ImageFilter.FIND_EDGES).filter(ImageFilter.GaussianBlur(radius=2))
+            image = Image.open(BytesIO(bytes_)).resize((full_width, full_height)).convert("L").filter(ImageFilter.FIND_EDGES)
+            if blur > 0:
+                image = image.filter(ImageFilter.GaussianBlur(radius=blur))
             raw = []
             pixels = tuple(1 if p > threshold else 0 for p in image.getdata())
             inf = -float("inf")
