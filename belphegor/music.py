@@ -508,9 +508,9 @@ class Music:
     @music.command(aliases=["q"])
     async def queue(self, ctx, *, name=None):
         '''
-            `>>music queue <optional: name>`
-            Search Youtube for a song and put it in queue.
-            If no name is provided, the current queue is displayed instead.
+            `>>music queue <optional: name or url>`
+            Search Youtube for song name then put it in queue, or immediately queue it if input is a recognized url.
+            If no input is provided, the current queue is displayed instead.
             Queue is server-specific.
         '''
         music_player = await self.get_music_player(ctx.guild)
