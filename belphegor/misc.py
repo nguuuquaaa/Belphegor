@@ -392,7 +392,7 @@ class Misc:
         #wiki
         tag = data.find("div", class_="knowledge-panel")
         if tag:
-            title = tag.find("div", class_="d1rFIf").div.text
+            title = tag.find("div", class_="kno-ecr-pt").span.text
             desc = tag.find('div', class_='kno-rdesc')
             if desc:
                 url_tag = desc.find("a")
