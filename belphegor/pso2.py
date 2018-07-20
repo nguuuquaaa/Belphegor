@@ -580,7 +580,7 @@ class PSO2:
 
     async def check_for_new_version(self):
         bytes_ = await self.bot.fetch(
-            "https://pso2.acf.me.uk/PSO2Alert/PSO2Alert.json",
+            "https://pso2.acf.me.uk/PSO2Alert.json",
             headers={
                 "User-Agent": "PSO2Alert",
                 "Connection": "Keep-Alive",
@@ -590,7 +590,7 @@ class PSO2:
         data = json.loads(bytes_)[0]
         self.api_data["version"] = data["Version"]
         self.api_data["url"] = data["API"]
-        self.api_data["headers"] = {"User-Agent": f"PSO2.Alert.v{data['Version']} nguuuquaaa_eq_service", "Host": "pso2.acf.me.uk"}
+        self.api_data["headers"] = {"User-Agent": f"PSO2.Alert.v{data['Version']} you_thought_its_eq_alert_but_its_actually_me_nguuuquaaa", "Host": "pso2.acf.me.uk"}
 
     async def eq_alert(self):
         _loop = self.bot.loop
@@ -672,10 +672,11 @@ class PSO2:
                             _loop.create_task(try_it(channel.send(embed=simple_embed)))
         except asyncio.CancelledError:
             return
-        except Exception as e:
-            await asyncio.sleep(10)
-            print(e)
+        except ConnectionError:
+            await asyncio.sleep(30)
             self.eq_alert_forever = weakref.ref(_loop.create_task(self.eq_alert()))
+        except:
+            await self.bot.error_hook.execute(f"```\n{traceback.format_exc()}\n```")
 
     def get_emoji(self, dt_obj):
         if dt_obj.minute == 0:

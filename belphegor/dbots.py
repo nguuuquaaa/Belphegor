@@ -3,6 +3,7 @@ from discord.ext import commands
 from . import utils
 from .utils import token
 import json
+import dbl
 
 #==================================================================================================================================================
 
@@ -15,12 +16,13 @@ class DBots:
             "Authorization": token.DBOTS_TOKEN,
             "content-type": "application/json"
         }
+        self.dbl = dbl.Client(self.bot, token.DBL_TOKEN)
 
     async def update(self):
         payload = {"server_count": len(self.bot.guilds)}
         data = json.dumps(payload)
-        async with self.bot.session.post(self.base_url, headers=self.headers, data=data) as resp:
-            pass
+        await self.bot.session.post(self.base_url, headers=self.headers, data=data)
+        await self.dbl.post_server_count()
 
     async def on_guild_join(self, guild):
         await self.update()
