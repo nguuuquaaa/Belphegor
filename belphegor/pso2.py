@@ -266,8 +266,14 @@ class PSO2:
         self.boost_remind_forever = weakref.ref(bot.loop.create_task(self.boost_remind()))
 
     def __unload(self):
-        self.eq_alert_forever().cancel()
-        self.boost_remind_forever().cancel()
+        try:
+            self.eq_alert_forever().cancel()
+        except:
+            pass
+        try:
+            self.boost_remind_forever().cancel()
+        except:
+            pass
 
     @commands.command(aliases=["c"])
     async def chip(self, ctx, *, name):
@@ -590,7 +596,7 @@ class PSO2:
         data = json.loads(bytes_)[0]
         self.api_data["version"] = data["Version"]
         self.api_data["url"] = data["API"]
-        self.api_data["headers"] = {"User-Agent": f"PSO2.Alert.v{data['Version']} you_thought_its_eq_alert_but_its_actually_me_nguuuquaaa", "Host": "pso2.acf.me.uk"}
+        self.api_data["headers"] = {"User-Agent": f"PSO2.Alert.v3.0.5.9 you_thought_its_eq_alert_but_its_actually_me_nguuuquaaa", "Host": "pso2.acf.me.uk"}
 
     async def eq_alert(self):
         _loop = self.bot.loop

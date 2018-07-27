@@ -242,7 +242,7 @@ class Paginator:
         else:
             embed = next(iter(self.navigation.values()))()
         message = await ctx.send(embed=embed)
-        _loop.create_task(self.add_navigate_reactions(message))
+        rt = _loop.create_task(self.add_navigate_reactions(message))
 
         try:
             while True:
@@ -263,6 +263,6 @@ class Paginator:
                 else:
                     return
         except asyncio.CancelledError:
-            return
+            rt.cancel()
         finally:
             _loop.create_task(try_it(message.clear_reactions()))

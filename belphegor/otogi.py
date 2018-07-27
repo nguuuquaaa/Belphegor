@@ -386,19 +386,10 @@ class Otogi:
             Base command. Does nothing significant.
         '''
         if ctx.invoked_subcommand is None:
-            embed = discord.Embed(title="\U0001f4bf Update database", colour=discord.Colour.orange())
-            embed.add_field(
-                name="Otogi SSA server only command",
-                value="`>>update create <data>` - Add an entry to database."
-            )
-            embed.add_field(
-                name="Public command",
-                value="`>>update wikia <name>` - Update an entry with the information from wikia.\n"
-            )
-            await ctx.send(embed=embed)
+            pass
 
     @update.command()
-    @checks.otogi_guild_only()
+    @checks.owner_only()
     async def create(self, ctx, *, data:str):
         '''
             `>>update create <data>`

@@ -112,8 +112,8 @@ class Song:
     def raw_update(self):
         try:
             data, f = self.get_stream()
-        except OSError:
-            return
+        except:
+            return None
         if data.get("duration"):
             d = data["duration"]
             self.duration = f"{d//3600:02}:{d%3600//60:02}:{d%60:02}"
@@ -525,13 +525,18 @@ class Music:
             return await ctx.send("Too many entries.")
 
         if name.startswith(("http://", "https://")):
-            d = await self.bot.run_in_lock(self.ytdl_lock, ytdl_extract_info, name)
-            if d["formats"]:
-                await music_player.queue.put(Song(ctx.message.author, d["title"], d["webpage_url"]))
-                await ctx.send(f"Added **{d['title']}** to queue.")
+            try:
+                d = await self.bot.run_in_lock(self.ytdl_lock, ytdl_extract_info, name)
+            except:
+                await ctx.send("This url is not available.")
             else:
-                await ctx.send("Song not found.")
-            return
+                if d["formats"]:
+                    await music_player.queue.put(Song(ctx.message.author, d["title"], d["webpage_url"]))
+                    await ctx.send(f"Added **{d['title']}** to queue.")
+                else:
+                    await ctx.send("Song not found.")
+            finally:
+                return
 
         results = await self.bot.run_in_lock(self.yt_lock, self.youtube_search, name)
         stuff = "\n\n".join([
