@@ -440,19 +440,19 @@ class Otogi:
     @update.command(hidden=True)
     @checks.owner_only()
     async def edit(self, ctx, *, data):
-        data = data.strip().splitlines()
+        data = data.strip().partition("\n")
         daemon = await self._search(ctx, data[0], prompt=True)
         if not daemon:
             return
-        field = data[1]
-        value = data[2]
+        field, sep, value = data[2].partition(" ")
         if field.lower() in (
             "name", "alias", "pic_url", "artwork_url", "max_atk", "max_hp", "mlb_atk", "mlb_hp", "rarity",
             "daemon_type", "daemon_class", "skill", "ability1", "ability2", "bond1", "bond2", "faction"
         ):
             try:
                 if field.lower() in ("skill", "ability1", "ability2", "bond1", "bond2"):
-                    value = {"name": data[2], "effect": data[3]}
+                    value = value.partition("\n")
+                    value = {"name": value[0], "effect": value[2]}
             except:
                 return await ctx.send("Provided data is lacking.")
             try:
@@ -499,7 +499,7 @@ class Otogi:
             await ctx.send(f"The daemon {daemon.name} is not in summon pool.")
 
     @update.command()
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     async def wikia(self, ctx, *, name):
         '''
             `>>update wikia <name>`
@@ -525,11 +525,14 @@ class Otogi:
         alias = daemon.alias
         try:
             bracket_index = name.index("[")
-            base_name = name[:bracket_index-1]
-            form = f"{name[bracket_index+1:-1]} Form"
         except:
             base_name = name
             form = "Original Form"
+        else:
+            base_name = name[:bracket_index-1]
+            form = name[bracket_index+1:-1]
+            if not form.endswith(" Form"):
+                form = f"{form} Form"
 
         #wikia search
         if direct:
@@ -539,8 +542,6 @@ class Otogi:
             elif base_name in ("Tsukuyomi", "Tsukiyomi"):
                 base_name = "Tsukuyomi"
                 form = "Original Form"
-            while form.count(" Form") > 1:
-                form = form[:-5]
         else:
             bytes_ = await self.bot.fetch(f"http://otogi.wikia.com/api/v1/Search/List?query={quote(utils.unifix(name))}&limit=5&batch=1&namespaces=0%2C14")
             search_query = json.loads(bytes_)
@@ -603,7 +604,10 @@ class Otogi:
 
         #skills, abilities and bonds
         sub_pattern = re.compile(re.escape("(MAX/MLB)"), re.IGNORECASE)
-        new_daemon.skills.append({"name": utils.unifix(tags[7].text), "effect": sub_pattern.sub("", utils.unifix(tags[8].text))})
+        try:
+            new_daemon.skills.append({"name": utils.unifix(tags[7].text), "effect": sub_pattern.sub("", utils.unifix(tags[8].text))})
+        except:
+            pass
         for i in (10, 12):
             ability_value = utils.unifix(str(tags[i].text))
             if len(ability_value) > 5:

@@ -39,25 +39,23 @@ class ErrorHandle:
                 await ctx.send(error, delete_after=30)
         elif isinstance(error, commands.CommandInvokeError):
             error = error.original
-            prt_err = "".join(traceback.format_exception(type(error), error, error.__traceback__, 5))
-            await ctx.send("Unexpected error. Oops (ᵒ ڡ <)๑⌒☆", delete_after=30)
-            await self.error_hook.execute(f"```\nIgnoring exception in command {ctx.command}:\n{prt_err}\n```")
+            if isinstance(error, OverflowError):
+                await ctx.send("Input number too big. You sure really need it?")
+            elif isinstance(error, discord.Forbidden):
+                await ctx.send(error)
+            else:
+                prt_err = "".join(traceback.format_exception(type(error), error, error.__traceback__, 5))
+                await ctx.send("Unexpected error. Oops (ᵒ ڡ <)๑⌒☆", delete_after=30)
+                await self.error_hook.execute(f"```\nIgnoring exception in command {ctx.command}:\n{prt_err}\n```")
         elif isinstance(error, commands.MissingRequiredArgument):
             await ctx.send("Argument missing. You sure know what this command does?", delete_after=30)
         elif isinstance(error, commands.BadArgument):
             await ctx.send("Bad arguments. You sure read command description?", delete_after=30)
         elif isinstance(error, ignored):
             pass
-        elif isinstance(error, OverflowError):
-            await ctx.send("Input number too big. You sure really need it?")
-        elif isinstance(error, discord.Forbidden):
-            try:
-                await ctx.send(f"I don't have enough permissions to do that.")
-            except:
-                pass
         else:
             prt_err = "".join(traceback.format_exception(type(error), error, None))
-            await self.error_hook.execute(f"```\nIgnoring exception in command {ctx.command}:\n{prt_err}\n```")
+            await self.error_hook.execute(f"```\nUnexpected error:\n{prt_err}\n```")
 
 #==================================================================================================================================================
 

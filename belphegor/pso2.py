@@ -873,9 +873,9 @@ class PSO2:
         results = []
         for item in response.get("items", []):
             title = item["summary"].lower()
-            if title.startswith("pso2 day"):
+            if "pso2 day" in title:
                 item["boost_type"] = "rappy"
-            elif title.startswith("arks league"):
+            elif "arks league" in title:
                 item["boost_type"] = "league"
             elif "eq" in title:
                 item["boost_type"] = "eq"
