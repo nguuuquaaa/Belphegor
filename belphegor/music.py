@@ -279,10 +279,11 @@ class MusicPlayer:
         self.player = weakref.ref(self.bot.loop.create_task(self.play_till_eternity()))
 
     def skip(self):
-        if self.guild.voice_client.is_playing():
-            self.guild.voice_client.stop()
-            if self.repeat is True:
-                self.current_song = None
+        if self.guild.voice_client:
+            if self.guild.voice_client.is_playing():
+                self.guild.voice_client.stop()
+        if self.repeat is True:
+            self.current_song = None
 
     async def leave_voice(self):
         if self.guild.voice_client:
@@ -296,12 +297,12 @@ class MusicPlayer:
         self.repeat = mode
         await self.queue.playlist_data.update_one({"guild_id": self.guild.id}, {"$set": {"repeat": mode}})
 
-    def cancel(self):
+    def cancel(self, clean_after=0):
         try:
             self.player().cancel()
         except:
             pass
-        self.inactivity.assign(0)
+        self.inactivity.assign(clean_after)
 
     async def play_till_eternity(self):
         def next_part(e):
@@ -463,7 +464,7 @@ class Music:
             except AttributeError:
                 await ctx.send(f"{self.bot.user.display_name} is not in any voice channel.")
             else:
-                music_player.cancel()
+                music_player.cancel(120)
                 await music_player.leave_voice()
                 await ctx.send(f"{self.bot.user.display_name} left {name}.")
 
