@@ -201,7 +201,10 @@ class Otogi:
 
         creampie_guild = self.bot.get_guild(config.CREAMPIE_GUILD_ID)
         self.emojis = {}
-        for emoji_name in ("atk", "hp", "skill", "ability", "bond", "star", "mochi", "phantasma", "anima", "divina", "ranged", "melee", "healer"):
+        for emoji_name in (
+            "atk", "hp", "skill", "ability", "bond", "star", "mochi", "phantasma",
+            "anima", "divina", "ranged", "melee", "healer", "assist"
+        ):
             self.emojis[emoji_name] = discord.utils.find(lambda e:e.name==emoji_name, creampie_guild.emojis)
 
         self.lock = asyncio.Lock()
@@ -498,7 +501,7 @@ class Otogi:
         else:
             await ctx.send(f"The daemon {daemon.name} is not in summon pool.")
 
-    @update.command()
+    @update.command(aliases=["wiki"])
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     async def wikia(self, ctx, *, name):
         '''
@@ -683,7 +686,8 @@ class Otogi:
                     await msg.edit(content=f"Fetching...\n{utils.progress_bar(i/count)}")
 
             await msg.edit(content=f"Done.\n{utils.progress_bar(i/count)}")
-            await ctx.send(file=discord.File(json.dumps({"done": done, "undone": undone}, indent=4, ensure_ascii=False).encode("utf-8"), filename="result.json"))
+            bytes_ = json.dumps({"done": done, "undone": undone}, indent=4, ensure_ascii=False).encode("utf-8")
+            await ctx.send(f"Done: {len(done)}\nUndone: {len(undone)}", file=discord.File(bytes_, filename="result.json"))
         else:
             await ctx.send("There's nothing to update.")
 
