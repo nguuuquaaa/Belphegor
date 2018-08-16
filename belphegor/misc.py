@@ -845,10 +845,12 @@ class Misc:
         target = channel or ctx
         try:
             message = await target.get_message(msg_id)
-        except:
+        except discord.NotFound:
             await ctx.send("Can't find message.")
+        except discord.Forbidden:
+            await ctx.send(f"I don't have permissions to access {channel.mention}")
         else:
-            embed = discord.Embed(title=f"ID: {msg_id}", description=message.content)
+            embed = discord.Embed(title=f"ID: {msg_id}", description=message.content, url=message.jump_url)
             embed.set_author(name=message.author.display_name, icon_url=message.author.avatar_url)
             embed.set_footer(text=utils.format_time(message.created_at))
             if message.attachments:
@@ -865,10 +867,12 @@ class Misc:
         target = channel or ctx
         try:
             message = await ctx.get_message(msg_id)
-        except:
+        except discord.NotFound:
             await ctx.send("Can't find message.")
+        except discord.Forbidden:
+            await ctx.send(f"I don't have permissions to access {channel.mention}")
         else:
-            embed = discord.Embed(title=f"ID: {msg_id}", description=utils.split_page(message.content, 2000, safe_mode=True)[0])
+            embed = discord.Embed(title=f"ID: {msg_id}", description=utils.split_page(message.content, 2000, safe_mode=True)[0], url=message.jump_url)
             embed.set_author(name=message.author.display_name, icon_url=message.author.avatar_url)
             embed.set_footer(text=utils.format_time(message.created_at))
             if message.attachments:

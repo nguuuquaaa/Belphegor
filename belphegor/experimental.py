@@ -63,6 +63,8 @@ class Statistics:
         self.user_data = bot.db.user_data
         self.command_data = bot.db.command_data
 
+        self.command_run_count = bot.saved_stuff.pop("command_run_count", {})
+
         now = utils.now_time()
         self.all_users = {}
         try:
@@ -80,6 +82,7 @@ class Statistics:
 
     def __unload(self):
         self.bot.saved_stuff["all_users"] = self.all_users
+        self.bot.saved_stuff["command_run_count"] = self.command_run_count
 
     def get_update_requests(self, member_stats, member=None):
         if member:
@@ -91,7 +94,7 @@ class Statistics:
                 if m:
                     break
             else:
-                return None
+                return []
 
         items = member_stats.process_status(m.status.value, update=True)
         last_mark = items[-1]["mark"]
@@ -404,7 +407,28 @@ class Statistics:
         await ctx.send(f"Default offset has been set to {offset:+d}")
 
     async def on_command_completion(self, ctx):
-        await self.command_data.update_one({"name": ctx.command.name}, {"$inc": {"total_count": 1}}, upsert=True)
+        cmd = ctx.command.qualified_name
+        self.command_run_count[cmd] = self.command_run_count.get(cmd, 0) + 1
+        await self.command_data.update_one({"name": cmd}, {"$inc": {"total_count": 1}}, upsert=True)
+
+    @commands.command(hidden=True)
+    async def topcmd(self, ctx):
+        all_cmds = [(name, value) for name, value in self.command_run_count.items()]
+        all_cmds.sort(key=lambda x: x[1], reverse=True)
+
+        embed = discord.Embed(title="Commands run")
+        total = (x[1] for x in all_cmds)
+        embed.add_field(name="Total", value=f"{sum(total)}", inline=False)
+
+        top = []
+        for cmd in all_cmds:
+            top.append(cmd)
+            if len(top) >= 3:
+                break
+
+        embed.add_field(name="Top command", value="\n".join((f"{i+1}\u20e3 {x[0]} - {x[1]} times" for i, x in enumerate(all_cmds))), inline=False)
+
+        await ctx.send(embed=embed)
 
 #==================================================================================================================================================
 
