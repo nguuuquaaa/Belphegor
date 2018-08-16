@@ -586,7 +586,7 @@ class PSO2:
 
     async def check_for_new_version(self):
         bytes_ = await self.bot.fetch(
-            "https://pso2.acf.me.uk/PSO2Alert.json",
+            "https://pso2.acf.me.uk/PSO2Alert/PSO2Alert.json",
             headers={
                 "User-Agent": "PSO2Alert",
                 "Connection": "Keep-Alive",
@@ -596,7 +596,7 @@ class PSO2:
         data = json.loads(bytes_)[0]
         self.api_data["version"] = data["Version"]
         self.api_data["url"] = data["API"]
-        self.api_data["headers"] = {"User-Agent": f"PSO2.Alert.v3.0.5.9 you_thought_its_eq_alert_but_its_actually_me_nguuuquaaa", "Host": "pso2.acf.me.uk"}
+        self.api_data["headers"] = {"User-Agent": f"PSO2.Alert.v{data['Version']} you_thought_its_eq_alert_but_its_actually_me_nguuuquaaa", "Host": "pso2.acf.me.uk"}
 
     async def eq_alert(self):
         _loop = self.bot.loop

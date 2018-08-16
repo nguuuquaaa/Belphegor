@@ -61,7 +61,7 @@ class Statistics:
     def __init__(self, bot):
         self.bot = bot
         self.user_data = bot.db.user_data
-        self.belphegor_config = bot.db.belphegor_config
+        self.command_data = bot.db.command_data
 
         now = utils.now_time()
         self.all_users = {}
@@ -109,11 +109,15 @@ class Statistics:
         return reqs
 
     async def update_all(self):
-        reqs = []
+        all_reqs = []
         for member_stats in self.all_users.values():
             reqs = self.get_update_requests(member_stats)
-            if reqs:
-                await self.user_data.bulk_write(reqs)
+            all_reqs.extend(reqs)
+            if len(all_reqs) >= 100:
+                await self.user_data.bulk_write(all_reqs)
+                all_reqs.clear()
+        if all_reqs:
+            await self.user_data.bulk_write(all_reqs)
 
     async def update(self, member):
         member_stats = self.all_users[member.id]
@@ -398,6 +402,9 @@ class Statistics:
         offset = self.better_offset(offset)
         await self.user_data.update_one({"user_id": ctx.author.id}, {"$set": {"timezone": offset}})
         await ctx.send(f"Default offset has been set to {offset:+d}")
+
+    async def on_command_completion(self, ctx):
+        await self.command_data.update_one({"name": ctx.command.name}, {"$inc": {"total_count": 1}}, upsert=True)
 
 #==================================================================================================================================================
 
