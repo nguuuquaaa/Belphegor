@@ -45,14 +45,14 @@ class Help:
             name="Categories",
             value=
                 "`>>help` - Show this message\n"
-                f"      {self.emojis['mochi']} Otogi: Spirit Agents stuff\n"
-                f"      {self.emojis['hu']} PSO2 stuff\n"
-                "      \U0001f3b2 Play board games\n"
-                "      \U0001f5bc Image search/random\n"
-                "      \U0001f3b5 Music\n"
-                "      \U0001f4d4 Role/server-related stuff\n"
-                "      \U0001f3f7 Tag and sticker\n"
-                "      \u2699 Miscellaneous commands\n\n"
+                f"{self.emojis['mochi']} Otogi: Spirit Agents stuff\n"
+                f"{self.emojis['hu']} PSO2 stuff\n"
+                "\U0001f3b2 Play board games\n"
+                "\U0001f5bc Image search/random\n"
+                "\U0001f3b5 Music\n"
+                "\U0001f4d4 Role/server-related stuff\n"
+                "\U0001f3f7 Tag and sticker\n"
+                "\u2699 Miscellaneous commands\n\n"
                 "You can also use `>>help <full command name>` to get command usage",
             inline=False
         )
@@ -85,7 +85,7 @@ class Help:
             name="Database",
             value=
                 "`>>d`, `>>daemon` - Check a daemon info\n"
-                "      `filter` - Find daemons with given conditions\n"
+                "\u2517 `filter` - Find daemons with given conditions\n"
                 "Note: Data taken from [Otogi Wikia](http://otogi.wikia.com/)\n\n"
                 "`>>update` - Update database\n\n"
                 "`>>nuker(s)` - Nuker rank\n"
@@ -99,13 +99,13 @@ class Help:
             name="Simulation",
             value=
                 "`>>ls` - ~~salt~~ Lunchtime summon simulation\n"
-                "      `till` - Estimate how many summons a certain daemon\n"
-                "      `pool` - Display current summon pool\n\n"
+                "\u2517 `till` - Estimate how many summons a certain daemon\n"
+                "\u2517 `pool` - Display current summon pool\n\n"
                 "`>>mybox` - Show your or a player's box\n"
                 "`>>lb`, `>>limitbreak` - Limit break your daemons\n\n"
                 "`>>mochi` - Sell a certain daemon\n"
-                "      `bulk` - Sell all daemons with given name\n"
-                "      `all` - Sell all daemons with given rarity\n\n"
+                "\u2517 `bulk` - Sell all daemons with given name\n"
+                "\u2517 `all` - Sell all daemons with given rarity\n\n"
                 "`>>gift` - Gift someone a daemon\n"
                 "`>>gimme` - Ask someone to trade you a daemon",
             inline=False
@@ -121,7 +121,7 @@ class Help:
                 "`>>c`, `>>chip` - Check a chip info\n"
                 "Note: Data taken from [swiki](http://pso2es.swiki.jp/)\n\n"
                 "`>>w`, `>>weapon` - Check a weapon info\n"
-                "      `filter` - Find weapons with given conditions\n"
+                "\u2517 `filter` - Find weapons with given conditions\n"
                 "`>>u`, `>>unit` - Check a unit info\n"
                 "Note: Data taken from [Arks-Visiphone](http://pso2.arks-visiphone.com/wiki/Main_Page)\n\n"
                 "`>>i`, `>>item` - Search for items\n"
@@ -179,13 +179,13 @@ class Help:
             name="Commands",
             value=
                 "`>>r`, `>>random`\n"
-                "      `d`, `danbooru` - [Danbooru](https://danbooru.donmai.us)\n"
-                "      `s`, `safebooru` - [Safebooru](https://safebooru.org)\n"
-                "      `k`, `konachan` - [Konachan](http://konachan.net)\n"
-                "      `y`, `yandere` - [Yandere](https://yande.re)\n\n"
-                "      `dh`, `danbooru_h` - [NSFW Danbooru](https://danbooru.donmai.us)\n"
-                "      `kh`, `konachan_h` - [NSFW Konachan](http://konachan.com)\n"
-                "      `sc`, `sancom` - [NSFW Sankaku Complex](https://chan.sankakucomplex.com)\n\n"
+                "\u2517 `d`, `danbooru` - [Danbooru](https://danbooru.donmai.us)\n"
+                "\u2517 `s`, `safebooru` - [Safebooru](https://safebooru.org)\n"
+                "\u2517 `k`, `konachan` - [Konachan](http://konachan.net)\n"
+                "\u2517 `y`, `yandere` - [Yandere](https://yande.re)\n\n"
+                "\u2517 `dh`, `danbooru_h` - [NSFW Danbooru](https://danbooru.donmai.us)\n"
+                "\u2517 `kh`, `konachan_h` - [NSFW Konachan](http://konachan.com)\n"
+                "\u2517 `sc`, `sancom` - [NSFW Sankaku Complex](https://chan.sankakucomplex.com)\n\n"
                 "`>>saucenao` - Find the sauce of an uploaded pic or url",
             inline=False
         )
@@ -198,24 +198,24 @@ class Help:
             name="Commands",
             value=
                 "`>>m`, `>>music`\n"
-                f"      `j`, `join` - Have {self.bot.user.name} join the voice channel you are\n"
-                "                         currently in and play everything in queue\n"
-                f"      `l`, `leave` - Have {self.bot.user.name} leave the voice channel\n\n"
-                "      `q`, `queue` - Search Youtube and queue a song\n"
-                "      `p`, `playlist` - Search Youtube and queue a playlist\n\n"
-                "      `i`, `info` - Display video info, default current song (position 0)\n"
-                "      `ai`, `autoinfo` - Auto info display mode\n"
-                "      `mi`, `manualinfo` - Manual info display mode\n\n"
-                "      `t`, `toggle` - Toggle play/pause\n"
-                "      `v`, `volume` - Set volume, must be between 0 and 200\n"
-                "      `f`, `forward` - Fast forward, default 10 (seconds)\n"
-                "      `s`, `skip` - Skip current song\n"
-                "      `r`, `repeat` - Toggle repeat mode\n\n"
-                "      `d`, `delete` - Delete a song from queue with given position\n"
-                "      `purge` - Purge all songs from queue\n\n"
-                "      `setchannel` - Change notifying channel\n"
-                "      `export` - Export current queue to JSON file\n"
-                "      `import` - Import JSON playlist",
+                f"\u2517 `j`, `join` - Have {self.bot.user.name} join the voice channel you are\n"
+                "\u2517                    currently in and play everything in queue\n"
+                f"\u2517 `l`, `leave` - Have {self.bot.user.name} leave the voice channel\n\n"
+                "\u2517 `q`, `queue` - Search Youtube and queue a song\n"
+                "\u2517 `p`, `playlist` - Search Youtube and queue a playlist\n\n"
+                "\u2517 `i`, `info` - Display video info, default current song (position 0)\n"
+                "\u2517 `ai`, `autoinfo` - Auto info display mode\n"
+                "\u2517 `mi`, `manualinfo` - Manual info display mode\n\n"
+                "\u2517 `t`, `toggle` - Toggle play/pause\n"
+                "\u2517 `v`, `volume` - Set volume, must be between 0 and 200\n"
+                "\u2517 `f`, `forward` - Fast forward, default 10 (seconds)\n"
+                "\u2517 `s`, `skip` - Skip current song\n"
+                "\u2517 `r`, `repeat` - Toggle repeat mode\n\n"
+                "\u2517 `d`, `delete` - Delete a song from queue with given position\n"
+                "\u2517 `purge` - Purge all songs from queue\n\n"
+                "\u2517 `setchannel` - Change notifying channel\n"
+                "\u2517 `export` - Export current queue to JSON file\n"
+                "\u2517 `import` - Import JSON playlist",
             inline=False
         )
         paging.set_action("\U0001f3b5", lambda: music_embed)
@@ -251,11 +251,11 @@ class Help:
             name="Role",
             value=
                 "`>>selfrole` - Get selfrole with given name, if applicable\n"
-                "      `empty` - Remove all selfroles\n"
-                "      `list` - Display server selfrole pool\n"
-                "      `distribution` - Pie chart showing selfrole distribution\n"
-                "      `add` - Add an existed role to selfrole pool\n"
-                "      `remove` - Remove a role from selfrole pool\n\n"
+                "\u2517 `empty` - Remove all selfroles\n"
+                "\u2517 `list` - Display server selfrole pool\n"
+                "\u2517 `distribution` - Pie chart showing selfrole distribution\n"
+                "\u2517 `add` - Add an existed role to selfrole pool\n"
+                "\u2517 `remove` - Remove a role from selfrole pool\n\n"
                 "`>>creampie` - Get NSFW role, if applicable\n"
                 "`>>censored` - Remove NSFW role, if applicable",
             inline=False
@@ -287,24 +287,24 @@ class Help:
             name="Commands",
             value=
                 "`>>tag` - Get tag with given name\n"
-                "      `create` - Create a tag\n"
-                "      `alias` - Create an alias to another tag\n"
-                "      `edit` - Edit a tag\n"
-                "      `delete` - Delete a tag\n"
-                "      `info` - Tag info\n"
-                "      `find` - Find tags\n"
-                "      `list` - All tags by member\n"
-                "      `all` - All tags of current server\n\n"
+                "\u2517 `create` - Create a tag\n"
+                "\u2517 `alias` - Create an alias to another tag\n"
+                "\u2517 `edit` - Edit a tag\n"
+                "\u2517 `delete` - Delete a tag\n"
+                "\u2517 `info` - Tag info\n"
+                "\u2517 `find` - Find tags\n"
+                "\u2517 `list` - All tags by member\n"
+                "\u2517 `all` - All tags of current server\n\n"
                 "`>>sticker`\n"
-                "      `add` - Add a sticker\n"
-                "      `edit` - Edit a sticker\n"
-                "      `delete` - Delete a sticker\n"
-                "      `info` - Sticker info\n"
-                "      `find` - Find stickers\n"
-                "      `list` - All stickers by member\n"
-                "      `prefix` - Check/set server custom sticker prefix\n"
-                "      `ban` - Ban a sticker in current server\n"
-                "      `unban` - Unban a sticker in current server",
+                "\u2517 `add` - Add a sticker\n"
+                "\u2517 `edit` - Edit a sticker\n"
+                "\u2517 `delete` - Delete a sticker\n"
+                "\u2517 `info` - Sticker info\n"
+                "\u2517 `find` - Find stickers\n"
+                "\u2517 `list` - All stickers by member\n"
+                "\u2517 `prefix` - Check/set server custom sticker prefix\n"
+                "\u2517 `ban` - Ban a sticker in current server\n"
+                "\u2517 `unban` - Unban a sticker in current server",
             inline=False
         )
         paging.set_action("\U0001f3f7", lambda: tag_embed)
@@ -319,25 +319,25 @@ class Help:
                 "`>>poll` - Make a poll\n\n"
                 "`>>fancy` - Fancilize a sentence\n"
                 "`>>glitch` - Z̜͍̊ă̤̥ḷ̐́ģͮ͛ò̡͞ ͥ̉͞ť͔͢e̸̷̅x̠ͯͧt̰̱̾\n"
-                "      `m`, `meaningless` - ĜþŞ¶ōÙđĔł ĝĖĘ Ùľ© ¼Ħâ Ŗėēů®³ĸ¤²\n\n"
+                "\u2517 `m`, `meaningless` - ĜþŞ¶ōÙđĔł ĝĖĘ Ùľ© ¼Ħâ Ŗėēů®³ĸ¤²\n\n"
                 "`>>avatar` - Get your or a user avatar\n"
                 "`>>g`, `>>google` - Google search\n"
                 "`>>gtrans`, `>>translate` - Google, but translate\n"
                 "`>>remind`\n"
-                "      `me` - Set a reminder\n"
-                "      `list` - Display all your reminders\n"
-                "      `delete` - Delete a reminder\n\n"
+                "\u2517 `me` - Set a reminder\n"
+                "\u2517 `list` - Display all your reminders\n"
+                "\u2517 `delete` - Delete a reminder\n\n"
                 "`>>char` - Get unicode character info.\n"
                 "`>>color`, `>>colour` - Visualize color's code\n"
                 "`>>choose` - Choose random\n"
                 "`>>calc` - Calculator\n"
                 "`>>solve`\n"
-                "      `quad` - Solve degree 2 polynominal equation\n"
-                "      `cubic` - Solve degree 3 polynominal equation\n"
+                "\u2517 `quad` - Solve degree 2 polynominal equation\n"
+                "\u2517 `cubic` - Solve degree 3 polynominal equation\n"
                 "`>>ascii` - Grayscale ASCII art\n"
-                "      `biggur` - Biggur grayscale ASCII art\n"
-                "      `block` - Block ASCII art\n"
-                "      `edge` - Edge-detection ASCII art",
+                "\u2517 `biggur` - Biggur grayscale ASCII art\n"
+                "\u2517 `block` - Block ASCII art\n"
+                "\u2517 `edge` - Edge-detection ASCII art",
             inline=False
         )
         paging.set_action("\u2699", lambda: misc_embed)
