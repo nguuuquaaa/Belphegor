@@ -108,10 +108,13 @@ class Misc:
     def __init__(self, bot):
         self.bot = bot
         self.jankenpon_record = bot.db.jankenpon_record
+        self.guild_data = bot.db.guild_data
         self.google_regex = re.compile(r"\<input name\=\"rlz\" value\=\"([a-zA-Z0-9_])\" type\=\"hidden\">")
         self.google_lock = asyncio.Lock()
         self.owo = {"/o/": "\\o\\", "\\o\\": "/o/", "\\o/": "/o\\", "/o\\": "\\o/"}
         self.setup_ascii_chars()
+        self.auto_rep_disabled = set()
+        bot.loop.create_task(self.fetch_auto_rep_settings())
 
     def quote(self, streak):
         if streak.endswith("ddd"):
@@ -214,6 +217,10 @@ class Misc:
 
     async def on_message(self, message):
         if message.author.bot:
+            return
+        if not message.guild:
+            pass
+        elif message.guild.id in self.auto_rep_disabled:
             return
         inp = message.content
         if inp == "ping":
@@ -782,8 +789,14 @@ class Misc:
         choices = choices.split(" or ")
         await ctx.send(random.choice(choices))
 
-    @commands.command(name="embed", hidden=True)
+    @commands.command(name="embed")
     async def cmd_embed(self, ctx, *, data):
+        '''
+            `>>embed <data>`
+            Display an embed.
+            Data input is kwargs-like multiline, which each line has the format of `key=value`.
+            Acceptable key: title, author, author_icon, description, url, colour (in hex), thumbnail, image, footer (text), field (each line add one field in final embed, using format `name||value||optional inline`)
+        '''
         data = data.splitlines()
         kwargs = {"fields": []}
         for item in data:
@@ -1056,6 +1069,39 @@ class Misc:
     @commands.command(name="ping")
     async def cmd_ping(self, ctx):
         await self.ping(ctx)
+
+    async def fetch_auto_rep_settings(self):
+        async for data in self.guild_data.aggregate([
+            {
+                "$match": {
+                    "no_auto_rep": True
+                }
+            },
+            {
+                "$group": {
+                    "_id": None,
+                    "guild_ids": {"$push": "$guild_id"}
+                }
+            }
+        ]):
+            self.auto_rep_disabled.update(data["guild_ids"])
+
+    @commands.command()
+    @checks.guild_only()
+    @checks.manager_only()
+    async def autorep(self, ctx, mode):
+        if mode in ("on", "off"):
+            guild_id = ctx.guild.id
+            if mode == "off":
+                self.auto_rep_disabled.add(guild_id)
+                await self.guild_data.update_one({"guild_id": guild_id}, {"$set": {"no_auto_rep": True}, "$setOnInsert": {"guild_id": guild_id}}, upsert=True)
+            else:
+                self.auto_rep_disabled.discard(guild_id)
+                await self.guild_data.update_one({"guild_id": guild_id}, {"$unset": {"no_auto_rep": True}})
+            await ctx.confirm()
+        else:
+            await ctx.send("Please use on/off.")
+
 
 #==================================================================================================================================================
 

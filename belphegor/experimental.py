@@ -426,7 +426,7 @@ class Statistics:
             if len(top) >= 3:
                 break
 
-        embed.add_field(name="Top command", value="\n".join((f"{i+1}\u20e3 {x[0]} - {x[1]} times" for i, x in enumerate(all_cmds))), inline=False)
+        embed.add_field(name="Top command", value="\n".join((f"{i+1}\u20e3 {x[0]} - {x[1]} times" for i, x in enumerate(top))), inline=False)
 
         await ctx.send(embed=embed)
 

@@ -962,7 +962,12 @@ class Guild:
             If members is provided, purge only messages of those members, otherwise purge everything.
         '''
         if number > 0:
-            await ctx.message.delete()
+            try:
+                await ctx.message.delete()
+            except discord.NotFound:
+                pass
+            except discord.Forbidden:
+                return
             if members:
                 await ctx.channel.purge(limit=number, check=lambda m: m.author in members)
             else:

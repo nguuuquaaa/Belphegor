@@ -61,11 +61,12 @@ class Help:
             value=
                 "`>>invite` - Invite link\n"
                 "`>>stats`, `>>about` - Bot info\n"
-                "`>>feedback` - Feedback anything\n",
+                "`>>feedback` - Feedback anything\n"
+                "`>>autorep on/off` - Enable/disable autorep",
             inline=False
         )
         base_embed.add_field(
-            name="None-commands",
+            name="Autorep",
             value=
                 "`ping` - pong\n"
                 "`\\o\\` `/o/` `/o\\` `\\o/` - `/o/` `\\o\\` `\\o/` `/o\\`\n",
