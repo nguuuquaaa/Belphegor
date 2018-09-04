@@ -32,6 +32,8 @@ EVERYONE = Everyone()
 #==================================================================================================================================================
 
 class Paginator:
+    all_tasks = {}
+
     def __init__(self, container, per_page=1, *, separator="\n", jump=10, book=False, page_display=True, render=True, **kwargs):
         self.container = container
         self.per_page = per_page
@@ -231,6 +233,11 @@ class Paginator:
         _bot = ctx.bot
         _loop = _bot.loop
         target = target or ctx.author
+
+        if target.id in self.all_tasks:
+            self.all_tasks[target.id].cancel()
+        self.all_tasks[target.id] = asyncio.Task.current_task(loop=_loop)
+
         if ctx.channel.permissions_for(ctx.me).manage_messages:
             event = "reaction_add"
             handle_reaction = lambda m, r, u: _loop.create_task(try_it(m.remove_reaction(r, u)))
@@ -264,5 +271,7 @@ class Paginator:
                     return
         except asyncio.CancelledError:
             rt.cancel()
+        else:
+            self.all_tasks.pop(target.id)
         finally:
             _loop.create_task(try_it(message.clear_reactions()))

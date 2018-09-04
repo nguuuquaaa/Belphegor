@@ -94,7 +94,6 @@ class BelphegorContext(commands.Context):
             else:
                 await self.send(f"Can't find {name} in database.")
                 return None
-        name = name.lower()
         regex = ".*?".join(map(re.escape, name.split()))
         pipeline = [{
             "$match": {
@@ -123,8 +122,9 @@ class BelphegorContext(commands.Context):
             pipeline.append({"$sort": sort_order})
         cursor = pool.aggregate(pipeline)
         if prompt is False:
+            lower_name = name.lower()
             async for item_data in cursor:
-                if name in (item_data.get(att, "").lower() for att in atts):
+                if lower_name in (item_data.get(att, "").lower() for att in atts):
                     break
             try:
                 return cls(item_data)

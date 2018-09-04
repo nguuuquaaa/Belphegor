@@ -15,6 +15,8 @@ import subprocess
 import copy
 import sys
 import textwrap
+import objgraph
+import math
 
 #==================================================================================================================================================
 
@@ -212,6 +214,28 @@ class Admin:
             await ctx.deny()
         else:
             await ctx.send(file=discord.File(data.prettify().encode("utf-8"), filename="data.html"))
+
+    @commands.command(hidden=True)
+    @checks.owner_only()
+    async def growth(self, ctx, limit: int=10):
+        g = objgraph.growth(limit)
+        max_class = 0
+        max_count = 0
+        max_growth = 0
+        for item in g:
+            len_class = len(item[0])
+            len_count = int(math.log10(item[1])) + 1
+            len_growth = int(math.log10(item[2])) + 1
+
+            if len_class > max_class:
+                max_class = len_class
+            if len_count > max_count:
+                max_count = len_count
+            if len_growth > max_growth:
+                max_growth = len_growth
+
+        gr = "\n".join((f"{i[0]: <{max_class}}     {i[1]: >{max_count}}     {i[2]: >+{max_growth+1}}" for i in g))
+        await ctx.send(f"```\n{gr}\n```")
 
 #==================================================================================================================================================
 

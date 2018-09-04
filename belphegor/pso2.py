@@ -678,8 +678,8 @@ class PSO2:
                             _loop.create_task(try_it(channel.send(embed=simple_embed)))
         except asyncio.CancelledError:
             return
-        except ConnectionError:
-            await asyncio.sleep(30)
+        except (ConnectionError, json.JSONDecodeError):
+            await asyncio.sleep(60)
             self.eq_alert_forever = weakref.ref(_loop.create_task(self.eq_alert()))
         except:
             await self.bot.error_hook.execute(f"```\n{traceback.format_exc()}\n```")
