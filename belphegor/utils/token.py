@@ -6,3 +6,7 @@ GOOGLE_CLIENT_API_KEY = None
 DBOTS_TOKEN = None
 
 DBL_TOKEN = None
+
+G_EMAIL = None
+
+G_PASSWORD = None
