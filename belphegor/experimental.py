@@ -15,6 +15,7 @@ import random
 #==================================================================================================================================================
 
 BEGINNING = datetime(2018, 6, 19, 0, 0, 0, tzinfo=pytz.utc)
+DISCORDPY_GUILD_ID = 336642139381301249
 
 #==================================================================================================================================================
 
@@ -24,11 +25,10 @@ class WTFException(Exception):
 #==================================================================================================================================================
 
 class MemberStats:
-    __slots__ = ("id", "guild_ids", "last_updated")
+    __slots__ = ("id", "last_updated")
 
-    def __init__(self, id, *, guild_ids, last_updated):
+    def __init__(self, id, *, last_updated):
         self.id = id
-        self.guild_ids = guild_ids
         self.last_updated = last_updated
 
     def process_status(self, stt, *, update=False):
@@ -70,15 +70,12 @@ class Statistics:
         try:
             all_users = bot.saved_stuff.pop("all_users")
         except KeyError:
-            for guild in self.bot.guilds:
-                for member in guild.members:
-                    if member.id in self.all_users:
-                        self.all_users[member.id].guild_ids.append(guild.id)
-                    else:
-                        self.all_users[member.id] = MemberStats(member.id, guild_ids=[guild.id], last_updated=now)
+            dpy_guild = bot.get_guild(DISCORDPY_GUILD_ID)
+            for member in dpy_guild.members:
+                self.all_users[member.id] = MemberStats(member.id, last_updated=now)
         else:
             for key, value in all_users.items():
-                self.all_users[key] = MemberStats(value.id, guild_ids=value.guild_ids, last_updated=value.last_updated)
+                self.all_users[key] = MemberStats(value.id, last_updated=value.last_updated)
 
     def __unload(self):
         self.bot.saved_stuff["all_users"] = self.all_users
@@ -88,13 +85,10 @@ class Statistics:
         if member:
             m = member
         else:
-            for gid in member_stats.guild_ids:
-                g = self.bot.get_guild(gid)
-                m = g.get_member(member_stats.id)
-                if m:
-                    break
-            else:
-                return []
+            g = self.bot.get_guild(DISCORDPY_GUILD_ID)
+            m = g.get_member(member_stats.id)
+            if not m:
+                return
 
         items = member_stats.process_status(m.status.value, update=True)
         last_mark = items[-1]["mark"]
@@ -129,46 +123,28 @@ class Statistics:
             await self.user_data.bulk_write(reqs)
 
     async def on_member_join(self, member):
-        if member.id in self.all_users:
-            self.all_users[member.id].guild_ids.append(member.guild.id)
-        else:
-            self.all_users[member.id] = MemberStats(member.id, guild_ids=[member.guild.id], last_updated=utils.now_time())
+        if member.guild.id == DISCORDPY_GUILD_ID:
+            self.all_users[member.id] = MemberStats(member.id, last_updated=utils.now_time())
 
     async def on_member_remove(self, member):
-        member_stats = self.all_users[member.id]
-        member_stats.guild_ids.remove(member.guild.id)
-        if not member_stats.guild_ids:
+        if member.guild.id == DISCORDPY_GUILD_ID:
             self.all_users.pop(member.id)
 
-    async def on_guild_join(self, guild):
-        now = utils.now_time()
-        for member in guild.members:
-            if member.id in self.all_users:
-                self.all_users[member.id].guild_ids.append(member.guild.id)
-            else:
-                self.all_users[member.id] = MemberStats(id=member.id, guild_ids=[guild.id], last_updated=now)
-
-    async def on_guild_remove(self, guild):
-        for member in guild.members:
-            member_stats = self.all_users[member.id]
-            member_stats.guild_ids.remove(guild.id)
-            if not member_stats.guild_ids:
-                self.all_users.pop(member.id)
-
     async def on_member_update(self, before, after):
-        if before.status != after.status:
-            try:
-                m = self.all_users[before.id]
-            except KeyError:
-                m = MemberStats(id=before.id, guild_ids=[before.guild.id], last_updated=utils.now_time())
-                self.all_users[before.id] = m
-            else:
-                if before.guild.id == m.guild_ids[0]:
+        if before.guild.id == DISCORDPY_GUILD_ID:
+            if before.status != after.status:
+                try:
+                    m = self.all_users[before.id]
+                except KeyError:
+                    m = MemberStats(id=before.id, last_updated=utils.now_time())
+                    self.all_users[before.id] = m
+                else:
                     if before:
                         await self.update(before)
 
     @commands.command()
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
+    @checks.in_certain_guild(DISCORDPY_GUILD_ID)
     async def guildstatus(self, ctx):
         '''
            `>>guildstatus`
@@ -252,6 +228,7 @@ class Statistics:
 
     @commands.command()
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
+    @checks.in_certain_guild(DISCORDPY_GUILD_ID)
     async def piestatus(self, ctx, member: discord.Member=None):
         '''
            `>>piestatus <optional: member>`
@@ -333,6 +310,7 @@ class Statistics:
 
     @commands.command()
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
+    @checks.in_certain_guild(DISCORDPY_GUILD_ID)
     async def linestatus(self, ctx, member: discord.Member=None, offset=None):
         '''
            `>>linestatus <optional: member> <optional: offset>`
@@ -355,6 +333,7 @@ class Statistics:
 
     @commands.command()
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
+    @checks.in_certain_guild(DISCORDPY_GUILD_ID)
     async def areastatus(self, ctx, member: discord.Member=None, offset=None):
         '''
            `>>areastatus <optional: member> <optional: offset>`
@@ -397,6 +376,7 @@ class Statistics:
 
     @commands.command()
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+    @checks.in_certain_guild(DISCORDPY_GUILD_ID)
     async def timezone(self, ctx, offset: int):
         '''
            `>>timezone <offset>`

@@ -561,7 +561,10 @@ class Misc:
             "q": quote(search),
             "safe": "active",
             "lr": "lang_en",
-            "hl": "en"
+            "hl": "en",
+            "client": "firefox-b-ab",
+            "ie": "UTF-8",
+            "oe": "UTF-8"
         }
         if ctx.channel.is_nsfw():
             params.pop("safe")
