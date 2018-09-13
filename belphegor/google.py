@@ -382,7 +382,7 @@ class GoogleEngine:
             return None
 
         other = "\n\n".join((f"<{r[1]}>" for r in search_results[1:5]))
-        return f"**Search result:**\n{search_results[0][0]}\n**See also:**\n{other}"
+        return f"**Search result:**\n{search_results[0][1]}\n**See also:**\n{other}"
 
     def close(self):
         self.driver.close()
@@ -426,10 +426,7 @@ class Google:
         '''
         await ctx.trigger_typing()
 
-        if ctx.channel.is_nsfw():
-            safe = True
-        else:
-            safe = False
+        safe = ctx.channel.is_nsfw()
 
         fut = self.bot.loop.create_future()
         mid = ctx.message.id
