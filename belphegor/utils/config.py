@@ -26,6 +26,7 @@ all_extensions = [
     "belphegor.otogi",
     "belphegor.pso2",
     "belphegor.misc",
+    "belphegor.google",
     "belphegor.help",
     "belphegor.music",
     "belphegor.image",
