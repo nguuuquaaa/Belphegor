@@ -705,6 +705,30 @@ class Misc:
         for c in ("A", "C", "D", "H", "I", "J", "K", "L", "M", "N", "O", "S", "T", "U", "V", "W", "X", "Y", "Z"):
             self.chars[c].weight = 0.6
 
+    def process_image(self, image, image_proc, per_cut, width, height, char_width, char_height, threshold, inverse=0):
+        width = width
+        height = height
+        char_width = char_width
+        char_height = char_height
+        full_width = width * char_width
+        full_height = height * char_height
+
+        raw = []
+        image = image.resize((full_width, full_height)).convert("L")
+        if image_proc:
+            image = image_proc(image)
+        pixels = tuple(1-inverse if p > threshold else inverse for p in image.getdata())
+        range_height = range(char_height)
+        range_width = range(char_width)
+
+        for y in range(0, full_height, char_height):
+            for x in range(0, full_width, char_width):
+                cut = tuple(pixels[x+i+(y+j)*full_width] for j in range_height for i in range_width)
+                raw.append(per_cut(cut))
+
+        t = ("".join(raw[i:i+width]) for i in range(0, width*height, width))
+        return "\n".join(t)
+
     @ascii.command(name="edge")
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     async def ascii_edge(self, ctx, member: discord.Member=None, threshold: int=32, blur: int=2):
@@ -727,40 +751,31 @@ class Misc:
         await ctx.trigger_typing()
         target = member or ctx.author
         bytes_ = await self.bot.fetch(target.avatar_url)
+        image = Image.open(BytesIO(bytes_))
 
-        def do_stuff():
-            width = 64
-            height = 30
-            char_width, char_height = CHAR_SIZE
-            full_width = width * char_width
-            full_height = height * char_height
-
-            start = time.perf_counter()
-            image = Image.open(BytesIO(bytes_)).resize((full_width, full_height)).convert("L").filter(ImageFilter.FIND_EDGES)
+        def image_proc(image):
+            image = image.filter(ImageFilter.FIND_EDGES)
             if blur > 0:
                 image = image.filter(ImageFilter.GaussianBlur(radius=blur))
-            raw = []
-            pixels = tuple(1 if p > threshold else 0 for p in image.getdata())
-            inf = -float("inf")
-            chars = self.chars.items()
-            range_height = range(char_height)
-            range_width = range(char_width)
+            return image
 
-            for y in range(0, full_height, char_height):
-                for x in range(0, full_width, char_width):
-                    cut = tuple(pixels[x+i+(y+j)*full_width] for j in range_height for i in range_width)
-                    best_weight = inf
-                    best_char = None
-                    for c, im in chars:
-                        weight = im.compare(cut)
-                        if weight > best_weight:
-                            best_weight = weight
-                            best_char = c
-                    raw.append(best_char)
+        chars = self.chars.items()
+        inf = -float("inf")
+        def per_cut(cut):
+            best_weight = inf
+            best_char = None
+            for c, im in chars:
+                weight = im.compare(cut)
+                if weight > best_weight:
+                    best_weight = weight
+                    best_char = c
+            return best_char
+
+        def do_stuff():
+            start = time.perf_counter()
+            ret = self.process_image(image, image_proc, per_cut, 64, 30, *CHAR_SIZE, threshold, 0)
             end = time.perf_counter()
-
-            t = ("".join(raw[i:i+width]) for i in range(0, width*height, width))
-            return "\n".join(t), end-start
+            return ret, end-start
 
         result, time_taken = await self.bot.loop.run_in_executor(None, do_stuff)
         await ctx.send(f"Result in {time_taken*1000:.2f}ms```\n{result}\n```")
@@ -773,37 +788,18 @@ class Misc:
         await ctx.trigger_typing()
         target = member or ctx.author
         bytes_ = await self.bot.fetch(target.avatar_url)
+        image = Image.open(BytesIO(bytes_))
 
-        def do_stuff():
-            width = 56
-            height = 32
-            char_width = 2
-            char_height = 4
-            full_width = width * char_width
-            full_height = height * char_height
+        inf = -float("inf")
+        def per_cut(cut):
+            pos = [str(p) for i, p in enumerate(DOT_PATTERN) if cut[i] == 1]
+            if pos:
+                pos.sort()
+                return unicodedata.lookup(f"BRAILLE PATTERN DOTS-{''.join(pos)}")
+            else:
+                return "\u2800"
 
-            image = Image.open(BytesIO(bytes_)).resize((full_width, full_height)).convert("L")
-            raw = []
-            pixels = tuple(1-inverse if p > threshold else inverse for p in image.getdata())
-            inf = -float("inf")
-            chars = self.chars.items()
-            range_height = range(char_height)
-            range_width = range(char_width)
-
-            for y in range(0, full_height, char_height):
-                for x in range(0, full_width, char_width):
-                    cut = tuple(pixels[x+i+(y+j)*full_width] for j in range_height for i in range_width)
-                    pos = [str(p) for i, p in enumerate(DOT_PATTERN) if cut[i] == 1]
-                    if pos:
-                        pos.sort()
-                        raw.append(unicodedata.lookup(f"BRAILLE PATTERN DOTS-{''.join(pos)}"))
-                    else:
-                        raw.append("\U00002800")
-
-            t = ("".join(raw[i:i+width]) for i in range(0, width*height, width))
-            return "\n".join(t)
-
-        result = await self.bot.loop.run_in_executor(None, do_stuff)
+        result = await self.bot.loop.run_in_executor(None, self.process_image, image, None, per_cut, 56, 32, 2, 4, threshold, inverse)
         await ctx.send(f"{result}")
 
     @ascii.group(name="dot", invoke_without_command=True)
