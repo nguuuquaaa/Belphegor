@@ -76,6 +76,8 @@ ASCII = "@%#*+=-:. "
 RANGE = 256 / len(ASCII)
 CHAR_SIZE = (8, 16)
 
+DOT_PATTERN = (1, 4, 2, 5, 3, 6, 7, 8)
+
 #==================================================================================================================================================
 
 class CharImage:
@@ -763,6 +765,55 @@ class Misc:
         result, time_taken = await self.bot.loop.run_in_executor(None, do_stuff)
         await ctx.send(f"Result in {time_taken*1000:.2f}ms```\n{result}\n```")
 
+    async def dot_this(self, ctx, member, threshold, inverse):
+        if threshold > 255:
+            return await ctx.send("Threshold is too big.")
+        elif threshold < 0:
+            return await ctx.send("Threshold should be a non-negative number.")
+        await ctx.trigger_typing()
+        target = member or ctx.author
+        bytes_ = await self.bot.fetch(target.avatar_url)
+
+        def do_stuff():
+            width = 56
+            height = 32
+            char_width = 2
+            char_height = 4
+            full_width = width * char_width
+            full_height = height * char_height
+
+            image = Image.open(BytesIO(bytes_)).resize((full_width, full_height)).convert("L")
+            raw = []
+            pixels = tuple(1-inverse if p > threshold else inverse for p in image.getdata())
+            inf = -float("inf")
+            chars = self.chars.items()
+            range_height = range(char_height)
+            range_width = range(char_width)
+
+            for y in range(0, full_height, char_height):
+                for x in range(0, full_width, char_width):
+                    cut = tuple(pixels[x+i+(y+j)*full_width] for j in range_height for i in range_width)
+                    pos = [str(p) for i, p in enumerate(DOT_PATTERN) if cut[i] == 1]
+                    if pos:
+                        pos.sort()
+                        raw.append(unicodedata.lookup(f"BRAILLE PATTERN DOTS-{''.join(pos)}"))
+                    else:
+                        raw.append("\U00002800")
+
+            t = ("".join(raw[i:i+width]) for i in range(0, width*height, width))
+            return "\n".join(t)
+
+        result = await self.bot.loop.run_in_executor(None, do_stuff)
+        await ctx.send(f"{result}")
+
+    @ascii.group(name="dot", invoke_without_command=True)
+    async def ascii_dot(self, ctx, member: discord.Member=None, threshold: int=128):
+        await self.dot_this(ctx, member, threshold, 0)
+
+    @ascii_dot.command(name="inverse", aliases=["i"])
+    async def ascii_dot_inverse(self, ctx, member: discord.Member=None, threshold: int=128):
+        await self.dot_this(ctx, member, threshold, 1)
+
     @commands.command(name="ping")
     async def cmd_ping(self, ctx):
         await self.ping(ctx)
@@ -798,7 +849,6 @@ class Misc:
             await ctx.confirm()
         else:
             await ctx.send("Please use on/off.")
-
 
 #==================================================================================================================================================
 

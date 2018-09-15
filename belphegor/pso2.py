@@ -719,7 +719,7 @@ class PSO2:
         if random_eq or sched_eq:
             if random_eq:
                 sched_time = start_time + timedelta(hours=1)
-                embed.add_field(name="Random EQ", value="{self.get_emoji(sched_time)} **At {sched_time.strftime('%I:%M %p')}\n{random_eq}", inline=False)
+                embed.add_field(name="Random EQ", value=f"{self.get_emoji(sched_time)} **At {sched_time.strftime('%I:%M %p')}\n{random_eq}", inline=False)
             if sched_eq:
                 embed.add_field(name="Schedule EQ", value="\n\n".join(sched_eq), inline=False)
         else:

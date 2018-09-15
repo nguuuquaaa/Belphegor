@@ -426,7 +426,7 @@ class Google:
         '''
         await ctx.trigger_typing()
 
-        safe = ctx.channel.is_nsfw()
+        safe = not ctx.channel.is_nsfw()
 
         fut = self.bot.loop.create_future()
         mid = ctx.message.id
@@ -491,7 +491,7 @@ class RunGoogleInBackground(multiprocessing.Process):
     @try_sync
     def run(self):
         drivers = (GoogleEngine.setup_browser(safe=False), GoogleEngine.setup_browser(safe=True))
-        signal.signal(signal.SIGTERM, lambda signum, frame: drivers[0].close() and drivers[1].close())
+        signal.signal(signal.SIGTERM, lambda signum, frame: drivers[0].quit() and drivers[1].quit())
         print("google ready")
         while self.running:
             try:
@@ -509,11 +509,11 @@ class RunGoogleInBackground(multiprocessing.Process):
                 no_error = False
             finally:
                 result_queue.put((mid, no_error, ret))
-        drivers[0].close()
-        drivers[1].close()
+        drivers[0].quit()
+        drivers[1].quit()
 
 def setup(bot):
-    process = RunGoogleInBackground()
+    process = RunGoogleInBackground(daemon=True)
     process.running = True
     process.start()
     bot.add_cog(Google(bot))
