@@ -337,7 +337,8 @@ class Help:
                 "`>>ascii` - Grayscale ASCII art\n"
                 "\u2517 `biggur` - Biggur grayscale ASCII art\n"
                 "\u2517 `block` - Block ASCII art\n"
-                "\u2517 `edge` - Edge-detection ASCII art",
+                "\u2517 `edge` - Edge-detection ASCII art\n"
+                "\u2517 `dot` - Dot ASCII art",
             inline=False
         )
         paging.set_action("\u2699", lambda: misc_embed)

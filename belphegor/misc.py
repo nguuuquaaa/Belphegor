@@ -665,6 +665,11 @@ class Misc:
 
     @ascii_block.command(name="inverse", aliases=["i"])
     async def ascii_block_inverse(self, ctx, member: discord.Member=None, threshold: int=128):
+        '''
+            `>>ascii block inverse <optional: member>`
+            Block ASCII art of member avatar, inversed.
+            If no member is specified, use your avatar.
+        '''
         await self.block_this(ctx, member, threshold, 1)
 
     def setup_ascii_chars(self):
@@ -793,10 +798,20 @@ class Misc:
 
     @ascii.group(name="dot", invoke_without_command=True)
     async def ascii_dot(self, ctx, member: discord.Member=None, threshold: int=128):
+        '''
+            `>>ascii dot <optional: member>`
+            Braille dot ~~unicode~~ ASCII art of member avatar.
+            If no member is specified, use your avatar.
+        '''
         await self.dot_this(ctx, member, threshold, 0)
 
     @ascii_dot.command(name="inverse", aliases=["i"])
     async def ascii_dot_inverse(self, ctx, member: discord.Member=None, threshold: int=128):
+        '''
+            `>>ascii dot <optional: member>`
+            Braille dot ASCII art of member avatar, inversed.
+            If no member is specified, use your avatar.
+        '''
         await self.dot_this(ctx, member, threshold, 1)
 
     @commands.command(name="ping")
