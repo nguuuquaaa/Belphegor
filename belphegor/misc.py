@@ -77,6 +77,12 @@ RANGE = 256 / len(ASCII)
 CHAR_SIZE = (8, 16)
 
 DOT_PATTERN = (1, 4, 2, 5, 3, 6, 7, 8)
+BOX_PATTERN = {
+    (0, 0): "\u2003",
+    (0, 1): "\u2584",
+    (1, 0): "\u2580",
+    (1, 1): "\u2588"
+}
 
 #==================================================================================================================================================
 
@@ -633,50 +639,33 @@ class Misc:
         text = await self.bot.loop.run_in_executor(None, self.to_ascii, bytes_, width, width//2)
         await ctx.send(file=discord.File(text.encode("utf-8"), filename=f"ascii_{len(text)}_chars.txt"))
 
-    @ascii.command(name="block")
-    async def ascii_block(self, ctx, member: discord.Member=None):
+    async def block_this(self, ctx, member, threshold, inverse):
+        if threshold > 255:
+            return await ctx.send("Threshold is too big.")
+        elif threshold < 0:
+            return await ctx.send("Threshold should be a non-negative number.")
+        target = member or ctx.author
+        bytes_ = await self.bot.fetch(target.avatar_url)
+        image = Image.open(BytesIO(bytes_))
+
+        def per_cut(cut):
+            return BOX_PATTERN[cut]
+
+        result = self.process_image(image, None, per_cut, 64, 30, 1, 2, threshold, inverse)
+        await ctx.send(f"```\n{result}\n```")
+
+    @ascii.group(name="block", invoke_without_command=True)
+    async def ascii_block(self, ctx, member: discord.Member=None, threshold: int=128):
         '''
             `>>ascii block <optional: member>`
             Block ~~unicode~~ ASCII art of member avatar.
             If no member is specified, use your avatar.
         '''
-        target = member or ctx.author
-        bytes_ = await self.bot.fetch(target.avatar_url)
+        await self.block_this(ctx, member, threshold, 0)
 
-        def do_stuff():
-            image = Image.open(BytesIO(bytes_))
-
-            height = 30
-            width = 64
-            proc = image.resize((width, 2*height)).convert("L")
-
-            pixels = proc.getdata()
-            output = []
-            for i in range(height):
-                for j in range(width):
-                    upper = 255 - pixels[i*2*width+j]
-                    lower = 255 - pixels[(i*2+1)*width+j]
-                    if upper-lower>=128:
-                        output.append("▀")
-                    elif lower-upper>=128:
-                        output.append("▄")
-                    else:
-                        if upper+lower>=320:
-                            output.append("█")
-                        elif upper+lower>=256:
-                            output.append("▓")
-                        elif upper+lower>=192:
-                            output.append("▒")
-                        elif upper+lower>=96:
-                            output.append("░")
-                        else:
-                            output.append(" ")
-
-            t = ("".join(output[i:i+width]) for i in range(0, len(output), width))
-            return "\n".join(t)
-
-        result = await self.bot.loop.run_in_executor(None, do_stuff)
-        await ctx.send(f"```\n{result}\n```")
+    @ascii_block.command(name="inverse", aliases=["i"])
+    async def ascii_block_inverse(self, ctx, member: discord.Member=None, threshold: int=128):
+        await self.block_this(ctx, member, threshold, 1)
 
     def setup_ascii_chars(self):
         CharImage.INVERSE_WEIGHT = 4
