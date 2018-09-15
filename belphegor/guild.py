@@ -1059,7 +1059,7 @@ class Guild:
         embed = discord.Embed(title=guild.name, colour=discord.Colour.blue())
         embed.set_thumbnail(url=guild.icon_url_as(format="png"))
         embed.add_field(name="ID", value=guild.id)
-        embed.add_field(name="Owner", value=str(guild.owner))
+        embed.add_field(name="Owner", value=guild.owner.mention)
         embed.add_field(name="Created at", value=guild.created_at.strftime("%d-%m-%Y"))
         embed.add_field(name="Region", value=str(guild.region).title().replace("Us-", "US ").replace("Vip-", "VIP ").replace("Eu-", "EU "))
         embed.add_field(name="Features", value=", ".join(guild.features) or "None", inline=False)
