@@ -793,8 +793,8 @@ class Misc:
             else:
                 return "\u2800"
 
-        result = await self.bot.loop.run_in_executor(None, self.process_image, image, None, per_cut, 56, 32, 2, 4, threshold, inverse)
-        await ctx.send(f"{result}")
+        result = await self.bot.loop.run_in_executor(None, self.process_image, image, None, per_cut, 54, 34, 2, 4, threshold, inverse)
+        await ctx.send(f"```\n{result}\n```")
 
     @ascii.group(name="dot", invoke_without_command=True)
     async def ascii_dot(self, ctx, member: discord.Member=None, threshold: int=128):
