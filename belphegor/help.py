@@ -127,6 +127,7 @@ class Help:
                 "`>>i`, `>>item` - Search for items\n"
                 "`>>price` - Check item price, quite outdated\n"
                 "Note: Data taken from DB Kakia\n\n"
+                "`>>pso2text` - ARKS language\n"
                 "`>>eq` - Display EQ schedule for the next 3 hours\n"
                 "`>>daily` - Display daily orders/featured quests\n"
                 "`>>boost` - Display current week's boost events",

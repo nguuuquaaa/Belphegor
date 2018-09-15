@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
 from . import utils
 from .utils import config, checks, data_type, token
@@ -987,6 +987,29 @@ class PSO2:
                     await self.update_events()
                 else:
                     continue
+
+    @commands.command(aliases=["pt"])
+    async def pso2text(self, ctx, *, text):
+        '''
+            `>>pso2text <text>`
+            You play PSO2, you know ARKS language.
+            Send an image with text written in ARKS language.
+        '''
+        if len(text) > 50:
+            return await ctx.send("Text too long.")
+        for c in text:
+            if c.isalnum() or c in "!%&*+;:/?., '-":
+                continue
+            else:
+                return await ctx.send(f"Text contains unaccepted character {c}")
+        font = ImageFont.truetype(f"{config.DATA_PATH}/font/pso2_font.ttf", size=30)
+        x, y = font.getsize(text)
+        image = Image.new("RGBA", (x+6, y+6), (255, 255, 255, 0))
+        draw = ImageDraw.Draw(image)
+        draw.text((3, 3), text, font=font, fill=(255, 255, 255, 255))
+        b = BytesIO()
+        image.save(b, "png")
+        await ctx.send(file=discord.File(b.getvalue(), "pso2.png"))
 
 #==================================================================================================================================================
 

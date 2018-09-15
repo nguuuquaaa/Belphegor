@@ -657,18 +657,22 @@ class Misc:
     @ascii.group(name="block", invoke_without_command=True)
     async def ascii_block(self, ctx, member: discord.Member=None, threshold: int=128):
         '''
-            `>>ascii block <optional: member>`
+            `>>ascii block <optional: member> <optional: threshold>`
             Block ~~unicode~~ ASCII art of member avatar.
             If no member is specified, use your avatar.
+            Less threshold is better with darker image, more is better with light one.
+            Default threshold is 128. Max threshold is 255.
         '''
         await self.block_this(ctx, member, threshold, 0)
 
     @ascii_block.command(name="inverse", aliases=["i"])
     async def ascii_block_inverse(self, ctx, member: discord.Member=None, threshold: int=128):
         '''
-            `>>ascii block inverse <optional: member>`
+            `>>ascii block inverse <optional: member> <optional: threshold>`
             Block ASCII art of member avatar, inversed.
             If no member is specified, use your avatar.
+            Less threshold is better with darker image, more is better with light one.
+            Default threshold is 128. Max threshold is 255.
         '''
         await self.block_this(ctx, member, threshold, 1)
 
@@ -799,23 +803,31 @@ class Misc:
     @ascii.group(name="dot", invoke_without_command=True)
     async def ascii_dot(self, ctx, member: discord.Member=None, threshold: int=128):
         '''
-            `>>ascii dot <optional: member>`
+            `>>ascii dot <optional: member> <optional: threshold>`
             Braille dot ~~unicode~~ ASCII art of member avatar.
             If no member is specified, use your avatar.
+            Less threshold is better with darker image, more is better with light one.
+            Default threshold is 128. Max threshold is 255.
         '''
         await self.dot_this(ctx, member, threshold, 0)
 
     @ascii_dot.command(name="inverse", aliases=["i"])
     async def ascii_dot_inverse(self, ctx, member: discord.Member=None, threshold: int=128):
         '''
-            `>>ascii dot <optional: member>`
+            `>>ascii dot <optional: member> <optional: threshold>`
             Braille dot ASCII art of member avatar, inversed.
             If no member is specified, use your avatar.
+            Less threshold is better with darker image, more is better with light one.
+            Default threshold is 128. Max threshold is 255.
         '''
         await self.dot_this(ctx, member, threshold, 1)
 
     @commands.command(name="ping")
     async def cmd_ping(self, ctx):
+        '''
+            `>>ping`
+            Ping the current channel.
+        '''
         await self.ping(ctx)
 
     async def fetch_auto_rep_settings(self):
