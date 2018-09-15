@@ -228,9 +228,9 @@ class Unit(data_type.BaseObject):
 #==================================================================================================================================================
 
 class PSO2:
-    """
+    '''
     PSO2 info.
-    """
+    '''
 
     def __init__(self, bot):
         self.bot = bot
@@ -277,11 +277,11 @@ class PSO2:
 
     @commands.command(aliases=["c"])
     async def chip(self, ctx, *, name):
-        """
-        `>>chip <name>`
-        Display a PSO2es chip info.
-        Chip name is case-insensitive and can be either EN or JP.
-        """
+        '''
+            `>>chip <name>`
+            Display a PSO2es chip info.
+            Chip name is case-insensitive and can be either EN or JP.
+        '''
         chip = await ctx.search(
             name, self.chip_library,
             cls=Chip, colour=discord.Colour.blue(),
@@ -293,11 +293,11 @@ class PSO2:
 
     @commands.group(name="weapon", aliases=["w",], invoke_without_command=True)
     async def cmd_weapon(self, ctx, *, name):
-        """
-        `>>weapon <name>`
-        Display a PSO2 weapon info.
-        Weapon name is case-insensitive and can be either EN or JP.
-        """
+        '''
+            `>>weapon <name>`
+            Display a PSO2 weapon info.
+            Weapon name is case-insensitive and can be either EN or JP.
+        '''
         weapon = await ctx.search(
             name, self.weapon_list,
             cls=Weapon, colour=discord.Colour.blue(),
@@ -415,20 +415,20 @@ class PSO2:
 
     @cmd_weapon.command(name="filter")
     async def w_filter(self, ctx, *, data):
-        """
-        `>>w filter <criteria>`
-        Find all weapons with <criteria>.
-        Criteria can contain multiple lines, each with format `<attribute> <value>`.
-        Available attributes:
-        - en_name
-        - jp_name
-        - category
-        - rarity
-        - atk
-        - properties/potential/ability/saf/s_class
-        - classes
-        - ssa_slots
-        """
+        '''
+            `>>w filter <criteria>`
+            Find all weapons with <criteria>.
+            Criteria can contain multiple lines, each with format `<attribute> <value>`.
+            Available attributes:
+            - en_name
+            - jp_name
+            - category
+            - rarity
+            - atk
+            - properties/potential/ability/saf/s_class
+            - classes
+            - ssa_slots
+        '''
         data = data.strip().splitlines()
         attrs = []
         for d in data:
@@ -521,11 +521,11 @@ class PSO2:
 
     @commands.command(name="item", aliases=["i"])
     async def cmd_item(self, ctx, *, name):
-        """
-        `>>item <name>`
-        Find PSO2 items.
-        Name given is case-insensitive, and can be either EN or JP.
-        """
+        '''
+            `>>item <name>`
+            Find PSO2 items.
+            Name given is case-insensitive, and can be either EN or JP.
+        '''
         async with ctx.typing():
             params = {"name": name}
             bytes_ = await utils.fetch(self.bot.session, "http://db.kakia.org/item/search", params=params)
@@ -543,10 +543,10 @@ class PSO2:
 
     @commands.command(name="price")
     async def cmd_price(self, ctx, *, name):
-        """
-        `>>price <name>`
-        Check the price of an item.
-        """
+        '''
+            `>>price <name>`
+            Check the price of an item.
+        '''
         async with ctx.typing():
             params = {"name": name}
             bytes_ = await utils.fetch(self.bot.session, "http://db.kakia.org/item/search", params=params)
@@ -578,10 +578,10 @@ class PSO2:
 
     @commands.command()
     async def jptime(self, ctx):
-        """
-        `>>jptime`
-        Current time in JP.
-        """
+        '''
+            `>>jptime`
+            Current time in JP.
+        '''
         await ctx.send(utils.jp_time(utils.now_time()))
 
     async def check_for_new_version(self):
@@ -696,10 +696,10 @@ class PSO2:
 
     @commands.command(name="eq")
     async def nexteq(self, ctx):
-        """
-        `>>eq`
-        Display eq schedule for the next 3 hours.
-        """
+        '''
+            `>>eq`
+            Display eq schedule for the next 3 hours.
+        '''
         if not self.last_eq_data:
             bytes_ = await self.bot.fetch(self.api_data["url"], headers=self.api_data["headers"])
             self.last_eq_data = json.loads(bytes_)[0]
@@ -728,11 +728,11 @@ class PSO2:
 
     @commands.group(name="unit", aliases=["u"], invoke_without_command=True)
     async def cmd_unit(self, ctx, *, name):
-        """
-        `>>unit <name>`
-        Check a PSO2 unit info.
-        Name given is case-insensitive, and can be either EN or JP.
-        """
+        '''
+            `>>unit <name>`
+            Check a PSO2 unit info.
+            Name given is case-insensitive, and can be either EN or JP.
+        '''
         unit = await ctx.search(
             name, self.unit_list,
             cls=Unit, colour=discord.Colour.blue(),
@@ -803,11 +803,11 @@ class PSO2:
 
     @commands.command(name="daily", aliases=["dailyorder"])
     async def cmd_daily_order(self, ctx, query_date=""):
-        """
-        `>>daily <optional: date>`
-        Display daily orders/featured quests schedule of the specified date.
-        If no date is provided, today is used.
-        """
+        '''
+            `>>daily <optional: date>`
+            Display daily orders/featured quests schedule of the specified date.
+            If no date is provided, today is used.
+        '''
         m = simple_time_regex.fullmatch(query_date)
         jp_time = utils.now_time(utils.jp_timezone)
         if not m:
@@ -894,10 +894,10 @@ class PSO2:
 
     @commands.group(name="boost")
     async def cmd_boost(self, ctx):
-        """
-        `>>boost`
-        Display current week's casino boost, PSO2 Day and ARKS League.
-        """
+        '''
+            `>>boost`
+            Display current week's casino boost, PSO2 Day and ARKS League.
+        '''
         if ctx.invoked_subcommand is None:
             def process_date(i, x):
                 start_date = iso_time_regex.fullmatch(x["start"]["dateTime"])
