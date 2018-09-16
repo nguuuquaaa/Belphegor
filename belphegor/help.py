@@ -383,11 +383,11 @@ class Help:
                         usage = command.help.partition("\n")
                         things = usage[2].split("\n\n\n")
                         if len(things) > 1:
-                            embed.add_field(name="Usage", value=f"``{usage[0]}``\n{things[0]}".format(ctx.me.display_name), inline=False)
+                            embed.add_field(name="Usage", value=f"``{usage[0]}``\n{things[0]}", inline=False)
                             for thing in things[1:]:
                                 embed.add_field(name="\u200b", value=f"\u200b{thing}", inline=False)
                         else:
-                            usage = f"``{usage[0]}``\n{usage[2]}".format(ctx.me.display_name)
+                            usage = f"``{usage[0]}``\n{usage[2]}"
                             embed.add_field(name="Usage", value=usage, inline=False)
                     else:
                         embed.add_field(name="Usage", value="Not yet documented.", inline=False)

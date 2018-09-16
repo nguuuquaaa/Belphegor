@@ -78,11 +78,17 @@ CHAR_SIZE = (8, 16)
 
 DOT_PATTERN = (1, 4, 2, 5, 3, 6, 7, 8)
 BOX_PATTERN = {
-    (0, 0): "\u2003",
+    (0, 0): " ",
     (0, 1): "\u2584",
     (1, 0): "\u2580",
     (1, 1): "\u2588"
 }
+def generate_blank_char():
+    while True:
+        yield "\u2002"
+        yield "\u2003"
+
+blank_chars = generate_blank_char()
 
 #==================================================================================================================================================
 
@@ -651,7 +657,7 @@ class Misc:
         def per_cut(cut):
             return BOX_PATTERN[cut]
 
-        result = self.process_image(image, None, per_cut, 64, 30, 1, 2, threshold, inverse)
+        result = self.convert_image_to_ascii(image, None, per_cut, 64, 30, 1, 2, threshold, inverse)
         await ctx.send(f"```\n{result}\n```")
 
     @ascii.group(name="block", invoke_without_command=True)
@@ -699,11 +705,12 @@ class Misc:
         self.chars["["].weight = 0.6
         self.chars["]"].weight = 0.6
         self.chars["~"].weight = 0.6
+        self.chars["*"].weight = 0.6
 
         for c in ("A", "C", "D", "H", "I", "J", "K", "L", "M", "N", "O", "S", "T", "U", "V", "W", "X", "Y", "Z"):
             self.chars[c].weight = 0.6
 
-    def process_image(self, image, image_proc, per_cut, width, height, char_width, char_height, threshold, inverse=0):
+    def convert_image_to_ascii(self, image, image_proc, per_cut, width, height, char_width, char_height, threshold, inverse=0):
         width = width
         height = height
         char_width = char_width
@@ -771,7 +778,7 @@ class Misc:
 
         def do_stuff():
             start = time.perf_counter()
-            ret = self.process_image(image, image_proc, per_cut, 64, 30, *CHAR_SIZE, threshold, 0)
+            ret = self.convert_image_to_ascii(image, image_proc, per_cut, 64, 30, *CHAR_SIZE, threshold, 0)
             end = time.perf_counter()
             return ret, end-start
 
@@ -795,10 +802,10 @@ class Misc:
                 pos.sort()
                 return unicodedata.lookup(f"BRAILLE PATTERN DOTS-{''.join(pos)}")
             else:
-                return "\u2800"
+                return next(blank_chars)
 
-        result = await self.bot.loop.run_in_executor(None, self.process_image, image, None, per_cut, 54, 34, 2, 4, threshold, inverse)
-        await ctx.send(f"```\n{result}\n```")
+        result = await self.bot.loop.run_in_executor(None, self.convert_image_to_ascii, image, None, per_cut, 56, 32, 2, 4, threshold, inverse)
+        await ctx.send(f"{result}")
 
     @ascii.group(name="dot", invoke_without_command=True)
     async def ascii_dot(self, ctx, member: discord.Member=None, threshold: int=128):

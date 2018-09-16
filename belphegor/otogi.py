@@ -756,7 +756,10 @@ class Otogi:
         if not daemon:
             return
         pool_data = await self.summon_pool.find_one({"rarity": daemon.rarity})
-        pool = pool_data["pool"]
+        if pool_data:
+            pool = pool_data["pool"]
+        else:
+            return await ctx.send(f"Daemon {daemon.name} not in summon pool.")
         for daemon_id in pool:
             if daemon.id == daemon_id:
                 break

@@ -422,7 +422,7 @@ class Music:
     async def join(self, ctx):
         '''
             `>>music join`
-            Have {0} join the current voice channel you are in and play everything in queue.
+            Have Belphegor join the current voice channel you are in and play everything in queue.
             May or may not bug out when the connection is unstable. If that happens, try move her to another channel.
         '''
         try:
@@ -455,7 +455,7 @@ class Music:
     async def leave(self, ctx):
         '''
             `>>music leave`
-            Have {0} leave voice channel.
+            Have Belphegor leave voice channel.
         '''
         music_player = await self.get_music_player(ctx.guild)
         async with music_player.lock:

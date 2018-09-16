@@ -269,11 +269,11 @@ class PSO2:
         try:
             self.eq_alert_forever().cancel()
         except:
-            pass
+            traceback.print_exc()
         try:
             self.boost_remind_forever().cancel()
         except:
-            pass
+            traceback.print_exc()
 
     @commands.command(aliases=["c"])
     async def chip(self, ctx, *, name):
