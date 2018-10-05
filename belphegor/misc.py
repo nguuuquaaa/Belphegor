@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from . import utils, board_game
-from .utils import config, checks
+from .utils import config, checks, modding
 import random
 import asyncio
 import unicodedata
@@ -144,7 +144,7 @@ class Misc:
                 return random.choice(QUOTES["lose"])
         return random.choice(QUOTES["draw"])
 
-    @commands.command(aliases=["jkp",])
+    @modding.command(aliases=["jkp",], brief="Play rock-paper-scissor", category="Misc", field="Commands", paragraph=0)
     async def jankenpon(self, ctx):
         '''
             `>>jankenpon`
@@ -252,7 +252,7 @@ class Misc:
             except:
                 pass
 
-    @commands.command()
+    @modding.command(brief="Get your or a user avatar", category="Misc", field="Commands", paragraph=1)
     async def avatar(self, ctx, *, member: discord.Member=None):
         '''
             `>>avatar <optional: member>`
@@ -264,7 +264,7 @@ class Misc:
         embed.set_image(url=member.avatar_url_as(static_format="png"))
         await ctx.send(embed=embed)
 
-    @commands.command()
+    @modding.command(brief="Roll dices", category="Misc", field="Commands", paragraph=0)
     async def dice(self, ctx, dice_type):
         '''
             `>>dice ndM`
@@ -288,8 +288,8 @@ class Misc:
         else:
             await ctx.send("Max side must be between 4 and 120 and number of dices must be between 1 and 100.")
 
-    @commands.command()
-    async def fancy(self, ctx, *, textin: str):
+    @modding.command(brief="\U0001f1eb \U0001f1e6 \U0001f1f3 \U0001f1e8 \U0001f1fe", category="Misc", field="Commands", paragraph=0)
+    async def fancy(self, ctx, *, textin):
         '''
             `>>fancy <text goes here>`
             Emojified text.
@@ -297,7 +297,7 @@ class Misc:
         textin = textin.upper()
         await ctx.send(" ".join((FANCY_CHARS.get(charin, charin) for charin in textin)))
 
-    @commands.command(aliases=["hello",])
+    @modding.command(aliases=["hello",])
     async def hi(self, ctx):
         '''
             `>>hi`
@@ -305,7 +305,7 @@ class Misc:
         '''
         await ctx.send("Go away.")
 
-    @commands.group(invoke_without_command=True)
+    @modding.group(invoke_without_command=True)
     async def say(self, ctx, *, something: commands.clean_content):
         '''
             `>>say <text goes here>`
@@ -313,7 +313,7 @@ class Misc:
         '''
         await ctx.send(something)
 
-    @say.command(aliases=["hello",], name="hi")
+    @say.command(name="hi", aliases=["hello",])
     async def say_hi(self, ctx):
         '''
             `>>say hi`
@@ -329,7 +329,7 @@ class Misc:
         '''
         await ctx.send("Welcome to Leave Me Alone village. The exit is right there.")
 
-    @commands.command()
+    @modding.command(brief="Get unicode character info", category="Misc", field="Commands", paragraph=2)
     async def char(self, ctx, *, characters):
         '''
             `>>char <characters>`
@@ -341,11 +341,11 @@ class Misc:
         else:
             await ctx.send("\n".join([f"`\\U{ord(c):08x}` - `{c}` - {unicodedata.name(c, 'No name found.')}" for c in characters]))
 
-    @commands.command()
+    @modding.command(brief="Make a poll", category="Misc", field="Commands", paragraph=0)
     async def poll(self, ctx, *, data):
         '''
             `>>poll <question and choices>`
-            Make a poll.
+            Make a quick poll.
             Question and choices are separated by newline.
             The default (and shortest) duration is 60 seconds. You can specify more in question, i.e. `in 60 minutes`.
         '''
@@ -354,6 +354,8 @@ class Misc:
         duration = duration.total_seconds()
         if duration < 60:
             duration = 60
+        elif duration > 3600:
+            return await ctx.send("Duration too long.")
         items = stuff[1:10]
         if not items:
             return await ctx.send("You must specify choices.")
@@ -387,28 +389,29 @@ class Misc:
                 max_result.append(items[emoji_to_int[key]-1])
         await ctx.send(f"Poll ended.\nHighest vote: {' and '.join(max_result)} with {max_number} votes.")
 
-    @commands.group(invoke_without_command=True)
-    async def glitch(self, ctx, *, text):
+    @modding.group(invoke_without_command=True, brief="Z̜͍̊ă̤̥ḷ̐́ģͮ͛ò̡͞ ͥ̉͞ť͔͢e̸̷̅x̠ͯͧt̰̱̾", category="Misc", field="Commands", paragraph=1)
+    async def glitch(self, ctx, *, data: modding.KeyValue(escape=False, clean=False)):
         '''
             `>>glitch <optional: weight> <text>`
             Generate Zalgo text.
             More weight, more weird.
             Default weight is 20.
         '''
-        if ctx.invoked_subcommand is None:
-            data = text.partition(" ")
-            try:
-                weight = int(data[0])
-            except:
-                weight = 20
+        text = data.getall("", [])
+        weight = data.getone("weight", None)
+        try:
+            weight = int(weight)
+        except:
+            weight = 20
+        if 0 < weight <= 50:
+            if text:
+                await ctx.send("".join(("".join((c, "".join((random.choice(GLITCH_ALL) for i in range(weight))))) for c in "\n".join(text))))
             else:
-                text = data[2]
-            if 0 < weight <= 50:
-                await ctx.send("".join(("".join((c, "".join((random.choice(GLITCH_ALL) for i in range(weight))))) for c in text)))
-            else:
-                await ctx.send("Weight value can only be between 1 and 50.")
+                await ctx.send("No input text given.")
+        else:
+            await ctx.send("Weight value can only be between 1 and 50.")
 
-    @glitch.command(aliases=["m"])
+    @glitch.command(aliases=["m"], brief="ĜþŞ¶ōÙđĔł ĝĖĘ Ùľ© ¼Ħâ Ŗėēů®³ĸ¤²", category="Misc", field="Commands", paragraph=1)
     async def meaningless(self, ctx, length: int=0):
         '''
             `>>glitch meaningless <optional: length>`
@@ -427,17 +430,17 @@ class Misc:
         else:
             await ctx.send("Wha hold your horse with the length.")
 
-    @commands.command(aliases=["colour"])
+    @modding.command(aliases=["colour"], brief="Color", category="Misc", field="Commands", paragraph=2)
     async def color(self, ctx, *args):
         '''
-            `>>color <int or hex code>`
+            `>>color <int, hex code or rgb>`
             Send an image filled with the color in question.
         '''
         if len(args) == 3:
             try:
                 rgb = (int(args[0]), int(args[1]), int(args[2]))
             except:
-                return await ctx.send("Oi, that's not RGB format at all.")
+                return await ctx.send("Oi, what's this format?")
         elif len(args) == 1:
             i = args[0]
             if i.startswith("0x"):
@@ -448,9 +451,11 @@ class Misc:
                 c = discord.Colour(int(i, 16))
             except:
                 return await ctx.send("Oi, that's not color code at all.")
+            else:
+                rgb = c.to_rgb()
         else:
             return await ctx.send("Do you even try?")
-        pic = Image.new("RGB", (50, 50), c.to_rgb())
+        pic = Image.new("RGB", (50, 50), rgb)
         bytes_ = BytesIO()
         pic.save(bytes_, "png")
         f = discord.File(bytes_.getvalue(), filename="color.png")
@@ -458,7 +463,7 @@ class Misc:
         e.set_image(url="attachment://color.png")
         await ctx.send(file=f, embed=e)
 
-    @commands.command()
+    @modding.command()
     async def pyfuck(self, ctx, *, data):
         '''
             `>>pyfuck <code>`
@@ -490,7 +495,7 @@ class Misc:
         else:
             await ctx.send(file=discord.File(code.encode("utf-8"), filename="fuck_this.py"))
 
-    @commands.command(name="choose")
+    @modding.command(name="choose", brief="Random choice", category="Misc", field="Commands", paragraph=2)
     async def cmd_choose(self, ctx, *, choices):
         '''
             `>>choose <choices>`
@@ -500,28 +505,14 @@ class Misc:
         choices = choices.split(" or ")
         await ctx.send(random.choice(choices))
 
-    @commands.command(name="embed")
-    async def cmd_embed(self, ctx, *, data):
+    @modding.command(name="embed")
+    async def cmd_embed(self, ctx, *, kwargs: modding.KeyValue()):
         '''
             `>>embed <data>`
             Display an embed.
             Data input is kwargs-like multiline, which each line has the format of `key=value`.
             Acceptable key: title, author, author_icon, description, url, colour (in hex), thumbnail, image, footer (text), field (each line add one field in final embed, using format `name||value||optional inline`)
         '''
-        data = data.splitlines()
-        kwargs = {"fields": []}
-        for item in data:
-            p = item.partition("=")
-            k = p[0].strip()
-            try:
-                v = p[2].strip().encode("raw_unicode_escape").decode("unicode_escape")
-            except:
-                return await ctx.send("Unicode coding error.")
-            if k == "field":
-                kwargs["fields"].append(v.split("||"))
-            else:
-                kwargs[k] = v
-
         Empty = discord.Embed.Empty
         embed = discord.Embed(
             title=kwargs.get("title") or Empty,
@@ -546,20 +537,21 @@ class Misc:
         if footer:
             embed.set_footer(text=footer)
 
-        fields = kwargs["fields"]
+        fields = kwargs.getall("field", [])
         if len(fields) > 25:
             return await ctx.send("Too many fields.")
         for f in fields:
-            if len(f) > 1:
-                if len(f[0]) > 0 and len(f[1]) > 0:
-                    embed.add_field(name=f[0].strip(), value=f[1].strip(), inline=utils.get_element(f, 2, default="true").strip() in ("True", "1", "true", "inline"))
+            items = f.split("||")
+            if len(items) > 1:
+                if len(items[0]) > 0 and len(items[1]) > 0:
+                    embed.add_field(name=items[0].strip(), value=items[1].strip(), inline=utils.get_element(items, 2, default="true").strip() in ("True", "1", "true", "inline"))
 
         try:
             await ctx.send(embed=embed)
         except Exception as e:
             await ctx.send(e)
 
-    @commands.group(name="quote", invoke_without_command=True)
+    @modding.group(name="quote", invoke_without_command=True)
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     async def cmd_quote(self, ctx, msg_id: int, channel: discord.TextChannel=None):
         '''
@@ -615,7 +607,7 @@ class Misc:
         t = ("".join(chars[i:i+width]) for i in range(0, len(chars), width))
         return "\n".join(t)
 
-    @commands.group(invoke_without_command=True)
+    @modding.group(invoke_without_command=True, brief="Ascii art", category="Misc", field="Commands", paragraph=3)
     async def ascii(self, ctx, member: discord.Member=None):
         '''
             `>>ascii <optional: member>`
@@ -628,7 +620,7 @@ class Misc:
         text = self.to_ascii(bytes_, 64, 30)
         await ctx.send(f"```\n{text}\n```")
 
-    @ascii.command(name="big", aliases=["bigger", "biggur"])
+    @ascii.command(name="big", aliases=["bigger", "biggur"], brief="Bigger ascii art", category="Misc", field="Commands", paragraph=3)
     async def big_ascii(self, ctx, member: discord.Member=None, width=256):
         '''
             `>>ascii big <optional: member> <optional: width>`
@@ -660,7 +652,7 @@ class Misc:
         result = self.convert_image_to_ascii(image, None, per_cut, 64, 30, 1, 2, threshold, inverse)
         await ctx.send(f"```\n{result}\n```")
 
-    @ascii.group(name="block", invoke_without_command=True)
+    @ascii.group(name="block", invoke_without_command=True, brief="Block ascii art", category="Misc", field="Commands", paragraph=3)
     async def ascii_block(self, ctx, member: discord.Member=None, threshold: int=128):
         '''
             `>>ascii block <optional: member> <optional: threshold>`
@@ -671,7 +663,7 @@ class Misc:
         '''
         await self.block_this(ctx, member, threshold, 0)
 
-    @ascii_block.command(name="inverse", aliases=["i"])
+    @ascii_block.command(name="inverse", aliases=["i"], brief="Block ascii art, inversed", category="Misc", field="Commands", paragraph=3)
     async def ascii_block_inverse(self, ctx, member: discord.Member=None, threshold: int=128):
         '''
             `>>ascii block inverse <optional: member> <optional: threshold>`
@@ -683,7 +675,7 @@ class Misc:
         await self.block_this(ctx, member, threshold, 1)
 
     def setup_ascii_chars(self):
-        CharImage.INVERSE_WEIGHT = 4
+        CharImage.INVERSE_WEIGHT = 5
         self.chars = {}
         font = ImageFont.truetype(f"{config.DATA_PATH}/font/consola.ttf", CHAR_SIZE[1])
         for c in (
@@ -731,10 +723,10 @@ class Misc:
                 cut = tuple(pixels[x+i+(y+j)*full_width] for j in range_height for i in range_width)
                 raw.append(per_cut(cut))
 
-        t = ("".join(raw[i:i+width]) for i in range(0, width*height, width))
+        t = ("".join(raw[i:i+width]).rstrip() for i in range(0, width*height, width))
         return "\n".join(t)
 
-    @ascii.command(name="edge")
+    @ascii.command(name="edge", brief="Edge-detection ascii art", category="Misc", field="Commands", paragraph=3)
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     async def ascii_edge(self, ctx, member: discord.Member=None, threshold: int=32, blur: int=2):
         '''
@@ -785,14 +777,24 @@ class Misc:
         result, time_taken = await self.bot.loop.run_in_executor(None, do_stuff)
         await ctx.send(f"Result in {time_taken*1000:.2f}ms```\n{result}\n```")
 
-    async def dot_this(self, ctx, member, threshold, inverse):
+    async def dot_this(self, ctx, member, size, threshold, inverse):
         if threshold > 255:
             return await ctx.send("Threshold is too big.")
         elif threshold < 0:
             return await ctx.send("Threshold should be a non-negative number.")
+        width, sep, height = size.partition("x")
+        try:
+            width = int(width.strip())
+            height = int(height.strip())
+        except ValueError:
+            return await ctx.send("Please use `width x height` format for size.")
+        else:
+            if height < 5 or width < 5:
+                return await ctx.send("Size too small.")
+            if (width+1)*height >= 2000:
+                return await ctx.send("Size too large.")
         await ctx.trigger_typing()
-        target = member or ctx.author
-        bytes_ = await self.bot.fetch(target.avatar_url)
+        bytes_ = await self.bot.fetch(member.avatar_url)
         image = Image.open(BytesIO(bytes_))
 
         inf = -float("inf")
@@ -804,11 +806,14 @@ class Misc:
             else:
                 return next(blank_chars)
 
-        result = await self.bot.loop.run_in_executor(None, self.convert_image_to_ascii, image, None, per_cut, 56, 32, 2, 4, threshold, inverse)
-        await ctx.send(f"{result}")
+        result = await self.bot.loop.run_in_executor(None, self.convert_image_to_ascii, image, None, per_cut, width, height, 2, 4, threshold, inverse)
+        if result.isspace():
+            await ctx.send("Result is all blank. Maybe you should try tweaking threshold a little?")
+        else:
+            await ctx.send(f"\u200b{result}")
 
-    @ascii.group(name="dot", invoke_without_command=True)
-    async def ascii_dot(self, ctx, member: discord.Member=None, threshold: int=128):
+    @ascii.group(name="dot", invoke_without_command=True, brief="Braille dot ascii art", category="Misc", field="Commands", paragraph=3)
+    async def ascii_dot(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t"): int, ("inverse", "i"): bool}, clean=False, multiline=False)=modding.EMPTY):
         '''
             `>>ascii dot <optional: member> <optional: threshold>`
             Braille dot ~~unicode~~ ASCII art of member avatar.
@@ -816,20 +821,14 @@ class Misc:
             Less threshold is better with darker image, more is better with light one.
             Default threshold is 128. Max threshold is 255.
         '''
-        await self.dot_this(ctx, member, threshold, 0)
 
-    @ascii_dot.command(name="inverse", aliases=["i"])
-    async def ascii_dot_inverse(self, ctx, member: discord.Member=None, threshold: int=128):
-        '''
-            `>>ascii dot <optional: member> <optional: threshold>`
-            Braille dot ASCII art of member avatar, inversed.
-            If no member is specified, use your avatar.
-            Less threshold is better with darker image, more is better with light one.
-            Default threshold is 128. Max threshold is 255.
-        '''
-        await self.dot_this(ctx, member, threshold, 1)
+        target = data.geteither("", "member", "m", default=ctx.author)
+        size = data.geteither("size", "s", default="56x32")
+        threshold = data.geteither("threshold", "t", default=128)
+        inverse = data.geteither("inverse", "i", default=0)
+        await self.dot_this(ctx, target, size, threshold, inverse)
 
-    @commands.command(name="ping")
+    @modding.command(name="ping")
     async def cmd_ping(self, ctx):
         '''
             `>>ping`
@@ -853,7 +852,7 @@ class Misc:
         ]):
             self.auto_rep_disabled.update(data["guild_ids"])
 
-    @commands.command()
+    @modding.command()
     @checks.guild_only()
     @checks.manager_only()
     async def autorep(self, ctx, mode):

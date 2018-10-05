@@ -499,7 +499,6 @@ class Guild:
             await ctx.deny()
         else:
             await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$pull": {"prefixes": prefix}})
-        finally:
             await ctx.confirm()
 
     @cmd_unset.command(name="allprefix")
@@ -1056,17 +1055,23 @@ class Guild:
             Display server info.
         '''
         guild = ctx.guild
-        embed = discord.Embed(title=guild.name, colour=discord.Colour.blue())
-        embed.set_thumbnail(url=guild.icon_url_as(format="png"))
-        embed.add_field(name="ID", value=guild.id)
-        embed.add_field(name="Owner", value=guild.owner.mention)
-        embed.add_field(name="Created at", value=guild.created_at.strftime("%d-%m-%Y"))
-        embed.add_field(name="Region", value=str(guild.region).title().replace("Us-", "US ").replace("Vip-", "VIP ").replace("Eu-", "EU "))
-        embed.add_field(name="Features", value=", ".join(guild.features) or "None", inline=False)
-        embed.add_field(name="Channels", value=f"{len(guild.categories)} categories\n{len(guild.text_channels)} text channels\n{len(guild.voice_channels)} voice channels")
-        embed.add_field(name="Members", value=f"{guild.member_count} members")
-        embed.add_field(name="Roles", value=", ".join((r.name for r in guild.roles)), inline=False)
-        await ctx.send(embed=embed)
+        roleinfo = ", ".join((r.mention for r in guild.roles))
+        role_pages = utils.split_page(roleinfo, 1900, safe_mode=False)
+        embeds = []
+        for page in role_pages:
+            embed = discord.Embed(title=guild.name, colour=discord.Colour.blue())
+            embed.set_thumbnail(url=guild.icon_url_as(format="png"))
+            embed.add_field(name="ID", value=guild.id)
+            embed.add_field(name="Owner", value=guild.owner.mention)
+            embed.add_field(name="Created at", value=guild.created_at.strftime("%d-%m-%Y"))
+            embed.add_field(name="Region", value=str(guild.region).title().replace("Us-", "US ").replace("Vip-", "VIP ").replace("Eu-", "EU "))
+            embed.add_field(name="Features", value=", ".join(guild.features) or "None", inline=False)
+            embed.add_field(name="Channels", value=f"{len(guild.categories)} categories\n{len(guild.text_channels)} text channels\n{len(guild.voice_channels)} voice channels")
+            embed.add_field(name="Members", value=f"{guild.member_count} members")
+            embed.add_field(name="Roles", value=page, inline=False)
+            embeds.append(embed)
+        paging = utils.Paginator(embeds, render=False)
+        await paging.navigate(ctx)
 
     @commands.command()
     async def roleinfo(self, ctx, *, name):

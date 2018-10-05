@@ -1047,11 +1047,12 @@ class Otogi:
         '''
         player = await self.get_player(ctx.author.id)
         if name:
-            name, lb = self._process_name(player, name)
+            name, lb = self._process_name(name)
             daemon = await self._search(ctx, name, prompt=False)
-            if not daemon:
-                return
-            self.lb_that(player, daemon.id)
+            if daemon:
+                self.lb_that(player, daemon.id)
+            else:
+                return await ctx.send("Can't find daemon with that name.")
         else:
             all_ids = set([])
             for d in player["daemons"]:

@@ -138,8 +138,11 @@ def progress_bar(rate, length=2):
 
 def clean_codeblock(text):
     if text.startswith("```"):
-        text = text.partition("\n")[2]
-    text = text.strip("` \n")
+        for i, c in enumerate(text):
+            if c.isspace():
+                break
+        text = text[i:]
+    text = text.strip("` \n\r\t\v\f")
     return text
 
 _format_regex = re.compile(r"(?<!\\)\{([^\\]+?)\}")

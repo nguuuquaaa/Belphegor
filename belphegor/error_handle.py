@@ -45,7 +45,12 @@ class ErrorHandle:
                 await ctx.send(error)
             else:
                 prt_err = "".join(traceback.format_exception(type(error), error, error.__traceback__, 5))
-                await ctx.send("Unexpected error. Oops (ᵒ ڡ <)๑⌒☆", delete_after=30)
+                await ctx.send(
+                    "Unexpected error. Oops (ᵒ ڡ <)๑⌒☆\n"
+                    "If you see this message, it means there's a bug in the code.\n"
+                    "Please wait for a while for the owner to fix.",
+                    delete_after=30
+                )
                 await self.error_hook.execute(f"```\nIgnoring exception in command {ctx.command}:\n{prt_err}\n```")
         elif isinstance(error, commands.MissingRequiredArgument):
             await ctx.send("Argument missing. You sure know what this command does?", delete_after=30)

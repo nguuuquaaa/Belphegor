@@ -432,7 +432,7 @@ class Music:
             try:
                 member, before, after = await self.bot.wait_for("voice_state_update", check=lambda m, b, a: m.id==ctx.author.id and a.channel.guild.id==ctx.guild.id, timeout=120)
             except asyncio.TimeoutError:
-                return msg.edit("So you don't want to listen to music? Great, I don't have to work then!")
+                return msg.edit(content="So you don't want to listen to music? Great, I don't have to work then!")
             else:
                 voice_channel = after.channel
                 await msg.delete()
@@ -577,7 +577,8 @@ class Music:
         if 0 <= vol <= 200:
             if music_player.current_song:
                 music_player.current_song.default_volume = vol / 100
-                music_player.current_song.music.volume = vol / 100
+                if music_player.current_song.music:
+                    music_player.current_song.music.volume = vol / 100
                 await ctx.send(f"Volume for current song has been set to {vol}%.")
             else:
                 await ctx.send("No song is currently playing.")

@@ -236,7 +236,7 @@ class Paginator:
 
         if target.id in self.all_tasks:
             self.all_tasks[target.id].cancel()
-        self.all_tasks[target.id] = asyncio.Task.current_task(loop=_loop)
+        self.all_tasks[target.id] = asyncio.current_task(loop=_loop)
 
         if ctx.channel.permissions_for(ctx.me).manage_messages:
             event = "reaction_add"
@@ -249,6 +249,8 @@ class Paginator:
         else:
             embed = next(iter(self.navigation.values()))()
         message = await ctx.send(embed=embed)
+        if not self.navigation:
+            return
         rt = _loop.create_task(self.add_navigate_reactions(message))
 
         try:

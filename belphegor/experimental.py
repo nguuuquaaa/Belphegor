@@ -144,7 +144,6 @@ class Statistics:
 
     @commands.command()
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
-    @checks.in_certain_guild(DISCORDPY_GUILD_ID)
     async def guildstatus(self, ctx):
         '''
            `>>guildstatus`
@@ -406,7 +405,7 @@ class Statistics:
             if len(top) >= 3:
                 break
 
-        embed.add_field(name="Top command", value="\n".join((f"{i+1}\u20e3 {x[0]} - {x[1]} times" for i, x in enumerate(top))), inline=False)
+        embed.add_field(name="Top commands", value="\n".join((f"{i+1}\u20e3 {x[0]} - {x[1]} times" for i, x in enumerate(top))), inline=False)
 
         await ctx.send(embed=embed)
 

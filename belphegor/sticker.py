@@ -94,7 +94,7 @@ class Sticker:
             await ctx.send(f"Cannot delete sticker.\nEither sticker doesn't exist or you are not the creator of the sticker.")
 
     @sticker.command(name="list")
-    async def sticker_list(self, ctx, user: discord.User=None):
+    async def cmd_sticker_list(self, ctx, user: discord.User=None):
         '''
             `>>sticker list <optional: user>`
             Get all stickers created by <user>.

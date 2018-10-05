@@ -12,3 +12,4 @@ fuzzywuzzy
 python-Levenshtein
 motor
 pytz
+selenium
