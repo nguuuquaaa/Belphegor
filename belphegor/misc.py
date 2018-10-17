@@ -9,7 +9,7 @@ import re
 from pymongo import ReturnDocument
 import json
 from io import BytesIO
-from PIL import Image, ImageFilter, ImageDraw, ImageFont
+from PIL import Image, ImageFilter, ImageDraw, ImageFont, ImageOps
 import traceback
 import collections
 import time
@@ -93,20 +93,20 @@ blank_chars = generate_blank_char()
 #==================================================================================================================================================
 
 class CharImage:
-    def __init__(self, char, *, font, weight=None):
+    def __init__(self, char, *, font, weight=None, pos=(0, 0)):
         image = Image.new("L", CHAR_SIZE, 0)
         draw = ImageDraw.Draw(image)
-        draw.text((0, 0), char, font=font, fill=255)
+        draw.text(pos, char, font=font, fill=255)
         self.weight = weight or 1
         self.raw = tuple(1 if i > 127 else 0 for i in image.getdata())
 
-    def compare(self, other):
+    def compare(self, other, inverse_weight):
         rating = 0
         inverse_rating = 0
         for char_value, other_value in zip(self.raw, other):
             rating += char_value * other_value
             inverse_rating += char_value * (1 - other_value)
-        rating = (rating - self.INVERSE_WEIGHT * inverse_rating) * self.weight
+        rating = (rating - inverse_weight * inverse_rating) * self.weight
         return rating
 
 #==================================================================================================================================================
@@ -120,8 +120,6 @@ class Misc:
         self.bot = bot
         self.jankenpon_record = bot.db.jankenpon_record
         self.guild_data = bot.db.guild_data
-        self.google_regex = re.compile(r"\<input name\=\"rlz\" value\=\"([a-zA-Z0-9_])\" type\=\"hidden\">")
-        self.google_lock = asyncio.Lock()
         self.owo = {"/o/": "\\o\\", "\\o\\": "/o/", "\\o/": "/o\\", "/o\\": "\\o/"}
         self.setup_ascii_chars()
         self.auto_rep_disabled = set()
@@ -506,19 +504,19 @@ class Misc:
         await ctx.send(random.choice(choices))
 
     @modding.command(name="embed")
-    async def cmd_embed(self, ctx, *, kwargs: modding.KeyValue()):
+    async def cmd_embed(self, ctx, *, kwargs: modding.KeyValue(escape=True)):
         '''
             `>>embed <data>`
             Display an embed.
             Data input is kwargs-like multiline, which each line has the format of `key=value`.
-            Acceptable key: title, author, author_icon, description, url, colour (in hex), thumbnail, image, footer (text), field (each line add one field in final embed, using format `name||value||optional inline`)
+            Acceptable key: title, author, author_icon, description, url, colour (in hex), thumbnail, image, footer (text), field (each line add one field in final embed, using format `name|value|optional inline`)
         '''
         Empty = discord.Embed.Empty
         embed = discord.Embed(
             title=kwargs.get("title") or Empty,
             description=kwargs.get("description") or Empty,
             url=kwargs.get("url") or Empty,
-            colour=utils.to_int(kwargs.get("colour", kwargs.get("color")), 16) or Empty,
+            colour=utils.to_int(kwargs.geteither("colour", "color"), 16) or Empty,
         )
 
         author = kwargs.get("author")
@@ -541,10 +539,13 @@ class Misc:
         if len(fields) > 25:
             return await ctx.send("Too many fields.")
         for f in fields:
-            items = f.split("||")
+            items = tuple(i for i in modding.split_iter(f, check=lambda c: c=="|") if i!="|")
             if len(items) > 1:
-                if len(items[0]) > 0 and len(items[1]) > 0:
-                    embed.add_field(name=items[0].strip(), value=items[1].strip(), inline=utils.get_element(items, 2, default="true").strip() in ("True", "1", "true", "inline"))
+                name = items[0].strip()
+                value = items[1].strip()
+                inline = utils.get_element(items, 2, default="true").strip().lower() in ("1", "true", "inline")
+                if len(name) > 0 and len(value) > 0:
+                    embed.add_field(name=name, value=value, inline=inline)
 
         try:
             await ctx.send(embed=embed)
@@ -621,73 +622,40 @@ class Misc:
         await ctx.send(f"```\n{text}\n```")
 
     @ascii.command(name="big", aliases=["bigger", "biggur"], brief="Bigger ascii art", category="Misc", field="Commands", paragraph=3)
-    async def big_ascii(self, ctx, member: discord.Member=None, width=256):
+    async def big_ascii(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("width", "w"): int}, clean=False, multiline=False)=modding.EMPTY):
         '''
-            `>>ascii big <optional: member> <optional: width>`
-            Bigger size ASCII art of member avatar, send as txt file due to discord 2000 characters limit.
+            `>>ascii big <keyword: _|member|m> <keyword: width|w>`
+            Bigger size ASCII art of member avatar, send as txt file due to discord's 2000 characters limit.
             If no member is specified, use your avatar. Default width is 256.
         '''
-        await ctx.trigger_typing()
-        target = member or ctx.author
+        target = data.geteither("", "member", "m", default=ctx.author)
+        width = data.geteither("width", "w", default=256)
         if width > 1024:
             return await ctx.send("Width should be 1024 or less.")
         elif width < 64:
             return await ctx.send("Width should be 64 or more.")
+
+        await ctx.trigger_typing()
         bytes_ = await self.bot.fetch(target.avatar_url)
         text = await self.bot.loop.run_in_executor(None, self.to_ascii, bytes_, width, width//2)
         await ctx.send(file=discord.File(text.encode("utf-8"), filename=f"ascii_{len(text)}_chars.txt"))
 
-    async def block_this(self, ctx, member, threshold, inverse):
-        if threshold > 255:
-            return await ctx.send("Threshold is too big.")
-        elif threshold < 0:
-            return await ctx.send("Threshold should be a non-negative number.")
-        target = member or ctx.author
-        bytes_ = await self.bot.fetch(target.avatar_url)
-        image = Image.open(BytesIO(bytes_))
-
-        def per_cut(cut):
-            return BOX_PATTERN[cut]
-
-        result = self.convert_image_to_ascii(image, None, per_cut, 64, 30, 1, 2, threshold, inverse)
-        await ctx.send(f"```\n{result}\n```")
-
-    @ascii.group(name="block", invoke_without_command=True, brief="Block ascii art", category="Misc", field="Commands", paragraph=3)
-    async def ascii_block(self, ctx, member: discord.Member=None, threshold: int=128):
-        '''
-            `>>ascii block <optional: member> <optional: threshold>`
-            Block ~~unicode~~ ASCII art of member avatar.
-            If no member is specified, use your avatar.
-            Less threshold is better with darker image, more is better with light one.
-            Default threshold is 128. Max threshold is 255.
-        '''
-        await self.block_this(ctx, member, threshold, 0)
-
-    @ascii_block.command(name="inverse", aliases=["i"], brief="Block ascii art, inversed", category="Misc", field="Commands", paragraph=3)
-    async def ascii_block_inverse(self, ctx, member: discord.Member=None, threshold: int=128):
-        '''
-            `>>ascii block inverse <optional: member> <optional: threshold>`
-            Block ASCII art of member avatar, inversed.
-            If no member is specified, use your avatar.
-            Less threshold is better with darker image, more is better with light one.
-            Default threshold is 128. Max threshold is 255.
-        '''
-        await self.block_this(ctx, member, threshold, 1)
-
     def setup_ascii_chars(self):
-        CharImage.INVERSE_WEIGHT = 5
         self.chars = {}
-        font = ImageFont.truetype(f"{config.DATA_PATH}/font/consola.ttf", CHAR_SIZE[1])
+        size = int(CHAR_SIZE[0] / 0.5894)
+        font = ImageFont.truetype(f"{config.DATA_PATH}/font/consola.ttf", size)
+        ts = font.getsize("A")
+        from_top = (CHAR_SIZE[1] - ts[1] - 1) // 2
         for c in (
             " ", "'", "(", ")", "*", "+", ",", "-", ".", "/", ":", ";", "<", "=", ">", "?", "A", "C", "D", "H", "I",
             "J", "K", "L", "M", "N", "O", "S", "T", "U", "V", "W", "X", "Y", "Z", "[", "\\", "]", "^", "_", "|", "~"
         ):
-            self.chars[c] = CharImage(c, font=font)
+            self.chars[c] = CharImage(c, font=font, pos=(0, from_top))
 
-        self.chars["\\"].weight = 2
-        self.chars["/"].weight = 2
-        self.chars["_"].weight = 2
-        self.chars["-"].weight = 2
+        self.chars["\\"].weight = 1.8
+        self.chars["/"].weight = 1.8
+        self.chars["_"].weight = 1.8
+        self.chars["-"].weight = 1.8
         self.chars["<"].weight = 1.3
         self.chars[">"].weight = 1.3
         self.chars["|"].weight = 1.8
@@ -702,7 +670,7 @@ class Misc:
         for c in ("A", "C", "D", "H", "I", "J", "K", "L", "M", "N", "O", "S", "T", "U", "V", "W", "X", "Y", "Z"):
             self.chars[c].weight = 0.6
 
-    def convert_image_to_ascii(self, image, image_proc, per_cut, width, height, char_width, char_height, threshold, inverse=0):
+    def convert_image_to_ascii(self, image, image_proc, per_cut, width, height, char_width, char_height, threshold, inverse):
         width = width
         height = height
         char_width = char_width
@@ -726,32 +694,66 @@ class Misc:
         t = ("".join(raw[i:i+width]).rstrip() for i in range(0, width*height, width))
         return "\n".join(t)
 
+    def get_params(self, threshold, size):
+        if threshold > 255:
+            raise ValueError("Threshold is too big.")
+        elif threshold < 0:
+            raise ValueError("Threshold should be a non-negative number.")
+
+        width, sep, height = size.partition("x")
+        try:
+            width = int(width.strip())
+            height = int(height.strip())
+        except ValueError:
+            raise ValueError("Please use `width x height` format for size.")
+        else:
+            if height < 5 or width < 5:
+                raise ValueError("Size too small.")
+            if (width+1)*height >= 2000:
+                raise ValueError("Size too large.")
+
+        return threshold, width, height
+
     @ascii.command(name="edge", brief="Edge-detection ascii art", category="Misc", field="Commands", paragraph=3)
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
-    async def ascii_edge(self, ctx, member: discord.Member=None, threshold: int=32, blur: int=2):
+    async def ascii_edge(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t", "blur", "b"): int, ("weight", "w"): float, ("edge", "e", "inverse", "i"): bool}, clean=False, multiline=False)=modding.EMPTY):
         '''
-            `>>ascii edge <optional: member> <optional: threshold> <optional: blur>`
+            `>>ascii edge <keyword: _|member|m> <keyword: threshold|t> <keyword: blur|b> <keyword: weight>`
             Edge-detection ASCII art of member avatar.
             If no member is specified, use your avatar.
             Less threshold, more dense. Default threshold is 32. Maximum threshold is 255.
             Less blur, more sharp. Default blur is 2. Maximum blur is 10.
+            Less weight, bigger characters.
             Has 10s cooldown due to heavy processing (someone give me good algorithm pls).
         '''
-        if threshold > 255:
-            return await ctx.send("Threshold is too big.")
-        elif threshold < 0:
-            return await ctx.send("Threshold should be a non-negative number.")
+        target = data.geteither("", "member", "m", default=ctx.author)
+        size = data.geteither("size", "s", default="64x30")
+        threshold = data.geteither("threshold", "t", default=32)
+        blur = data.geteither("blur", "b", default=2)
+        inverse_weight = data.geteither("weight", "w", default=5.0)
+        edge = data.geteither("edge", "e", default=True)
+        inverse = data.geteither("inverse", "i", default=0)
+
+        try:
+            threshold, width, height = self.get_params(threshold, size)
+        except ValueError as e:
+            return await ctx.send(e)
         if blur > 10:
             return await ctx.send("Blur value is too big.")
         elif blur < 0:
             return await ctx.send("Blur value should be a non-negative number.")
+        if inverse_weight > 10:
+            return await ctx.send("Inverse weight value is too big.")
+        elif inverse_weight < 0:
+            return await ctx.send("Inverse weight value should be a non-negative number.")
+
         await ctx.trigger_typing()
-        target = member or ctx.author
         bytes_ = await self.bot.fetch(target.avatar_url)
         image = Image.open(BytesIO(bytes_))
 
         def image_proc(image):
-            image = image.filter(ImageFilter.FIND_EDGES)
+            if edge:
+                image = image.filter(ImageFilter.FIND_EDGES)
             if blur > 0:
                 image = image.filter(ImageFilter.GaussianBlur(radius=blur))
             return image
@@ -762,7 +764,7 @@ class Misc:
             best_weight = inf
             best_char = None
             for c, im in chars:
-                weight = im.compare(cut)
+                weight = im.compare(cut, inverse_weight)
                 if weight > best_weight:
                     best_weight = weight
                     best_char = c
@@ -770,31 +772,61 @@ class Misc:
 
         def do_stuff():
             start = time.perf_counter()
-            ret = self.convert_image_to_ascii(image, image_proc, per_cut, 64, 30, *CHAR_SIZE, threshold, 0)
+            ret = self.convert_image_to_ascii(image, image_proc, per_cut, width, height, *CHAR_SIZE, threshold, inverse)
             end = time.perf_counter()
             return ret, end-start
 
         result, time_taken = await self.bot.loop.run_in_executor(None, do_stuff)
         await ctx.send(f"Result in {time_taken*1000:.2f}ms```\n{result}\n```")
 
-    async def dot_this(self, ctx, member, size, threshold, inverse):
-        if threshold > 255:
-            return await ctx.send("Threshold is too big.")
-        elif threshold < 0:
-            return await ctx.send("Threshold should be a non-negative number.")
-        width, sep, height = size.partition("x")
+    @ascii.group(name="block", invoke_without_command=True, brief="Block ascii art", category="Misc", field="Commands", paragraph=3)
+    async def ascii_block(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t"): int, ("inverse", "i"): bool}, clean=False, multiline=False)=modding.EMPTY):
+        '''
+            `>>ascii block <keyword: _|member|m> <keyword: threshold|t> <keyword: inverse|i>`
+            Block ~~unicode~~ ASCII art of member avatar.
+            If no member is specified, use your avatar.
+            Less threshold is better with darker image, more is better with light one.
+            Default threshold is 128. Max threshold is 255.
+        '''
+        target = data.geteither("", "member", "m", default=ctx.author)
+        size = data.geteither("size", "s", default="64x30")
+        threshold = data.geteither("threshold", "t", default=128)
+        inverse = data.geteither("inverse", "i", default=0)
         try:
-            width = int(width.strip())
-            height = int(height.strip())
-        except ValueError:
-            return await ctx.send("Please use `width x height` format for size.")
-        else:
-            if height < 5 or width < 5:
-                return await ctx.send("Size too small.")
-            if (width+1)*height >= 2000:
-                return await ctx.send("Size too large.")
+            threshold, width, height = self.get_params(threshold, size)
+        except ValueError as e:
+            return await ctx.send(e)
+
         await ctx.trigger_typing()
-        bytes_ = await self.bot.fetch(member.avatar_url)
+        bytes_ = await self.bot.fetch(target.avatar_url)
+        image = Image.open(BytesIO(bytes_))
+
+        def per_cut(cut):
+            return BOX_PATTERN[cut]
+
+        result = self.convert_image_to_ascii(image, None, per_cut, width, height, 1, 2, threshold, inverse)
+        await ctx.send(f"```\n{result}\n```")
+
+    @ascii.group(name="dot", invoke_without_command=True, brief="Braille dot ascii art", category="Misc", field="Commands", paragraph=3)
+    async def ascii_dot(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t"): int, ("inverse", "i"): bool}, clean=False, multiline=False)=modding.EMPTY):
+        '''
+            `>>ascii dot <keyword: _|member|m> <keyword: threshold|t> <keyword: inverse|i>`
+            Braille dot ~~unicode~~ ASCII art of member avatar.
+            If no member is specified, use your avatar.
+            Less threshold is better with darker image, more is better with light one.
+            Default threshold is 128. Max threshold is 255.
+        '''
+        target = data.geteither("", "member", "m", default=ctx.author)
+        size = data.geteither("size", "s", default="56x32")
+        threshold = data.geteither("threshold", "t", default=128)
+        inverse = data.geteither("inverse", "i", default=0)
+        try:
+            threshold, width, height = self.get_params(threshold, size)
+        except ValueError as e:
+            return await ctx.send(e)
+
+        await ctx.trigger_typing()
+        bytes_ = await self.bot.fetch(target.avatar_url)
         image = Image.open(BytesIO(bytes_))
 
         inf = -float("inf")
@@ -811,22 +843,6 @@ class Misc:
             await ctx.send("Result is all blank. Maybe you should try tweaking threshold a little?")
         else:
             await ctx.send(f"\u200b{result}")
-
-    @ascii.group(name="dot", invoke_without_command=True, brief="Braille dot ascii art", category="Misc", field="Commands", paragraph=3)
-    async def ascii_dot(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t"): int, ("inverse", "i"): bool}, clean=False, multiline=False)=modding.EMPTY):
-        '''
-            `>>ascii dot <optional: member> <optional: threshold>`
-            Braille dot ~~unicode~~ ASCII art of member avatar.
-            If no member is specified, use your avatar.
-            Less threshold is better with darker image, more is better with light one.
-            Default threshold is 128. Max threshold is 255.
-        '''
-
-        target = data.geteither("", "member", "m", default=ctx.author)
-        size = data.geteither("size", "s", default="56x32")
-        threshold = data.geteither("threshold", "t", default=128)
-        inverse = data.geteither("inverse", "i", default=0)
-        await self.dot_this(ctx, target, size, threshold, inverse)
 
     @modding.command(name="ping")
     async def cmd_ping(self, ctx):

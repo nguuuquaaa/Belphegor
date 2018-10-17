@@ -44,7 +44,7 @@ class ErrorHandle:
             elif isinstance(error, discord.Forbidden):
                 await ctx.send(error)
             else:
-                prt_err = "".join(traceback.format_exception(type(error), error, error.__traceback__, 5))
+                prt_err = "".join(traceback.format_exception(type(error), error, error.__traceback__, 5)).replace("`", "\u200b`")
                 await ctx.send(
                     "Unexpected error. Oops (ᵒ ڡ <)๑⌒☆\n"
                     "If you see this message, it means there's a bug in the code.\n"
@@ -59,7 +59,7 @@ class ErrorHandle:
         elif isinstance(error, ignored):
             pass
         else:
-            prt_err = "".join(traceback.format_exception(type(error), error, None))
+            prt_err = "".join(traceback.format_exception(type(error), error, None)).replace("`", "\u200b`")
             await self.error_hook.execute(f"```\nUnexpected error:\n{prt_err}\n```")
 
 #==================================================================================================================================================

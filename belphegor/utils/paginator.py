@@ -235,7 +235,7 @@ class Paginator:
         target = target or ctx.author
 
         if target.id in self.all_tasks:
-            self.all_tasks[target.id].cancel()
+            self.all_tasks.pop(target.id).cancel()
         self.all_tasks[target.id] = asyncio.current_task(loop=_loop)
 
         if ctx.channel.permissions_for(ctx.me).manage_messages:

@@ -336,7 +336,10 @@ class RandomImage:
             if title_tag:
                 for br in title_tag.find_all("br"):
                     br.replace_with("\n")
-                title = title_tag.get_text().strip().splitlines()[0]
+                try:
+                    title = title_tag.get_text().strip().splitlines()[0]
+                except IndexError:
+                    title = "no title"
             else:
                 result_content = tag.find("div", class_="resultcontent")
                 for br in result_content.find_all("br"):

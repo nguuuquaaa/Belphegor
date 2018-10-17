@@ -172,11 +172,17 @@ class Admin:
 
     @commands.command(hidden=True)
     @checks.owner_only()
-    async def mongoitem(self, ctx, col, *, query="{}"):
-        data = await self.bot.db[col].find_one(eval(query))
+    async def mongoitem(self, ctx, col, *, raw_query="{}"):
+        raw = utils.load_concat_json(raw_query)
+        query = utils.get_element(raw, 0, default={})
+        projection = utils.get_element(raw, 1, default={})
+        data = await self.bot.db[col].find_one(query, projection=projection)
         if data:
-            data.pop("_id")
-            await ctx.send(file=discord.File(json.dumps(data, indent=4, ensure_ascii=False).encode("utf-8"), filename="data.json"))
+            text = json.dumps(data, indent=4, ensure_ascii=False)
+            if len(text) > 1900:
+                await ctx.send(file=discord.File(text.encode("utf-8"), filename="data.json"))
+            else:
+                await ctx.send(f"```\n{text}\n```")
         else:
             await ctx.send("Nothing found.")
 

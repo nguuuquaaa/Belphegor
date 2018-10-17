@@ -493,7 +493,7 @@ class PSO2:
                     weapon["classes"] = "all_classes"
                     break
                 else:
-                    weapon["classes"].append(CLASS_DICT[cl])
+                    weapon["classes"].append(CLASS_DICT[cl.lower()])
             category_weapons.append(weapon)
         return category_weapons
 

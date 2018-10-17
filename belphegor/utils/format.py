@@ -7,6 +7,8 @@ import pytz
 from pytz import timezone
 from urllib.parse import quote
 import collections
+import json
+import functools
 
 #==================================================================================================================================================
 
@@ -28,13 +30,30 @@ def no_mass_mention(word):
     else:
         return word
 
-_split_regex = re.compile(r"(\s)")
+def split_iter(txt, *, check=str.isspace):
+    word = []
+    escape = False
+    for c in txt:
+        if escape:
+            word.append(c)
+            escape = False
+        elif check(c):
+            if word:
+                yield "".join(word)
+            word.clear()
+            yield c
+        else:
+            if c == "\\":
+                escape = True
+            word.append(c)
+    else:
+        if word:
+            yield "".join(word)
 
 def split_page(text, split_len, *, safe_mode=True):
-    description = _split_regex.split(text)
     description_page = ["",]
     cur_index = 0
-    for word in description:
+    for word in split_iter(text):
         word = no_mass_mention(word)
         if safe_mode:
             if word.startswith(("http://", "https://")):
@@ -148,3 +167,21 @@ def clean_codeblock(text):
 _format_regex = re.compile(r"(?<!\\)\{([^\\]+?)\}")
 def str_format(text, **kwargs):
     return _format_regex.sub(lambda m: kwargs[m.group(1)], text)
+
+#==================================================================================================================================================
+
+_WHITESPACE = re.compile(r"\s*")
+
+class ConcatJSONDecoder(json.JSONDecoder):
+    def decode(self, s, _w=_WHITESPACE.match):
+        s = s.strip()
+        s_len = len(s)
+
+        objs = []
+        end = 0
+        while end != s_len:
+            obj, end = self.raw_decode(s, idx=_w(s, end).end())
+            objs.append(obj)
+        return objs
+
+load_concat_json = functools.partial(json.loads, cls=ConcatJSONDecoder)

@@ -13,3 +13,6 @@ python-Levenshtein
 motor
 pytz
 selenium
+numpy
+objgraph
+dblpy

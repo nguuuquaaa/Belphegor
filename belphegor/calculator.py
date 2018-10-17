@@ -351,7 +351,8 @@ class BaseParse:
         return self.current_parse
 
     def log_this(kind):
-        def wrap(func):
+        @functools.wrap(func)
+        def wrapped(func):
             def f(self, *args, **kwargs):
                 self.log_lines.append(f"start {kind} at {self.current_parse}")
                 try:
