@@ -199,7 +199,8 @@ class BaseParse:
         "**":   pow,
         "!":    math.factorial,
         "C":    combination,
-        "°":    math.radians
+        "°":    math.radians,
+        "deg":    math.radians
     }
     SPECIAL_FUNCS = {
         "sigma":    Sigma,
@@ -351,8 +352,8 @@ class BaseParse:
         return self.current_parse
 
     def log_this(kind):
-        @functools.wrap(func)
         def wrapped(func):
+            @functools.wraps(func)
             def f(self, *args, **kwargs):
                 self.log_lines.append(f"start {kind} at {self.current_parse}")
                 try:
@@ -364,7 +365,7 @@ class BaseParse:
                 self.log_lines.append(f"end {kind} at {self.current_parse}")
                 return ret
             return f
-        return wrap
+        return wrapped
 
     @log_this("next value")
     def parse_next_value(self):

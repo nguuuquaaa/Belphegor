@@ -118,37 +118,11 @@ class KeyValue(commands.Converter):
 
         return ret
 
-class ExtraCommandFeatures:
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.category = kwargs.pop("category", None)
-        self.field = kwargs.pop("field", "Commands")
-        self.paragraph = kwargs.pop("paragraph", 0)
-
-class Command(ExtraCommandFeatures, commands.Command):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-class Group(ExtraCommandFeatures, commands.Group):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def command(self, **kwargs):
-        def wrapper(func):
-            cmd = command(**kwargs)(func)
-            self.add_command(cmd)
-            return cmd
-        return wrapper
-
-    def group(self, **kwargs):
-        def wrapper(func):
-            cmd = group(**kwargs)(func)
-            self.add_command(cmd)
-            return cmd
-        return wrapper
-
-def command(*, name=None, **kwargs):
-    return commands.command(name, Command, **kwargs)
-
-def group(*, name=None, **kwargs):
-    return commands.command(name, Group, **kwargs)
+def help(**kwargs):
+    def wrapper(command):
+        command.brief = kwargs.pop("brief", None)
+        command.category = kwargs.pop("category", None)
+        command.field = kwargs.pop("field", "Commands")
+        command.paragraph = kwargs.pop("paragraph", 0)
+        return command
+    return wrapper

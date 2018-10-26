@@ -494,8 +494,12 @@ class Google:
 class RunGoogleInBackground(multiprocessing.Process):
     @try_sync
     def run(self):
+        def quit_sessions():
+            drivers[0].quit()
+            drivers[1].quit()
+        signal.signal(signal.SIGTERM, quit_sessions)
+
         drivers = (GoogleEngine.setup_browser(safe=False), GoogleEngine.setup_browser(safe=True))
-        signal.signal(signal.SIGTERM, lambda signum, frame: drivers[0].quit() and drivers[1].quit())
         print("google ready")
         while self.running:
             try:
@@ -513,8 +517,7 @@ class RunGoogleInBackground(multiprocessing.Process):
                 no_error = False
             finally:
                 result_queue.put((mid, no_error, ret))
-        drivers[0].quit()
-        drivers[1].quit()
+        quit_sessions()
 
 def setup(bot):
     process = RunGoogleInBackground(daemon=True)

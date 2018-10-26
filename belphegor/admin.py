@@ -175,14 +175,15 @@ class Admin:
     async def mongoitem(self, ctx, col, *, raw_query="{}"):
         raw = utils.load_concat_json(raw_query)
         query = utils.get_element(raw, 0, default={})
-        projection = utils.get_element(raw, 1, default={})
+        projection = utils.get_element(raw, 1, default=None)
         data = await self.bot.db[col].find_one(query, projection=projection)
         if data:
+            data.pop("_id", None)
             text = json.dumps(data, indent=4, ensure_ascii=False)
             if len(text) > 1900:
                 await ctx.send(file=discord.File(text.encode("utf-8"), filename="data.json"))
             else:
-                await ctx.send(f"```\n{text}\n```")
+                await ctx.send(f"```json\n{text}\n```")
         else:
             await ctx.send("Nothing found.")
 

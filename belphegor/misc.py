@@ -14,6 +14,7 @@ import traceback
 import collections
 import time
 import copy
+import numpy as np
 
 #==================================================================================================================================================
 
@@ -98,14 +99,14 @@ class CharImage:
         draw = ImageDraw.Draw(image)
         draw.text(pos, char, font=font, fill=255)
         self.weight = weight or 1
-        self.raw = tuple(1 if i > 127 else 0 for i in image.getdata())
+        self.raw = np.where(np.array(image)>127, 1, 0)
+        self.sum_raw = np.sum(self.raw)
 
     def compare(self, other, inverse_weight):
         rating = 0
         inverse_rating = 0
-        for char_value, other_value in zip(self.raw, other):
-            rating += char_value * other_value
-            inverse_rating += char_value * (1 - other_value)
+        rating = np.sum(self.raw * other)
+        inverse_rating = self.sum_raw - rating
         rating = (rating - inverse_weight * inverse_rating) * self.weight
         return rating
 
@@ -142,7 +143,8 @@ class Misc:
                 return random.choice(QUOTES["lose"])
         return random.choice(QUOTES["draw"])
 
-    @modding.command(aliases=["jkp",], brief="Play rock-paper-scissor", category="Misc", field="Commands", paragraph=0)
+    @modding.help(brief="Play rock-paper-scissor", category="Misc", field="Commands", paragraph=0)
+    @commands.command(aliases=["jkp",])
     async def jankenpon(self, ctx):
         '''
             `>>jankenpon`
@@ -250,7 +252,8 @@ class Misc:
             except:
                 pass
 
-    @modding.command(brief="Get your or a user avatar", category="Misc", field="Commands", paragraph=1)
+    @modding.help(brief="Get your or a user avatar", category="Misc", field="Commands", paragraph=1)
+    @commands.command(aliases=["av"])
     async def avatar(self, ctx, *, member: discord.Member=None):
         '''
             `>>avatar <optional: member>`
@@ -262,7 +265,8 @@ class Misc:
         embed.set_image(url=member.avatar_url_as(static_format="png"))
         await ctx.send(embed=embed)
 
-    @modding.command(brief="Roll dices", category="Misc", field="Commands", paragraph=0)
+    @modding.help(brief="Roll dices", category="Misc", field="Commands", paragraph=0)
+    @commands.command()
     async def dice(self, ctx, dice_type):
         '''
             `>>dice ndM`
@@ -286,7 +290,8 @@ class Misc:
         else:
             await ctx.send("Max side must be between 4 and 120 and number of dices must be between 1 and 100.")
 
-    @modding.command(brief="\U0001f1eb \U0001f1e6 \U0001f1f3 \U0001f1e8 \U0001f1fe", category="Misc", field="Commands", paragraph=0)
+    @modding.help(brief="\U0001f1eb \U0001f1e6 \U0001f1f3 \U0001f1e8 \U0001f1fe", category="Misc", field="Commands", paragraph=0)
+    @commands.command()
     async def fancy(self, ctx, *, textin):
         '''
             `>>fancy <text goes here>`
@@ -295,7 +300,7 @@ class Misc:
         textin = textin.upper()
         await ctx.send(" ".join((FANCY_CHARS.get(charin, charin) for charin in textin)))
 
-    @modding.command(aliases=["hello",])
+    @commands.command(aliases=["hello",])
     async def hi(self, ctx):
         '''
             `>>hi`
@@ -303,7 +308,7 @@ class Misc:
         '''
         await ctx.send("Go away.")
 
-    @modding.group(invoke_without_command=True)
+    @commands.group(invoke_without_command=True)
     async def say(self, ctx, *, something: commands.clean_content):
         '''
             `>>say <text goes here>`
@@ -327,7 +332,8 @@ class Misc:
         '''
         await ctx.send("Welcome to Leave Me Alone village. The exit is right there.")
 
-    @modding.command(brief="Get unicode character info", category="Misc", field="Commands", paragraph=2)
+    @modding.help(brief="Get unicode character info", category="Misc", field="Commands", paragraph=2)
+    @commands.command()
     async def char(self, ctx, *, characters):
         '''
             `>>char <characters>`
@@ -339,7 +345,8 @@ class Misc:
         else:
             await ctx.send("\n".join([f"`\\U{ord(c):08x}` - `{c}` - {unicodedata.name(c, 'No name found.')}" for c in characters]))
 
-    @modding.command(brief="Make a poll", category="Misc", field="Commands", paragraph=0)
+    @modding.help(brief="Make a poll", category="Misc", field="Commands", paragraph=0)
+    @commands.command()
     async def poll(self, ctx, *, data):
         '''
             `>>poll <question and choices>`
@@ -387,7 +394,8 @@ class Misc:
                 max_result.append(items[emoji_to_int[key]-1])
         await ctx.send(f"Poll ended.\nHighest vote: {' and '.join(max_result)} with {max_number} votes.")
 
-    @modding.group(invoke_without_command=True, brief="Z̜͍̊ă̤̥ḷ̐́ģͮ͛ò̡͞ ͥ̉͞ť͔͢e̸̷̅x̠ͯͧt̰̱̾", category="Misc", field="Commands", paragraph=1)
+    @modding.help(brief="Z̜͍̊ă̤̥ḷ̐́ģͮ͛ò̡͞ ͥ̉͞ť͔͢e̸̷̅x̠ͯͧt̰̱̾", category="Misc", field="Commands", paragraph=1)
+    @commands.group(invoke_without_command=True)
     async def glitch(self, ctx, *, data: modding.KeyValue(escape=False, clean=False)):
         '''
             `>>glitch <optional: weight> <text>`
@@ -409,7 +417,8 @@ class Misc:
         else:
             await ctx.send("Weight value can only be between 1 and 50.")
 
-    @glitch.command(aliases=["m"], brief="ĜþŞ¶ōÙđĔł ĝĖĘ Ùľ© ¼Ħâ Ŗėēů®³ĸ¤²", category="Misc", field="Commands", paragraph=1)
+    @modding.help(brief="ĜþŞ¶ōÙđĔł ĝĖĘ Ùľ© ¼Ħâ Ŗėēů®³ĸ¤²", category="Misc", field="Commands", paragraph=1)
+    @glitch.command(aliases=["m"])
     async def meaningless(self, ctx, length: int=0):
         '''
             `>>glitch meaningless <optional: length>`
@@ -428,7 +437,8 @@ class Misc:
         else:
             await ctx.send("Wha hold your horse with the length.")
 
-    @modding.command(aliases=["colour"], brief="Color", category="Misc", field="Commands", paragraph=2)
+    @modding.help(brief="Color", category="Misc", field="Commands", paragraph=2)
+    @commands.command(aliases=["colour"])
     async def color(self, ctx, *args):
         '''
             `>>color <int, hex code or rgb>`
@@ -437,7 +447,7 @@ class Misc:
         if len(args) == 3:
             try:
                 rgb = (int(args[0]), int(args[1]), int(args[2]))
-            except:
+            except ValueError:
                 return await ctx.send("Oi, what's this format?")
         elif len(args) == 1:
             i = args[0]
@@ -447,7 +457,7 @@ class Misc:
                 i = i[1:]
             try:
                 c = discord.Colour(int(i, 16))
-            except:
+            except ValueError:
                 return await ctx.send("Oi, that's not color code at all.")
             else:
                 rgb = c.to_rgb()
@@ -461,7 +471,8 @@ class Misc:
         e.set_image(url="attachment://color.png")
         await ctx.send(file=f, embed=e)
 
-    @modding.command()
+    @modding.help()
+    @commands.command()
     async def pyfuck(self, ctx, *, data):
         '''
             `>>pyfuck <code>`
@@ -493,7 +504,8 @@ class Misc:
         else:
             await ctx.send(file=discord.File(code.encode("utf-8"), filename="fuck_this.py"))
 
-    @modding.command(name="choose", brief="Random choice", category="Misc", field="Commands", paragraph=2)
+    @modding.help(brief="Random choice", category="Misc", field="Commands", paragraph=2)
+    @commands.command(name="choose")
     async def cmd_choose(self, ctx, *, choices):
         '''
             `>>choose <choices>`
@@ -503,7 +515,7 @@ class Misc:
         choices = choices.split(" or ")
         await ctx.send(random.choice(choices))
 
-    @modding.command(name="embed")
+    @commands.command(name="embed")
     async def cmd_embed(self, ctx, *, kwargs: modding.KeyValue(escape=True)):
         '''
             `>>embed <data>`
@@ -514,7 +526,7 @@ class Misc:
         Empty = discord.Embed.Empty
         embed = discord.Embed(
             title=kwargs.get("title") or Empty,
-            description=kwargs.get("description") or Empty,
+            description=kwargs.geteither("description", "") or Empty,
             url=kwargs.get("url") or Empty,
             colour=utils.to_int(kwargs.geteither("colour", "color"), 16) or Empty,
         )
@@ -539,7 +551,7 @@ class Misc:
         if len(fields) > 25:
             return await ctx.send("Too many fields.")
         for f in fields:
-            items = tuple(i for i in modding.split_iter(f, check=lambda c: c=="|") if i!="|")
+            items = tuple(utils.split_iter(f, check=lambda c: c=="|", keep_delimiters=False))
             if len(items) > 1:
                 name = items[0].strip()
                 value = items[1].strip()
@@ -552,7 +564,7 @@ class Misc:
         except Exception as e:
             await ctx.send(e)
 
-    @modding.group(name="quote", invoke_without_command=True)
+    @commands.group(name="quote", invoke_without_command=True)
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     async def cmd_quote(self, ctx, msg_id: int, channel: discord.TextChannel=None):
         '''
@@ -608,7 +620,8 @@ class Misc:
         t = ("".join(chars[i:i+width]) for i in range(0, len(chars), width))
         return "\n".join(t)
 
-    @modding.group(invoke_without_command=True, brief="Ascii art", category="Misc", field="Commands", paragraph=3)
+    @modding.help(brief="Grayscale ascii art", category="Misc", field="Commands", paragraph=3)
+    @commands.group(invoke_without_command=True)
     async def ascii(self, ctx, member: discord.Member=None):
         '''
             `>>ascii <optional: member>`
@@ -621,7 +634,8 @@ class Misc:
         text = self.to_ascii(bytes_, 64, 30)
         await ctx.send(f"```\n{text}\n```")
 
-    @ascii.command(name="big", aliases=["bigger", "biggur"], brief="Bigger ascii art", category="Misc", field="Commands", paragraph=3)
+    @modding.help(brief="Bigger grayscale ascii art", category="Misc", field="Commands", paragraph=3)
+    @ascii.command(name="big", aliases=["bigger", "biggur"])
     async def big_ascii(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("width", "w"): int}, clean=False, multiline=False)=modding.EMPTY):
         '''
             `>>ascii big <keyword: _|member|m> <keyword: width|w>`
@@ -682,23 +696,27 @@ class Misc:
         image = image.resize((full_width, full_height)).convert("L")
         if image_proc:
             image = image_proc(image)
-        pixels = tuple(1-inverse if p > threshold else inverse for p in image.getdata())
+        raw_pixels = np.array(image)
+        pixels = np.where(raw_pixels>threshold, 1-inverse, 0)
         range_height = range(char_height)
         range_width = range(char_width)
 
         for y in range(0, full_height, char_height):
             for x in range(0, full_width, char_width):
-                cut = tuple(pixels[x+i+(y+j)*full_width] for j in range_height for i in range_width)
+                cut = pixels[y:y+char_height, x:x+char_width]
                 raw.append(per_cut(cut))
 
         t = ("".join(raw[i:i+width]).rstrip() for i in range(0, width*height, width))
         return "\n".join(t)
 
-    def get_params(self, threshold, size):
-        if threshold > 255:
+    def check_threshold(self, threshold, *, max=255):
+        if threshold > max:
             raise ValueError("Threshold is too big.")
         elif threshold < 0:
             raise ValueError("Threshold should be a non-negative number.")
+
+    def get_params(self, threshold, size):
+        self.check_threshold(threshold)
 
         width, sep, height = size.partition("x")
         try:
@@ -714,7 +732,8 @@ class Misc:
 
         return threshold, width, height
 
-    @ascii.command(name="edge", brief="Edge-detection ascii art", category="Misc", field="Commands", paragraph=3)
+    @modding.help(brief="Edge-detection ascii art", category="Misc", field="Commands", paragraph=3)
+    @ascii.command(name="edge")
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     async def ascii_edge(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t", "blur", "b"): int, ("weight", "w"): float, ("edge", "e", "inverse", "i"): bool}, clean=False, multiline=False)=modding.EMPTY):
         '''
@@ -779,7 +798,17 @@ class Misc:
         result, time_taken = await self.bot.loop.run_in_executor(None, do_stuff)
         await ctx.send(f"Result in {time_taken*1000:.2f}ms```\n{result}\n```")
 
-    @ascii.group(name="block", invoke_without_command=True, brief="Block ascii art", category="Misc", field="Commands", paragraph=3)
+    @ascii_edge.error
+    async def ascii_edge_error(self, ctx, error):
+        if isinstance(error, commands.CommandOnCooldown):
+            await ctx.send(
+                "Woah slow down your command request.\n"
+                "Remember that ascii edge has heavy processing so you can only use it once every 10 seconds.",
+                delete_after=10
+            )
+
+    @modding.help(brief="Block ascii art", category="Misc", field="Commands", paragraph=3)
+    @ascii.group(name="block", invoke_without_command=True)
     async def ascii_block(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t"): int, ("inverse", "i"): bool}, clean=False, multiline=False)=modding.EMPTY):
         '''
             `>>ascii block <keyword: _|member|m> <keyword: threshold|t> <keyword: inverse|i>`
@@ -802,12 +831,13 @@ class Misc:
         image = Image.open(BytesIO(bytes_))
 
         def per_cut(cut):
-            return BOX_PATTERN[cut]
+            return BOX_PATTERN[tuple(cut.flatten())]
 
         result = self.convert_image_to_ascii(image, None, per_cut, width, height, 1, 2, threshold, inverse)
         await ctx.send(f"```\n{result}\n```")
 
-    @ascii.group(name="dot", invoke_without_command=True, brief="Braille dot ascii art", category="Misc", field="Commands", paragraph=3)
+    @modding.help(brief="Braille dot ascii art", category="Misc", field="Commands", paragraph=3)
+    @ascii.group(name="dot", invoke_without_command=True)
     async def ascii_dot(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t"): int, ("inverse", "i"): bool}, clean=False, multiline=False)=modding.EMPTY):
         '''
             `>>ascii dot <keyword: _|member|m> <keyword: threshold|t> <keyword: inverse|i>`
@@ -831,6 +861,7 @@ class Misc:
 
         inf = -float("inf")
         def per_cut(cut):
+            cut = cut.flatten()
             pos = [str(p) for i, p in enumerate(DOT_PATTERN) if cut[i] == 1]
             if pos:
                 pos.sort()
@@ -844,7 +875,8 @@ class Misc:
         else:
             await ctx.send(f"\u200b{result}")
 
-    @modding.command(name="ping")
+    @modding.help(brief="pong")
+    @commands.command(name="ping")
     async def cmd_ping(self, ctx):
         '''
             `>>ping`
@@ -868,7 +900,8 @@ class Misc:
         ]):
             self.auto_rep_disabled.update(data["guild_ids"])
 
-    @modding.command()
+    @modding.help(brief="Enable/disable autorep")
+    @commands.command()
     @checks.guild_only()
     @checks.manager_only()
     async def autorep(self, ctx, mode):
@@ -883,6 +916,53 @@ class Misc:
             await ctx.confirm()
         else:
             await ctx.send("Please use on/off.")
+
+    @commands.command(aliases=["ct"])
+    async def transform(self, ctx, *, data: modding.KeyValue({("member", "m", ""): discord.Member, ("threshold", "t"): int}, clean=False, multiline=False)=modding.EMPTY):
+        '''
+            `>>transform <keyword: _|member|m> <keyword: rgb> <keyword: threshold|t>`
+            Apply an image tone transformation to member avatar.
+            Default member is command invoker.
+            Rgb is in hex format, default is 7289da.
+            Threshold defines how dark the target image is, default is 150.
+        '''
+        target = data.geteither("member", "m", "", default=ctx.author)
+        rgb = data.get("rgb", "7289da").lstrip("#").lower()
+        try:
+            rgb = int(rgb, 16)
+        except ValueError:
+            return await ctx.send("Input is not RGB in hex format.")
+        threshold = data.geteither("threshold", "t", default=150)
+        self.check_threshold(threshold, max=255*4)
+
+        await ctx.trigger_typing()
+        url = target.avatar_url_as(format="png")
+        bytes_ = await self.bot.fetch(url)
+
+        rg, b = divmod(rgb, 256)
+        r, g = divmod(rg, 256)
+        if r < 0 or r > 255:
+            return await ctx.send("RGB value out of range.")
+
+        def do_stuff():
+            image = Image.open(BytesIO(bytes_))
+            a = np.array(image)
+            t = a[:, :, 0] * 0.2989 + a[:, :, 1] * 0.5870 + a[:, :, 2] * 0.1140
+            print(hex(r), hex(g), hex(b))
+            if a.shape[2] == 3:
+                t = np.concatenate(((t*(r/threshold))[:, :, None], (t*(g/threshold))[:, :, None], (t*(b/threshold))[:, :, None]), axis=2)
+            else:
+                t = np.concatenate(((t*(r/threshold))[:, :, None], (t*(g/threshold))[:, :, None], (t*(b/threshold))[:, :, None], a[:, :, [3]]), axis=2)
+            t[t>255] = 255
+            t = t.astype(np.uint8)
+            image = Image.fromarray(t)
+
+            bio = BytesIO()
+            image.save(bio, "png")
+            return bio.getvalue()
+
+        bytes_2 = await self.bot.loop.run_in_executor(None, do_stuff)
+        await ctx.send(file=discord.File(bytes_2, "test.png"))
 
 #==================================================================================================================================================
 

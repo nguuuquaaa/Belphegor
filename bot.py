@@ -105,6 +105,8 @@ class Belphegor(commands.Bot):
         while self.counter > 0:
             await asyncio.sleep(0.1)
         await asyncio.sleep(3)
+        if "google" in self.saved_stuff:
+            self.saved_stuff["google"].terminate()
 
     def block_or_not(self, ctx):
         author_id = ctx.author.id

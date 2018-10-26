@@ -399,7 +399,10 @@ def adjust_alpha(inp, alpha):
 def pairwise(iterable):
     i = iter(iterable)
     while True:
-        yield next(i), next(i)
+        try:
+            yield next(i), next(i)
+        except StopIteration:
+            break
 
 def get_border(xy, epsilon=1):
     min_x = float("inf")

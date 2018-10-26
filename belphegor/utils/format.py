@@ -13,12 +13,10 @@ import functools
 #==================================================================================================================================================
 
 _keep_char = (".", "_", " ")
-
 def safe_filename(any_string):
     return ''.join((c for c in any_string if c.isalnum() or c in _keep_char))
 
 _keep_special_char = ("\n", "\t")
-
 def unifix(any_string):
     return "".join((c for c in normalize("NFKC", any_string) if category(c)[0]!="C" or c in _keep_special_char)).strip()
 
@@ -30,7 +28,7 @@ def no_mass_mention(word):
     else:
         return word
 
-def split_iter(txt, *, check=str.isspace):
+def split_iter(txt, *, check=str.isspace, keep_delimiters=True):
     word = []
     escape = False
     for c in txt:
@@ -41,7 +39,8 @@ def split_iter(txt, *, check=str.isspace):
             if word:
                 yield "".join(word)
             word.clear()
-            yield c
+            if keep_delimiters:
+                yield c
         else:
             if c == "\\":
                 escape = True
@@ -50,31 +49,46 @@ def split_iter(txt, *, check=str.isspace):
         if word:
             yield "".join(word)
 
-def split_page(text, split_len, *, safe_mode=True):
-    description_page = ["",]
-    cur_index = 0
-    for word in split_iter(text):
+def split_page(text, split_len, *, check=str.isspace, safe_mode=True, fix="...", strip=None):
+    description_page = []
+    cur_node = []
+    cur_len = 0
+    len_fix = len(fix)
+    if strip is None:
+        clean = str.strip
+    else:
+        clean = lambda s: s.strip(strip)
+    for word in split_iter(text, check=check):
         word = no_mass_mention(word)
         if safe_mode:
             if word.startswith(("http://", "https://")):
                 word = safe_url(word)
             else:
                 word = discord_escape(word)
-        cur_node = description_page[cur_index]
-        if len(cur_node) + len(word) < split_len:
-            description_page[cur_index] = f"{cur_node}{word}"
+
+        if cur_len + len(word) < split_len:
+            cur_node.append(word)
+            cur_len += len(word)
         else:
             if len(word) < split_len:
-                description_page[cur_index] = f"{cur_node}..."
-                description_page.append(f"...{word}")
-                cur_index += 1
+                cur_node.append(word)
+                description_page.append(f"{fix}{clean(''.join(cur_node))}{fix}")
+                cur_node = []
+                cur_len = 0
             else:
-                left = split_len - len(cur_node)
-                description_page[cur_index] = f"{cur_node}{word[:left]}..."
-                stuff = [f"...{word[i+left:i+split_len+left]}..." for i in range(0, len(word)-left, split_len)]
-                stuff[-1] = stuff[-1][:-3]
+                left = split_len - cur_len
+                cur_node.append(word[:left])
+                description_page.append(f"{fix}{clean(''.join(cur_node))}{fix}")
+                stuff = (f"{fix}{clean(word[i+left:i+split_len+left])}{fix}" for i in range(0, len(word)-left, split_len))
                 description_page.extend(stuff)
-                cur_index += len(stuff)
+                word = description_page.pop(-1)[len_fix:-len_fix]
+                cur_node = [word]
+                cur_len = len(word)
+    if cur_node:
+        description_page.append(f"{fix}{clean(''.join(cur_node))}")
+    else:
+        description_page[-1] = description_page[-1][:-len_fix]
+    description_page[0] = description_page[0][len_fix:]
     return description_page
 
 def seconds_to_text(seconds):

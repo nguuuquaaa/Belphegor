@@ -88,7 +88,7 @@ class Statistics:
             g = self.bot.get_guild(DISCORDPY_GUILD_ID)
             m = g.get_member(member_stats.id)
             if not m:
-                return
+                return []
 
         items = member_stats.process_status(m.status.value, update=True)
         last_mark = items[-1]["mark"]

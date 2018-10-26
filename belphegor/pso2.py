@@ -3,12 +3,12 @@ from discord.ext import commands
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
 from . import utils
-from .utils import config, checks, data_type, token
+from .utils import config, checks, data_type, token, modding
 import aiohttp
 import asyncio
 import re
 import html
-from bs4 import BeautifulSoup as BS
+from bs4 import BeautifulSoup as BS, NavigableString as NS
 import json
 from datetime import datetime, timedelta
 import traceback
@@ -40,7 +40,7 @@ CATEGORY_DICT = {
     "rear":         "Rear",
     "arm":          "Arm",
     "leg":          "Leg",
-    "sub_unit":     "Sub Unit"
+    "sub":     "Sub Unit"
 }
 ATK_EMOJIS = ("satk", "ratk", "tatk")
 WEAPON_URLS = {
@@ -77,10 +77,10 @@ DEF_EMOJIS = ("sdef", "rdef", "tdef")
 RESIST_EMOJIS = ("s_res", "r_res", "t_res")
 ELEMENTAL_RESIST_EMOJIS = ("fire_res", "ice_res", "lightning_res", "wind_res", "light_res", "dark_res")
 UNIT_URLS = {
-    "rear":     "https://pso2.arks-visiphone.com/wiki/Unit_List:_Rear",
-    "arm":      "https://pso2.arks-visiphone.com/wiki/Unit_List:_Arm",
-    "leg":      "https://pso2.arks-visiphone.com/wiki/Unit_List:_Leg",
-    "sub_unit": "https://pso2.arks-visiphone.com/wiki/Unit_List:_Sub"
+    "rear":     "https://pso2.arks-visiphone.com/wiki/Rear_Units_List",
+    "arm":      "https://pso2.arks-visiphone.com/wiki/Arm_Units_List",
+    "leg":      "https://pso2.arks-visiphone.com/wiki/Leg_Units_List",
+    "sub":      "https://pso2.arks-visiphone.com/wiki/Sub_Units_List"
 }
 UNIT_SORT = tuple(UNIT_URLS.keys())
 ICON_DICT = {
@@ -127,6 +127,22 @@ simple_time_regex = re.compile(r"([0-9]{1,2})[-/]([0-9]{1,2})[-/]?([0-9]{2,4})?"
 
 iso_time_regex = re.compile(r"([0-9]{4})\-([0-9]{2})\-([0-9]{2})T([0-9]{2})\:([0-9]{2})\:([0-9]{2}\.?[0-9]{0,6})(Z|[+-]([0-9]{2})\:([0-9]{2}))")
 
+UNIT_FORMAT = {
+    "S-ATK":            "satk",
+    "R-ATK":            "ratk",
+    "T-ATK":            "tatk",
+    "DEX":              "dex",
+    "Strike Resist":    "s_res",
+    "Range Resist":     "r_res",
+    "Tech Resist":      "t_res",
+    "Fire Resist":      "fire_res",
+    "Ice Resist":       "ice_res",
+    "Lightning Resist": "lightning_res",
+    "Wind Resist":      "wind_res",
+    "Light Resist":     "light_res",
+    "Dark Resist":      "dark_res"
+}
+
 #==================================================================================================================================================
 
 class Chip(data_type.BaseObject):
@@ -171,9 +187,9 @@ class Weapon(data_type.BaseObject):
             for i in range(self.rarity - most*3):
                 description = f"{description}{emoji}"
         if self.classes == "all_classes":
-            usable_classes = ''.join((str(emojis[cl]) for cl in CLASS_DICT.values()))
+            usable_classes = "".join((str(emojis[cl]) for cl in CLASS_DICT.values()))
         else:
-            usable_classes = ''.join((str(emojis[cl]) for cl in self.classes))
+            usable_classes = "".join((str(emojis[cl]) for cl in self.classes))
         description = f"{description}\n{usable_classes}"
         if self.ssa_slots:
             slots = "".join((str(emojis[s]) for s in self.ssa_slots))
@@ -184,7 +200,7 @@ class Weapon(data_type.BaseObject):
             embed.set_thumbnail(url=self.pic_url)
         rq = self.requirement
         embed.add_field(name="Requirement", value=f"{emojis.get(rq['type'], '')}{rq['value']}" or "?")
-        max_atk = self.atk['max']
+        max_atk = self.atk["max"]
         embed.add_field(name="ATK", value="\n".join((f"{emojis[e]}{max_atk[e]}" for e in ATK_EMOJIS)))
         for prp in self.properties:
             embed.add_field(name=f"{emojis[prp['type']]}{prp['name']}", value=prp["description"], inline=False)
@@ -211,16 +227,16 @@ class Unit(data_type.BaseObject):
             embed.set_thumbnail(url=self.pic_url)
         rq = self.requirement
         embed.add_field(name="Requirement", value=f"{emojis[rq['type']]}{rq['value']}")
-        max_def = self.defs['max']
+        max_def = self.defs["max"]
         embed.add_field(name="DEF", value="\n".join((f"{emojis[e]}{max_def[e]}" for e in DEF_EMOJIS)))
         stats = self.stats
-        stats_des = "\n".join((f"**{s.upper()}** + {stats[s]}" for s in ("hp", "pp") if stats[s]))
-        embed.add_field(name="Stats", value=f"\n".join((stats_des, "\n".join((f"{emojis[s]}+ {stats[s]}" for s in ("satk", "ratk", "tatk", "dex") if stats[s])))))
+        stats_des = "\n".join((f"**{s.upper()}** + {stats[s]}" for s in ("hp", "pp") if stats.get(s)))
+        embed.add_field(name="Stats", value=f"\n".join((stats_des, "\n".join((f"{emojis[s]}+ {stats[s]}" for s in ("satk", "ratk", "tatk", "dex") if stats.get(s))))).strip() or "None")
         resist = self.resist
-        res_des = "\n".join((f"{emojis[e]}+ {resist[e]}%" for e in RESIST_EMOJIS if resist[e]))
+        res_des = "\n".join((f"{emojis[e]}+ {resist[e]}%" for e in RESIST_EMOJIS if resist.get(e)))
         if res_des:
             embed.add_field(name="Resist", value=res_des)
-        ele_res_des = "\n".join((f"{emojis[e]}+ {resist[e]}%" for e in ELEMENTAL_RESIST_EMOJIS if resist[e]))
+        ele_res_des = "\n".join((f"{emojis[e]}+ {resist[e]}%" for e in ELEMENTAL_RESIST_EMOJIS if resist.get(e)))
         if ele_res_des:
             embed.add_field(name="Elemental resist", value=ele_res_des)
         return embed
@@ -251,7 +267,7 @@ class PSO2:
         for emoji_name in WEAPON_SORT:
             self.emojis[emoji_name] = discord.utils.find(lambda e:e.name==emoji_name, test_guild.emojis)
         for emoji_name in (
-            "sdef", "rdef", "tdef", "dex", "rear", "arm", "leg", "sub_unit", "s_res", "r_res", "t_res",
+            "sdef", "rdef", "tdef", "dex", "rear", "arm", "leg", "sub", "s_res", "r_res", "t_res",
             "fire_res", "ice_res", "lightning_res", "wind_res", "light_res", "dark_res",
             "s_class", "s1", "s2", "s3", "s4"
         ):
@@ -448,8 +464,8 @@ class PSO2:
 
     def weapon_parse(self, category, bytes_):
         category_weapons = []
-        data = BS(bytes_.decode("utf-8"), "lxml")
-        table = data.find(lambda x: x.name=="table" and "wikitable" in x.get("class") and "sortable" in x.get("class")).find_all(True, recursive=False)[1:]
+        soup = BS(bytes_.decode("utf-8"), "lxml")
+        table = soup.find(lambda x: x.name=="table" and "wikitable" in x.get("class", []) and "sortable" in x.get("class", [])).find_all(True, recursive=False)[1:]
         for item in table:
             weapon = {"category": category}
             relevant = item.find_all(True, recursive=False)
@@ -493,7 +509,7 @@ class PSO2:
                     weapon["classes"] = "all_classes"
                     break
                 else:
-                    weapon["classes"].append(CLASS_DICT[cl.lower()])
+                    weapon["classes"].append(CLASS_DICT[cl])
             category_weapons.append(weapon)
         return category_weapons
 
@@ -767,39 +783,86 @@ class PSO2:
 
     def unit_parse(self, category, bytes_):
         category_units = []
-        data = BS(bytes_.decode("utf-8"), "lxml")
-        table = data.find("table", class_="sortable").find_all(True, recursive=False)[3:]
-        for item in table:
-            unit = {"category": category}
-            relevant = item.find_all(True, recursive=False)
-            third_column = relevant[2]
-            try:
-                unit["en_name"] = utils.unifix(third_column.find("a").get_text())
-                unit["jp_name"] = utils.unifix("".join((t.get_text() for t in third_column.find_all("span"))))
-            except:
-                continue
-            unit["rarity"] = utils.to_int(relevant[0].find("img")["alt"])
-            try:
-                unit["pic_url"] = f"https://pso2.arks-visiphone.com{relevant[1].find('img')['src'].replace('64px-', '96px-')}"
-            except:
-                unit["pic_url"] = None
-            rq_img_tag = third_column.find("img")
-            unit["requirement"] = {"type": rq_img_tag["alt"].replace(" ", "").lower(), "value": int(rq_img_tag.next_sibling.strip())}
-            unit["defs"] = {
-                "base": {DEF_EMOJIS[i]: int(relevant[3+i].get_text().strip()) for i in range(3)},
-                "max":  {DEF_EMOJIS[i]: int(relevant[6+i].get_text().strip()) for i in range(3)}
-            }
-            unit["stats"] = {}
-            for i, s in enumerate(("hp", "pp", "satk", "ratk", "tatk", "dex")):
-                unit["stats"][s] = utils.to_int(relevant[9+i].get_text().strip(), default=0)
-            unit["resist"] = {}
-            for i, s in enumerate(RESIST_EMOJIS):
-                unit["resist"][s] = utils.to_int(relevant[15+i].get_text().replace("%", "").strip(), default=0)
-            ele_res_tag = relevant[18].find_all("td")
-            for i, s in enumerate(ELEMENTAL_RESIST_EMOJIS):
-                unit["resist"][s] = utils.to_int(ele_res_tag[i].get_text().replace("%", "").strip(), default=0)
-            category_units.append(unit)
-        return category_units
+        soup = BS(bytes_.decode("utf-8"), "lxml")
+
+        if category == "sub":
+            table = soup.find("table", class_="sortable").find_all(True, recursive=False)[3:]
+            for item in table:
+                unit = {"category": category}
+                relevant = item.find_all(True, recursive=False)
+                third_column = relevant[2]
+                try:
+                    unit["en_name"] = utils.unifix(third_column.find("a").get_text())
+                    unit["jp_name"] = utils.unifix("".join((t.get_text() for t in third_column.find_all("span"))))
+                except:
+                    continue
+                unit["rarity"] = utils.to_int(relevant[0].find("img")["alt"])
+                try:
+                    unit["pic_url"] = f"https://pso2.arks-visiphone.com{relevant[1].find('img')['src'].replace('64px-', '96px-')}"
+                except:
+                    unit["pic_url"] = None
+                rq_img_tag = third_column.find("img")
+                unit["requirement"] = {"type": rq_img_tag["alt"].replace(" ", "").lower(), "value": int(rq_img_tag.next_sibling.strip())}
+                unit["defs"] = {
+                    "base": {DEF_EMOJIS[i]: int(relevant[3+i].get_text().strip()) for i in range(3)},
+                    "max":  {DEF_EMOJIS[i]: int(relevant[6+i].get_text().strip()) for i in range(3)}
+                }
+                unit["stats"] = {}
+                for i, s in enumerate(("hp", "pp", "satk", "ratk", "tatk", "dex")):
+                    unit["stats"][s] = utils.to_int(relevant[9+i].get_text().strip(), default=0)
+                unit["resist"] = {}
+                for i, s in enumerate(RESIST_EMOJIS):
+                    unit["resist"][s] = utils.to_int(relevant[15+i].get_text().replace("%", "").strip(), default=0)
+                ele_res_tag = relevant[18].find_all("td")
+                for i, s in enumerate(ELEMENTAL_RESIST_EMOJIS):
+                    unit["resist"][s] = utils.to_int(ele_res_tag[i].get_text().replace("%", "").strip(), default=0)
+                category_units.append(unit)
+            return category_units
+        else:
+            table = soup.find(lambda x: x.name=="table" and "wikitable" in x.get("class", []) and "sortable" in x.get("class", [])).find_all(True, recursive=False)[2:]
+            for item in table:
+                unit = {"category": category}
+                relevant = item.find_all(True, recursive=False)
+                third_column = relevant[2]
+                try:
+                    unit["en_name"] = utils.unifix(third_column.find("a").get_text())
+                    unit["jp_name"] = utils.unifix(third_column.find("p").get_text())
+                except:
+                    continue
+                unit["rarity"] = utils.to_int(relevant[0].find("img")["alt"])
+                try:
+                    unit["pic_url"] = f"https://pso2.arks-visiphone.com{relevant[1].find('img')['src'].replace('64px-', '96px-')}"
+                except:
+                    unit["pic_url"] = None
+                rq = utils.unifix(relevant[3].text).partition(" ")
+                unit["requirement"] = {"type": rq[2].replace("-", "").lower(), "value": rq[0]}
+                unit["defs"] = {
+                    "base": {DEF_EMOJIS[i]: utils.to_int(l.strip()) for i, l in enumerate(relevant[5].find_all(text=True))},
+                    "max":  {DEF_EMOJIS[i]: utils.to_int(l.strip()) for i, l in enumerate(relevant[6].find_all(text=True))}
+                }
+
+                unit["stats"] = {}
+                unit["resist"] = {}
+                tn = None
+                for tag in relevant[7].children:
+                    if tag.name == "br":
+                        continue
+                    elif tag.name == "img":
+                        tn = UNIT_FORMAT[tag["alt"]]
+                    elif tag:
+                        if tn is None:
+                            stat, delim, value = tag.lower().partition("+")
+                            unit["stats"][utils.unifix(stat)] = utils.to_int(value.strip())
+                        else:
+                            value = tag.replace("+", "").replace("%", "").strip()
+                            if tn in ATK_EMOJIS:
+                                unit["stats"][tn] = value
+                            else:
+                                unit["resist"][tn] = value
+                            tn = None
+
+                category_units.append(unit)
+            return category_units
 
     @commands.command(name="daily", aliases=["dailyorder"])
     async def cmd_daily_order(self, ctx, query_date=""):
