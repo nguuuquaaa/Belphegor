@@ -20,6 +20,9 @@ class MissingPerms(CheckFailure):
         self.perms = perms
         super().__init__(*args)
 
+class OwnerFault(CheckFailure):
+    pass
+
 #==================================================================================================================================================
 
 def owner_only():
@@ -46,7 +49,6 @@ def guild_only():
             return True
         else:
             raise commands.NoPrivateMessage("This command cannot be used in DM.")
-            return False
     return commands.check(check_no_dm)
 
 def in_certain_guild(gid):

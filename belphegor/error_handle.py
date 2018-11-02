@@ -41,7 +41,7 @@ class ErrorHandle:
             error = error.original
             if isinstance(error, OverflowError):
                 await ctx.send("Input number too big. You sure really need it?")
-            elif isinstance(error, discord.Forbidden):
+            elif isinstance(error, (discord.Forbidden, checks.OwnerFault)):
                 await ctx.send(error)
             else:
                 prt_err = "".join(traceback.format_exception(type(error), error, error.__traceback__, 5)).replace("`", "\u200b`")
@@ -53,9 +53,13 @@ class ErrorHandle:
                 )
                 await self.error_hook.execute(f"```\nIgnoring exception in command {ctx.command}:\n{prt_err}\n```")
         elif isinstance(error, commands.MissingRequiredArgument):
-            await ctx.send("Argument missing. You sure know what this command does?", delete_after=30)
+            stuff = ctx.command.help.partition("\n")
+            if stuff[0]:
+                await ctx.send(f"Use this format you dumbo\n```\n{stuff[0].strip('`')}\n```")
+            else:
+                await ctx.send("Argument missing. You sure read command description?", delete_after=30)
         elif isinstance(error, commands.BadArgument):
-            await ctx.send("Bad arguments. You sure read command description?", delete_after=30)
+            await ctx.send("Argument conversion failed. You sure type in the right value?", delete_after=30)
         elif isinstance(error, ignored):
             pass
         else:

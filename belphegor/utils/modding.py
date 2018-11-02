@@ -15,6 +15,14 @@ class MultiDict(multidict.MultiDict):
         else:
             return default
 
+    def getalltext(self, key, *, default="", delimiter=" "):
+        try:
+            temp = self.getall(key)
+        except KeyError:
+            return default
+        else:
+            return delimiter.join((str(t) for t in temp))
+
 EMPTY = MultiDict()
 _quotes = commands.view._quotes
 _all_quotes = set((*_quotes.keys(), *_quotes.values()))

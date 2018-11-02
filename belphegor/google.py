@@ -414,10 +414,10 @@ class Google:
             except queue.Empty:
                 continue
 
-            if ret[1]:
-                self.orders[ret[0]].set_result(ret[2])
+            if isinstance(ret[1], Exception):
+                self.orders[ret[0]].set_exception(ret[1])
             else:
-                self.orders[ret[0]].set_exception(ret[2])
+                self.orders[ret[0]].set_result(ret[1])
 
     @commands.command(aliases=["g"])
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
@@ -492,16 +492,20 @@ class Google:
 #==================================================================================================================================================
 
 class RunGoogleInBackground(multiprocessing.Process):
-    @try_sync
-    def run(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.drivers = ()
         def quit_sessions():
-            drivers[0].quit()
-            drivers[1].quit()
+            for dr in self.drivers:
+                dr.quit()
         signal.signal(signal.SIGTERM, quit_sessions)
 
+    @try_sync
+    def run(self):
         drivers = (GoogleEngine.setup_browser(safe=False), GoogleEngine.setup_browser(safe=True))
+        self.drivers = drivers
         print("google ready")
-        while self.running:
+        while True:
             try:
                 item = search_queue.get(True, 5)
             except queue.Empty:
@@ -511,21 +515,17 @@ class RunGoogleInBackground(multiprocessing.Process):
             query = item[2]
             try:
                 ret = driver.search(query)
-                no_error = True
             except Exception as e:
                 ret = e
-                no_error = False
             finally:
-                result_queue.put((mid, no_error, ret))
-        quit_sessions()
+                result_queue.put((mid, ret))
 
 def setup(bot):
     process = RunGoogleInBackground(daemon=True)
-    process.running = True
     process.start()
     bot.add_cog(Google(bot))
     bot.saved_stuff["google"] = process
 
 def teardown(bot):
     process = bot.saved_stuff.pop("google")
-    process.running = False
+    process.terminate()

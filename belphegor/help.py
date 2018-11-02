@@ -13,6 +13,11 @@ import sys
 #==================================================================================================================================================
 
 ISO_DATE = re.compile(r"([0-9]{4})\-([0-9]{2})\-([0-9]{2})T([0-9]{2})\:([0-9]{2})\:([0-9]{2})Z")
+ENGLISH = {
+    1: "once",
+    2: "twice",
+    3: "thrice"
+}
 
 #==================================================================================================================================================
 
@@ -39,7 +44,11 @@ class Help:
         paging = utils.Paginator([])
 
         #base help
-        base_embed = discord.Embed(title=f"{self.emojis['ranged']} {self.bot.user}", colour=discord.Colour.teal())
+        base_embed = discord.Embed(
+            title=f"{self.emojis['ranged']} {self.bot.user}",
+            colour=discord.Colour.teal(),
+            description="[Join support server](https://discord.gg/qnavjMy)"
+        )
         base_embed.set_thumbnail(url=self.bot.user.avatar_url)
         base_embed.add_field(
             name="Categories",
@@ -87,7 +96,6 @@ class Help:
                 "`>>d`, `>>daemon` - Check a daemon info\n"
                 "\u2517 `filter` - Find daemons with given conditions\n"
                 "Note: Data taken from [Otogi Wikia](http://otogi.wikia.com/)\n\n"
-                "`>>update` - Update database\n\n"
                 "`>>nuker(s)` - Nuker rank\n"
                 "`>>auto` - Auto attack rank\n"
                 "`>>buffer(s)`, `>>debuffer(s)` - List of supporters\n"
@@ -374,16 +382,24 @@ class Help:
                         cmd = cmd.parent
                         if not getattr(cmd, "invoke_without_command", False):
                             all_checks.update(cmd.checks)
+                    ch = ", ".join((c.__name__[6:].replace("guild", "server").replace("_", " ") for c in all_checks))
+                    if ch:
+                        ch = f"Limit: {ch}"
+                    cooldown = command._buckets._cooldown
+                    if cooldown:
+                        cd = f"Rate: {ENGLISH.get(cooldown.rate, f'{cooldown.rate} times')} per {utils.seconds_to_text(cooldown.per)} (each {cooldown.type.name.replace('guild', 'server')})"
+                    else:
+                        cd = None
                     embed.add_field(
                         name="Restriction",
-                        value=", ".join((f"`{c.__name__[6:].replace('guild', 'server')}`" for c in all_checks)) if all_checks else "None",
+                        value="\n".join(filter(None, (ch, cd))) or "None",
                         inline=False
                     )
                     if command.help:
                         usage = command.help.partition("\n")
                         things = usage[2].split("\n\n\n")
                         if len(things) > 1:
-                            embed.add_field(name="Usage", value=f"``{usage[0]}``\n{things[0]}", inline=False)
+                            embed.add_field(name="Usage", value=f"```\n{usage[0].strip('`')}\n``\n{things[0]}", inline=False)
                             for thing in things[1:]:
                                 embed.add_field(name="\u200b", value=f"\u200b{thing}", inline=False)
                         else:

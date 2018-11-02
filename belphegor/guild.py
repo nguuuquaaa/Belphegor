@@ -8,6 +8,7 @@ from io import BytesIO
 import random
 from PIL import Image
 import textwrap
+import traceback
 
 #==================================================================================================================================================
 
@@ -215,6 +216,7 @@ class Guild:
             `>>set muterole <role name>`
             Set role with <role name> as muted role.
             Name is case-insensitive.
+            Oh and evading muted role is useless as it will be added automatically when rejoin.
         '''
         role = discord.utils.find(lambda r: name.lower()==r.name.lower(), ctx.guild.roles)
         await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$set": {"mute_role_id": role.id}, "$setOnInsert": {"guild_id": ctx.guild.id}}, upsert=True)
@@ -916,7 +918,6 @@ class Guild:
                 reason, duration = utils.extract_time(reason)
                 duration = duration.total_seconds()
             except:
-                import traceback
                 traceback.print_exc()
                 return await ctx.send("Time too large.")
             if duration > 0:

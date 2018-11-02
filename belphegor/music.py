@@ -21,6 +21,7 @@ import functools
 #==================================================================================================================================================
 
 youtube_match = re.compile(r"(?:https?\:\/\/)?(?:www\.)?(?:youtube(?:-nocookie)?\.com\/\S*[^\w\s-]|youtu\.be\/)([\w-]{11})(?:[^\w\s-]|$)")
+BUFFER_SIZE = 3000
 MAX_PLAYLIST_SIZE = 1000
 
 ytdl_format_options = {
@@ -64,8 +65,8 @@ class Buffer(queue.Queue):
 
 class FFmpegWithBuffer(discord.FFmpegPCMAudio):
     def __init__(self, *args, **kwargs):
-        discord.FFmpegPCMAudio.__init__(self, *args, **kwargs)
-        self._buffer = Buffer(config.BUFFER_SIZE)
+        super().__init__(*args, **kwargs)
+        self._buffer = Buffer(BUFFER_SIZE)
         self.counter = 0
         self._is_running = True
         thread = Thread(target=self.read_buffer, args=())
@@ -92,7 +93,7 @@ class FFmpegWithBuffer(discord.FFmpegPCMAudio):
 
     def cleanup(self):
         self._is_running = False
-        discord.FFmpegPCMAudio.cleanup(self)
+        super().cleanup()
 
 #==================================================================================================================================================
 
@@ -321,8 +322,10 @@ class MusicPlayer:
                 try:
                     self.current_song = await asyncio.wait_for(self.queue.get(), 120, loop=self.bot.loop)
                 except asyncio.TimeoutError:
+                    self.inactivity.assign(0)
                     await self.channel.send("No music? Time to sleep then. Yaaawwnnnn~~")
-                    break
+                    async with self.lock:
+                        return await self.leave_voice()
             await self.bot.loop.run_in_executor(None, self.current_song.raw_update)
             if self.current_song.music is None:
                 await self.channel.send(f"**{self.current_song.title}** is not available.")
@@ -341,20 +344,6 @@ class MusicPlayer:
                     await asyncio.shield(self.queue.put(self.current_song))
                 if not self.repeat:
                     await self.clear_current_song()
-
-            for m in voice.channel.members:
-                if not m.bot:
-                    break
-            else:
-                try:
-                    await self.bot.wait_for("voice_state_update", check=lambda m, b, a: a.channel.id==voice.channel.id and not m.bot, timeout=120)
-                except asyncio.TimeoutError:
-                    await self.channel.send("Heeey, anybody's listening? No? Then I'll go to sleep.")
-                    break
-
-        self.inactivity.assign(0)
-        async with self.lock:
-            await self.leave_voice()
 
 #==================================================================================================================================================
 
@@ -407,6 +396,15 @@ class Music:
             if not mp.channel:
                 mp.inactivity.assign(120)
             return mp
+
+    async def on_voice_state_update(self, member, before, after):
+        if member.guild.id in self.music_players:
+            if after == None:
+                for m in voice.channel.members:
+                    if not m.bot:
+                        break
+                else:
+                    self.music_players[member.guild.id].inactivity.assign(120)
 
     @commands.group(aliases=["m"])
     @checks.guild_only()

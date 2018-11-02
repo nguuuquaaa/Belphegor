@@ -17,6 +17,7 @@ import sys
 import textwrap
 import objgraph
 import math
+import asyncio
 
 #==================================================================================================================================================
 
@@ -93,6 +94,7 @@ class Admin:
     async def status(self, ctx, *, stuff):
         data = stuff.partition(" ")
         await self.bot.change_presence(activity=discord.Activity(type=getattr(discord.ActivityType, data[0]), name=data[2]))
+        await ctx.confirm()
 
     @commands.command(hidden=True)
     @checks.owner_only()
@@ -120,7 +122,8 @@ class Admin:
             "ctx": ctx,
             "discord": discord,
             "commands": commands,
-            "utils": utils
+            "utils": utils,
+            "asyncio": asyncio
         }
         try:
             exec(code, env)
@@ -213,14 +216,9 @@ class Admin:
     @commands.command(hidden=True)
     @checks.owner_only()
     async def prettify(self, ctx, url, *, params="None"):
-        try:
-            bytes_ = await self.bot.fetch(url, params=eval(params))
-            data = BS(bytes_.decode("utf-8"), "lxml")
-        except Exception as e:
-            print(e)
-            await ctx.deny()
-        else:
-            await ctx.send(file=discord.File(data.prettify().encode("utf-8"), filename="data.html"))
+        bytes_ = await self.bot.fetch(url, params=eval(params))
+        data = BS(bytes_.decode("utf-8"), "lxml")
+        await ctx.send(file=discord.File(data.prettify().encode("utf-8"), filename="data.html"))
 
     @commands.command(hidden=True)
     @checks.owner_only()

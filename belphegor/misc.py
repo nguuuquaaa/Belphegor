@@ -526,7 +526,7 @@ class Misc:
         Empty = discord.Embed.Empty
         embed = discord.Embed(
             title=kwargs.get("title") or Empty,
-            description=kwargs.geteither("description", "") or Empty,
+            description=kwargs.geteither("description", "desc") or Empty,
             url=kwargs.get("url") or Empty,
             colour=utils.to_int(kwargs.geteither("colour", "color"), 16) or Empty,
         )
@@ -697,7 +697,7 @@ class Misc:
         if image_proc:
             image = image_proc(image)
         raw_pixels = np.array(image)
-        pixels = np.where(raw_pixels>threshold, 1-inverse, 0)
+        pixels = np.where(raw_pixels>threshold, 1-inverse, inverse)
         range_height = range(char_height)
         range_width = range(char_width)
 
@@ -743,7 +743,7 @@ class Misc:
             Less threshold, more dense. Default threshold is 32. Maximum threshold is 255.
             Less blur, more sharp. Default blur is 2. Maximum blur is 10.
             Less weight, bigger characters.
-            Has 10s cooldown due to heavy processing (someone give me good algorithm pls).
+            Has cooldown due to heavy processing (someone give me good algorithm pls).
         '''
         target = data.geteither("", "member", "m", default=ctx.author)
         size = data.geteither("size", "s", default="64x30")
@@ -921,9 +921,9 @@ class Misc:
     async def transform(self, ctx, *, data: modding.KeyValue({("member", "m", ""): discord.Member, ("threshold", "t"): int}, clean=False, multiline=False)=modding.EMPTY):
         '''
             `>>transform <keyword: _|member|m> <keyword: rgb> <keyword: threshold|t>`
-            Apply an image tone transformation to member avatar.
+            Apply a color tone transformation to member avatar.
             Default member is command invoker.
-            Rgb is in hex format, default is 7289da.
+            Rgb is in hex format, default is 7289da (blurple).
             Threshold defines how dark the target image is, default is 150.
         '''
         target = data.geteither("member", "m", "", default=ctx.author)
@@ -948,11 +948,9 @@ class Misc:
             image = Image.open(BytesIO(bytes_))
             a = np.array(image)
             t = a[:, :, 0] * 0.2989 + a[:, :, 1] * 0.5870 + a[:, :, 2] * 0.1140
-            print(hex(r), hex(g), hex(b))
-            if a.shape[2] == 3:
-                t = np.concatenate(((t*(r/threshold))[:, :, None], (t*(g/threshold))[:, :, None], (t*(b/threshold))[:, :, None]), axis=2)
-            else:
-                t = np.concatenate(((t*(r/threshold))[:, :, None], (t*(g/threshold))[:, :, None], (t*(b/threshold))[:, :, None], a[:, :, [3]]), axis=2)
+            t = np.array((r/threshold, g/threshold, b/threshold), dtype=np.float32) * t[:, :, None]
+            if a.shape[2] == 4:
+                t = np.concatenate((t, a[:, :, [3]]), axis=2)
             t[t>255] = 255
             t = t.astype(np.uint8)
             image = Image.fromarray(t)

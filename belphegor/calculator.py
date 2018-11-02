@@ -2,48 +2,41 @@ import discord
 from discord.ext import commands
 from . import utils
 from .utils import checks
-import math
-import cmath
 import operator
 import re
 import traceback
 import asyncio
 import random
-import collections
-import numpy
 import time
 import functools
+import sympy
 
 #==================================================================================================================================================
 
-EPSILON = 1e-10
+PRECISION = 100
+EPSILON = sympy.Float(f"1e-{PRECISION-5}", PRECISION)
+AFTER_DOT = 20
 
 #==================================================================================================================================================
 
-def combination(n, k):
-    t = 1
-    b = 1
-    if n >= k >= 0:
-        for i in range(min(n-k, k)):
-            t *= n - i
-            b *= i + 1
-    else:
-        return 0
-    return t // b
+def maybe_int(number):
+    ret = []
+    for n in (sympy.re(number), sympy.im(number)):
+        nearest = n.round()
+        if sympy.Abs(n - nearest) < EPSILON:
+            r = sympy.Integer(nearest)
+        else:
+            r = n
+        ret.append(r)
+    return ret[0] + ret[1] * sympy.I
 
 def greatest_common_factor(*args):
     if len(args) < 2:
         raise CommonParseError
     else:
-        if not isinstance(args[0], int):
-            raise ParseError("Can't calculate greatest common factor of non-integers.")
-
-        result = abs(args[0])
-        for i in range(1, len(args)):
-            if not isinstance(args[i], int):
-                raise ParseError("Can't calculate greatest common factor of non-integers.")
-            b = abs(args[i])
-            result = math.gcd(result, b)
+        result = args[0]
+        for i in args[1:]:
+            result = result.gcd(i)
 
         return result
 
@@ -51,54 +44,26 @@ def least_common_multiple(*args):
     if len(args) < 2:
         raise CommonParseError
     else:
-        if not isinstance(args[0], int):
-            raise ParseError("Can't calculate least common multiple of non-integers.")
-
-        result = abs(args[0])
-        for i in range(1, len(args)):
-            if not isinstance(args[i], int):
-                raise ParseError("Can't calculate least common multiple of non-integers.")
-            b = abs(args[i])
-            result = result * b // math.gcd(result, b)
+        result = args[0]
+        for i in args[1:]:
+            result = result.lcm(i)
 
         return result
-
-def to_real_number(func):
-    @functools.wraps(func)
-    def do_func(*args):
-        result = func(*args)
-        if abs(getattr(result, "imag", 0)) < EPSILON:
-            result = getattr(result, "real", result)
-        return result
-    return do_func
-
-def nth_root(deg, number):
-    if isinstance(deg, int):
-        if deg > 1:
-            r, phi = cmath.polar(number)
-            roots = []
-            for i in range(deg):
-                cur = (phi + 2 * math.pi * i) / deg
-                v = cmath.rect(r**(1/deg), cur)
-                if abs(v.imag) < EPSILON:
-                    return v.real
-                else:
-                    roots.append(v)
-            else:
-                return roots[0]
-        else:
-            raise ParseError("Degree should be greater than 1.")
-    else:
-        raise ParseError("Degree should be an integer.")
 
 def cube_root(number):
-    return nth_root(3, number)
+    return sympy.real_root(number, 3)
 
-def conjugate(number):
-    if isinstance(number, complex):
-        return number.conjugate()
+def nth_rooth(number, degree):
+    return sympy.real_root(number, degree)
+
+def log10(number):
+    return sympy.log(number, 10)
+
+def radians(deg):
+    if sympy.im(deg) == 0:
+        return deg * sympy.pi / 180
     else:
-        return number
+        raise CommonParseError
 
 #==================================================================================================================================================
 
@@ -134,7 +99,7 @@ class Reduce:
             raise ParseError(f"{self.__class__.__name__} max range is {self.MAX_RANGE}.")
         if func.reduce:
             raise ParseError("Nested reduce/sigma is not accepted.")
-        if isinstance(from_, int) and isinstance(to_, int):
+        if isinstance(from_, sympy.Integer) and isinstance(to_, sympy.Integer):
             pass
         else:
             raise ParseError("From/to must be integers.")
@@ -163,44 +128,47 @@ class BaseParse:
         "-":    -1
     }
     OPS = {
-        "*":    operator.mul,
-        "/":    operator.truediv,
-        "//":   operator.floordiv,
-        "%":    operator.mod
+        "*":        operator.mul,
+        "/":        operator.truediv,
+        "//":       operator.floordiv,
+        "%":        operator.mod
     }
     FUNCS = {
-        "sin":      to_real_number(cmath.sin),
-        "cos":      to_real_number(cmath.cos),
-        "tan":      to_real_number(cmath.tan),
-        "cot":      to_real_number(lambda x: cmath.cos(x)/cmath.sin(x)),
-        "asin":     to_real_number(cmath.asin),
-        "arcsin":   to_real_number(cmath.asin),
-        "acos":     to_real_number(cmath.acos),
-        "arccos":   to_real_number(cmath.acos),
-        "atan":     to_real_number(cmath.atan),
-        "arctan":   to_real_number(cmath.atan),
-        "log":      to_real_number(cmath.log10),
-        "ln":       to_real_number(cmath.log),
-        "sqrt":     to_real_number(cmath.sqrt),
+        "sin":      sympy.sin,
+        "cos":      sympy.cos,
+        "tan":      sympy.tan,
+        "cot":      sympy.cot,
+        "asin":     sympy.asin,
+        "arcsin":   sympy.asin,
+        "acos":     sympy.acos,
+        "arccos":   sympy.acos,
+        "atan":     sympy.atan,
+        "arctan":   sympy.atan,
+        "acot":     sympy.acot,
+        "arccot":   sympy.acot,
+        "log":      log10,
+        "ln":       sympy.log,
+        "sqrt":     sympy.sqrt,
         "cbrt":     cube_root,
-        "root":     nth_root,
-        "abs":      abs,
-        "sign":     numpy.sign,
-        "sgn":      numpy.sign,
+        "root":     sympy.real_root,
+        "abs":      sympy.Abs,
+        "sign":     sympy.sign,
+        "sgn":      sympy.sign,
         "gcd":      greatest_common_factor,
         "gcf":      greatest_common_factor,
         "lcm":      least_common_multiple,
         "max":      max,
         "min":      min,
-        "conj":     conjugate
+        "conj":     sympy.conjugate,
+        "gamma":    sympy.gamma
     }
     SPECIAL_OPS = {
-        "^":    pow,
-        "**":   pow,
-        "!":    math.factorial,
-        "C":    combination,
-        "°":    math.radians,
-        "deg":    math.radians
+        "^":        pow,
+        "**":       pow,
+        "!":        sympy.factorial,
+        "C":        sympy.binomial,
+        "°":        radians,
+        "deg":      radians
     }
     SPECIAL_FUNCS = {
         "sigma":    Sigma,
@@ -208,15 +176,15 @@ class BaseParse:
         "reduce":   Reduce
     }
     CONSTS = {
-        "e":    math.e,
-        "π":    math.pi,
-        "pi":   math.pi,
-        "τ":    math.tau,
-        "tau":  math.tau,
-        "i":    1j,
-        "inf":  float("inf"),
-        "∞":    float("inf"),
-        "None": NoValue(None)
+        "e":        sympy.E,
+        "π":        sympy.pi,
+        "pi":       sympy.pi,
+        "τ":        sympy.pi * 2,
+        "tau":      sympy.pi * 2,
+        "i":        sympy.I,
+        "inf":      sympy.oo,
+        "∞":        sympy.oo,
+        "counter":  NoValue(None)
     }
 
     def do_nothing(x):
@@ -227,8 +195,8 @@ class BaseParse:
         "(":        (")", do_nothing),
         "[":        ("]", do_nothing),
         "{":        ("}", do_nothing),
-        "\u2308":   ("\u2309", math.ceil),
-        "\u230a":   ("\u230b", math.floor)
+        "\u2308":   ("\u2309", sympy.ceiling),
+        "\u230a":   ("\u230b", sympy.floor)
     }
 
     CLOSED = tuple(c[0] for c in ENCLOSED.values())
@@ -241,6 +209,8 @@ class BaseParse:
         "\u0009", "\u000a", "\u000b", "\u000c", "\u000d", "\u0020", "\u0085", "\u00a0", "\u1680", "\u2000", "\u2001", "\u2002", "\u2003",
         "\u2004", "\u2005", "\u2006", "\u2007", "\u2008", "\u2009", "\u200a", "\u200b", "\u2028", "\u2029", "\u202f", "\u205f", "\u3000"
     )
+
+    BASE_DIGITS = ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f")
 
     def __init__(self):
         self.log_lines = []
@@ -280,23 +250,23 @@ class BaseParse:
         if base == 2:
             self.base_str = "bin: "
             self.strfmt = "b"
-            self.max_power = self.MAX_POWER_LOG * math.log10(2)
-            self.digits = ("0", "1")
+            self.max_power = self.MAX_POWER_LOG * log10(2)
+            self.digits = self.BASE_DIGITS[:base]
         elif base == 8:
             self.base_str = "oct: "
             self.strfmt = "o"
-            self.max_power = self.MAX_POWER_LOG * math.log10(8)
-            self.digits = ("0", "1", "2", "3", "4", "5", "6", "7")
+            self.max_power = self.MAX_POWER_LOG * log10(8)
+            self.digits = self.BASE_DIGITS[:base]
         elif base == 10:
             self.base_str = ""
             self.strfmt = "d"
             self.max_power = self.MAX_POWER_LOG
-            self.digits = ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9")
+            self.digits = self.BASE_DIGITS[:base]
         elif base == 16:
             self.base_str = "hex: "
             self.strfmt = "x"
-            self.max_power = self.MAX_POWER_LOG * math.log10(16)
-            self.digits = ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f")
+            self.max_power = self.MAX_POWER_LOG * log10(16)
+            self.digits = self.BASE_DIGITS[:base]
 
     def parse_number(self):
         get_it = []
@@ -321,9 +291,9 @@ class BaseParse:
             self.next()
         n = "".join(get_it)
         if is_int:
-            return int(n, self.base)
+            return sympy.Integer(int(n, self.base))
         else:
-            return float(n)
+            return maybe_int(sympy.Float(n))
 
     def parse_next(self):
         while self.cur() in self.WHITESPACES:
@@ -380,6 +350,9 @@ class BaseParse:
             result = self.parse_reduce(n)
         elif n in self.ENCLOSED:
             result = self.parse_level()
+        elif n in self.SIGNS:
+            self.parse_next()
+            result = self.SIGNS[n] * self.parse_next_value()
         else:
             result = n
             self.parse_next()
@@ -390,13 +363,12 @@ class BaseParse:
     def parse_special(self, value):
         c = self.current_parse
         if c == self.SPECIAL_OPS["!"]:
-            if isinstance(value, int):
-                if value > self.MAX_FACTORIAL:
-                    raise ParseError(f"Limit for factorial is {self.MAX_FACTORIAL}!")
-                elif value < 0:
-                    raise ParseError("Can't factorial negative number.")
-                else:
-                    result = c(value)
+            if value > self.MAX_FACTORIAL:
+                raise ParseError("Limit for factorial is {self.MAX_FACTORIAL}!")
+            elif value < 0:
+                raise ParseError("Can't factorial negetive number.")
+            elif maybe_int(value) == value:
+                result = c(value)
             else:
                 raise ParseError("Can't factorial non-integer.")
             self.parse_next()
@@ -404,27 +376,21 @@ class BaseParse:
         elif c == self.SPECIAL_OPS["^"]:
             self.parse_next()
             p = self.parse_next_value()
-            r = getattr(p, "real", p)
-            v = getattr(value, "real", value)
-            if v == 0 or v == self.CONSTS["inf"] or r == self.CONSTS["inf"] or r * math.log10(abs(value)) < self.max_power:
+            r = sympy.re(p)
+            v = sympy.re(value)
+            if v == 0 or v == self.CONSTS["inf"] or r == self.CONSTS["inf"] or r * log10(abs(value)) < self.max_power:
                 result = c(value, p)
             else:
-                raise ParseError(f"Limit for power in base {self.base} is 10^{int(self.max_power)}")
+                raise ParseError(f"Limit for power in base {self.base} is 10^{sympy.Integer(self.max_power)}")
         elif c == self.SPECIAL_OPS["C"]:
             self.parse_next()
             k = self.parse_next_value()
-            if isinstance(value, int) and isinstance(k, int):
-                if value > 2 * self.MAX_FACTORIAL:
-                    raise ParseError(f"Limit for combination is n <= {2*self.MAX_FACTORIAL}")
-                else:
-                    result = c(value, k)
+            if value > 2 * self.MAX_FACTORIAL:
+                raise ParseError(f"Limit for combination is n <= {2*self.MAX_FACTORIAL}")
             else:
-                raise ParseError("Can't combination non-integer.")
+                result = c(value, k)
         elif c == self.SPECIAL_OPS["°"]:
-            if isinstance(value, complex):
-                raise ParseError("Degree can't be complex number.")
-            else:
-                result = c(value)
+            result = c(value)
             self.parse_next()
             result = self.parse_special(result)
         else:
@@ -527,7 +493,7 @@ class BaseParse:
                     if len(result) > 0:
                         raise CommonParseError
                 else:
-                    result.append(cur)
+                    result.append(maybe_int(cur))
                 break
             elif n in self.CLOSED:
                 raise ParseError("No closing bracket.")
@@ -538,7 +504,7 @@ class BaseParse:
             elif n in self.SIGNALS:
                 if cur is None:
                     raise CommonParseError
-                result.append(cur)
+                result.append(maybe_int(cur))
                 cur = None
                 sign = 1
                 self.parse_next()
@@ -732,21 +698,19 @@ class MathParse(BaseParse):
 
     def how_to_display(self, number):
         if number == float("nan"):
-            return number, "Not a number"
+            return "Not a number"
         elif number == self.CONSTS["inf"]:
-            return number, "+∞"
+            return "+∞"
         elif number == -self.CONSTS["inf"]:
-            return number, "-∞"
+            return "-∞"
 
         if number > self.MAX_VALUE:
             raise OverflowError
-        value = int(round(number))
-        if abs(number - value) < EPSILON:
-            s = f"{value:{self.strfmt}}"
+
+        if isinstance(number, sympy.Integer):
+            return f"{int(number):{self.strfmt}}"
         else:
-            value = number
-            s = f"{value:.10f}".rstrip("0").rstrip(".")
-        return value, s
+            return f"{number.evalf(PRECISION):.{AFTER_DOT}f}".rstrip("0").rstrip(".")
 
     def result(self):
         results = []
@@ -777,7 +741,7 @@ class MathParse(BaseParse):
 
                         #variable definition
                         self.text = stuff[2]
-                        if self.text.strip() == "None":
+                        if self.text.strip() == "counter":
                             x = var_name
                             self.user_variables[x] = NoValue(x)
                             results.append(f"Defined {x}")
@@ -810,7 +774,7 @@ class MathParse(BaseParse):
                         results.append(f"Defined {var_name}({da})")
                         continue
                     else:
-                        raise ParseError("Don't put strange symbol in var/func definition.")
+                        raise ParseError("Bad definition detected.")
 
                 else:
                     raise ParseError(f"Bad definition detected.")
@@ -818,37 +782,41 @@ class MathParse(BaseParse):
                 self.text = f
 
             self.reset()
-            result = self.parse_level()
-            if isinstance(result, complex):
-                if self.base == 10:
-                    r, rstr = self.how_to_display(result.real)
-                    i, istr = self.how_to_display(result.imag)
-                    if i == 0:
-                        value = r
-                        s = rstr
-                    elif r == 0:
-                        value = i * 1j
-                        if i == 1:
-                            istr = ""
-                        elif i == -1:
-                            istr = "-"
-                        s = f"{istr}i"
-                    else:
-                        value = r + i * 1j
-                        if i == 1 or i == -1:
-                            istr = ""
-                        if i > 0:
-                            s = f"{rstr} + {istr}i"
-                        else:
-                            s = f"{rstr} - {istr.lstrip('-')}i"
-                else:
-                    raise ParseError("Complex number is not allowed in non-decimal mode.")
+            raw_result = self.parse_level()
+            result = maybe_int(raw_result)
+            if self.base != 10 and result != raw_result:
+                raise ParseError("Non-integer is not allowed in non-decimal mode.")
+            if result != raw_result:
+                result = raw_result
+            real = sympy.re(result)
+            imag = sympy.im(result)
+
+            if self.base != 10 and imag != 0:
+                raise ParseError("Complex number is not allowed in non-decimal mode.")
             else:
-                value, s = self.how_to_display(result)
+                rstr = self.how_to_display(real)
+                istr = self.how_to_display(imag)
+                if imag == 0:
+                    s = rstr
+                elif real == 0:
+                    if imag == 1:
+                        istr = ""
+                    elif imag == -1:
+                        istr = "-"
+
+                    s = f"{istr}i"
+                else:
+                    if imag == 1 or imag == -1:
+                        istr = ""
+                    if imag > 0:
+                        s = f"{rstr} + {istr}i"
+                    else:
+                        s = f"{rstr} - {istr.lstrip('-')}i"
+
 
             if stuff[1]:
                 x = var_name
-                self.user_variables[x] = value
+                self.user_variables[x] = result
                 results.append(f"{self.base_str}{x} = {s}")
             else:
                 results.append(f"{self.base_str}{s}")
@@ -885,17 +853,17 @@ class Calculator:
              - Operators `+` , `-` , `*` , `/` (true div), `//` (div mod), `%` (mod), `^`|`**` (pow), `!` (factorial)
              - Functions `sin`, `cos`, `tan`, `cot`, `arcsin`|`asin`, `arccos`|`acos`, `arctan`|`atan`, `log` (base 10), `ln` (natural log), `sqrt` (square root), `cbrt` (cube root), `root` (nth root), `abs` (absolute value), `nCk` (combination), `sign`|`sgn` (sign function), `gcd`|`gcf` (greatest common divisor/factor), `lcm` (least common multiple), `max`, `min`
              - Constants `e`, `pi`|`π`, `tau`|`τ`, `i` (imaginary), `inf`|`∞` (infinity, use at your own risk)
-             - Enclosed `()`, `[]`, `{{}}`, `\u2308 \u2309` (ceil), `\u230a \u230b` (floor)
+             - Enclosed `()`, `[]`, `{}`, `\u2308 \u2309` (ceil), `\u230a \u230b` (floor)
              - Binary/octal/hexadecimal mode. Put `bin:`, `oct:`, `hex:` at the start to use that mode in current line. Default to decimal (`dec:`) mode (well of course)
 
 
              - Set a variable to a value (value can be a calculable formula) for next calculations
              - Define a function. User functions must be in `func_name(arg1, arg2...)` format, both at defining and using
              - Special function `sigma`|`Σ` (sum)
-                Format: `sigma(counter, from, to)(formula)`
-                Due to how parser works, counter must be a wildcard defined by `counter = None` prior to the sigma function.
+                Format: `sigma(n, from, to)(formula)`
+                Due to how parser works, n must be a wildcard defined by `n = counter` prior to the sigma function.
              - Special function `reduce` (cumulate)
-                Format: `reduce(function, counter, from, to)(formula)`
+                Format: `reduce(function, n, from, to)(formula)`
                 It's like sigma, but use `function` instead of sum.
                 `function` can be either builtin or user-defined, but must take exactly 2 arguments.
              - Line that starts with `#` is comment
@@ -906,13 +874,16 @@ class Calculator:
             m = MathParse(stuff)
             results, time_taken = await self.bot.loop.run_in_executor(None, self.time_stuff, m.result)
         except ParseError as e:
-            await ctx.send(e)
+            target = getattr(e, "target", m)
+            await ctx.send(f"{e}\n```\n{target.show_parse_error()}\n```")
         except ZeroDivisionError:
             await ctx.send("Division by zero.")
-        except ValueError:
-            await ctx.send("Calculation error. Probably incomprehensible calculation involved ∞ or something.")
         except OverflowError:
             await ctx.send("IO number too big. U sure need this one?")
+        except ValueError as e:
+            target = getattr(e, "target", m)
+            await ctx.send(f"Calculation error.\n```\n{target.show_parse_error()}\n```")
+            l = traceback.format_exc()
         except Exception as e:
             target = getattr(e, "target", m)
             await ctx.send(f"Parsing error.\n```\n{target.show_parse_error()}\n```")
