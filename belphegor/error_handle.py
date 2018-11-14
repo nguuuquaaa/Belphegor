@@ -41,7 +41,7 @@ class ErrorHandle:
             error = error.original
             if isinstance(error, OverflowError):
                 await ctx.send("Input number too big. You sure really need it?")
-            elif isinstance(error, (discord.Forbidden, checks.OwnerFault)):
+            elif isinstance(error, (discord.Forbidden,)):
                 await ctx.send(error)
             else:
                 prt_err = "".join(traceback.format_exception(type(error), error, error.__traceback__, 5)).replace("`", "\u200b`")

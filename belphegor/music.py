@@ -164,13 +164,12 @@ class Song:
 #==================================================================================================================================================
 
 class MusicQueue:
-    __slots__ = ("playlist_data", "guild_id", "playlist", "_iter", "_lock", "_not_empty", "_not_full", "next_index")
+    __slots__ = ("playlist_data", "guild_id", "playlist", "_lock", "_not_empty", "_not_full", "next_index")
 
     def __init__(self, bot, guild_id, *, next_index):
         self.playlist_data = bot.db.music_playlist_data
         self.guild_id = guild_id
         self.playlist = []
-        self._iter = iter(self.playlist)
         self._lock = asyncio.Lock()
         self._not_empty = asyncio.Condition(self._lock)
         self._not_full = asyncio.Condition(self._lock)
@@ -328,8 +327,9 @@ class MusicPlayer:
                         return await self.leave_voice()
             await self.bot.loop.run_in_executor(None, self.current_song.raw_update)
             if self.current_song.music is None:
-                await self.channel.send(f"**{self.current_song.title}** is not available.")
+                title = self.current_song.title
                 await self.clear_current_song()
+                await self.channel.send(f"**{title}** is not available.")
             else:
                 voice.play(self.current_song.music, after=next_part)
                 name = utils.discord_escape(getattr(self.current_song.requestor, "display_name", "<User left server>"))

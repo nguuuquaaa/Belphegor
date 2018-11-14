@@ -13,6 +13,12 @@ from pymongo import ReturnDocument, UpdateOne, ASCENDING
 import json
 
 #==================================================================================================================================================
+SPECIAL = {
+    "Commander Yashichi": ("Yashichi", "Commander Form"),
+    "Earth Defense Force: Helium": ("Helium Elf", "Earth Defense Force Form")
+}
+
+#==================================================================================================================================================
 
 class Daemon(data_type.BaseObject):
     @classmethod
@@ -82,14 +88,14 @@ class Daemon(data_type.BaseObject):
         if self.mlb_atk:
             return f"{self.max_atk}/{self.mlb_atk}"
         else:
-            return self.max_atk
+            return self.max_atk or "?"
 
     @property
     def hp(self):
         if self.mlb_hp:
             return f"{self.max_hp}/{self.mlb_hp}"
         else:
-            return self.max_hp
+            return self.max_hp or "?"
 
     @property
     def true_artwork_url(self):
@@ -511,19 +517,19 @@ class Otogi:
         daemon = await self._search(ctx, name, prompt=True)
         if not daemon:
             return
-        async with ctx.typing():
-            try:
-                new_daemon = await self.search_wikia(daemon)
-                if new_daemon:
-                    await self.daemon_collection.replace_one({"id": daemon.id}, new_daemon.__dict__)
-                    await ctx.send(f"The entry for {new_daemon.name} has been updated with latest information from wikia.")
-                else:
-                    await ctx.send("No wikia page found.")
-            except:
-                await ctx.send("Something went wrong.")
-                raise
+        await ctx.trigger_typing()
+        try:
+            new_daemon = await self.search_wikia(daemon)
+            if new_daemon:
+                await self.daemon_collection.replace_one({"id": daemon.id}, new_daemon.__dict__)
+                await ctx.send(f"The entry for {new_daemon.name} has been updated with latest information from wikia.")
+            else:
+                await ctx.send("No wikia page found.")
+        except:
+            await ctx.send("Something went wrong.")
+            raise
 
-    async def search_wikia(self, daemon, *, direct=False):
+    async def search_wikia(self, daemon, *, direct=True):
         name = daemon.name
         alias = daemon.alias
         try:
@@ -539,12 +545,7 @@ class Otogi:
 
         #wikia search
         if direct:
-            if base_name == "Commander Yashichi":
-                base_name = "Yashichi"
-                form = "Commander Form"
-            elif base_name in ("Tsukuyomi", "Tsukiyomi"):
-                base_name = "Tsukuyomi"
-                form = "Original Form"
+            base_name, form = SPECIAL.get(base_name, (base_name, form))
         else:
             bytes_ = await self.bot.fetch(f"http://otogi.wikia.com/api/v1/Search/List?query={quote(utils.unifix(name))}&limit=5&batch=1&namespaces=0%2C14")
             search_query = json.loads(bytes_)
@@ -558,9 +559,8 @@ class Otogi:
         url = f"http://otogi.wikia.com/wiki/{quote(base_name)}"
         raw_data = await self.bot.fetch(url)
 
-        delimiters = (' [', ']', ' ')
-        regexPattern = '|'.join(map(re.escape, delimiters))
-        name_pattern = '_'.join(re.split(regexPattern, name)).strip("_ ")
+        regex = re.compile(r"[\w\-]+")
+        name_pattern = "_".join(regex.findall(name))
         pic_kind = {"pic_url": "", "artwork_url": "_Artwork"}
         for kind, trailing in pic_kind.items():
             try:
@@ -594,9 +594,9 @@ class Otogi:
 
         #stats
         raw_atk = tags[4].find_all("td")
-        new_daemon.max_atk = int(raw_atk[1].text.strip().partition("/")[2])
+        new_daemon.max_atk = utils.to_int(raw_atk[1].text.strip().partition("/")[2])
         raw_hp = tags[5].find_all("td")
-        new_daemon.max_hp = int(raw_hp[1].text.strip().partition("/")[2])
+        new_daemon.max_hp = utils.to_int(raw_hp[1].text.strip().partition("/")[2])
         raw_mlb = tags[6].find_all("td")
         try:
             stat_mlb = raw_mlb[1].text.strip().partition("/")
@@ -635,7 +635,7 @@ class Otogi:
         add_keys = {16+delta: "voice_actor", 18+delta: "illustrator", 20+delta: "description", 22+delta: "how_to_acquire", 24+delta: "notes_and_trivia"}
         for i, add_type in add_keys.items():
             setattr(new_daemon, add_type, utils.unifix(tags[i+1].text))
-        quote_keys = {27+delta: "main", 28+delta: "skill", 29+delta: "summon", 30: "limit_break"}
+        quote_keys = {27+delta: "main", 28+delta: "skill", 29+delta: "summon", 30+delta: "limit_break"}
         for i, quote_type in quote_keys.items():
             quote_data = tags[i].find_all("td")
             url = quote_data[2].span.find("a")
@@ -669,10 +669,11 @@ class Otogi:
 
         msg = await ctx.send(f"Fetching...\n{utils.progress_bar(0)}")
         cursor = self.daemon_collection.find({"id": {"$gte": start_from}})
-        count = await cursor.count()
-        if count:
+        daemons = await cursor.to_list(None)
+        if daemons:
+            count = len(daemons)
             i = 0
-            async for daemon_data in cursor:
+            for daemon_data in daemons:
                 try:
                     daemon = Daemon(daemon_data)
                     new_daemon = await self.search_wikia(daemon, direct=True)
@@ -686,8 +687,11 @@ class Otogi:
                     await msg.edit(content=f"Fetching...\n{utils.progress_bar(i/count)}")
 
             await msg.edit(content=f"Done.\n{utils.progress_bar(i/count)}")
-            bytes_ = json.dumps({"done": done, "undone": undone}, indent=4, ensure_ascii=False).encode("utf-8")
-            await ctx.send(f"Done: {len(done)}\nUndone: {len(undone)}", file=discord.File(bytes_, filename="result.json"))
+            txt = json.dumps({"done": done, "undone": undone}, indent=4, ensure_ascii=False)
+            if len(txt) > 1900:
+                await ctx.send(f"Done: {len(done)}\nUndone: {len(undone)}", file=discord.File(txt.encode("utf-8"), filename="result.json"))
+            else:
+                await ctx.send(f"Done: {len(done)}\nUndone: {len(undone)}\n```json\n{text}\n```")
         else:
             await ctx.send("There's nothing to update.")
 

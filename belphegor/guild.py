@@ -925,7 +925,7 @@ class Guild:
                 try:
                     before, after = await self.bot.wait_for(
                         "member_update",
-                        check=lambda b,a: a.id==member.id and a.guild.id==member.guild.id and "Muted" not in [r.name for r in a.roles],
+                        check=lambda b,a: a.id==member.id and a.guild.id==member.guild.id and mute_role in b.roles and muted_role not in a.roles,
                         timeout=duration
                     )
                 except asyncio.TimeoutError:

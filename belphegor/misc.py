@@ -15,6 +15,7 @@ import collections
 import time
 import copy
 import numpy as np
+import aiohttp
 
 #==================================================================================================================================================
 
@@ -610,9 +611,8 @@ class Misc:
                 embed.set_image(url=message.attachments[0].url)
             await ctx.send(embed=embed)
 
-    def to_ascii(self, image_bytes, width, height):
-        raw = Image.open(BytesIO(image_bytes))
-        image = raw.resize((width, height)).convert("L")
+    def to_ascii(self, image, width, height):
+        image = image.resize((width, height)).convert("L")
 
         pixels = image.getdata()
         chars = [ASCII[int(p/RANGE)] for p in pixels]
@@ -622,16 +622,26 @@ class Misc:
 
     @modding.help(brief="Grayscale ascii art", category="Misc", field="Commands", paragraph=3)
     @commands.group(invoke_without_command=True)
-    async def ascii(self, ctx, member: discord.Member=None):
+    async def ascii(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member}, clean=False, multiline=False)=modding.EMPTY):
         '''
             `>>ascii <optional: member>`
             ASCII art of member avatar.
             If no member is specified, use your avatar.
         '''
+        target = data.geteither("", "member", "m", default=ctx.author)
+        url = data.get("url", target.avatar_url)
+
         await ctx.trigger_typing()
-        target = member or ctx.author
-        bytes_ = await self.bot.fetch(target.avatar_url)
-        text = self.to_ascii(bytes_, 64, 30)
+        try:
+            bytes_ = await self.bot.fetch(url)
+        except aiohttp.InvalidURL:
+            return await ctx.send("Invalid URL.")
+        try:
+            image = Image.open(BytesIO(bytes_))
+        except OSError:
+            return await ctx.send("Cannot identify image.")
+        image = Image.open(BytesIO(bytes_))
+        text = self.to_ascii(image, 64, 30)
         await ctx.send(f"```\n{text}\n```")
 
     @modding.help(brief="Bigger grayscale ascii art", category="Misc", field="Commands", paragraph=3)
@@ -643,6 +653,7 @@ class Misc:
             If no member is specified, use your avatar. Default width is 256.
         '''
         target = data.geteither("", "member", "m", default=ctx.author)
+        url = data.get("url", target.avatar_url)
         width = data.geteither("width", "w", default=256)
         if width > 1024:
             return await ctx.send("Width should be 1024 or less.")
@@ -650,8 +661,15 @@ class Misc:
             return await ctx.send("Width should be 64 or more.")
 
         await ctx.trigger_typing()
-        bytes_ = await self.bot.fetch(target.avatar_url)
-        text = await self.bot.loop.run_in_executor(None, self.to_ascii, bytes_, width, width//2)
+        try:
+            bytes_ = await self.bot.fetch(url)
+        except aiohttp.InvalidURL:
+            return await ctx.send("Invalid URL.")
+        try:
+            image = Image.open(BytesIO(bytes_))
+        except OSError:
+            return await ctx.send("Cannot identify image.")
+        text = await self.bot.loop.run_in_executor(None, self.to_ascii, image, width, width//2)
         await ctx.send(file=discord.File(text.encode("utf-8"), filename=f"ascii_{len(text)}_chars.txt"))
 
     def setup_ascii_chars(self):
@@ -727,7 +745,7 @@ class Misc:
         else:
             if height < 5 or width < 5:
                 raise ValueError("Size too small.")
-            if (width+1)*height >= 2000:
+            if (width+1)*height > 1950:
                 raise ValueError("Size too large.")
 
         return threshold, width, height
@@ -746,6 +764,7 @@ class Misc:
             Has cooldown due to heavy processing (someone give me good algorithm pls).
         '''
         target = data.geteither("", "member", "m", default=ctx.author)
+        url = data.get("url", target.avatar_url)
         size = data.geteither("size", "s", default="64x30")
         threshold = data.geteither("threshold", "t", default=32)
         blur = data.geteither("blur", "b", default=2)
@@ -767,8 +786,14 @@ class Misc:
             return await ctx.send("Inverse weight value should be a non-negative number.")
 
         await ctx.trigger_typing()
-        bytes_ = await self.bot.fetch(target.avatar_url)
-        image = Image.open(BytesIO(bytes_))
+        try:
+            bytes_ = await self.bot.fetch(url)
+        except aiohttp.InvalidURL:
+            return await ctx.send("Invalid URL.")
+        try:
+            image = Image.open(BytesIO(bytes_))
+        except OSError:
+            return await ctx.send("Cannot identify image.")
 
         def image_proc(image):
             if edge:
@@ -818,6 +843,7 @@ class Misc:
             Default threshold is 128. Max threshold is 255.
         '''
         target = data.geteither("", "member", "m", default=ctx.author)
+        url = data.get("url", target.avatar_url)
         size = data.geteither("size", "s", default="64x30")
         threshold = data.geteither("threshold", "t", default=128)
         inverse = data.geteither("inverse", "i", default=0)
@@ -827,8 +853,14 @@ class Misc:
             return await ctx.send(e)
 
         await ctx.trigger_typing()
-        bytes_ = await self.bot.fetch(target.avatar_url)
-        image = Image.open(BytesIO(bytes_))
+        try:
+            bytes_ = await self.bot.fetch(url)
+        except aiohttp.InvalidURL:
+            return await ctx.send("Invalid URL.")
+        try:
+            image = Image.open(BytesIO(bytes_))
+        except OSError:
+            return await ctx.send("Cannot identify image.")
 
         def per_cut(cut):
             return BOX_PATTERN[tuple(cut.flatten())]
@@ -847,6 +879,7 @@ class Misc:
             Default threshold is 128. Max threshold is 255.
         '''
         target = data.geteither("", "member", "m", default=ctx.author)
+        url = data.get("url", target.avatar_url)
         size = data.geteither("size", "s", default="56x32")
         threshold = data.geteither("threshold", "t", default=128)
         inverse = data.geteither("inverse", "i", default=0)
@@ -856,8 +889,14 @@ class Misc:
             return await ctx.send(e)
 
         await ctx.trigger_typing()
-        bytes_ = await self.bot.fetch(target.avatar_url)
-        image = Image.open(BytesIO(bytes_))
+        try:
+            bytes_ = await self.bot.fetch(url)
+        except aiohttp.InvalidURL:
+            return await ctx.send("Invalid URL.")
+        try:
+            image = Image.open(BytesIO(bytes_))
+        except OSError:
+            return await ctx.send("Cannot identify image.")
 
         inf = -float("inf")
         def per_cut(cut):
@@ -918,6 +957,7 @@ class Misc:
             await ctx.send("Please use on/off.")
 
     @commands.command(aliases=["ct"])
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     async def transform(self, ctx, *, data: modding.KeyValue({("member", "m", ""): discord.Member, ("threshold", "t"): int}, clean=False, multiline=False)=modding.EMPTY):
         '''
             `>>transform <keyword: _|member|m> <keyword: rgb> <keyword: threshold|t>`
@@ -945,6 +985,7 @@ class Misc:
             return await ctx.send("RGB value out of range.")
 
         def do_stuff():
+            start = time.perf_counter()
             image = Image.open(BytesIO(bytes_))
             a = np.array(image)
             t = a[:, :, 0] * 0.2989 + a[:, :, 1] * 0.5870 + a[:, :, 2] * 0.1140
@@ -957,6 +998,7 @@ class Misc:
 
             bio = BytesIO()
             image.save(bio, "png")
+            print(time.perf_counter() - start)
             return bio.getvalue()
 
         bytes_2 = await self.bot.loop.run_in_executor(None, do_stuff)

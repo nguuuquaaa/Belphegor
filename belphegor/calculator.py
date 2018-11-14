@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from . import utils
-from .utils import checks
+from .utils import checks, data_type
 import operator
 import re
 import traceback
@@ -10,23 +10,47 @@ import random
 import time
 import functools
 import sympy
+import weakref
 
 #==================================================================================================================================================
 
 PRECISION = 100
 EPSILON = sympy.Float(f"1e-{PRECISION-5}", PRECISION)
 AFTER_DOT = 20
+INF = sympy.oo
+NAN = sympy.nan
+ZINF = sympy.zoo
+SPECIAL_NUMBERS = (INF, -INF, NAN, ZINF)
+
+#==================================================================================================================================================
+
+#I hate this, but sympy is pretty dumb for raising TypeError instead of return False for NaN comparison
+def always_false(self, other):
+    return False
+
+cls = NAN.__class__
+
+cls.__eq__ = always_false
+cls.__ne__ = always_false
+cls.__gt__ = always_false
+cls.__ge__ = always_false
+cls.__lt__ = always_false
+cls.__le__ = always_false
+#end haxing
 
 #==================================================================================================================================================
 
 def maybe_int(number):
     ret = []
     for n in (sympy.re(number), sympy.im(number)):
-        nearest = n.round()
-        if sympy.Abs(n - nearest) < EPSILON:
-            r = sympy.Integer(nearest)
-        else:
+        if n in SPECIAL_NUMBERS:
             r = n
+        else:
+            nearest = n.round()
+            if sympy.Abs(n - nearest) < EPSILON:
+                r = sympy.Integer(nearest)
+            else:
+                r = n
         ret.append(r)
     return ret[0] + ret[1] * sympy.I
 
@@ -95,7 +119,7 @@ class Reduce:
             self.delta = 1
         else:
             self.delta = -1
-        if abs(to_ - from_) > self.MAX_RANGE:
+        if sympy.Abs(to_ - from_) > self.MAX_RANGE:
             raise ParseError(f"{self.__class__.__name__} max range is {self.MAX_RANGE}.")
         if func.reduce:
             raise ParseError("Nested reduce/sigma is not accepted.")
@@ -218,6 +242,7 @@ class BaseParse:
         self.user_variables = {}
         self.user_functions = {}
         self.things_to_check = (*self.BUILTINS, self.user_functions, self.user_variables)
+        self.current_index = 0
 
     def next(self, jump=1):
         self.current_index += jump
@@ -363,11 +388,13 @@ class BaseParse:
     def parse_special(self, value):
         c = self.current_parse
         if c == self.SPECIAL_OPS["!"]:
-            if value > self.MAX_FACTORIAL:
-                raise ParseError("Limit for factorial is {self.MAX_FACTORIAL}!")
+            if value in SPECIAL_NUMBERS:
+                result = c(value)
+            elif value > self.MAX_FACTORIAL:
+                raise ParseError(f"Limit for factorial is {self.MAX_FACTORIAL}!")
             elif value < 0:
                 raise ParseError("Can't factorial negetive number.")
-            elif maybe_int(value) == value:
+            elif sympy.Integer(value) == value:
                 result = c(value)
             else:
                 raise ParseError("Can't factorial non-integer.")
@@ -378,14 +405,16 @@ class BaseParse:
             p = self.parse_next_value()
             r = sympy.re(p)
             v = sympy.re(value)
-            if v == 0 or v == self.CONSTS["inf"] or r == self.CONSTS["inf"] or r * log10(abs(value)) < self.max_power:
+            if v == 0 or v in SPECIAL_NUMBERS or r in SPECIAL_NUMBERS or r * log10(sympy.Abs(value)) < self.max_power:
                 result = c(value, p)
             else:
                 raise ParseError(f"Limit for power in base {self.base} is 10^{sympy.Integer(self.max_power)}")
         elif c == self.SPECIAL_OPS["C"]:
             self.parse_next()
             k = self.parse_next_value()
-            if value > 2 * self.MAX_FACTORIAL:
+            if value in SPECIAL_NUMBERS:
+                result = c(value, k)
+            elif value > 2 * self.MAX_FACTORIAL:
                 raise ParseError(f"Limit for combination is n <= {2*self.MAX_FACTORIAL}")
             else:
                 result = c(value, k)
@@ -690,20 +719,16 @@ class MathParse(BaseParse):
 
     MAX_VALUE = 10 ** 300
 
-    def __init__(self, text):
+    def __init__(self, text, *, inactivity=None):
         super().__init__()
         self.formulas = [t.strip() for t in text.splitlines()]
         if len(self.formulas) > 30:
             raise ParseError("Oi, don't do that many calculations in one go.")
 
-    def how_to_display(self, number):
-        if number == float("nan"):
-            return "Not a number"
-        elif number == self.CONSTS["inf"]:
-            return "+∞"
-        elif number == -self.CONSTS["inf"]:
-            return "-∞"
+        self.text = self.formulas[0]
+        self.inactivity = inactivity or data_type.Observer(120)
 
+    def how_to_display(self, number):
         if number > self.MAX_VALUE:
             raise OverflowError
 
@@ -783,36 +808,46 @@ class MathParse(BaseParse):
 
             self.reset()
             raw_result = self.parse_level()
-            result = maybe_int(raw_result)
-            if self.base != 10 and result != raw_result:
-                raise ParseError("Non-integer is not allowed in non-decimal mode.")
-            if result != raw_result:
+            if raw_result in SPECIAL_NUMBERS:
                 result = raw_result
-            real = sympy.re(result)
-            imag = sympy.im(result)
-
-            if self.base != 10 and imag != 0:
-                raise ParseError("Complex number is not allowed in non-decimal mode.")
+                if result is NAN:
+                    s = "NaN"
+                elif result is INF:
+                    s = "+∞"
+                elif result is -INF:
+                    s = "-∞"
+                elif result is ZINF:
+                    s = "z∞"
             else:
-                rstr = self.how_to_display(real)
-                istr = self.how_to_display(imag)
-                if imag == 0:
-                    s = rstr
-                elif real == 0:
-                    if imag == 1:
-                        istr = ""
-                    elif imag == -1:
-                        istr = "-"
+                result = maybe_int(raw_result)
+                if self.base != 10 and result != raw_result:
+                    raise ParseError("Non-integer is not allowed in non-decimal mode.")
+                if result != raw_result:
+                    result = raw_result
+                real = sympy.re(result)
+                imag = sympy.im(result)
 
-                    s = f"{istr}i"
+                if self.base != 10 and imag != 0:
+                    raise ParseError("Complex number is not allowed in non-decimal mode.")
                 else:
-                    if imag == 1 or imag == -1:
-                        istr = ""
-                    if imag > 0:
-                        s = f"{rstr} + {istr}i"
-                    else:
-                        s = f"{rstr} - {istr.lstrip('-')}i"
+                    rstr = self.how_to_display(real)
+                    istr = self.how_to_display(imag)
+                    if imag == 0:
+                        s = rstr
+                    elif real == 0:
+                        if imag == 1:
+                            istr = ""
+                        elif imag == -1:
+                            istr = "-"
 
+                        s = f"{istr}i"
+                    else:
+                        if imag == 1 or imag == -1:
+                            istr = ""
+                        if imag > 0:
+                            s = f"{rstr} + {istr}i"
+                        else:
+                            s = f"{rstr} - {istr.lstrip('-')}i"
 
             if stuff[1]:
                 x = var_name
@@ -834,6 +869,8 @@ class Calculator:
         else:
             del bot.enable_calc_log
 
+        self.last_calc = {}
+
     def __unload(self):
         self.bot.enable_calc_log = self.enable_log
 
@@ -843,6 +880,38 @@ class Calculator:
         end = time.perf_counter()
         return ret, end-start
 
+    async def cleanup_when_inactive(self, user_id):
+        inactivity = self.last_calc[user_id].inactivity
+        while True:
+            inactivity.clear()
+            wait_time = inactivity.item
+            try:
+                await inactivity.wait(timeout=wait_time)
+            except asyncio.TimeoutError:
+                return self.last_calc.pop(user_id)
+
+    def update_calc(self, user_id, new_calc):
+        last_calc = self.last_calc.get(user_id)
+        if last_calc:
+            last_calc.user_functions.update(new_calc.user_functions)
+            last_calc.user_variables.update(new_calc.user_variables)
+        else:
+            last_calc = new_calc
+            self.bot.loop.create_task(self.cleanup_when_inactive(user_id))
+        last_calc.inactivity.assign(120)
+        self.last_calc[user_id] = last_calc
+
+    def get_calc(self, user_id, text):
+        try:
+            last = self.last_calc[user_id]
+        except KeyError:
+            return MathParse(text)
+        else:
+            m = MathParse(text, inactivity=last.inactivity)
+            m.user_functions.update(last.user_functions)
+            m.user_variables.update(last.user_variables)
+            return m
+
     @commands.command(aliases=["calc"])
     async def calculate(self, ctx, *, stuff):
         '''
@@ -851,7 +920,7 @@ class Calculator:
 
             **Acceptable expressions:**
              - Operators `+` , `-` , `*` , `/` (true div), `//` (div mod), `%` (mod), `^`|`**` (pow), `!` (factorial)
-             - Functions `sin`, `cos`, `tan`, `cot`, `arcsin`|`asin`, `arccos`|`acos`, `arctan`|`atan`, `log` (base 10), `ln` (natural log), `sqrt` (square root), `cbrt` (cube root), `root` (nth root), `abs` (absolute value), `nCk` (combination), `sign`|`sgn` (sign function), `gcd`|`gcf` (greatest common divisor/factor), `lcm` (least common multiple), `max`, `min`
+             - Functions `sin`, `cos`, `tan`, `cot`, `arcsin`|`asin`, `arccos`|`acos`, `arctan`|`atan`, `log` (base 10), `ln` (natural log), `sqrt` (square root), `cbrt` (cube root), `root` (nth root), `abs` (absolute value), `nCk` (combination), `sign`|`sgn` (sign function), `gcd`|`gcf` (greatest common divisor/factor), `lcm` (least common multiple), `max`, `min`, `gamma`
              - Constants `e`, `pi`|`π`, `tau`|`τ`, `i` (imaginary), `inf`|`∞` (infinity, use at your own risk)
              - Enclosed `()`, `[]`, `{}`, `\u2308 \u2309` (ceil), `\u230a \u230b` (floor)
              - Binary/octal/hexadecimal mode. Put `bin:`, `oct:`, `hex:` at the start to use that mode in current line. Default to decimal (`dec:`) mode (well of course)
@@ -871,7 +940,7 @@ class Calculator:
         stuff = utils.clean_codeblock(stuff)
         l = ""
         try:
-            m = MathParse(stuff)
+            m = self.get_calc(ctx.author.id, stuff)
             results, time_taken = await self.bot.loop.run_in_executor(None, self.time_stuff, m.result)
         except ParseError as e:
             target = getattr(e, "target", m)
@@ -889,6 +958,7 @@ class Calculator:
             await ctx.send(f"Parsing error.\n```\n{target.show_parse_error()}\n```")
             l = traceback.format_exc()
         else:
+            self.update_calc(ctx.author.id, m)
             r = "\n".join(results)
             await ctx.send(f"Result in {1000*(time_taken):.2f}ms\n```\n{r}\n```")
         finally:
@@ -941,6 +1011,7 @@ class Calculator:
             "b = b\n"
             "c = c\n\n"
             "Δ = b^2 - 4ac\n\n"
+            "#Result\n"
             "x1 = (-b + sqrt(Δ))/(2a)\n"
             "x2 = (-b - sqrt(Δ))/(2a)"
         )
@@ -980,6 +1051,7 @@ class Calculator:
             "Δ1 = 2b^3 - 9abc + 27a^2*d\n"
             "C1 = cbrt((Δ1 + sqrt(Δ1^2 - 4Δ0^3))/2)\n"
             "C2 = cbrt((Δ1 - sqrt(Δ1^2 - 4Δ0^3))/2)\n\n"
+            "#Result\n"
             "x1 = -(b + C1 + C2)/(3a)\n"
             "x2 = -(b + C1 * ζ1 + C2 / ζ1)/(3a)\n"
             "x3 = -(b + C1 * ζ2 + C2 / ζ2)/(3a)"

@@ -18,6 +18,7 @@ import textwrap
 import objgraph
 import math
 import asyncio
+import pymongo
 
 #==================================================================================================================================================
 
@@ -175,13 +176,21 @@ class Admin:
 
     @commands.command(hidden=True)
     @checks.owner_only()
-    async def mongoitem(self, ctx, col, *, raw_query="{}"):
-        raw = utils.load_concat_json(raw_query)
+    async def mongo(self, ctx, col, *, raw_query="{}"):
+        try:
+            raw = utils.load_concat_json(raw_query)
+        except json.JSONDecodeError:
+            return await ctx.send("Wrong json format.")
         query = utils.get_element(raw, 0, default={})
         projection = utils.get_element(raw, 1, default=None)
-        data = await self.bot.db[col].find_one(query, projection=projection)
+        data = []
+        try:
+            async for d in self.bot.db[col].find(query, projection=projection):
+                d.pop("_id", None)
+                data.append(d)
+        except pymongo.errors.OperationFailure as e:
+            return await ctx.send(e)
         if data:
-            data.pop("_id", None)
             text = json.dumps(data, indent=4, ensure_ascii=False)
             if len(text) > 1900:
                 await ctx.send(file=discord.File(text.encode("utf-8"), filename="data.json"))

@@ -495,7 +495,7 @@ class RunGoogleInBackground(multiprocessing.Process):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.drivers = ()
-        def quit_sessions():
+        def quit_sessions(signum, frame):
             for dr in self.drivers:
                 dr.quit()
         signal.signal(signal.SIGTERM, quit_sessions)

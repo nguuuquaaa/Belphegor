@@ -20,7 +20,7 @@ class MissingPerms(CheckFailure):
         self.perms = perms
         super().__init__(*args)
 
-class OwnerFault(CheckFailure):
+class CustomError(commands.CommandError):
     pass
 
 #==================================================================================================================================================

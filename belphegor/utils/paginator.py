@@ -34,13 +34,14 @@ EVERYONE = Everyone()
 class Paginator:
     all_tasks = {}
 
-    def __init__(self, container, per_page=1, *, separator="\n", jump=10, book=False, page_display=True, render=True, **kwargs):
+    def __init__(self, container, per_page=1, *, separator="\n", jump=10, book=False, page_display=True, render=True, first_page=None, **kwargs):
         self.container = container
         self.per_page = per_page
         self.separator = separator
         self.book_mode = book
         self.jump = jump
         self.page_display = page_display
+        self.first_page = first_page
 
         if book:
             self._item_amount = []
@@ -244,7 +245,9 @@ class Paginator:
         else:
             event = "reaction_add_or_remove"
             handle_reaction = lambda m, r, u: None
-        if self.container:
+        if self.first_page:
+            embed = self.first_page
+        elif self.container:
             embed = self.render()
         else:
             embed = next(iter(self.navigation.values()))()

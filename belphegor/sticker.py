@@ -179,7 +179,11 @@ class Sticker:
         '''
         if new_prefix is None:
             guild_data = await self.guild_data.find_one({"guild_id": ctx.guild.id}, projection={"_id": False, "sticker_prefix": True})
-            await ctx.send(f"Prefix is {guild_data.get('sticker_prefix', '$')}")
+            if guild_data:
+                p = "$"
+            else:
+                p = guild_data.get("sticker_prefix", "$")
+            await ctx.send(f"Prefix is {p}")
         elif ctx.channel.permissions_for(ctx.message.author).manage_guild:
             if new_prefix == "$":
                 self.sticker_regexes.pop(ctx.guild.id, None)
