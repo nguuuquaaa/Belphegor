@@ -318,7 +318,7 @@ class BaseParse:
         if is_int:
             return sympy.Integer(int(n, self.base))
         else:
-            return maybe_int(sympy.Float(n))
+            return maybe_int(sympy.Float(n, PRECISION))
 
     def parse_next(self):
         while self.cur() in self.WHITESPACES:
@@ -844,7 +844,7 @@ class MathParse(BaseParse):
                     else:
                         if imag == 1 or imag == -1:
                             istr = ""
-                        if imag > 0:
+                        elif imag.is_positive:
                             s = f"{rstr} + {istr}i"
                         else:
                             s = f"{rstr} - {istr.lstrip('-')}i"
@@ -1058,7 +1058,7 @@ class Calculator:
         )
         solution.user_variables.update(coefficients)
         results, solution_time = await self.bot.loop.run_in_executor(None, self.time_stuff, solution.result)
-        r = "\n".join(results[-13:])
+        r = "\n".join(results[-14:])
         r = f"ax^3 + bx^2 + cx + d = 0\n{r}"
         time_taken = input_time + solution_time
         await ctx.send(f"Result in {1000*(time_taken):.2f}ms\n```\n{r}\n```")

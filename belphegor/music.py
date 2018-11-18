@@ -259,7 +259,7 @@ class MusicQueue:
 #==================================================================================================================================================
 
 class MusicPlayer:
-    __slots__ = ("bot", "guild", "queue", "current_song", "repeat", "channel", "player", "lock", "auto_info", "inactivity")
+    __slots__ = ("bot", "guild", "queue", "current_song", "repeat", "channel", "player", "lock", "auto_info")
 
     def __init__(self, bot, guild, *, initial, next_index, repeat=False):
         self.bot = bot
@@ -272,7 +272,6 @@ class MusicPlayer:
         self.lock = asyncio.Lock()
         self.queue.playlist.extend((Song(guild.get_member(s["requestor_id"]), s["title"], s["url"], s["index"]) for s in initial))
         self.auto_info = None
-        self.inactivity = data_type.Observer()
 
     def ready_to_play(self, channel):
         self.channel = channel
@@ -297,12 +296,15 @@ class MusicPlayer:
         self.repeat = mode
         await self.queue.playlist_data.update_one({"guild_id": self.guild.id}, {"$set": {"repeat": mode}})
 
-    def cancel(self, clean_after=0):
+    def cancel(self):
         try:
             self.player().cancel()
         except:
             pass
-        self.inactivity.assign(clean_after)
+
+    def quit(self):
+        self.cancel()
+        self.bot.create_task_and_count(self.leave_voice())
 
     async def play_till_eternity(self):
         def next_part(e):
@@ -313,7 +315,6 @@ class MusicPlayer:
         play_next_song = asyncio.Event()
         cmd = self.bot.get_command("music info")
         voice = self.guild.voice_client
-        self.inactivity.assign(None)
 
         while True:
             play_next_song.clear()
@@ -321,7 +322,6 @@ class MusicPlayer:
                 try:
                     self.current_song = await asyncio.wait_for(self.queue.get(), 120, loop=self.bot.loop)
                 except asyncio.TimeoutError:
-                    self.inactivity.assign(0)
                     await self.channel.send("No music? Time to sleep then. Yaaawwnnnn~~")
                     async with self.lock:
                         return await self.leave_voice()
@@ -345,6 +345,17 @@ class MusicPlayer:
                 if not self.repeat:
                     await self.clear_current_song()
 
+            for m in voice.channel.members:
+                if not m.bot:
+                    break
+            else:
+                try:
+                    member, before, after = await self.bot.wait_for("voice_state_update", check=lambda m, b, a: not m.bot and not b.channel and a.channel==voice.channel, timeout=120)
+                except asyncio.TimeoutError:
+                    await self.channel.send("No one's here? I'm skipping this then.")
+                    async with self.lock:
+                        return await self.leave_voice()
+
 #==================================================================================================================================================
 
 class Music:
@@ -364,18 +375,7 @@ class Music:
 
     def __unload(self):
         for mp in self.music_players.values():
-            mp.cancel()
-            self.bot.create_task_and_count(mp.leave_voice())
-
-    async def cleanup_when_inactive(self, music_player):
-        try:
-            inactivity = music_player.inactivity
-            while True:
-                inactivity.clear()
-                timeout = inactivity.item
-                await inactivity.wait(timeout=timeout)
-        except asyncio.TimeoutError:
-            self.music_players.pop(music_player.guild.id, None)
+            mp.quit()
 
     async def get_music_player(self, guild):
         async with self.mp_lock:
@@ -392,19 +392,12 @@ class Music:
                 if cur_song:
                     mp.current_song = Song(guild.get_member(cur_song["requestor_id"]), cur_song["title"], cur_song["url"], cur_song["index"])
                 self.music_players[guild.id] = mp
-                self.bot.loop.create_task(self.cleanup_when_inactive(mp))
-            if not mp.channel:
-                mp.inactivity.assign(120)
             return mp
 
     async def on_voice_state_update(self, member, before, after):
-        if member.guild.id in self.music_players:
-            if after == None:
-                for m in voice.channel.members:
-                    if not m.bot:
-                        break
-                else:
-                    self.music_players[member.guild.id].inactivity.assign(120)
+        if member.id == self.bot.user.id:
+            if not after.channel:
+                self.music_players.pop(member.guild.id).cancel()
 
     @commands.group(aliases=["m"])
     @checks.guild_only()
@@ -462,8 +455,7 @@ class Music:
             except AttributeError:
                 await ctx.send(f"{self.bot.user.display_name} is not in any voice channel.")
             else:
-                music_player.cancel(120)
-                await music_player.leave_voice()
+                music_player.quit()
                 await ctx.send(f"{self.bot.user.display_name} left {name}.")
 
     def youtube_search(self, name, type="video"):

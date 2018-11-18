@@ -51,7 +51,7 @@ class ErrorHandle:
                     "Please wait for a while for the owner to fix.",
                     delete_after=30
                 )
-                await self.error_hook.execute(f"```\nIgnoring exception in command {ctx.command}:\n{prt_err}\n```")
+                await self.error_hook.execute(f"```\nIgnoring exception in command {ctx.command}:\n{prt_err}\n```", embed=discord.Embed(description=ctx.message.content))
         elif isinstance(error, commands.MissingRequiredArgument):
             stuff = ctx.command.help.partition("\n")
             if stuff[0]:
