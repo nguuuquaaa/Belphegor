@@ -822,8 +822,6 @@ class MathParse(BaseParse):
                 result = maybe_int(raw_result)
                 if self.base != 10 and result != raw_result:
                     raise ParseError("Non-integer is not allowed in non-decimal mode.")
-                if result != raw_result:
-                    result = raw_result
                 real = sympy.re(result)
                 imag = sympy.im(result)
 
@@ -844,7 +842,7 @@ class MathParse(BaseParse):
                     else:
                         if imag == 1 or imag == -1:
                             istr = ""
-                        elif imag.is_positive:
+                        if imag.is_positive:
                             s = f"{rstr} + {istr}i"
                         else:
                             s = f"{rstr} - {istr.lstrip('-')}i"
