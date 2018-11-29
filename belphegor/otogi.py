@@ -691,7 +691,7 @@ class Otogi:
             if len(txt) > 1900:
                 await ctx.send(f"Done: {len(done)}\nUndone: {len(undone)}", file=discord.File(txt.encode("utf-8"), filename="result.json"))
             else:
-                await ctx.send(f"Done: {len(done)}\nUndone: {len(undone)}\n```json\n{text}\n```")
+                await ctx.send(f"Done: {len(done)}\nUndone: {len(undone)}\n```json\n{txt}\n```")
         else:
             await ctx.send("There's nothing to update.")
 
@@ -913,6 +913,7 @@ class Otogi:
         '''
         player = await self.get_player(ctx.author.id)
         names = [n.strip() for n in names.split(";")]
+        number_of_daemons = 0
         total_mochi = 0
         for raw_name in names:
             name, lb = self._process_name(raw_name)
@@ -924,6 +925,7 @@ class Otogi:
                 d = player["daemons"][i]
                 if d["id"] == daemon.id:
                     target = player["daemons"].pop(i)
+                    number_of_daemons += 1
                     total_mochi += self.mochi_cost(daemon) * (target["lb"] + 1)
                 else:
                     i += 1

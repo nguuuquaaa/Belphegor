@@ -4,6 +4,9 @@ from . import format, paginator
 import asyncio
 import re
 import copy
+import collections
+from datetime import datetime, timedelta
+import pytz
 
 #==================================================================================================================================================
 
@@ -212,3 +215,48 @@ class Observer:
 
     def __bool__(self):
         return bool(self._item)
+
+#==================================================================================================================================================
+
+class AutoCleanupDict:
+    END_OF_TIME = datetime(year=9999, month=1, day=1, tzinfo=pytz.utc)
+
+    def __init__(self, limit=120, *, loop=None):
+        self.limit = limit
+        self.loop = loop or asyncio.get_event_loop()
+        self.container = {}
+        self.deadline = collections.OrderedDict()
+        self.active = asyncio.Event()
+        self.working_task = self.loop.create_task(self.check_deadline())
+
+    def update_deadline(self, key):
+        self.deadline[key] = format.now_time() + timedelta(seconds=self.limit)
+        self.deadline.move_to_end(key)
+        self.active.set()
+
+    def __getitem__(self, key):
+        return self.container[key]
+
+    def __setitem__(self, key, value):
+        self.container[key] = value
+        self.update_deadline(key)
+
+    def get(self, key, default=None):
+        return self.container.get(key, default)
+
+    async def check_deadline(self):
+        while True:
+            self.active.clear()
+            if self.container:
+                first_key, first_deadline = next(iter(self.deadline.items()))
+                try:
+                    await asyncio.wait_for(self.active.wait(), (first_deadline-format.now_time()).total_seconds())
+                except asyncio.TimeoutError:
+                    self.container.pop(first_key)
+                    self.deadline.pop(first_key)
+            else:
+                await self.active.wait()
+
+    def cleanup(self):
+        self.working_task.cancel()
+

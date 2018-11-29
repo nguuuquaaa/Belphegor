@@ -392,20 +392,25 @@ class Statistics:
 
     @commands.command(hidden=True)
     async def topcmd(self, ctx):
-        all_cmds = [(name, value) for name, value in self.command_run_count.items()]
-        all_cmds.sort(key=lambda x: x[1], reverse=True)
+        all_cmds = sorted(list(self.command_run_count.items()), key=lambda x: x[1], reverse=True)
 
         embed = discord.Embed(title="Commands run")
         total = (x[1] for x in all_cmds)
         embed.add_field(name="Total", value=f"{sum(total)}", inline=False)
 
         top = []
+        rest = []
         for cmd in all_cmds:
-            top.append(cmd)
             if len(top) >= 3:
-                break
+                rest.append(cmd)
+            else:
+                top.append(cmd)
 
-        embed.add_field(name="Top commands", value="\n".join((f"{i+1}\u20e3 {x[0]} - {x[1]} times" for i, x in enumerate(top))), inline=False)
+        top_cmd_txt = "\n".join((f"{i+1}\u20e3 {x[0]} - {x[1]} times" for i, x in enumerate(top)))
+        the_rest = ", ".join((f"{x[0]} ({x[1]})" for x in rest))
+        the_rest_pages = utils.split_page(the_rest, 1000, check=lambda x: x==",", fix="")
+        embed.add_field(name="Top commands", value=top_cmd_txt, inline=False)
+        embed.add_field(name="Other", value=the_rest_pages[0], inline=False)
 
         await ctx.send(embed=embed)
 

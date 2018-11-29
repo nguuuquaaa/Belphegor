@@ -968,10 +968,13 @@ class Guild:
                 pass
             except discord.Forbidden:
                 return
-            if members:
-                await ctx.channel.purge(limit=number, check=lambda m: m.author in members)
-            else:
-                await ctx.channel.purge(limit=number)
+            try:
+                if members:
+                    await ctx.channel.purge(limit=number, check=lambda m: m.author in members)
+                else:
+                    await ctx.channel.purge(limit=number)
+            except discord.NotFound:
+                pass
 
     @commands.command()
     @checks.guild_only()
@@ -1057,7 +1060,7 @@ class Guild:
         '''
         guild = ctx.guild
         roleinfo = ", ".join((r.mention for r in guild.roles))
-        role_pages = utils.split_page(roleinfo, 1900, safe_mode=False)
+        role_pages = utils.split_page(roleinfo, 1000, safe_mode=False)
         embeds = []
         for page in role_pages:
             embed = discord.Embed(title=guild.name, colour=discord.Colour.blue())

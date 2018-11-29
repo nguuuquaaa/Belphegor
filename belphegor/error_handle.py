@@ -35,7 +35,7 @@ class ErrorHandle:
     async def on_command_error(self, ctx, error):
         ignored = (commands.DisabledCommand, commands.CommandNotFound, commands.UserInputError, commands.CommandOnCooldown)
         if isinstance(error, commands.CheckFailure):
-            if isinstance(error, (checks.CheckFailure, commands.NotOwner, commands.NoPrivateMessage)):
+            if isinstance(error, (checks.CheckFailure, commands.NotOwner, commands.NoPrivateMessage, checks.CustomError)):
                 await ctx.send(error, delete_after=30)
         elif isinstance(error, commands.CommandInvokeError):
             error = error.original
@@ -53,9 +53,9 @@ class ErrorHandle:
                 )
                 await self.error_hook.execute(f"```\nIgnoring exception in command {ctx.command}:\n{prt_err}\n```", embed=discord.Embed(description=ctx.message.content))
         elif isinstance(error, commands.MissingRequiredArgument):
-            stuff = ctx.command.help.partition("\n")
-            if stuff[0]:
-                await ctx.send(f"Use this format you dumbo\n```\n{stuff[0].strip('`')}\n```")
+            if ctx.command.help:
+                stuff = ctx.command.help.partition("\n")
+                await ctx.send(f"Use this format you dumbo\n```\n{stuff[0].strip('`')}\n```", delete_after=30)
             else:
                 await ctx.send("Argument missing. You sure read command description?", delete_after=30)
         elif isinstance(error, commands.BadArgument):

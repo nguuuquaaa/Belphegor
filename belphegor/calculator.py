@@ -10,7 +10,8 @@ import random
 import time
 import functools
 import sympy
-import weakref
+from datetime import datetime, timedelta
+import collections
 
 #==================================================================================================================================================
 
@@ -719,14 +720,13 @@ class MathParse(BaseParse):
 
     MAX_VALUE = 10 ** 300
 
-    def __init__(self, text, *, inactivity=None):
+    def __init__(self, text):
         super().__init__()
         self.formulas = [t.strip() for t in text.splitlines()]
         if len(self.formulas) > 30:
             raise ParseError("Oi, don't do that many calculations in one go.")
 
         self.text = self.formulas[0]
-        self.inactivity = inactivity or data_type.Observer(120)
 
     def how_to_display(self, number):
         if number > self.MAX_VALUE:
@@ -867,10 +867,11 @@ class Calculator:
         else:
             del bot.enable_calc_log
 
-        self.last_calc = {}
+        self.parsers = data_type.AutoCleanupDict(120, loop=bot.loop)
 
     def __unload(self):
         self.bot.enable_calc_log = self.enable_log
+        self.parsers.cleanup()
 
     def time_stuff(self, func):
         start = time.perf_counter()
@@ -878,40 +879,19 @@ class Calculator:
         end = time.perf_counter()
         return ret, end-start
 
-    async def cleanup_when_inactive(self, user_id):
-        inactivity = self.last_calc[user_id].inactivity
-        while True:
-            inactivity.clear()
-            wait_time = inactivity.item
-            try:
-                await inactivity.wait(timeout=wait_time)
-            except asyncio.TimeoutError:
-                return self.last_calc.pop(user_id)
-
-    def update_calc(self, user_id, new_calc):
-        last_calc = self.last_calc.get(user_id)
-        if last_calc:
-            last_calc.user_functions.update(new_calc.user_functions)
-            last_calc.user_variables.update(new_calc.user_variables)
-        else:
-            last_calc = new_calc
-            self.bot.loop.create_task(self.cleanup_when_inactive(user_id))
-        last_calc.inactivity.assign(120)
-        self.last_calc[user_id] = last_calc
-
     def get_calc(self, user_id, text):
         try:
-            last = self.last_calc[user_id]
+            last = self.parsers[user_id]
         except KeyError:
             return MathParse(text)
         else:
-            m = MathParse(text, inactivity=last.inactivity)
+            m = MathParse(text)
             m.user_functions.update(last.user_functions)
             m.user_variables.update(last.user_variables)
             return m
 
     @commands.command(aliases=["calc"])
-    async def calculate(self, ctx, *, stuff):
+    async def calculate(self, ctx, *, text):
         '''
             `>>calc <formulas>`
             Formulas are separated by linebreak. You can codeblock the whole thing for easier on the eyes.
@@ -935,10 +915,10 @@ class Calculator:
                 `function` can be either builtin or user-defined, but must take exactly 2 arguments.
              - Line that starts with `#` is comment
         '''
-        stuff = utils.clean_codeblock(stuff)
+        text = utils.clean_codeblock(text)
         l = ""
         try:
-            m = self.get_calc(ctx.author.id, stuff)
+            m = self.get_calc(ctx.author.id, text)
             results, time_taken = await self.bot.loop.run_in_executor(None, self.time_stuff, m.result)
         except ParseError as e:
             target = getattr(e, "target", m)
@@ -956,7 +936,7 @@ class Calculator:
             await ctx.send(f"Parsing error.\n```\n{target.show_parse_error()}\n```")
             l = traceback.format_exc()
         else:
-            self.update_calc(ctx.author.id, m)
+            self.parsers[ctx.author.id] = m
             r = "\n".join(results)
             await ctx.send(f"Result in {1000*(time_taken):.2f}ms\n```\n{r}\n```")
         finally:
@@ -1015,7 +995,7 @@ class Calculator:
         )
         solution.user_variables.update(coefficients)
         results, solution_time = await self.bot.loop.run_in_executor(None, self.time_stuff, solution.result)
-        r = "\n".join(results[-8:])
+        r = "\n".join(results[-9:])
         r = f"ax^2 + bx + c = 0\n{r}"
         time_taken = input_time + solution_time
         await ctx.send(f"Result in {1000*(time_taken):.2f}ms\n```\n{r}\n```")
