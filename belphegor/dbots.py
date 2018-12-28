@@ -10,7 +10,7 @@ import dbl
 class DBots:
     def __init__(self, bot):
         self.bot = bot
-        self.base_url = f"https://bots.discord.pw/api/bots/{bot.user.id}/stats"
+        self.base_url = f"https://discord.bots.gg/api/v1/bots/{bot.user.id}/stats"
         self.headers = {
             "User-Agent": "Belphegor",
             "Authorization": token.DBOTS_TOKEN,

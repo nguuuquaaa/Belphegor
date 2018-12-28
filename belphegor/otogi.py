@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from urllib.parse import quote
 from . import utils
-from .utils import config, checks, token, data_type
+from .utils import config, checks, token, data_type, modding
 import random
 import re
 import traceback
@@ -221,6 +221,7 @@ class Otogi:
             cls=Daemon, colour=discord.Colour.orange(), atts=["id", "name", "alias"], name_att="name", emoji_att="daemon_class", prompt=prompt, sort={"id": 1}
         )
 
+    @modding.help(brief="Check a daemon info", category="Otogi", field="Database", paragraph=0)
     @commands.group(name="daemon", aliases=["d"], invoke_without_command=True)
     async def cmd_daemon(self, ctx, *, name: str):
         '''
@@ -345,6 +346,7 @@ class Otogi:
             result.append(new_daemon)
         return result
 
+    @modding.help(brief="Find daemons with given conditions", category="Otogi", field="Database", paragraph=0)
     @cmd_daemon.command(name="filter")
     async def cmd_daemon_filter(self, ctx, *, data):
         '''
@@ -727,7 +729,7 @@ class Otogi:
         if ctx.invoked_subcommand is None:
             id = ctx.author.id
             player = await self.get_player(id)
-            roll = random.randint(1,100)
+            roll = random.randint(1, 100)
             if 0 < roll <= 4:
                 rarity = 5
             elif 4 < roll <= 22:
@@ -744,7 +746,7 @@ class Otogi:
             try:
                 code = data[2].partition("&")
                 scale_url = f"{data[0]}/scale-to-width-down/250?cb={code[0]}"
-            except:
+            except IndexError:
                 pass
             embed.set_image(url=scale_url)
             await ctx.send(embed=embed)
@@ -772,7 +774,7 @@ class Otogi:
         result = 0
         while True:
             result += 1
-            roll = random.randint(1,100)
+            roll = random.randint(1, 100)
             if 0 < roll <= 4:
                 rarity = 5
             elif 4 < roll <= 22:

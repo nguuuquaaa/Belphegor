@@ -76,12 +76,21 @@ SSA_SLOTS = {
 DEF_EMOJIS = ("sdef", "rdef", "tdef")
 RESIST_EMOJIS = ("s_res", "r_res", "t_res")
 ELEMENTAL_RESIST_EMOJIS = ("fire_res", "ice_res", "lightning_res", "wind_res", "light_res", "dark_res")
-UNIT_URLS = {
+
+OLD_LAYOUT_UNIT_URLS = {
+    "rear":     "https://pso2.arks-visiphone.com/wiki/Unit_List:_Rear",
+    "arm":      "https://pso2.arks-visiphone.com/wiki/Unit_List:_Arm",
+    "leg":      "https://pso2.arks-visiphone.com/wiki/Unit_List:_Leg",
+    "sub":      "https://pso2.arks-visiphone.com/wiki/Unit_List:_Sub"
+}
+NEW_LAYOUT_UNIT_URLS = {
     "rear":     "https://pso2.arks-visiphone.com/wiki/Rear_Units_List",
     "arm":      "https://pso2.arks-visiphone.com/wiki/Arm_Units_List",
     "leg":      "https://pso2.arks-visiphone.com/wiki/Leg_Units_List",
     "sub":      "https://pso2.arks-visiphone.com/wiki/Sub_Units_List"
 }
+UNIT_URLS = OLD_LAYOUT_UNIT_URLS
+
 UNIT_SORT = tuple(UNIT_URLS.keys())
 ICON_DICT = {
     "Ability.png":              "ability",
@@ -799,7 +808,7 @@ class PSO2:
         category_units = []
         soup = BS(bytes_.decode("utf-8"), "lxml")
 
-        if category == "sub":
+        if True: #category == "sub":
             table = soup.find("table", class_="sortable").find_all(True, recursive=False)[3:]
             for item in table:
                 unit = {"category": category}
@@ -807,7 +816,7 @@ class PSO2:
                 third_column = relevant[2]
                 try:
                     unit["en_name"] = utils.unifix(third_column.find("a").get_text())
-                    unit["jp_name"] = utils.unifix("".join((t.get_text() for t in third_column.find_all("span"))))
+                    unit["jp_name"] = utils.unifix("".join((t.get_text() for t in third_column.find_all("span", style="font-size:75%"))))
                 except:
                     continue
                 unit["rarity"] = utils.to_int(relevant[0].find("img")["alt"])
@@ -818,16 +827,16 @@ class PSO2:
                 rq_img_tag = third_column.find("img")
                 unit["requirement"] = {"type": rq_img_tag["alt"].replace(" ", "").lower(), "value": int(rq_img_tag.next_sibling.strip())}
                 unit["defs"] = {
-                    "base": {DEF_EMOJIS[i]: int(relevant[3+i].get_text().strip()) for i in range(3)},
-                    "max":  {DEF_EMOJIS[i]: int(relevant[6+i].get_text().strip()) for i in range(3)}
+                    "base": {DEF_EMOJIS[i]: 0 for i in range(3)},
+                    "max":  {DEF_EMOJIS[i]: utils.to_int(relevant[10+i].get_text().strip(), default=0) for i in range(3)}
                 }
                 unit["stats"] = {}
                 for i, s in enumerate(("hp", "pp", "satk", "ratk", "tatk", "dex")):
-                    unit["stats"][s] = utils.to_int(relevant[9+i].get_text().strip(), default=0)
+                    unit["stats"][s] = utils.to_int(relevant[4+i].get_text().strip(), default=0)
                 unit["resist"] = {}
                 for i, s in enumerate(RESIST_EMOJIS):
-                    unit["resist"][s] = utils.to_int(relevant[15+i].get_text().replace("%", "").strip(), default=0)
-                ele_res_tag = relevant[18].find_all("td")
+                    unit["resist"][s] = utils.to_int(relevant[13+i].get_text().replace("%", "").strip(), default=0)
+                ele_res_tag = relevant[16].find_all("td")
                 for i, s in enumerate(ELEMENTAL_RESIST_EMOJIS):
                     unit["resist"][s] = utils.to_int(ele_res_tag[i].get_text().replace("%", "").strip(), default=0)
                 category_units.append(unit)

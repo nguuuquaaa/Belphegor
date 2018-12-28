@@ -345,9 +345,10 @@ class Help:
                 "\u2517 `cubic` - Solve degree 3 polynominal equation\n"
                 "`>>ascii` - Grayscale ASCII art\n"
                 "\u2517 `biggur` - Biggur grayscale ASCII art\n"
-                "\u2517 `block` - Block ASCII art\n"
+                "\u2517 `block` - Block art\n"
                 "\u2517 `edge` - Edge-detection ASCII art\n"
-                "\u2517 `dot` - Dot ASCII art",
+                "\u2517 `dot` - Braille dot art\n"
+                "\u2517 `moon` - Moon emoji art",
             inline=False
         )
         paging.set_action("\u2699", lambda: misc_embed)

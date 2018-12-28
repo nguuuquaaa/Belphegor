@@ -91,6 +91,17 @@ def generate_blank_char():
         yield "\u2003"
 
 blank_chars = generate_blank_char()
+MOON_PATTERN = {
+    (0, 0): "\U0001f311",
+    (0, 1): "\U0001f312",
+    (0, 2): "\U0001f313",
+    (1, 0): "\U0001f318",
+    (1, 1): "\U0001f315",
+    (1, 2): "\U0001f314",
+    (2, 0): "\U0001f317",
+    (2, 1): "\U0001f316",
+    (2, 2): "\U0001f315"
+}
 
 #==================================================================================================================================================
 
@@ -755,12 +766,13 @@ class Misc:
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     async def ascii_edge(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t", "blur", "b"): int, ("weight", "w"): float, ("edge", "e", "inverse", "i"): bool}, clean=False, multiline=False)=modding.EMPTY):
         '''
-            `>>ascii edge <keyword: _|member|m> <keyword: threshold|t> <keyword: blur|b> <keyword: weight>`
+            `>>ascii edge <keyword: _|member|m> <keyword: threshold|t> <keyword: blur|b> <keyword: weight> <keyword: size|s>`
             Edge-detection ASCII art of member avatar.
             If no member is specified, use your avatar.
             Less threshold, more dense. Default threshold is 32. Maximum threshold is 255.
             Less blur, more sharp. Default blur is 2. Maximum blur is 10.
-            Less weight, bigger characters.
+            Less weight, bigger characters, default weight is 5.0
+            Default size is 64x30.
             Has cooldown due to heavy processing (someone give me good algorithm pls).
         '''
         target = data.geteither("", "member", "m", default=ctx.author)
@@ -832,15 +844,16 @@ class Misc:
                 delete_after=10
             )
 
-    @modding.help(brief="Block ascii art", category="Misc", field="Commands", paragraph=3)
+    @modding.help(brief="Block art", category="Misc", field="Commands", paragraph=3)
     @ascii.group(name="block", invoke_without_command=True)
     async def ascii_block(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t"): int, ("inverse", "i"): bool}, clean=False, multiline=False)=modding.EMPTY):
         '''
-            `>>ascii block <keyword: _|member|m> <keyword: threshold|t> <keyword: inverse|i>`
+            `>>ascii block <keyword: _|member|m> <keyword: threshold|t> <keyword: inverse|i> <keyword: size|s>`
             Block ~~unicode~~ ASCII art of member avatar.
             If no member is specified, use your avatar.
             Less threshold is better with darker image, more is better with light one.
             Default threshold is 128. Max threshold is 255.
+            Default size is 64x30.
         '''
         target = data.geteither("", "member", "m", default=ctx.author)
         url = data.get("url", target.avatar_url)
@@ -868,15 +881,16 @@ class Misc:
         result = self.convert_image_to_ascii(image, None, per_cut, width, height, 1, 2, threshold, inverse)
         await ctx.send(f"```\n{result}\n```")
 
-    @modding.help(brief="Braille dot ascii art", category="Misc", field="Commands", paragraph=3)
+    @modding.help(brief="Braille dot art", category="Misc", field="Commands", paragraph=3)
     @ascii.group(name="dot", invoke_without_command=True)
     async def ascii_dot(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t"): int, ("inverse", "i"): bool}, clean=False, multiline=False)=modding.EMPTY):
         '''
-            `>>ascii dot <keyword: _|member|m> <keyword: threshold|t> <keyword: inverse|i>`
+            `>>ascii dot <keyword: _|member|m> <keyword: threshold|t> <keyword: inverse|i> <keyword: size|s>`
             Braille dot ~~unicode~~ ASCII art of member avatar.
             If no member is specified, use your avatar.
             Less threshold is better with darker image, more is better with light one.
             Default threshold is 128. Max threshold is 255.
+            Default size is 64x30.
         '''
         target = data.geteither("", "member", "m", default=ctx.author)
         url = data.get("url", target.avatar_url)
@@ -898,7 +912,6 @@ class Misc:
         except OSError:
             return await ctx.send("Cannot identify image.")
 
-        inf = -float("inf")
         def per_cut(cut):
             cut = cut.flatten()
             pos = [str(p) for i, p in enumerate(DOT_PATTERN) if cut[i] == 1]
@@ -913,6 +926,45 @@ class Misc:
             await ctx.send("Result is all blank. Maybe you should try tweaking threshold a little?")
         else:
             await ctx.send(f"\u200b{result}")
+
+    @modding.help(brief="Moon emoji art", category="Misc", field="Commands", paragraph=3)
+    @ascii.group(name="moon", invoke_without_command=True)
+    async def ascii_moon(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t"): int, ("inverse", "i"): bool}, clean=False, multiline=False)=modding.EMPTY):
+        '''
+            `>>ascii moon <keyword: _|member|m> <keyword: threshold|t> <keyword: inverse|i> <keyword: size|s>`
+            Braille moon ~~unicode~~ ASCII art of member avatar.
+            If no member is specified, use your avatar.
+            Less threshold is better with darker image, more is better with light one.
+            Default threshold is 128. Max threshold is 255.
+            Default size is 20x24.
+        '''
+        target = data.geteither("", "member", "m", default=ctx.author)
+        url = data.get("url", target.avatar_url)
+        size = data.geteither("size", "s", default="20x24")
+        threshold = data.geteither("threshold", "t", default=128)
+        inverse = data.geteither("inverse", "i", default=0)
+        try:
+            threshold, width, height = self.get_params(threshold, size)
+        except ValueError as e:
+            return await ctx.send(e)
+
+        await ctx.trigger_typing()
+        try:
+            bytes_ = await self.bot.fetch(url)
+        except aiohttp.InvalidURL:
+            return await ctx.send("Invalid URL.")
+        try:
+            image = Image.open(BytesIO(bytes_))
+        except OSError:
+            return await ctx.send("Cannot identify image.")
+
+        def per_cut(cut):
+            print(cut.flatten())
+            pt = (np.sum(cut[:, 0:2])//3, np.sum(cut[:, 2:4])//3)
+            return MOON_PATTERN[pt]
+
+        result = await self.bot.loop.run_in_executor(None, self.convert_image_to_ascii, image, None, per_cut, width, height, 4, 4, threshold, inverse)
+        await ctx.send(f"```\n{result}\n```")
 
     @modding.help(brief="pong")
     @commands.command(name="ping")
