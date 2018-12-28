@@ -932,7 +932,7 @@ class Misc:
     async def ascii_moon(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t"): int, ("inverse", "i"): bool}, clean=False, multiline=False)=modding.EMPTY):
         '''
             `>>ascii moon <keyword: _|member|m> <keyword: threshold|t> <keyword: inverse|i> <keyword: size|s>`
-            Braille moon ~~unicode~~ ASCII art of member avatar.
+            Moon ~~emoji~~ ASCII art of member avatar.
             If no member is specified, use your avatar.
             Less threshold is better with darker image, more is better with light one.
             Default threshold is 128. Max threshold is 255.
@@ -959,7 +959,6 @@ class Misc:
             return await ctx.send("Cannot identify image.")
 
         def per_cut(cut):
-            print(cut.flatten())
             pt = (np.sum(cut[:, 0:2])//3, np.sum(cut[:, 2:4])//3)
             return MOON_PATTERN[pt]
 
