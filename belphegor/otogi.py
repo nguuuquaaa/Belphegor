@@ -11,11 +11,12 @@ from apiclient.discovery import build
 import asyncio
 from pymongo import ReturnDocument, UpdateOne, ASCENDING
 import json
+import math
 
 #==================================================================================================================================================
 SPECIAL = {
-    "Commander Yashichi": ("Yashichi", "Commander Form"),
-    "Earth Defense Force: Helium": ("Helium Elf", "Earth Defense Force Form")
+    "Commander Yashichi": ("Yashichi", "Commander"),
+    "Earth Defense Force: Helium": ("Helium Elf", "Earth Defense Force")
 }
 
 #==================================================================================================================================================
@@ -24,11 +25,59 @@ class Daemon(data_type.BaseObject):
     @classmethod
     def empty(cls, id):
         return cls({
-            "id": id, "name": None, "alias": None, "url": None, "pic_url": None, "artwork_url": None, "max_atk": 0, "max_hp": 0,
+            "id": id, "name": None, "alias": None, "form": None, "url": None, "pic_url": None, "artwork_url": None, "max_atk": 0, "max_hp": 0,
             "mlb_atk": None, "mlb_hp": None, "rarity": 0, "daemon_type": None, "daemon_class": None, "skills": [], "abilities": [], "bonds": [],
             "faction": None, "voice_actor": None, "illustrator": None, "description": None, "how_to_acquire": None, "notes_and_trivia": None,
             "quotes": {"main": {}, "skill": {}, "summon": {}, "limit_break": {}}
         })
+
+    @classmethod
+    def from_infobox(cls, *args, **kwargs):
+        #basic info
+        daemon = cls.empty(None)
+        daemon.form = kwargs.get("version")
+        daemon.max_atk = utils.to_int(kwargs.get("final atk"), default=0)
+        daemon.max_hp = utils.to_int(kwargs.get("final hp"), default=0)
+        daemon.rarity = utils.to_int(kwargs.get("rarity"), default=0)
+        daemon.mlb_atk = utils.to_int(kwargs.get("lb atk"), default=mlb_stat(max=daemon.max_atk, rarity=daemon.rarity))
+        daemon.mlb_hp = utils.to_int(kwargs.get("lb hp"), default=mlb_stat(max=daemon.max_hp, rarity=daemon.rarity))
+        daemon.daemon_type = kwargs.get("type").lower()
+        daemon.daemon_class = kwargs.get("class").lower()
+
+        #skill, abilities and special bonds
+        daemon.skills.append({
+            "name": kwargs.get("skill"),
+            "effect": kwargs.get("skill info")
+        })
+        order = ("", 2)
+        for o in order:
+            abi_name = kwargs.get(f"ability{o}")
+            abi_effect = kwargs.get(f"ability info{o}")
+            if abi_name and abi_effect:
+                unlock = kwargs.get(f"unlock level{o}", "?")
+                daemon.abilities.append({
+                    "name": f"{abi_name} (Lv. {unlock})",
+                    "effect": abi_effect
+                })
+            bond_name = kwargs.get(f"bond{o}")
+            if bond_name:
+                daemon.bonds.append({
+                    "name": strip_ref(bond_name),
+                    "effect": kwargs.get(f"bond info{o}")
+                })
+
+        #additional info
+        daemon.voice_actor = kwargs.get("va") or None
+        daemon.illustrator = kwargs.get("illustrator") or None
+        daemon.description = strip_ref(strip_html(kwargs.get("description", ""))) or None
+        daemon.how_to_acquire = strip_ref(strip_html(kwargs.get("acquire", "")).strip(";")) or None
+        daemon.notes_and_trivia = strip_ref(strip_html(kwargs.get("info", ""))) or None
+        daemon.quotes["main"]["text"] = kwargs.get("caption")
+        daemon.quotes["skill"]["text"] = kwargs.get("skill quote")
+        daemon.quotes["summon"]["text"] = kwargs.get("summon quote")
+        daemon.quotes["limit_break"]["text"] = kwargs.get("lb quote")
+
+        return daemon
 
     def embed_form(self, cog):
         emojis = cog.emojis
@@ -47,12 +96,12 @@ class Daemon(data_type.BaseObject):
             try:
                 data = getattr(self, field)
                 for stuff in data[:-1]:
-                    data_embed.add_field(name=f"{emojis[key]}{stuff['name']}", value=stuff['effect'], inline=False)
+                    data_embed.add_field(name=f"{emojis[key]}{stuff['name']}", value=stuff["effect"], inline=False)
                     check -= 1
                 if check > 0:
                     data_embed.add_field(name=f"{emojis[key]}{data[-1]['name']}", value=f"{data[-1]['effect']}\n----------------------------------------------------------------------------------", inline=False)
                 else:
-                    data_embed.add_field(name=f"{emojis[key]}{data[-1]['name']}", value=data[-1]['effect'], inline=False)
+                    data_embed.add_field(name=f"{emojis[key]}{data[-1]['name']}", value=data[-1]["effect"], inline=False)
                 check -= 1
             except:
                 pass
@@ -75,10 +124,10 @@ class Daemon(data_type.BaseObject):
         data_embed.add_field(
             name="Quotes",
             value=
-                f"Main: [{quotes['main'].get('value')}]({quotes['main'].get('url')})\n"
-                f"Skill: [{quotes['skill'].get('value')}]({quotes['skill'].get('url')})\n"
-                f"Summon: [{quotes['summon'].get('value')}]({quotes['summon'].get('url')})\n"
-                f"Limit break: [{quotes['limit_break'].get('value')}]({quotes['limit_break'].get('url')})\n",
+                f"Main: [\"{quotes['main'].get('text')}\"]({quotes['main'].get('url')})\n"
+                f"Skill: [\"{quotes['skill'].get('text')}\"]({quotes['skill'].get('url')})\n"
+                f"Summon: [\"{quotes['summon'].get('text')}\"]({quotes['summon'].get('url')})\n"
+                f"Limit break: [\"{quotes['limit_break'].get('text')}\"]({quotes['limit_break'].get('url')})\n",
             inline=False
         )
         return data_embed
@@ -186,6 +235,124 @@ class Daemon(data_type.BaseObject):
             self.bonds.append(value)
         else:
             raise Exception("You can't set bond 2 when there's no bond 1.")
+
+#==================================================================================================================================================
+
+ref_regex = re.compile(r"\[\[(.+?\]?)\]\]")
+def left_most(m):
+    sp = m.group(1).rpartition("|")
+    return sp[2]
+
+def strip_ref(text):
+    return ref_regex.sub(left_most, text).strip()
+
+no_multi_linebreak = re.compile(r"\n\n+")
+def strip_html(text):
+    soup = BS(text, "lxml")
+    return no_multi_linebreak.sub("\n", soup.get_text().strip("; \n\t\r")).replace("\n:", "\n\u2022")
+
+def to_str(func):
+    def new_func(*args, **kwargs):
+        return str(func(*args, **kwargs))
+    return new_func
+
+def nothing(*args, **kwargs):
+    return None
+
+def min_stat(max):
+    value = int(max)
+    r = value % 3
+    if r == 0:
+        return value // 3
+    elif r == 1:
+        return int(round(value/3, -1))
+    else:
+        return int(round(value/3, -1)) - 5
+
+def mlb_stat(*, max, rarity, level_inc=0):
+    value = int(max)
+    rarity = int(rarity)
+    min_value = min_stat(value)
+    return int(round(value+(20+level_inc)*(value-min_value)/(19+10*rarity)))
+
+def mlb_skill(*, skill, rarity, level_inc=0):
+    rarity = int(rarity)
+    if skill.endswith("%"):
+        value = int(skill[:-1])
+        return str(value+int(round((20+level_inc)*(value-int(value/3))/(19+10*rarity)))) + "%" #inaccurate, but this will do for now
+    else:
+        value = int(skill)
+        return value + (20 + level_inc) * int(round(value*2/3/(19+10*rarity)))
+
+def parse_curly(text_generator):
+    try:
+        next_char = next(text_generator)
+    except StopIteration:
+        return "{"
+    if next_char != "{":
+        return "{" + next_char
+    else:
+        args = []
+        kwargs = {}
+        value = []
+        key = None
+        ref = 0
+        while True:
+            next_char = next(text_generator)
+            if next_char == "{":
+                value.append(parse_curly(text_generator))
+            elif next_char == "=":
+                if key is None:
+                    key = "".join(value).strip().lower()
+                    value.clear()
+                else:
+                    value.append(next_char)
+            elif next_char == "|":
+                if ref >= 2:
+                    value.append(next_char)
+                    ref = 2
+                else:
+                    if key is None:
+                        args.append("".join(value).strip())
+                    else:
+                        kwargs[key] = "".join(value).strip()
+                    value.clear()
+                    key = None
+            elif next_char == "}":
+                next_char = next(text_generator)
+                if next_char != "}":
+                    value.append("}"+next_char)
+                else:
+                    if value:
+                        if key is None:
+                            args.append("".join(value).strip())
+                        else:
+                            kwargs[key] = "".join(value).strip()
+                    name = args.pop(0)
+                    return INFOBOX_FUNCS.get(name.lower(), nothing)(*args, **kwargs)
+            elif next_char == "[":
+                value.append(next_char)
+                ref = ref + 1
+            elif next_char == "]":
+                value.append(next_char)
+                ref = ref - 1
+                if ref < 0:
+                    ref = 0
+            else:
+                if ref >= 2:
+                    ref = 2
+                else:
+                    ref = 0
+                value.append(next_char)
+
+INFOBOX_FUNCS = {
+    "infobox daemon": Daemon.from_infobox,
+    "mlb": to_str(mlb_stat),
+    "min": to_str(min_stat),
+    "ashla": to_str(mlb_skill),
+    "trim": lambda x: x,
+    "namer": lambda x, y: x
+}
 
 #==================================================================================================================================================
 
@@ -531,135 +698,85 @@ class Otogi:
             await ctx.send("Something went wrong.")
             raise
 
-    async def search_wikia(self, daemon, *, direct=True):
+    async def search_wikia(self, daemon):
         name = daemon.name
         alias = daemon.alias
         try:
             bracket_index = name.index("[")
-        except:
+        except ValueError:
             base_name = name
-            form = "Original Form"
+            form = "original"
         else:
             base_name = name[:bracket_index-1]
             form = name[bracket_index+1:-1]
-            if not form.endswith(" Form"):
-                form = f"{form} Form"
 
         #wikia search
-        if direct:
-            base_name, form = SPECIAL.get(base_name, (base_name, form))
-        else:
-            bytes_ = await self.bot.fetch(f"http://otogi.wikia.com/api/v1/Search/List?query={quote(utils.unifix(name))}&limit=5&batch=1&namespaces=0%2C14")
-            search_query = json.loads(bytes_)
-            for item in search_query.get("items"):
-                if "/" not in item["title"]:
-                    base_name = item["title"]
-                    break
+        base_name, form = SPECIAL.get(base_name, (base_name, form))
+        params = {
+            "action":   "parse",
+            "prop":     "wikitext",
+            "page":     quote(base_name),
+            "format":   "json",
+            "redirects": 1
+        }
+        bytes_ = await self.bot.fetch("https://otogi.wikia.com/api.php", params=params)
+        data = json.loads(bytes_)
+        text_generator = iter(data["parse"]["wikitext"]["*"])
+        new_daemon = None
+        while True:
+            try:
+                current_char = next(text_generator)
+            except StopIteration:
+                break
             else:
-                return None
+                if current_char == "{":
+                    new_daemon = parse_curly(text_generator)
+                    if isinstance(new_daemon, Daemon) and new_daemon.form == form:
+                        break
 
-        url = f"http://otogi.wikia.com/wiki/{quote(base_name)}"
-        raw_data = await self.bot.fetch(url)
+        new_daemon.id = daemon.id
+        new_daemon.name = daemon.name
+        new_daemon.alias = daemon.alias
+        new_daemon.faction = daemon.faction
+        new_daemon.url = f"https://otogi.wikia.com/wiki/{quote(base_name)}"
 
-        regex = re.compile(r"[\w\-]+")
-        name_pattern = "_".join(regex.findall(name))
-        pic_kind = {"pic_url": "", "artwork_url": "_Artwork"}
-        for kind, trailing in pic_kind.items():
-            try:
-                wiki_pic_url = f"http://otogi.wikia.com/wiki/File:{quote(name_pattern)}{quote(trailing)}.png"
-                pic_kind[kind] = await self.bot.fetch(wiki_pic_url)
-            except:
-                pic_kind[kind] = None
+        filename_base = name.replace("[", "").replace("]", "").replace(":", "")
+        files = {
+            "pic":                  f"File:{filename_base}.png",
+            "artwork":              f"File:{filename_base} Artwork.png",
+            "main_quote":           f"File:{filename_base} Main.ogg",
+            "skill_quote":          f"File:{filename_base} Skill.ogg",
+            "summon_quote":         f"File:{filename_base} Summon.ogg",
+            "limit_break_quote":    f"File:{filename_base} Limit Break.ogg"
+        }
+        rev = {v: k for k, v in files.items()}
+        file_params = {
+            "action":   "query",
+            "prop":     "imageinfo",
+            "iiprop":   "url",
+            "titles":   "|".join(files.values()),
+            "format":   "json"
+        }
+        file_bytes_ = await self.bot.fetch("https://otogi.wikia.com/api.php", params=file_params)
+        file_data = json.loads(file_bytes_)
+        file_urls = {}
+        for n in file_data["query"].get("normalized", []):
+            files[rev[n["from"]]] = n["to"]
 
-        new_daemon = await self.bot.loop.run_in_executor(None, self._bs_process, daemon, form, raw_data, pic_kind)
-        new_daemon.url = url
-        return new_daemon
+        rev = {v: k for k, v in files.items()}
+        for d in file_data["query"]["pages"].values():
+            if d["title"] in rev:
+                try:
+                    file_urls[rev[d["title"]]] = d["imageinfo"][0]["url"]
+                except (IndexError, KeyError):
+                    pass
 
-    def _bs_process(self, daemon, form, raw_data, pic_kind):
-        bs_data = BS(raw_data.decode("utf-8"), "lxml")
-        relevant_data = bs_data.find("div", attrs={"class": "tabbertab", "title": lambda x: x==form})
-        tags = relevant_data.find_all("tr")
-
-        new_daemon = Daemon.empty(daemon.id)
-
-        #name and alias
-        new_daemon.name = utils.unifix(tags[0].text)
-        new_daemon.alias = utils.unifix(daemon.alias)
-
-        new_daemon.url = None
-
-        #type, class and rarity
-        rarity_and_class = tags[3].find_all("td")
-        new_daemon.rarity = len(rarity_and_class[0].find_all("img", recursive=False))
-        new_daemon.daemon_type = tags[0].find("img")["alt"].replace("icon", "").lower()
-        new_daemon.daemon_class = rarity_and_class[1].find("img")["alt"].lower()
-
-        #stats
-        raw_atk = tags[4].find_all("td")
-        new_daemon.max_atk = utils.to_int(raw_atk[1].text.strip().partition("/")[2])
-        raw_hp = tags[5].find_all("td")
-        new_daemon.max_hp = utils.to_int(raw_hp[1].text.strip().partition("/")[2])
-        raw_mlb = tags[6].find_all("td")
-        try:
-            stat_mlb = raw_mlb[1].text.strip().partition("/")
-            new_daemon.mlb_atk = int(stat_mlb[0])
-            new_daemon.mlb_hp = int(stat_mlb[2])
-        except:
-            pass
-
-        #skills, abilities and bonds
-        sub_pattern = re.compile(re.escape("(MAX/MLB)"), re.IGNORECASE)
-        try:
-            new_daemon.skills.append({"name": utils.unifix(tags[7].text), "effect": sub_pattern.sub("", utils.unifix(tags[8].text))})
-        except:
-            pass
-        for i in (10, 12):
-            ability_value = utils.unifix(str(tags[i].text))
-            if len(ability_value) > 5:
-                new_daemon.abilities.append({"name": utils.unifix(tags[i-1].text), "effect": ability_value})
-        for i in (14, 15):
-            bond_data = tags[i].find_all("td")
-            bond_value = utils.unifix(str(bond_data[1].text))
-            if len(bond_value) > 5:
-                new_daemon.bonds.append({"name": re.sub(' +', ' ', utils.unifix(bond_data[0].text)), "effect": bond_value})
-
-        try:
-            bond_data = tags[16].find_all("td")
-            bond_value = utils.unifix(str(bond_data[1].text))
-            if len(bond_value) > 5:
-                new_daemon.bonds.append({"name": re.sub(' +', ' ', utils.unifix(bond_data[0].text)), "effect": bond_value})
-        except:
-            delta = 0
-        else:
-            delta = 1
-
-        #additional info
-        add_keys = {16+delta: "voice_actor", 18+delta: "illustrator", 20+delta: "description", 22+delta: "how_to_acquire", 24+delta: "notes_and_trivia"}
-        for i, add_type in add_keys.items():
-            setattr(new_daemon, add_type, utils.unifix(tags[i+1].text))
-        quote_keys = {27+delta: "main", 28+delta: "skill", 29+delta: "summon", 30+delta: "limit_break"}
-        for i, quote_type in quote_keys.items():
-            quote_data = tags[i].find_all("td")
-            url = quote_data[2].span.find("a")
-            if url:
-                url = url["href"]
-            new_daemon.quotes[quote_type] = {
-                "value": utils.unifix(quote_data[1].text),
-                "url": url
-            }
-
-        #pic links
-        for kind, raw_pic_data in pic_kind.items():
-            try:
-                bs_pic_data = BS(raw_pic_data.decode("utf-8"), "lxml")
-                pic_url = bs_pic_data.find("a", attrs={"class": "internal"})
-                setattr(new_daemon, kind, pic_url["href"])
-            except:
-                pass
-
-        #faction
-        if daemon.faction:
-            new_daemon.faction = daemon.faction
+        new_daemon.pic_url = file_urls.get("pic")
+        new_daemon.artwork_url = file_urls.get("artwork")
+        new_daemon.quotes["main"]["url"] = file_urls.get("main_quote")
+        new_daemon.quotes["skill"]["url"] = file_urls.get("skill_quote")
+        new_daemon.quotes["summon"]["url"] = file_urls.get("summon_quote")
+        new_daemon.quotes["limit_break"]["url"] = file_urls.get("limit_break_quote")
 
         return new_daemon
 
@@ -678,7 +795,7 @@ class Otogi:
             for daemon_data in daemons:
                 try:
                     daemon = Daemon(daemon_data)
-                    new_daemon = await self.search_wikia(daemon, direct=True)
+                    new_daemon = await self.search_wikia(daemon)
                     await self.daemon_collection.replace_one({"id": daemon.id}, new_daemon.__dict__)
                 except:
                     undone.append(f"#{daemon.id: 4d} {daemon.name}")
@@ -1322,6 +1439,35 @@ class Otogi:
             footer=utils.format_time(utils.now_time())
         )
         await paging.navigate(ctx)
+
+    @commands.command()
+    async def stat(self, ctx, max_stat: int, rarity: int, level: int):
+        '''
+            `>>stat <max> <rarity> <level>`
+            Calculate stat of daemon with given max stat and rarity, at certain level.
+        '''
+        if max_stat <= 0 or rarity <= 0 or rarity > 5 or level <= 0:
+            return await ctx.send("What is this input.")
+        else:
+            result = mlb_stat(max=max_stat, rarity=rarity, level_inc=level-(40+10*rarity))
+            await ctx.send(result)
+
+    @commands.command()
+    async def skill(self, ctx, max_skill, rarity: int, level: int):
+        '''
+            `>>skill <max> <rarity> <level>`
+            Calculate skill damage/percentage of daemon with given max skill damage/percentage and rarity, at certain level.
+            Percentage calculation is not accurate, just an estimation since the formula is not found yet.
+        '''
+        if rarity <= 0 or rarity > 5 or level <= 0:
+            return await ctx.send("What is this input.")
+        else:
+            try:
+                result = mlb_skill(skill=max_skill, rarity=rarity, level_inc=level-(40+10*rarity))
+            except:
+                await ctx.send("What is this input.")
+            else:
+                await ctx.send(result)
 
 #==================================================================================================================================================
 

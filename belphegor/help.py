@@ -430,7 +430,7 @@ class Help:
         await self.feedback_wh.execute(embed=embed, username=str(ctx.author), avatar_url=ctx.author.avatar_url_as(format="png"))
         await ctx.confirm()
 
-    @commands.command(aliases=["stat", "about"])
+    @commands.command(aliases=["about"])
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     async def stats(self, ctx):
         '''

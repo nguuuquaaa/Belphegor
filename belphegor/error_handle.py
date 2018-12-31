@@ -35,8 +35,10 @@ class ErrorHandle:
     async def on_command_error(self, ctx, error):
         ignored = (commands.DisabledCommand, commands.CommandNotFound, commands.UserInputError, commands.CommandOnCooldown)
         if isinstance(error, commands.CheckFailure):
-            if isinstance(error, (checks.CheckFailure, commands.NotOwner, commands.NoPrivateMessage, checks.CustomError)):
+            if isinstance(error, (checks.CheckFailure, commands.NotOwner, commands.NoPrivateMessage)):
                 await ctx.send(error, delete_after=30)
+        elif isinstance(error, checks.CustomError):
+            await ctx.send(error)
         elif isinstance(error, commands.CommandInvokeError):
             error = error.original
             if isinstance(error, OverflowError):

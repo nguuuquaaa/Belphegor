@@ -740,9 +740,9 @@ class Misc:
 
     def check_threshold(self, threshold, *, max=255):
         if threshold > max:
-            raise ValueError("Threshold is too big.")
+            raise checks.CustomError("Threshold is too big.")
         elif threshold < 0:
-            raise ValueError("Threshold should be a non-negative number.")
+            raise checks.CustomError("Threshold should be a non-negative number.")
 
     def get_params(self, threshold, size):
         self.check_threshold(threshold)
@@ -752,12 +752,12 @@ class Misc:
             width = int(width.strip())
             height = int(height.strip())
         except ValueError:
-            raise ValueError("Please use `width x height` format for size.")
+            raise checks.CustomError("Please use `width x height` format for size.")
         else:
             if height < 5 or width < 5:
-                raise ValueError("Size too small.")
-            if (width+1)*height > 1950:
-                raise ValueError("Size too large.")
+                raise checks.CustomError("Size too small.")
+            if (width+1)*height > 1980:
+                raise checks.CustomError("Size too large.")
 
         return threshold, width, height
 
@@ -784,10 +784,7 @@ class Misc:
         edge = data.geteither("edge", "e", default=True)
         inverse = data.geteither("inverse", "i", default=0)
 
-        try:
-            threshold, width, height = self.get_params(threshold, size)
-        except ValueError as e:
-            return await ctx.send(e)
+        threshold, width, height = self.get_params(threshold, size)
         if blur > 10:
             return await ctx.send("Blur value is too big.")
         elif blur < 0:
@@ -845,13 +842,13 @@ class Misc:
             )
 
     @modding.help(brief="Block art", category="Misc", field="Commands", paragraph=3)
-    @ascii.group(name="block", invoke_without_command=True)
+    @ascii.command(name="block")
     async def ascii_block(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t"): int, ("inverse", "i"): bool}, clean=False, multiline=False)=modding.EMPTY):
         '''
             `>>ascii block <keyword: _|member|m> <keyword: threshold|t> <keyword: inverse|i> <keyword: size|s>`
             Block ~~unicode~~ ASCII art of member avatar.
             If no member is specified, use your avatar.
-            Less threshold is better with darker image, more is better with light one.
+            Threshold defines dark/light border. More threshold, more black pixels.
             Default threshold is 128. Max threshold is 255.
             Default size is 64x30.
         '''
@@ -860,10 +857,8 @@ class Misc:
         size = data.geteither("size", "s", default="64x30")
         threshold = data.geteither("threshold", "t", default=128)
         inverse = data.geteither("inverse", "i", default=0)
-        try:
-            threshold, width, height = self.get_params(threshold, size)
-        except ValueError as e:
-            return await ctx.send(e)
+
+        threshold, width, height = self.get_params(threshold, size)
 
         await ctx.trigger_typing()
         try:
@@ -882,13 +877,13 @@ class Misc:
         await ctx.send(f"```\n{result}\n```")
 
     @modding.help(brief="Braille dot art", category="Misc", field="Commands", paragraph=3)
-    @ascii.group(name="dot", invoke_without_command=True)
+    @ascii.command(name="dot")
     async def ascii_dot(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t"): int, ("inverse", "i"): bool}, clean=False, multiline=False)=modding.EMPTY):
         '''
             `>>ascii dot <keyword: _|member|m> <keyword: threshold|t> <keyword: inverse|i> <keyword: size|s>`
             Braille dot ~~unicode~~ ASCII art of member avatar.
             If no member is specified, use your avatar.
-            Less threshold is better with darker image, more is better with light one.
+            Threshold defines dark/light border. More threshold, more black pixels.
             Default threshold is 128. Max threshold is 255.
             Default size is 64x30.
         '''
@@ -897,10 +892,8 @@ class Misc:
         size = data.geteither("size", "s", default="56x32")
         threshold = data.geteither("threshold", "t", default=128)
         inverse = data.geteither("inverse", "i", default=0)
-        try:
-            threshold, width, height = self.get_params(threshold, size)
-        except ValueError as e:
-            return await ctx.send(e)
+
+        threshold, width, height = self.get_params(threshold, size)
 
         await ctx.trigger_typing()
         try:
@@ -928,13 +921,13 @@ class Misc:
             await ctx.send(f"\u200b{result}")
 
     @modding.help(brief="Moon emoji art", category="Misc", field="Commands", paragraph=3)
-    @ascii.group(name="moon", invoke_without_command=True)
+    @ascii.command(name="moon")
     async def ascii_moon(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t"): int, ("inverse", "i"): bool}, clean=False, multiline=False)=modding.EMPTY):
         '''
             `>>ascii moon <keyword: _|member|m> <keyword: threshold|t> <keyword: inverse|i> <keyword: size|s>`
             Moon ~~emoji~~ ASCII art of member avatar.
             If no member is specified, use your avatar.
-            Less threshold is better with darker image, more is better with light one.
+            Threshold defines dark/light border. More threshold, more black pixels.
             Default threshold is 128. Max threshold is 255.
             Default size is 20x24.
         '''
@@ -943,10 +936,8 @@ class Misc:
         size = data.geteither("size", "s", default="20x24")
         threshold = data.geteither("threshold", "t", default=128)
         inverse = data.geteither("inverse", "i", default=0)
-        try:
-            threshold, width, height = self.get_params(threshold, size)
-        except ValueError as e:
-            return await ctx.send(e)
+
+        threshold, width, height = self.get_params(threshold, size)
 
         await ctx.trigger_typing()
         try:
