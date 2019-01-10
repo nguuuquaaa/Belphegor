@@ -310,7 +310,6 @@ def parse_curly(text_generator):
             elif next_char == "|":
                 if ref >= 2:
                     value.append(next_char)
-                    ref = 2
                 else:
                     if key is None:
                         args.append("".join(value).strip())
@@ -336,17 +335,14 @@ def parse_curly(text_generator):
             elif next_char == "]":
                 value.append(next_char)
                 ref = ref - 1
-                if ref < 0:
-                    ref = 0
             else:
-                if ref >= 2:
-                    ref = 2
-                else:
-                    ref = 0
                 value.append(next_char)
 
+def return_kwargs(*args, **kwargs):
+    return (Daemon.from_infobox(*args, **kwargs), kwargs)
+
 INFOBOX_FUNCS = {
-    "infobox daemon": Daemon.from_infobox,
+    "infobox daemon": return_kwargs,
     "mlb": to_str(mlb_stat),
     "min": to_str(min_stat),
     "ashla": to_str(mlb_skill),
@@ -730,9 +726,11 @@ class Otogi:
                 break
             else:
                 if current_char == "{":
-                    new_daemon = parse_curly(text_generator)
-                    if isinstance(new_daemon, Daemon) and new_daemon.form == form:
-                        break
+                    ret = parse_curly(text_generator)
+                    if isinstance(ret, tuple):
+                        new_daemon, kwargs = ret
+                        if isinstance(new_daemon, Daemon) and new_daemon.form == form:
+                            break
 
         new_daemon.id = daemon.id
         new_daemon.name = daemon.name
@@ -740,7 +738,7 @@ class Otogi:
         new_daemon.faction = daemon.faction
         new_daemon.url = f"https://otogi.wikia.com/wiki/{quote(base_name)}"
 
-        filename_base = name.replace("[", "").replace("]", "").replace(":", "")
+        filename_base = kwargs.get("image name") or name.replace("[", "").replace("]", "").replace(":", "")
         files = {
             "pic":                  f"File:{filename_base}.png",
             "artwork":              f"File:{filename_base} Artwork.png",

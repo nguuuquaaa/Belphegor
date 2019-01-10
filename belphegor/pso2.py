@@ -634,7 +634,7 @@ class PSO2:
         )
         data = json.loads(bytes_)[0]
         self.api_data["version"] = data["Version"]
-        self.api_data["url"] = data["API"]
+        self.api_data["url"] = data["EQAPI"]
         self.api_data["headers"] = {"User-Agent": f"PSO2.Alert.v{data['Version']} you_thought_its_eq_alert_but_its_actually_me_nguuuquaaa", "Host": "pso2.acf.me.uk"}
 
     async def eq_alert(self):
@@ -752,13 +752,22 @@ class PSO2:
         for index, key in enumerate(TIME_LEFT):
             if data[key]:
                 sched_time = start_time + timedelta(minutes=30*index)
-                sched_eq.append(f"{self.get_emoji(sched_time)} **At {sched_time.strftime('%I:%M %p')}**\n   {data[key]}")
+                wait_time = (int((sched_time-now_time).total_seconds())//60) * 60
+                if wait_time < 0:
+                    sched_eq.append(f"{self.get_emoji(sched_time)} **At {sched_time.strftime('%I:%M %p')}**\n   {data[key]}")
+                else:
+                    sched_eq.append(f"{self.get_emoji(sched_time)} **In {utils.seconds_to_text(wait_time)}**\n   {data[key]}")
+
         embed = discord.Embed(colour=discord.Colour.red())
         embed.set_footer(text=utils.jp_time(now_time))
         if random_eq or sched_eq:
             if random_eq:
                 sched_time = start_time + timedelta(hours=1)
-                embed.add_field(name="Random EQ", value=f"{self.get_emoji(sched_time)} **At {sched_time.strftime('%I:%M %p')}**\n{random_eq}", inline=False)
+                wait_time = (int((sched_time-now_time).total_seconds())//60) * 60
+                if wait_time <= 0:
+                    embed.add_field(name="Random EQ", value=f"{self.get_emoji(sched_time)} **At {sched_time.strftime('%I:%M %p')}**\n{random_eq}", inline=False)
+                else:
+                    embed.add_field(name="Random EQ", value=f"{self.get_emoji(sched_time)} **In {utils.seconds_to_text(wait_time)}**\n{random_eq}", inline=False)
             if sched_eq:
                 embed.add_field(name="Schedule EQ", value="\n\n".join(sched_eq), inline=False)
         else:
@@ -1023,10 +1032,14 @@ class PSO2:
 
                 start_date = iso_time_regex.fullmatch(next_event["start"]["dateTime"])
                 end_date = iso_time_regex.fullmatch(next_event["end"]["dateTime"])
-                start_time = utils.jp_timezone.localize(datetime(
-                    int(start_date.group(1)), int(start_date.group(2)), int(start_date.group(3)),
-                    int(start_date.group(4)), int(start_date.group(5))
-                ))
+                marks = []
+                for d in (start_date, end_date):
+                    marks.append(utils.jp_timezone.localize(datetime(
+                        int(d.group(1)), int(d.group(2)), int(d.group(3)),
+                        int(d.group(4)), int(d.group(5))
+                    )))
+                start_time, end_time = marks
+                period = int((end_time - start_time).total_seconds())
                 wait_time = (start_time - now_time).total_seconds()
                 if wait_time > 2700:
                     try:
@@ -1035,7 +1048,7 @@ class PSO2:
                         pass
                     else:
                         continue
-                elif wait_time < 0:
+                else: #if wait_time < 0:
                     self.incoming_events.call("pop", 0)
                     continue
 
@@ -1046,16 +1059,16 @@ class PSO2:
                 )
                 boost_type = next_event["boost_type"]
                 if boost_type == "rappy":
-                    embed.description = f"{self.emojis['rappy']} {next_event['summary']}"
+                    embed.description = f"{self.emojis['rappy']} **{next_event['summary']}**"
                     embed.set_image(url="https://i.imgur.com/FV7a52s.jpg")
                 elif boost_type == "league":
-                    embed.description = f"\U0001f3c6 {next_event['summary']}\n   From {start_date.group(4)}:{start_date.group(5)} to {end_date.group(4)}:{end_date.group(5)}"
+                    embed.description = f"\U0001f3c6 **{next_event['summary']}**\n   In 45 minutes\n   Period: {utils.seconds_to_text(period)}"
                 elif boost_type == "casino":
-                    embed.description = f"\U0001f3b0 {next_event['summary']}\n   From {start_date.group(4)}:{start_date.group(5)} to {end_date.group(4)}:{end_date.group(5)}"
+                    embed.description = f"\U0001f3b0 **{next_event['summary']}**\n   In 45 minutes\n   Period: {utils.seconds_to_text(period)}"
                 elif boost_type == "eq":
-                    embed.description = f"\u2694 {next_event['summary']}\n   At {start_date.group(4)}:{start_date.group(5)}"
+                    embed.description = f"\u2694 **{next_event['summary']}**\n   In 45 minutes"
                 else:
-                    embed.description = f"{next_event['summary']}\n   From {start_date.group(4)}:{start_date.group(5)} to {end_date.group(4)}:{end_date.group(5)}"
+                    embed.description = f"{next_event['summary']}\n   In 45 minutes\n   Period: {utils.seconds_to_text(period)}"
                 embed.set_footer(text=utils.jp_time(now_time))
 
                 async for gd in self.guild_data.find(
