@@ -36,11 +36,11 @@ CATEGORY_DICT = {
     "talis":        "Talis",
     "wand":         "Wand",
     "jb":           "Jet Boot",
-    "tact":         "Tact",
+    "takt":         "Takt",
     "rear":         "Rear",
     "arm":          "Arm",
     "leg":          "Leg",
-    "sub":     "Sub Unit"
+    "sub":          "Sub Unit"
 }
 ATK_EMOJIS = ("satk", "ratk", "tatk")
 WEAPON_URLS = {
@@ -61,7 +61,7 @@ WEAPON_URLS = {
     "talis":        "https://pso2.arks-visiphone.com/wiki/Simple_Talises_List",
     "wand":         "https://pso2.arks-visiphone.com/wiki/Simple_Wands_List",
     "jb":           "https://pso2.arks-visiphone.com/wiki/Simple_Jet_Boots_List",
-    "tact":         "https://pso2.arks-visiphone.com/wiki/Simple_Takts_List"
+    "takt":         "https://pso2.arks-visiphone.com/wiki/Simple_Takts_List"
 }
 WEAPON_SORT = tuple(WEAPON_URLS.keys())
 SSA_SLOTS = {
@@ -326,7 +326,7 @@ class PSO2:
         weapon = await ctx.search(
             name, self.weapon_list,
             cls=Weapon, colour=discord.Colour.blue(),
-            atts=["en_name", "jp_name"], name_att="en_name", emoji_att="category", sort={"category": WEAPON_SORT}
+            atts=["en_name", "jp_name", "category"], name_att="en_name", emoji_att="category", sort={"category": WEAPON_SORT}
         )
         if not weapon:
             return
@@ -784,7 +784,7 @@ class PSO2:
         unit = await ctx.search(
             name, self.unit_list,
             cls=Unit, colour=discord.Colour.blue(),
-            atts=["en_name", "jp_name"], name_att="en_name", emoji_att="category"
+            atts=["en_name", "jp_name", "category"], name_att="en_name", emoji_att="category"
         )
         if not unit:
             return

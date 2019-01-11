@@ -85,6 +85,19 @@ BOX_PATTERN = {
     (1, 0): "\u2580",
     (1, 1): "\u2588"
 }
+
+def lstrip_generator(generator):
+    check = True
+    for item in generator:
+        if check:
+            if not item:
+                continue
+            else:
+                yield item
+                check = False
+        else:
+            yield item
+
 def generate_blank_char():
     while True:
         yield "\u2002"
@@ -628,7 +641,7 @@ class Misc:
         pixels = image.getdata()
         chars = [ASCII[int(p/RANGE)] for p in pixels]
 
-        t = ("".join(chars[i:i+width]) for i in range(0, len(chars), width))
+        t = lstrip_generator(("".join(chars[i:i+width]).rstrip() for i in range(0, len(chars), width)))
         return "\n".join(t)
 
     @modding.help(brief="Grayscale ascii art", category="Misc", field="Commands", paragraph=3)
@@ -735,7 +748,7 @@ class Misc:
                 cut = pixels[y:y+char_height, x:x+char_width]
                 raw.append(per_cut(cut))
 
-        t = ("".join(raw[i:i+width]).rstrip() for i in range(0, width*height, width))
+        t = lstrip_generator(("".join(raw[i:i+width]).rstrip() for i in range(0, width*height, width)))
         return "\n".join(t)
 
     def check_threshold(self, threshold, *, max=255):
