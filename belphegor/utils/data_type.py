@@ -98,18 +98,23 @@ class BelphegorContext(commands.Context):
                 await self.send(f"Can't find {name} in database.")
                 return None
         regex = ".*?".join(map(re.escape, name.split()))
-        pipeline = [{
-            "$match": {
-                "$or": [
-                    {
-                        att: {
-                            "$regex": regex,
-                            "$options": "i"
-                        }
-                    } for att in atts
-                ]
+        pipeline = [
+            {
+                "$addFields": {
+                    "all_att_concat": {
+                        "$concat": [f"${a}" for a in atts]
+                    }
+                }
+            },
+            {
+                "$match": {
+                    "all_att_concat": {
+                        "$regex": regex,
+                        "$options": "i"
+                    }
+                }
             }
-        }]
+        ]
         if sort:
             add_fields = {}
             sort_order = {}
