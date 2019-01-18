@@ -677,7 +677,7 @@ class Misc:
             If no member is specified, use your avatar. Default width is 256.
         '''
         target = data.geteither("", "member", "m", default=ctx.author)
-        url = data.get("url", target.avatar_url)
+        url = data.get("url", target.avatar_url_as(format="png"))
         width = data.geteither("width", "w", default=256)
         if width > 1024:
             return await ctx.send("Width should be 1024 or less.")
@@ -789,7 +789,7 @@ class Misc:
             Has cooldown due to heavy processing (someone give me good algorithm pls).
         '''
         target = data.geteither("", "member", "m", default=ctx.author)
-        url = data.get("url", target.avatar_url)
+        url = data.get("url", target.avatar_url_as(format="png"))
         size = data.geteither("size", "s", default="64x30")
         threshold = data.geteither("threshold", "t", default=32)
         blur = data.geteither("blur", "b", default=2)
@@ -866,7 +866,7 @@ class Misc:
             Default size is 64x30.
         '''
         target = data.geteither("", "member", "m", default=ctx.author)
-        url = data.get("url", target.avatar_url)
+        url = data.get("url", target.avatar_url_as(format="png"))
         size = data.geteither("size", "s", default="64x30")
         threshold = data.geteither("threshold", "t", default=128)
         inverse = data.geteither("inverse", "i", default=0)
@@ -901,7 +901,7 @@ class Misc:
             Default size is 64x30.
         '''
         target = data.geteither("", "member", "m", default=ctx.author)
-        url = data.get("url", target.avatar_url)
+        url = data.get("url", target.avatar_url_as(format="png"))
         size = data.geteither("size", "s", default="56x32")
         threshold = data.geteither("threshold", "t", default=128)
         inverse = data.geteither("inverse", "i", default=0)
@@ -945,7 +945,7 @@ class Misc:
             Default size is 20x24.
         '''
         target = data.geteither("", "member", "m", default=ctx.author)
-        url = data.get("url", target.avatar_url)
+        url = data.get("url", target.avatar_url_as(format="png"))
         size = data.geteither("size", "s", default="20x24")
         threshold = data.geteither("threshold", "t", default=128)
         inverse = data.geteither("inverse", "i", default=0)
@@ -1011,28 +1011,29 @@ class Misc:
         else:
             await ctx.send("Please use on/off.")
 
-    @commands.command(aliases=["ct"])
+    @commands.command(aliases=["ct", "monochrome", "mc"])
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     async def transform(self, ctx, *, data: modding.KeyValue({("member", "m", ""): discord.Member, ("threshold", "t"): int}, clean=False, multiline=False)=modding.EMPTY):
         '''
             `>>transform <keyword: _|member|m> <keyword: rgb> <keyword: threshold|t>`
-            Apply a color tone transformation to member avatar.
+            Apply a monochrome transformation to member avatar.
             Default member is command invoker.
             Rgb is in hex format, default is 7289da (blurple).
             Threshold defines how dark the target image is, default is 150.
         '''
         target = data.geteither("member", "m", "", default=ctx.author)
+        url = data.get("url", target.avatar_url_as(format="png"))
         rgb = data.get("rgb", "7289da").lstrip("#").lower()
         try:
             rgb = int(rgb, 16)
         except ValueError:
             return await ctx.send("Input is not RGB in hex format.")
         threshold = data.geteither("threshold", "t", default=150)
+
         self.check_threshold(threshold, max=255*4)
 
         await ctx.trigger_typing()
-        url = target.avatar_url_as(format="png")
-        bytes_ = await self.bot.fetch(url)
+        bytes_ = await self.bot.fetch(url, max_file_size=1024*1024*5)
 
         rg, b = divmod(rgb, 256)
         r, g = divmod(rg, 256)

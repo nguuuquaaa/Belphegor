@@ -548,36 +548,38 @@ class PSO2:
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     async def cmd_item(self, ctx, *, data: modding.KeyValue(multiline=False, clean=False)):
         '''
-            `>>item <name>`
+            `>>item <name> <keyword: desc|description>`
             Find PSO2 items.
             Name given is case-insensitive, and can be either EN or JP.
+            Description is used to filtered result.
         '''
-        async with ctx.typing():
-            name = data.getall("", None)
-            name = " ".join(name)
-            desc = data.geteither("description", "desc")
-            if not name:
-                return await ctx.send("How do I find item without knowing its name?")
-            params = {"name": name}
-            bytes_ = await utils.fetch(self.bot.session, "http://db.kakia.org/item/search", params=params)
-            result = json.loads(bytes_)
-            if not result:
-                return await ctx.send("Can't find any item with that name.")
-            if desc:
-                regex = re.compile(".*?".join((re.escape(w) for w in desc.split())), re.I)
-                filtered = []
-                for r in result:
-                    if regex.search(r["EnDesc"]):
-                        filtered.append(r)
-            else:
-                filtered = result
-            nl = "\n"
-            paging = utils.Paginator(
-                filtered, 5, separator="\n\n",
-                title=f"Search result: {len(result)} results",
-                description=lambda i, x: f"**EN:** {x['EnName']}\n**JP:** {utils.unifix(x['JpName'])}\n{x['EnDesc'].replace(nl, ' ')}",
-                colour=discord.Colour.blue()
-            )
+        await ctx.trigger_typing()
+        name = data.getall("", None)
+        if not name:
+            return await ctx.send("How do I find item without knowing its name?")
+        name = " ".join(name)
+        desc = data.geteither("description", "desc")
+        params = {"name": name}
+        bytes_ = await utils.fetch(self.bot.session, "http://db.kakia.org/item/search", params=params)
+        result = json.loads(bytes_)
+        if not result:
+            return await ctx.send("Can't find any item with that name.")
+        if desc:
+            regex = re.compile(".*?".join((re.escape(w) for w in desc.split())), re.I)
+            filtered = []
+            for r in result:
+                if regex.search(r["EnDesc"]):
+                    filtered.append(r)
+        else:
+            filtered = result
+
+        nl = "\n"
+        paging = utils.Paginator(
+            filtered, 5, separator="\n\n",
+            title=f"Search result: {len(filtered)} results",
+            description=lambda i, x: f"**EN:** {x['EnName']}\n**JP:** {utils.unifix(x['JpName'])}\n{x['EnDesc'].replace(nl, ' ')}",
+            colour=discord.Colour.blue()
+        )
         await paging.navigate(ctx)
 
     @commands.command(name="price")

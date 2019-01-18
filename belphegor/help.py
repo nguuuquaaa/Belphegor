@@ -62,7 +62,7 @@ class Help:
                 "\U0001f4d4 Role/server-related stuff\n"
                 "\U0001f3f7 Tag and sticker\n"
                 "\u2699 Miscellaneous commands\n\n"
-                "You can also use `>>help <full command name>` to get command usage",
+                "You can also use `>>help help` to get a rough idea of how to use this help and `>>help <full command name>` to get specific command usage",
             inline=False
         )
         base_embed.add_field(
@@ -359,8 +359,28 @@ class Help:
     async def help(self, ctx, *, command_name=None):
         '''
             `>>help <optional: command>`
-            Display help.
-            If <command> is provide, display its usage.
+            Display help. Navigating by using reactions.
+
+            If you see this
+            \u200b    `>>command` - this is
+            \u200b    \u2517 `sub1` - an
+            \u200b    \u2517 `sub2` - example
+            Then it means `sub1` and `sub2` are subcommands of `command` and the usage is `>>command` for the parent and `>>command sub1` and `>>command sub2` for subcommands. This usage also reflects in specific command help.
+
+
+            Specific command usage usually has this format
+            ```>>command name <argument> <optional: argument> <keyword: _|arg|ument>```
+            - `>>` is the default prefix of Belphegor, some servers may not have this due to custom prefixes.
+            - `command name` and `<argument>` are self-explanatory.
+            - `<optional: argument>` is just argument with a default value.
+            Arguments and optional arguments are positional, which means you must enter input value in order, and if you want to change the last optional argument you must enter the value for all previous arguments too.
+
+
+            - `<keyword: _|arg|ument>` is argument in the form of `name=value`.
+            `_`, `arg` and `ument` are name, and `_` means you can omit the name part and just enter `value`. If value contains whitespaces or equal sign, you must enclosed it in quote characters.
+            Here's a list of all quote characters: `" "`, `‘ ’`, `‚ ‛`, `“ ”`, `„ ‟`, `⹂ ⹂`, `「 」`, `『 』`, `〝 〞`, `﹁ ﹂`, `﹃ ﹄`, `＂ ＂`, `｢ ｣`, `« »`, `‹ ›`, `《 》`, `〈 〉`
+            If value contains quote characters you must enclosed it in another quote characters.
+            Keyword arguments are non-positional, which mean you can place it in any order whatsoever.
         '''
         if command_name is None:
             await self.help_paging.navigate(ctx, timeout=120)
@@ -400,7 +420,7 @@ class Help:
                         usage = command.help.partition("\n")
                         things = usage[2].split("\n\n\n")
                         if len(things) > 1:
-                            embed.add_field(name="Usage", value=f"```\n{usage[0].strip('`')}\n``\n{things[0]}", inline=False)
+                            embed.add_field(name="Usage", value=f"```\n{usage[0].strip('`')}\n```\n{things[0]}", inline=False)
                             for thing in things[1:]:
                                 embed.add_field(name="\u200b", value=f"\u200b{thing}", inline=False)
                         else:

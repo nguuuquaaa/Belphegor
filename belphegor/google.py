@@ -502,7 +502,7 @@ class RunGoogleInBackground(multiprocessing.Process):
 
     @try_sync
     def run(self):
-        drivers = (GoogleEngine.setup_browser(safe=False), GoogleEngine.setup_browser(safe=True))
+        drivers = (GoogleEngine.setup_browser(safe=True),)
         self.drivers = drivers
         print("google ready")
         while True:
@@ -511,7 +511,7 @@ class RunGoogleInBackground(multiprocessing.Process):
             except queue.Empty:
                 continue
             mid = item[0]
-            driver = drivers[item[1]]
+            driver = drivers[0]
             query = item[2]
             try:
                 ret = driver.search(query)
@@ -529,3 +529,4 @@ def setup(bot):
 def teardown(bot):
     process = bot.saved_stuff.pop("google")
     process.terminate()
+    process.close()
