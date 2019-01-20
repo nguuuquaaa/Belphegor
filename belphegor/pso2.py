@@ -1064,13 +1064,13 @@ class PSO2:
                     embed.description = f"{self.emojis['rappy']} **{next_event['summary']}**"
                     embed.set_image(url="https://i.imgur.com/FV7a52s.jpg")
                 elif boost_type == "league":
-                    embed.description = f"\U0001f3c6 **{next_event['summary']}**\n   In 45 minutes\n   Period: {utils.seconds_to_text(period)}"
+                    embed.description = f"\U0001f3c6 **In 45 minutes**\n   ({utils.seconds_to_text(period)}) {next_event['summary']}"
                 elif boost_type == "casino":
-                    embed.description = f"\U0001f3b0 **{next_event['summary']}**\n   In 45 minutes\n   Period: {utils.seconds_to_text(period)}"
+                    embed.description = f"\U0001f3b0 **In 45 minutes**\n   ({utils.seconds_to_text(period)}) {next_event['summary']}"
                 elif boost_type == "eq":
-                    embed.description = f"\u2694 **{next_event['summary']}**\n   In 45 minutes"
+                    embed.description = f"\u2694 **In 45 minutes**\n   `All ships:` {next_event['summary']}"
                 else:
-                    embed.description = f"{next_event['summary']}\n   In 45 minutes\n   Period: {utils.seconds_to_text(period)}"
+                    embed.description = f"\u2753 **In 45 minutes**\n   ({utils.seconds_to_text(period)}) {next_event['summary']}"
                 embed.set_footer(text=utils.jp_time(now_time))
 
                 async for gd in self.guild_data.find(

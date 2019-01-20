@@ -16,6 +16,7 @@ import time
 import copy
 import numpy as np
 import aiohttp
+import scipy.ndimage
 
 #==================================================================================================================================================
 
@@ -115,6 +116,9 @@ MOON_PATTERN = {
     (2, 1): "\U0001f316",
     (2, 2): "\U0001f315"
 }
+
+def strip_url(url):
+    return url.lstrip("<").rstrip(">")
 
 #==================================================================================================================================================
 
@@ -364,11 +368,16 @@ class Misc:
             `>>char <characters>`
             Check unicode codepoint and name of characters.
         '''
-        characters = re.sub(r"\s", "", characters)
+        characters = "".join(characters.split())
         if len(characters) > 20:
             await ctx.send("Too many characters.")
         else:
-            await ctx.send("\n".join([f"`\\U{ord(c):08x}` - `{c}` - {unicodedata.name(c, 'No name found.')}" for c in characters]))
+            def codepoint_generator(characters):
+                for c in characters:
+                    o = ord(c)
+                    s = f"\\U{o:08x}" if o > 0xffff else f"\\u{o:04x}"
+                    yield f"`{s}` - `{c}` - {unicodedata.name(c, 'No name found.')}"
+            await ctx.send("\n".join(codepoint_generator(characters)))
 
     @modding.help(brief="Make a poll", category="Misc", field="Commands", paragraph=0)
     @commands.command()
@@ -653,7 +662,7 @@ class Misc:
             If no member is specified, use your avatar.
         '''
         target = data.geteither("", "member", "m", default=ctx.author)
-        url = data.get("url", target.avatar_url)
+        url = strip_url(data.get("url", target.avatar_url))
 
         await ctx.trigger_typing()
         try:
@@ -677,7 +686,7 @@ class Misc:
             If no member is specified, use your avatar. Default width is 256.
         '''
         target = data.geteither("", "member", "m", default=ctx.author)
-        url = data.get("url", target.avatar_url_as(format="png"))
+        url = strip_url(data.get("url", target.avatar_url_as(format="png")))
         width = data.geteither("width", "w", default=256)
         if width > 1024:
             return await ctx.send("Width should be 1024 or less.")
@@ -789,7 +798,7 @@ class Misc:
             Has cooldown due to heavy processing (someone give me good algorithm pls).
         '''
         target = data.geteither("", "member", "m", default=ctx.author)
-        url = data.get("url", target.avatar_url_as(format="png"))
+        url = strip_url(data.get("url", target.avatar_url_as(format="png")))
         size = data.geteither("size", "s", default="64x30")
         threshold = data.geteither("threshold", "t", default=32)
         blur = data.geteither("blur", "b", default=2)
@@ -866,7 +875,7 @@ class Misc:
             Default size is 64x30.
         '''
         target = data.geteither("", "member", "m", default=ctx.author)
-        url = data.get("url", target.avatar_url_as(format="png"))
+        url = strip_url(data.get("url", target.avatar_url_as(format="png")))
         size = data.geteither("size", "s", default="64x30")
         threshold = data.geteither("threshold", "t", default=128)
         inverse = data.geteither("inverse", "i", default=0)
@@ -901,7 +910,7 @@ class Misc:
             Default size is 64x30.
         '''
         target = data.geteither("", "member", "m", default=ctx.author)
-        url = data.get("url", target.avatar_url_as(format="png"))
+        url = strip_url(data.get("url", target.avatar_url_as(format="png")))
         size = data.geteither("size", "s", default="56x32")
         threshold = data.geteither("threshold", "t", default=128)
         inverse = data.geteither("inverse", "i", default=0)
@@ -945,7 +954,7 @@ class Misc:
             Default size is 20x24.
         '''
         target = data.geteither("", "member", "m", default=ctx.author)
-        url = data.get("url", target.avatar_url_as(format="png"))
+        url = strip_url(data.get("url", target.avatar_url_as(format="png")))
         size = data.geteither("size", "s", default="20x24")
         threshold = data.geteither("threshold", "t", default=128)
         inverse = data.geteither("inverse", "i", default=0)
@@ -1011,6 +1020,7 @@ class Misc:
         else:
             await ctx.send("Please use on/off.")
 
+    @modding.help(brief="Monochrome transformation", category="Misc", field="Commands", paragraph=5)
     @commands.command(aliases=["ct", "monochrome", "mc"])
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     async def transform(self, ctx, *, data: modding.KeyValue({("member", "m", ""): discord.Member, ("threshold", "t"): int}, clean=False, multiline=False)=modding.EMPTY):
@@ -1022,18 +1032,23 @@ class Misc:
             Threshold defines how dark the target image is, default is 150.
         '''
         target = data.geteither("member", "m", "", default=ctx.author)
-        url = data.get("url", target.avatar_url_as(format="png"))
+        url = strip_url(data.get("url", target.avatar_url_as(format="png")))
         rgb = data.get("rgb", "7289da").lstrip("#").lower()
         try:
             rgb = int(rgb, 16)
         except ValueError:
             return await ctx.send("Input is not RGB in hex format.")
         threshold = data.geteither("threshold", "t", default=150)
-
         self.check_threshold(threshold, max=255*4)
+        size = data.geteither("size", "s")
+        if size:
+            try:
+                width, height = (int(s.strip()) for s in size.split("x"))
+            except ValueError:
+                return await ctx.send("Size must be in widthxheight format.")
 
         await ctx.trigger_typing()
-        bytes_ = await self.bot.fetch(url, max_file_size=1024*1024*5)
+        bytes_ = await self.bot.fetch(url)
 
         rg, b = divmod(rgb, 256)
         r, g = divmod(rg, 256)
@@ -1041,10 +1056,11 @@ class Misc:
             return await ctx.send("RGB value out of range.")
 
         def do_stuff():
-            start = time.perf_counter()
-            image = Image.open(BytesIO(bytes_))
+            image = Image.open(BytesIO(bytes_)).convert("RGBA")
+            if size:
+                image = image.resize((width, height))
             a = np.array(image)
-            t = a[:, :, 0] * 0.2989 + a[:, :, 1] * 0.5870 + a[:, :, 2] * 0.1140
+            t = np.dot(a[:, :, :3], [0.2989, 0.5870, 0.1140])
             t = np.array((r/threshold, g/threshold, b/threshold), dtype=np.float32) * t[:, :, None]
             if a.shape[2] == 4:
                 t = np.concatenate((t, a[:, :, [3]]), axis=2)
@@ -1054,11 +1070,101 @@ class Misc:
 
             bio = BytesIO()
             image.save(bio, "png")
-            print(time.perf_counter() - start)
             return bio.getvalue()
 
         bytes_2 = await self.bot.loop.run_in_executor(None, do_stuff)
-        await ctx.send(file=discord.File(bytes_2, "test.png"))
+        await ctx.send(file=discord.File(bytes_2, "monochrome.png"))
+
+    @modding.help(brief="Turn avatar into sketch", category="Misc", field="Commands", paragraph=5)
+    @commands.command()
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+    async def sketch(self, ctx, *, data: modding.KeyValue({("member", "m", ""): discord.Member, ("sigma", "s"): int}, clean=False, multiline=False)=modding.EMPTY):
+        '''
+            `>>sketch <keyword: _|member|m> <keyword: sigma|s>`
+            Turn member avatar into pencil sketch.
+            Result is clearer with more sigma. Default sigma is 5, max sigma is 10.
+        '''
+        target = data.geteither("member", "m", "", default=ctx.author)
+        url = strip_url(data.get("url", target.avatar_url_as(format="png")))
+        sigma = data.geteither("sigma", "s", default=5)
+        if sigma > 10:
+            return await ctx.send("Max sigma is 10.")
+        elif sigma <= 0:
+            return await ctx.send("Sigma must be a positive number.")
+
+        await ctx.trigger_typing()
+        bytes_ = await self.bot.fetch(url)
+
+        def dodge(front, back):
+            result = front * 255 / (255 - back)
+            result[result>255] = 255
+            result[back==255] = 255
+            return result.astype("uint8")
+
+        def do_stuff():
+            image = Image.open(BytesIO(bytes_)).convert("RGB")
+            a = np.array(image)
+            gray = np.dot(a[:, :, :3], [0.2989, 0.5870, 0.1140])
+            invert = 255 - gray
+            blur = scipy.ndimage.filters.gaussian_filter(invert, sigma=sigma)
+            final = dodge(blur, gray)
+            image = Image.fromarray(final)
+
+            bio = BytesIO()
+            image.save(bio, "png")
+            return bio.getvalue()
+
+        bytes_2 = await self.bot.loop.run_in_executor(None, do_stuff)
+        await ctx.send(file=discord.File(bytes_2, "sketch.png"))
+
+    @modding.help(brief="Turn avatar into sketch", category="Misc", field="Commands", paragraph=5)
+    @commands.command()
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+    async def sketch2(self, ctx, *, data: modding.KeyValue({("member", "m", ""): discord.Member, ("depth", "d"): int}, clean=False, multiline=False)=modding.EMPTY):
+        '''
+            `>>sketch2 <keyword: _|member|m> <keyword: depth|d>`
+            Turn member avatar into pencil sketch.
+            Result is more dense with more depth. Default depth is 10, max depth is 100.
+        '''
+        target = data.geteither("member", "m", "", default=ctx.author)
+        url = strip_url(data.get("url", target.avatar_url_as(format="png")))
+        depth = data.geteither("depth", "d", default=10)
+        if depth > 100:
+            return await ctx.send("Max depth is 100.")
+        elif depth <= 0:
+            return await ctx.send("Depth must be a positive number.")
+
+        await ctx.trigger_typing()
+        bytes_ = await self.bot.fetch(url)
+
+        ele = np.pi/2.2
+        azi = np.pi/4
+
+        def do_stuff():
+            image = Image.open(BytesIO(bytes_)).convert("L")
+            a = np.array(image).astype("float")
+            grad = np.gradient(a)
+            grad_x, grad_y = grad
+            gd = np.cos(ele)
+            dx = gd * np.cos(azi)
+            dy = gd * np.sin(azi)
+            dz = np.sin(ele)
+            grad_x = grad_x * depth / 100
+            grad_y = grad_y * depth / 100
+            leng = np.sqrt(grad_x**2 + grad_y**2 + 1)
+            uni_x = grad_x / leng
+            uni_y = grad_y / leng
+            uni_z = 1 / leng
+            a2 = 255 * (dx*uni_x + dy*uni_y + dz*uni_z)
+            a2 = a2.clip(0, 255)
+            image = Image.fromarray(a2.astype("uint8"))
+
+            bio = BytesIO()
+            image.save(bio, "png")
+            return bio.getvalue()
+
+        bytes_2 = await self.bot.loop.run_in_executor(None, do_stuff)
+        await ctx.send(file=discord.File(bytes_2, "sketch2.png"))
 
 #==================================================================================================================================================
 
