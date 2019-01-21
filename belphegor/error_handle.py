@@ -3,6 +3,7 @@ from discord.ext import commands
 from .utils import config, checks
 import sys
 import traceback
+from PIL import Image
 
 #==================================================================================================================================================
 
@@ -45,6 +46,8 @@ class ErrorHandle:
                 await ctx.send("Input number too big. You sure really need it?")
             elif isinstance(error, (discord.Forbidden,)):
                 await ctx.send(error)
+            elif isinstance(error, Image.DecompressionBombError):
+                await ctx.send("...this is a decompression bomb, isn't it.")
             else:
                 prt_err = "".join(traceback.format_exception(type(error), error, error.__traceback__, 5)).replace("`", "\u200b`")
                 await ctx.send(

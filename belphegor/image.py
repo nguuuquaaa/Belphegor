@@ -308,8 +308,6 @@ class RandomImage:
                     message = await self.bot.wait_for("message", check=lambda m: m.author.id==ctx.author.id and (m.attachments or m.content), timeout=120)
                 except asyncio.TimeoutError:
                     return await msg.edit("That's it, I'm not waiting anymore.")
-                else:
-                    await msg.delete()
             else:
                 message = ctx.message
             if message.attachments:

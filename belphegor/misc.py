@@ -17,6 +17,7 @@ import copy
 import numpy as np
 import aiohttp
 import scipy.ndimage
+import colorsys
 
 #==================================================================================================================================================
 
@@ -1067,6 +1068,92 @@ class Misc:
             t[t>255] = 255
             t = t.astype(np.uint8)
             image = Image.fromarray(t)
+
+            bio = BytesIO()
+            image.save(bio, "png")
+            return bio.getvalue()
+
+        bytes_2 = await self.bot.loop.run_in_executor(None, do_stuff)
+        await ctx.send(file=discord.File(bytes_2, "monochrome.png"))
+
+    @modding.help(brief="Monochrome transformation", category="Misc", field="Commands", paragraph=5)
+    @commands.command(aliases=["ct2", "monochrome2", "mc2"])
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+    async def transform2(self, ctx, *, data: modding.KeyValue({("member", "m", ""): discord.Member}, clean=False, multiline=False)=modding.EMPTY):
+        '''
+            `>>transform2 <keyword: _|member|m> <keyword: rgb>`
+            Apply a monochrome transformation to member avatar.
+            Default member is command invoker.
+            Rgb is in hex format, default is 7289da (blurple).
+        '''
+        target = data.geteither("member", "m", "", default=ctx.author)
+        url = strip_url(data.get("url", target.avatar_url_as(format="png")))
+        rgb = data.get("rgb", "7289da").lstrip("#").lower()
+        try:
+            rgb = int(rgb, 16)
+        except ValueError:
+            return await ctx.send("Input is not RGB in hex format.")
+        threshold = data.geteither("threshold", "t", default=150)
+        self.check_threshold(threshold, max=255*4)
+        size = data.geteither("size", "s")
+        if size:
+            try:
+                width, height = (int(s.strip()) for s in size.split("x"))
+            except ValueError:
+                return await ctx.send("Size must be in widthxheight format.")
+
+        await ctx.trigger_typing()
+        bytes_ = await self.bot.fetch(url)
+
+        rg, b = divmod(rgb, 256)
+        r, g = divmod(rg, 256)
+        if r < 0 or r > 255:
+            return await ctx.send("RGB value out of range.")
+        h, s, v = colorsys.rgb_to_hsv(r/255, g/255, b/255)
+
+        def rgb_to_hsv(rgb):
+            rgb = rgb.astype("float")
+            hsv = np.zeros_like(rgb)
+            hsv[..., 3:] = rgb[..., 3:]
+            r, g, b = rgb[..., 0], rgb[..., 1], rgb[..., 2]
+            maxc = np.max(rgb[..., :3], axis=-1)
+            minc = np.min(rgb[..., :3], axis=-1)
+            hsv[..., 2] = maxc
+            mask = maxc != minc
+            hsv[mask, 1] = (maxc - minc)[mask] / maxc[mask]
+            rc = np.zeros_like(r)
+            gc = np.zeros_like(g)
+            bc = np.zeros_like(b)
+            rc[mask] = (maxc - r)[mask] / (maxc - minc)[mask]
+            gc[mask] = (maxc - g)[mask] / (maxc - minc)[mask]
+            bc[mask] = (maxc - b)[mask] / (maxc - minc)[mask]
+            hsv[..., 0] = np.select([r==maxc, g==maxc], [bc - gc, 2.0 + rc - bc], default=4.0+gc-rc)
+            hsv[..., 0] = (hsv[..., 0] / 6.0) % 1.0
+            return hsv
+
+        def hsv_to_rgb(hsv):
+            rgb = np.empty_like(hsv)
+            rgb[..., 3:] = hsv[..., 3:]
+            h, s, v = hsv[..., 0], hsv[..., 1], hsv[..., 2]
+            i = (h * 6.0).astype("uint8")
+            f = (h * 6.0) - i
+            p = v * (1.0 - s)
+            q = v * (1.0 - s * f)
+            t = v * (1.0 - s * (1.0 - f))
+            i = i % 6
+            conditions = [s == 0.0, i == 1, i == 2, i == 3, i == 4, i == 5]
+            rgb[..., 0] = np.select(conditions, [v, q, p, p, t, v], default=v)
+            rgb[..., 1] = np.select(conditions, [v, v, v, q, p, p], default=t)
+            rgb[..., 2] = np.select(conditions, [v, p, t, v, v, q], default=p)
+            return rgb.astype("uint8")
+
+        def do_stuff():
+            image = Image.open(BytesIO(bytes_)).convert("RGBA")
+            a = np.array(image)
+            hsv = rgb_to_hsv(a)
+            hsv[..., 0] = h
+            rgb = hsv_to_rgb(hsv)
+            image = Image.fromarray(rgb)
 
             bio = BytesIO()
             image.save(bio, "png")
