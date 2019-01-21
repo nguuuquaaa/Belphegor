@@ -60,12 +60,15 @@ class Sticker:
         '''
         name = NO_WORD_REGEX.sub("", name)
         if url.startswith(("https://", "http://")):
-            value = {"name": name, "url": url, "author_id": ctx.author.id, "uses": 0}
-            before = await self.sticker_list.find_one_and_update({"name": name}, {"$setOnInsert": value}, upsert=True)
-            if before is not None:
-                await ctx.send("Cannot add already existed sticker.")
+            if name:
+                value = {"name": name, "url": url, "author_id": ctx.author.id, "uses": 0}
+                before = await self.sticker_list.find_one_and_update({"name": name}, {"$setOnInsert": value}, upsert=True)
+                if before is not None:
+                    await ctx.send("Cannot add already existed sticker.")
+                else:
+                    await ctx.send(f"Sticker {name} added.")
             else:
-                await ctx.send(f"Sticker {name} added.")
+                await ctx.send(f"Name is not valid.")
         else:
             await ctx.send("Url should start with http or https.")
 
