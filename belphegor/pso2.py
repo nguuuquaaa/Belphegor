@@ -12,7 +12,6 @@ from bs4 import BeautifulSoup as BS, NavigableString as NS
 import json
 from datetime import datetime, timedelta
 import traceback
-from textwrap import indent
 from apiclient.discovery import build
 import weakref
 
@@ -186,15 +185,7 @@ class Weapon(data_type.BaseObject):
         emojis = cog.emojis
         ctgr = self.category
         embed = discord.Embed(title=f"{emojis[ctgr]}{self.en_name}", url=WEAPON_URLS[ctgr], colour=discord.Colour.blue())
-        description = ""
-        most = self.rarity//3
-        for i in range(most):
-            emoji = emojis.get(f"star_{i}", None)
-            description = f"{description}{emoji}{emoji}{emoji}"
-        if self.rarity > most*3:
-            emoji = emojis.get(f"star_{most}", None)
-            for i in range(self.rarity - most*3):
-                description = f"{description}{emoji}"
+        description = self.star_display(cog, self.rarity)
         if self.classes == "all_classes":
             usable_classes = "".join((str(emojis[cl]) for cl in CLASS_DICT.values()))
         else:
@@ -214,6 +205,20 @@ class Weapon(data_type.BaseObject):
         for prp in self.properties:
             embed.add_field(name=f"{emojis[prp['type']]}{prp['name']}", value=prp["description"], inline=False)
         return embed
+
+    @staticmethod
+    def star_display(cog, rarity):
+        emojis = cog.emojis
+        stars = []
+        most = rarity//3
+        for i in range(most):
+            emoji = emojis.get(f"star_{i}", None)
+            stars.extend((emoji, emoji, emoji))
+        if rarity > most*3:
+            emoji = emojis.get(f"star_{most}", None)
+            for i in range(rarity - most*3):
+                stars.append(emoji)
+        return "".join((str(s) for s in stars))
 
 #==================================================================================================================================================
 
@@ -409,11 +414,11 @@ class PSO2:
             new_weapon["category"] = weapon.pop("category")
             new_weapon["en_name"] = weapon.pop("en_name")
             new_weapon["jp_name"] = weapon.pop("jp_name")
-            r = ""
+            ret = []
             for key, value in weapon.items():
                 if key == "properties":
                     value = value[0]
-                    desc = f"{value['name']}\n{indent(value['description'], '     ')}"
+                    desc = f"{value['name']}\n{value['description']}"
                 elif key == "atk":
                     desc = f"{self.emojis['satk']}{value['max']['satk']} {self.emojis['ratk']}{value['max']['ratk']} {self.emojis['tatk']}{value['max']['tatk']}"
                 elif key in ("ssa_slots", "classes"):
@@ -424,26 +429,32 @@ class PSO2:
                 else:
                     desc = value
                 try:
-                    if len(desc) > 200 and key not in ("ssa_slots", "classes"):
-                        desc = f"{desc[:200]}..."
+                    if len(desc) > 200:
+                        if key == "potential":
+                            desc = f"{desc[:400]}"
+                        elif key not in ("ssa_slots", "classes"):
+                            desc = f"{desc[:200]}..."
                 except:
                     pass
                 if key == "properties":
-                    r = f"{r}\n   {self.emojis[value['type']]}{desc}"
-                elif key == "atk":
-                    r = f"{r}\n   {desc}"
+                    ret.append(f"{self.emojis[value['type']]}{desc}")
+                elif key in ("atk", "ssa_slots", "classes"):
+                    ret.append(desc)
+                elif key == "rarity":
+                    icon = self.emojis[f"star_{(value-1)//3}"]
+                    ret.append(f"`{value}` {icon}")
                 else:
-                    r = f"{r}\n   {key}: {desc}"
-            new_weapon["value"] = r
+                    ret.append(f"{key}: {desc}")
+            new_weapon["value"] = "\n".join(ret)
             result.append(new_weapon)
         return result
 
     @cmd_weapon.command(name="filter")
-    async def w_filter(self, ctx, *, data):
+    async def w_filter(self, ctx, *, data: modding.KeyValue()):
         '''
             `>>w filter <criteria>`
             Find all weapons with <criteria>.
-            Criteria can contain multiple lines, each with format `<attribute> <value>`.
+            Criteria can contain multiple lines, each with format `<attribute>=<value>`.
             Available attributes:
             - en_name
             - jp_name
@@ -454,17 +465,15 @@ class PSO2:
             - classes
             - ssa_slots
         '''
-        data = data.strip().splitlines()
         attrs = []
-        for d in data:
-            stuff = d.partition(" ")
-            attrs.append((stuff[0].lower(), stuff[2].lower()))
+        for k, v in data.items():
+            attrs.append((k.lower(), v.lower()))
         result = await self._search_att(attrs)
         if result:
             paging = utils.Paginator(
                 result, 5, separator="\n\n",
                 title=f"Search result: {len(result)} results",
-                description=lambda i, x: f"{self.emojis[x['category']]}**{x['en_name']}**{x['value']}",
+                description=lambda i, x: f"{self.emojis[x['category']]}**{x['en_name']}**\n{x['value']}",
                 colour=discord.Colour.blue()
             )
             await paging.navigate(ctx)
@@ -629,7 +638,7 @@ class PSO2:
         bytes_ = await self.bot.fetch(
             "https://pso2.acf.me.uk/PSO2Alert/PSO2Alert.json",
             headers={
-                "User-Agent": "PSO2Alert",
+                "User-Agent": "PSO2.Alert.v3.0.6.3",
                 "Connection": "Keep-Alive",
                 "Host": "pso2.acf.me.uk"
             }
@@ -670,17 +679,17 @@ class PSO2:
                 full_desc = []
                 simple_desc = []
                 ship_gen = (f"Ship{ship_number}" for ship_number in range(1, 11))
-                random_eq = "\n".join((f"   `Ship {ship[4:]}:` {data[ship]}" for ship in ship_gen if data[ship]))
+                random_eq = "\n".join((f"`Ship {ship[4:]}:` {data[ship]}" for ship in ship_gen if data[ship]))
 
                 for index, key in enumerate(TIME_LEFT):
                     if data[key]:
                         sched_time = start_time + timedelta(minutes=30*index)
                         time_left = int(round((sched_time - now_time).total_seconds(), -1))
                         if time_left == 0:
-                            full_desc.append(f"\u2694 **Now**\n   `All ships:` {data[key]}")
+                            full_desc.append(f"\u2694 **Now**\n`All ships:` {data[key]}")
                         elif time_left > 0:
                             if time_left in (900, 2700, 6300, 9900):
-                                text = f"\u23f0 **In {utils.seconds_to_text(time_left)}:**\n   `All ships:` {data[key]}"
+                                text = f"\u23f0 **In {utils.seconds_to_text(time_left)}:**\n`All ships:` {data[key]}"
                                 full_desc.append(text)
                                 if time_left in (2700, 6300):
                                     simple_desc.append(text)
@@ -749,16 +758,16 @@ class PSO2:
         jst = int(data["JST"])
         start_time = now_time.replace(minute=0, second=0) + timedelta(hours=jst-1-now_time.hour)
         ship_gen = (f"Ship{ship_number}" for ship_number in range(1, 11))
-        random_eq = "\n".join((f"`   Ship {ship[4:]}:` {data[ship]}" for ship in ship_gen if data[ship]))
+        random_eq = "\n".join((f"`Ship {ship[4:]}:` {data[ship]}" for ship in ship_gen if data[ship]))
         sched_eq = []
         for index, key in enumerate(TIME_LEFT):
             if data[key]:
                 sched_time = start_time + timedelta(minutes=30*index)
                 wait_time = (int((sched_time-now_time).total_seconds())//60) * 60
                 if wait_time < 0:
-                    sched_eq.append(f"{self.get_emoji(sched_time)} **At {sched_time.strftime('%I:%M %p')}**\n   {data[key]}")
+                    sched_eq.append(f"{self.get_emoji(sched_time)} **At {sched_time.strftime('%I:%M %p')}**\n{data[key]}")
                 else:
-                    sched_eq.append(f"{self.get_emoji(sched_time)} **In {utils.seconds_to_text(wait_time)}**\n   {data[key]}")
+                    sched_eq.append(f"{self.get_emoji(sched_time)} **In {utils.seconds_to_text(wait_time)}**\n{data[key]}")
 
         embed = discord.Embed(colour=discord.Colour.red())
         embed.set_footer(text=utils.jp_time(now_time))
@@ -1064,13 +1073,13 @@ class PSO2:
                     embed.description = f"{self.emojis['rappy']} **{next_event['summary']}**"
                     embed.set_image(url="https://i.imgur.com/FV7a52s.jpg")
                 elif boost_type == "league":
-                    embed.description = f"\U0001f3c6 **In 45 minutes**\n   ({utils.seconds_to_text(period)}) {next_event['summary']}"
+                    embed.description = f"\U0001f3c6 **In 45 minutes:**\n`[{utils.seconds_to_text(period)}]` {next_event['summary']}"
                 elif boost_type == "casino":
-                    embed.description = f"\U0001f3b0 **In 45 minutes**\n   ({utils.seconds_to_text(period)}) {next_event['summary']}"
+                    embed.description = f"\U0001f3b0 **In 45 minutes:**\n`[{utils.seconds_to_text(period)}]` {next_event['summary']}"
                 elif boost_type == "eq":
-                    embed.description = f"\u2694 **In 45 minutes**\n   `All ships:` {next_event['summary']}"
+                    embed.description = f"\u2694 **In 45 minutes:**\n{next_event['summary']}"
                 else:
-                    embed.description = f"\u2753 **In 45 minutes**\n   ({utils.seconds_to_text(period)}) {next_event['summary']}"
+                    embed.description = f"\u2753 **In 45 minutes:**\n`[{utils.seconds_to_text(period)}]` {next_event['summary']}"
                 embed.set_footer(text=utils.jp_time(now_time))
 
                 async for gd in self.guild_data.find(
@@ -1082,8 +1091,11 @@ class PSO2:
                         self.bot.loop.create_task(channel.send(embed=embed))
                 self.incoming_events.call("pop", 0)
             else:
+                days_ahead = (2 - now_time.weekday()) % 7
+                next_time = (now_time + timedelta(days=days_ahead)).replace(hour=17, minute=0, second=0)
+                wait_time = (next_time - now_time).total_seconds() % (86400 * 7)
                 try:
-                    await asyncio.wait_for(self.incoming_events.wait(), 7200)
+                    await asyncio.wait_for(self.incoming_events.wait(), wait_time)
                 except asyncio.TimeoutError:
                     await self.update_events()
                 else:

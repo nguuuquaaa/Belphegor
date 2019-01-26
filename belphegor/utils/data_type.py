@@ -97,7 +97,6 @@ class BelphegorContext(commands.Context):
             else:
                 await self.send(f"Can't find {name} in database.")
                 return None
-        regex = ".*?".join(map(re.escape, name.split()))
         pipeline = [
             {
                 "$addFields": {
@@ -108,10 +107,14 @@ class BelphegorContext(commands.Context):
             },
             {
                 "$match": {
-                    "all_att_concat": {
-                        "$regex": regex,
-                        "$options": "i"
-                    }
+                    "$and": [
+                        {
+                            "all_att_concat": {
+                                "$regex": re.escape(n),
+                                "$options": "i"
+                            }
+                        } for n in name.split()
+                    ]
                 }
             }
         ]
