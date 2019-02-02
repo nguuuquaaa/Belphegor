@@ -381,7 +381,7 @@ class Otogi:
     async def _search(self, ctx, name, *, prompt=None):
         return await ctx.search(
             name, self.daemon_collection,
-            cls=Daemon, colour=discord.Colour.orange(), atts=["id", "name", "alias"], name_att="name", emoji_att="daemon_class", prompt=prompt, sort={"id": 1}
+            cls=Daemon, colour=discord.Colour.orange(), atts=["id", "name", "alias", "form"], name_att="name", emoji_att="daemon_class", prompt=prompt, sort={"id": 1}
         )
 
     @modding.help(brief="Check a daemon info", category="Otogi", field="Database", paragraph=0)

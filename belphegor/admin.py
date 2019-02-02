@@ -19,6 +19,7 @@ import objgraph
 import math
 import asyncio
 import pymongo
+import re
 
 #==================================================================================================================================================
 
@@ -176,23 +177,52 @@ class Admin:
 
     @commands.command(hidden=True)
     @checks.owner_only()
-    async def mongo(self, ctx, col, *, raw_query="{}"):
+    async def mongo(self, ctx, col, *, raw_query):
+        raw_query = utils.clean_codeblock(raw_query)
         try:
-            raw = utils.load_concat_json(raw_query)
-        except json.JSONDecodeError:
-            return await ctx.send("Wrong json format.")
-        query = utils.get_element(raw, 0, default={})
-        projection = utils.get_element(raw, 1, default=None)
+            raw = eval(raw_query, globals(), locals())
+        except SyntaxError:
+            return await ctx.send("Invalid syntax.")
+
+        if isinstance(raw, dict):
+            query = raw
+            projection = {"_id": False}
+        else:
+            query = raw[0]
+            projection = raw[1]
         data = []
         try:
             async for d in self.bot.db[col].find(query, projection=projection):
-                d.pop("_id", None)
                 data.append(d)
         except pymongo.errors.OperationFailure as e:
             return await ctx.send(e)
         if data:
             text = json.dumps(data, indent=4, ensure_ascii=False)
-            if len(text) > 1900:
+            if len(text) > 1950:
+                await ctx.send(file=discord.File(text.encode("utf-8"), filename="data.json"))
+            else:
+                await ctx.send(f"```json\n{text}\n```")
+        else:
+            await ctx.send("Nothing found.")
+
+    @commands.command(hidden=True)
+    @checks.owner_only()
+    async def aggregate(self, ctx, col, *, raw_query):
+        raw_query = utils.clean_codeblock(raw_query)
+        try:
+            query = eval(raw_query, globals(), locals())
+        except SyntaxError:
+            return await ctx.send("Invalid syntax.")
+
+        data = []
+        try:
+            async for d in self.bot.db[col].aggregate(query):
+                data.append(d)
+        except pymongo.errors.OperationFailure as e:
+            return await ctx.send(e)
+        if data:
+            text = json.dumps(data, indent=4, ensure_ascii=False)
+            if len(text) > 1950:
                 await ctx.send(file=discord.File(text.encode("utf-8"), filename="data.json"))
             else:
                 await ctx.send(f"```json\n{text}\n```")
