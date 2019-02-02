@@ -181,8 +181,8 @@ class Admin:
         raw_query = utils.clean_codeblock(raw_query)
         try:
             raw = eval(raw_query, globals(), locals())
-        except SyntaxError:
-            return await ctx.send("Invalid syntax.")
+        except:
+            return await ctx.send(f"```\n{traceback.format_exc()}\n```")
 
         if isinstance(raw, dict):
             query = raw
@@ -211,8 +211,8 @@ class Admin:
         raw_query = utils.clean_codeblock(raw_query)
         try:
             query = eval(raw_query, globals(), locals())
-        except SyntaxError:
-            return await ctx.send("Invalid syntax.")
+        except:
+            return await ctx.send(f"```\n{traceback.format_exc()}\n```")
 
         data = []
         try:

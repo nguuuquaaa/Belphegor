@@ -683,16 +683,12 @@ class Otogi:
         if not daemon:
             return
         await ctx.trigger_typing()
-        try:
-            new_daemon = await self.search_wikia(daemon)
-            if new_daemon:
-                await self.daemon_collection.replace_one({"id": daemon.id}, new_daemon.__dict__)
-                await ctx.send(f"The entry for {new_daemon.name} has been updated with latest information from wikia.")
-            else:
-                await ctx.send("No wikia page found.")
-        except:
-            await ctx.send("Something went wrong.")
-            raise
+        new_daemon = await self.search_wikia(daemon)
+        if new_daemon:
+            await self.daemon_collection.replace_one({"id": daemon.id}, new_daemon.__dict__)
+            await ctx.send(f"The entry for {new_daemon.name} has been updated with latest information from wikia.")
+        else:
+            await ctx.send("No wikia page found.")
 
     async def search_wikia(self, daemon):
         name = daemon.name
@@ -709,11 +705,11 @@ class Otogi:
         #wikia search
         base_name, form = SPECIAL.get(base_name, (base_name, form))
         params = {
-            "action":   "parse",
-            "prop":     "wikitext",
-            "page":     quote(base_name),
-            "format":   "json",
-            "redirects": 1
+            "action":       "parse",
+            "prop":         "wikitext",
+            "page":         quote(base_name),
+            "format":       "json",
+            "redirects":    1
         }
         bytes_ = await self.bot.fetch("https://otogi.wikia.com/api.php", params=params)
         data = json.loads(bytes_)
@@ -723,7 +719,7 @@ class Otogi:
             try:
                 current_char = next(text_generator)
             except StopIteration:
-                break
+                raise checks.CustomError("No info found.")
             else:
                 if current_char == "{":
                     ret = parse_curly(text_generator)

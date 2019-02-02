@@ -342,6 +342,7 @@ class PSO2:
         query = {}
         check_type = None
         projection = {"_id": False, "category": True, "en_name": True, "jp_name": True}
+        special = None
         for attr in attrs:
             orig_att = attr[0]
             value = attr[1]
@@ -365,20 +366,22 @@ class PSO2:
                     q = {orig_att: re_value}
                 p = {orig_att: True}
             except:
-                re_value = ".*?".join(map(re.escape, value.split()))
+                args_list = value.split()
+                re_value = ".*?".join(map(re.escape, args_list))
                 p = None
-                if orig_att in ("properties", "affix", "abi", "ability", "potential", "pot", "latent", "saf", "s_class"):
-                    p = {"properties.$": True}
+                if orig_att in ("properties", "affix", "abi", "ability", "potential", "pot", "latent", "pa", "saf", "s_class", "ssa_saf"):
+                    p = {"properties": True}
                     if orig_att == "properties":
                         t = {"$exists": True}
-                    elif orig_att in ("affix", "abi", "ability"):
+                    elif orig_att in ("affix", "abi"):
                         t = "ability"
-                    elif orig_att in ("potential", "pot", "latent"):
+                    elif orig_att in ("pot", "latent"):
                         t = "potential"
-                    elif orig_att == "saf":
-                        t = "saf"
-                    elif orig_att == "s_class":
+                    elif orig_att in ("ssa_saf",):
                         t = "s_class"
+                    else:
+                        t = orig_att
+                    special = t
                     q = {
                         "properties": {
                             "$elemMatch": {
@@ -400,9 +403,14 @@ class PSO2:
                             }
                         }
                     }
-                elif orig_att in ("ssa_slots", "classes"):
-                    q = {"$or": [{orig_att: {"$all": value.split()}}, {orig_att: "all_classes"}]}
-                    p = {orig_att: True}
+                elif orig_att in ("ssa_slots", "slots", "slot", "classes", "class"):
+                    if orig_att in ("ssa_slots", "slots", "slot"):
+                        t = "ssa_slots"
+                        q = {"$and": [{t: a} for a in args_list]}
+                    elif orig_att in ("classes", "class"):
+                        t = "classes"
+                        q = {"$or": [{t: {"$all": args_list}}, {t: "all_classes"}]}
+                    p = {t: True}
                 else:
                     q = {orig_att: {"$regex": re_value, "$options": "i"}}
                     p = {orig_att: True}
@@ -417,7 +425,12 @@ class PSO2:
             ret = []
             for key, value in weapon.items():
                 if key == "properties":
-                    value = value[0]
+                    for v in value:
+                        if v["type"] == special:
+                            break
+                    else:
+                        continue
+                    value = v
                     desc = f"{value['name']}\n{value['description']}"
                 elif key == "atk":
                     desc = f"{self.emojis['satk']}{value['max']['satk']} {self.emojis['ratk']}{value['max']['ratk']} {self.emojis['tatk']}{value['max']['tatk']}"
@@ -458,16 +471,14 @@ class PSO2:
             Available attributes:
             - en_name
             - jp_name
-            - category
+            - category (note: look for the weapon emojis' name)
             - rarity
             - atk
-            - properties/potential/ability/saf/s_class
-            - classes
-            - ssa_slots
+            - properties/potential(pot)/ability(abi)/pa/saf/s_class(ssa_saf)
+            - classes(class)
+            - ssa_slots(slots/slot)
         '''
-        attrs = []
-        for k, v in data.items():
-            attrs.append((k.lower(), v.lower()))
+        attrs = [(k.lower(), v.lower()) for k, v in data.items()]
         result = await self._search_att(attrs)
         if result:
             paging = utils.Paginator(
