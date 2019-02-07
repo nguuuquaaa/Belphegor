@@ -47,7 +47,7 @@ class Daemon(data_type.BaseObject):
         #skill, abilities and special bonds
         daemon.skills.append({
             "name": kwargs.get("skill"),
-            "effect": kwargs.get("skill info")
+            "effect": bare_strip_html(kwargs.get("skill info", ""))
         })
         order = ("", 2)
         for o in order:
@@ -57,7 +57,7 @@ class Daemon(data_type.BaseObject):
                 unlock = kwargs.get(f"unlock level{o}", "?")
                 daemon.abilities.append({
                     "name": f"{abi_name} (Lv. {unlock})",
-                    "effect": abi_effect
+                    "effect": bare_strip_html(abi_effect)
                 })
             bond_name = kwargs.get(f"bond{o}")
             if bond_name:
@@ -246,10 +246,13 @@ def left_most(m):
 def strip_ref(text):
     return ref_regex.sub(left_most, text).strip()
 
+def bare_strip_html(text):
+    soup = BS(text, "lxml")
+    return soup.get_text()
+
 no_multi_linebreak = re.compile(r"\n\n+")
 def strip_html(text):
-    soup = BS(text, "lxml")
-    return no_multi_linebreak.sub("\n", soup.get_text().strip("; \n\t\r")).replace("\n:", "\n\u2022")
+    return no_multi_linebreak.sub("\n", bare_strip_html(text).strip("; \n\t\r")).replace("\n:", "\n\u2022")
 
 def to_str(func):
     def new_func(*args, **kwargs):
@@ -504,18 +507,21 @@ class Otogi:
                         value = f"{value[:200]}..."
                 except:
                     pass
-                r = f"{r}\n   {key}: {value}"
+                if key in ("daemon_type", "daemon_class"):
+                    r = f"{r}\n{key[7:]}: {self.emojis[value]}"
+                else:
+                    r = f"{r}\n{key}: {value}"
             new_daemon["value"] = r
             result.append(new_daemon)
         return result
 
     @modding.help(brief="Find daemons with given conditions", category="Otogi", field="Database", paragraph=0)
     @cmd_daemon.command(name="filter")
-    async def cmd_daemon_filter(self, ctx, *, data):
+    async def cmd_daemon_filter(self, ctx, *, data: modding.KeyValue()):
         '''
             `>>daemon filter <criteria>`
             Find all daemons with <criteria>.
-            Criteria can contain multiple lines, each with format `<attribute> <value>`
+            Criteria can contain multiple lines, each with format `<attribute>=<value>`
             Available attributes:
             - name
             - alias
@@ -536,11 +542,7 @@ class Otogi:
             - notes_and_trivia
             - description
         '''
-        data = data.strip().splitlines()
-        attrs = []
-        for d in data:
-            stuff = d.partition(" ")
-            attrs.append((stuff[0].lower(), stuff[2].lower()))
+        attrs = [(k.lower(), v.lower()) for k, v in data.items()]
         result = await self._search_att(attrs)
         if result:
             paging = utils.Paginator(
@@ -613,37 +615,45 @@ class Otogi:
 
     @update.command(hidden=True)
     @checks.owner_only()
-    async def edit(self, ctx, *, data):
-        data = data.strip().partition("\n")
-        daemon = await self._search(ctx, data[0], prompt=True)
+    async def edit(self, ctx, *, data: modding.KeyValue()):
+        name = data.pop("")
+        if not name:
+            return await ctx.send("Input the damn daemon ffs.")
+        daemon = await self._search(ctx, name, prompt=True)
         if not daemon:
-            return
-        field, sep, value = data[2].partition(" ")
-        if field.lower() in (
-            "name", "alias", "pic_url", "artwork_url", "max_atk", "max_hp", "mlb_atk", "mlb_hp", "rarity",
-            "daemon_type", "daemon_class", "skill", "ability1", "ability2", "bond1", "bond2", "faction"
-        ):
-            try:
-                if field.lower() in ("skill", "ability1", "ability2", "bond1", "bond2"):
-                    value = value.partition("\n")
-                    value = {"name": value[0], "effect": value[2]}
-            except:
-                return await ctx.send("Provided data is lacking.")
-            try:
-                value = int(value)
-            except:
-                pass
-            try:
-                if value:
-                    setattr(daemon, field, value)
+            return await ctx.send("Can't find {name} in database.")
+        success = []
+        failed = []
+        for field, value in data.items():
+            if field.lower() in (
+                "name", "alias", "pic_url", "artwork_url", "max_atk", "max_hp", "mlb_atk", "mlb_hp", "rarity",
+                "daemon_type", "daemon_class", "skill", "ability1", "ability2", "bond1", "bond2", "faction"
+            ):
+                try:
+                    if field.lower() in ("skill", "ability1", "ability2", "bond1", "bond2"):
+                        value = value.partition("\n")
+                        value = {"name": value[0], "effect": value[2]}
+                except:
+                    return await ctx.send("Provided data is lacking.")
+                try:
+                    value = int(value)
+                except:
+                    pass
+                try:
+                    if value:
+                        setattr(daemon, field, value)
+                    else:
+                        setattr(daemon, field, None)
+                except Exception as e:
+                    failed.append(field)
                 else:
-                    setattr(daemon, field, None)
-            except Exception as e:
-                return await ctx.send(e)
+                    success.append(field)
+            else:
+                failed.append(field)
+
+        if success:
             await self.daemon_collection.replace_one({"id": daemon.id}, daemon.__dict__)
-            await ctx.send(f"The entry for {daemon.name} has been edited.")
-        else:
-            await ctx.send(f"No field {field} found.")
+        await ctx.send(f"The entry for {daemon.name} has been edited.\nSuccess: {', '.join(success)}\nFailed: {', '.join(failed)}")
 
     @update.command(hidden=True, name="summon")
     @checks.owner_only()
@@ -674,23 +684,27 @@ class Otogi:
 
     @update.command(aliases=["wiki"])
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
-    async def wikia(self, ctx, *, name):
+    async def wikia(self, ctx, *, data: modding.KeyValue(multiline=False, clean=False, escape=False)):
         '''
             `>>update wikia <name>`
             Update daemon info with the infomation from wikia.
         '''
+        name = data.get("")
+        if not name:
+            return await ctx.send("Input the damn daemon ffs.")
+
         daemon = await self._search(ctx, name, prompt=True)
         if not daemon:
             return
         await ctx.trigger_typing()
-        new_daemon = await self.search_wikia(daemon)
+        new_daemon = await self.search_wikia(daemon, data.get("image_name"))
         if new_daemon:
             await self.daemon_collection.replace_one({"id": daemon.id}, new_daemon.__dict__)
             await ctx.send(f"The entry for {new_daemon.name} has been updated with latest information from wikia.")
         else:
             await ctx.send("No wikia page found.")
 
-    async def search_wikia(self, daemon):
+    async def search_wikia(self, daemon, image_name):
         name = daemon.name
         alias = daemon.alias
         try:
@@ -734,7 +748,9 @@ class Otogi:
         new_daemon.faction = daemon.faction
         new_daemon.url = f"https://otogi.wikia.com/wiki/{quote(base_name)}"
 
-        filename_base = kwargs.get("image name") or name.replace("[", "").replace("]", "").replace(":", "")
+        if not image_name:
+            image_name = name
+        filename_base = kwargs.get("image name") or image_name.replace("[", "").replace("]", "").replace(":", "")
         files = {
             "pic":                  f"File:{filename_base}.png",
             "artwork":              f"File:{filename_base} Artwork.png",
@@ -745,18 +761,28 @@ class Otogi:
         }
         rev = {v: k for k, v in files.items()}
         file_params = {
-            "action":   "query",
-            "prop":     "imageinfo",
-            "iiprop":   "url",
-            "titles":   "|".join(files.values()),
-            "format":   "json"
+            "action":       "query",
+            "prop":         "imageinfo",
+            "iiprop":       "url",
+            "titles":       "|".join(files.values()),
+            "format":       "json",
+            "redirects":    1
         }
         file_bytes_ = await self.bot.fetch("https://otogi.wikia.com/api.php", params=file_params)
         file_data = json.loads(file_bytes_)
-        file_urls = {}
+
         for n in file_data["query"].get("normalized", []):
             files[rev[n["from"]]] = n["to"]
 
+        redirects = file_data["query"].get("redirects")
+        if redirects:
+            for n in redirects:
+                files[rev[n["from"]]] = n["to"]
+            file_params["titles"] = "|".join(files.values())
+            file_bytes_ = await self.bot.fetch("https://otogi.wikia.com/api.php", params=file_params)
+            file_data = json.loads(file_bytes_)
+
+        file_urls = {}
         rev = {v: k for k, v in files.items()}
         for d in file_data["query"]["pages"].values():
             if d["title"] in rev:
@@ -765,8 +791,8 @@ class Otogi:
                 except (IndexError, KeyError):
                     pass
 
-        new_daemon.pic_url = file_urls.get("pic")
-        new_daemon.artwork_url = file_urls.get("artwork")
+        new_daemon.pic_url = file_urls.get("pic") or daemon.pic_url
+        new_daemon.artwork_url = file_urls.get("artwork") or daemon.artwork_url
         new_daemon.quotes["main"]["url"] = file_urls.get("main_quote")
         new_daemon.quotes["skill"]["url"] = file_urls.get("skill_quote")
         new_daemon.quotes["summon"]["url"] = file_urls.get("summon_quote")

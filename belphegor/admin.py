@@ -190,6 +190,7 @@ class Admin:
         else:
             query = raw[0]
             projection = raw[1]
+            projection["_id"] = False
         data = []
         try:
             async for d in self.bot.db[col].find(query, projection=projection):
@@ -217,6 +218,7 @@ class Admin:
         data = []
         try:
             async for d in self.bot.db[col].aggregate(query):
+                d.pop("_id")
                 data.append(d)
         except pymongo.errors.OperationFailure as e:
             return await ctx.send(e)
