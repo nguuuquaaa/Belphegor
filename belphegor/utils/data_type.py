@@ -7,6 +7,7 @@ import copy
 import collections
 from datetime import datetime, timedelta
 import pytz
+import itertools
 
 #==================================================================================================================================================
 
@@ -34,6 +35,13 @@ def get_element(container, predicate, *, default=None):
     else:
         raise TypeError("Predicate is an int or a callable.")
     return result
+
+def _insert_spaces(attrs):
+    def base_generator():
+        for a in attrs:
+            yield f"${a}"
+            yield " "
+    return list(itertools.islice(base_generator(), 2*len(attrs)-1))
 
 #==================================================================================================================================================
 
@@ -101,7 +109,7 @@ class BelphegorContext(commands.Context):
             {
                 "$addFields": {
                     "all_att_concat": {
-                        "$concat": [f"${a}" for a in atts]
+                        "$concat": _insert_spaces(atts)
                     }
                 }
             },
@@ -267,4 +275,3 @@ class AutoCleanupDict:
 
     def cleanup(self):
         self.working_task.cancel()
-
