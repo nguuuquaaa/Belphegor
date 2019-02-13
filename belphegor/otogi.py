@@ -841,7 +841,9 @@ class Otogi:
         cmd_wikia = self.bot.get_command("update wikia")
         await ctx.invoke(cmd_create, data=name)
         d = await self.daemon_collection.find_one({"name": name}, projection={"id": True})
-        await ctx.invoke(cmd_wikia, name=str(d["id"]))
+        data = modding.MultiDict()
+        data[""] = str(d["id"])
+        await ctx.invoke(cmd_wikia, data=data)
 
     async def get_player(self, id):
         async with self.lock:

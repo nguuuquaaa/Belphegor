@@ -37,11 +37,11 @@ def get_element(container, predicate, *, default=None):
     return result
 
 def _insert_spaces(attrs):
-    def base_generator():
-        for a in attrs:
-            yield f"${a}"
-            yield " "
-    return list(itertools.islice(base_generator(), 2*len(attrs)-1))
+    i = iter(attrs)
+    yield f"${next(i)}"
+    for a in attrs:
+        yield " "
+        yield f"${a}"
 
 #==================================================================================================================================================
 
@@ -109,7 +109,7 @@ class BelphegorContext(commands.Context):
             {
                 "$addFields": {
                     "all_att_concat": {
-                        "$concat": _insert_spaces(atts)
+                        "$concat": list(_insert_spaces(atts))
                     }
                 }
             },

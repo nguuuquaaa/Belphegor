@@ -7,10 +7,7 @@ import io
 import pymongo
 from datetime import datetime, timedelta
 import pytz
-import weakref
 import collections
-from PIL import ImageFont
-import random
 
 #==================================================================================================================================================
 
@@ -62,11 +59,13 @@ class Statistics:
         self.bot = bot
         self.user_data = bot.db.user_data
         self.command_data = bot.db.command_data
+        self.belphegor_config = bot.db.belphegor_config
 
         self.command_run_count = bot.saved_stuff.pop("command_run_count", {})
 
         now = utils.now_time()
         self.all_users = {}
+        self.opt_out = None
         try:
             all_users = bot.saved_stuff.pop("all_users")
         except KeyError:
@@ -81,7 +80,7 @@ class Statistics:
         self.bot.saved_stuff["all_users"] = self.all_users
         self.bot.saved_stuff["command_run_count"] = self.command_run_count
 
-    def get_update_requests(self, member_stats, member=None):
+    def get_update_request(self, member_stats, member=None):
         if member:
             m = member
         else:
@@ -91,36 +90,50 @@ class Statistics:
                 return []
 
         items = member_stats.process_status(m.status.value, update=True)
-        last_mark = items[-1]["mark"]
-        reqs = [
-            pymongo.UpdateOne(
-                {"user_id": m.id},
-                {"$pull": {"status": {"mark": {"$lt": last_mark-720}}}}
-            ),
-            pymongo.UpdateOne(
-                {"user_id": m.id},
-                {"$push": {"status": {"$each": items}}, "$setOnInsert": {"user_id": m.id, "timezone": 0}},
-                upsert=True
-            )
-        ]
-        return reqs
+        return pymongo.UpdateOne(
+            {"user_id": m.id},
+            {"$push": {"status": {"$each": items}}, "$setOnInsert": {"user_id": m.id, "timezone": 0}},
+            upsert=True
+        )
+
+    async def update_opt_out(self, member, add=True):
+        if add:
+            await self.belphegor_config.update_one({"category": "no_status_collect"}, {"$addToSet": {"user_ids": member.id}})
+        else:
+            await self.belphegor_config.update_one({"category": "no_status_collect"}, {"$pull": {"user_ids": member.id}})
+
+    async def check_opt_out(self):
+        if self.opt_out is None:
+            data = await self.belphegor_config.find_one({"category": "no_status_collect"})
+            self.opt_out = set(data["user_ids"])
 
     async def update_all(self):
+        await self.check_opt_out()
         all_reqs = []
         for member_stats in self.all_users.values():
-            reqs = self.get_update_requests(member_stats)
-            all_reqs.extend(reqs)
+            if member_stats.id in self.opt_out:
+                continue
+            req = self.get_update_request(member_stats)
+            all_reqs.append(req)
             if len(all_reqs) >= 100:
                 await self.user_data.bulk_write(all_reqs)
                 all_reqs.clear()
         if all_reqs:
             await self.user_data.bulk_write(all_reqs)
 
+        end = utils.now_time()
+        end_hour = (end - BEGINNING).total_seconds() / 3600
+        last_mark = int(end_hour)
+        await self.user_data.update_many({}, {"$pull": {"status": {"mark": {"$lt": last_mark-720}}}})
+
     async def update(self, member):
+        await self.check_opt_out()
+        if member.id in self.opt_out:
+            return
         member_stats = self.all_users[member.id]
-        reqs = self.get_update_requests(member_stats, member)
-        if reqs:
-            await self.user_data.bulk_write(reqs)
+        req = self.get_update_request(member_stats, member)
+        if req:
+            await self.user_data.bulk_write([req])
 
     async def on_member_join(self, member):
         if member.guild.id == DISCORDPY_GUILD_ID:
@@ -142,6 +155,10 @@ class Statistics:
                     if before:
                         await self.update(before)
 
+    def no_access_for_opt_out(self, ctx):
+        if ctx.author.id in self.opt_out:
+            raise checks.CustomError("...Hey, you opted out of this, remember?")
+
     @commands.command()
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     async def guildstatus(self, ctx):
@@ -149,6 +166,7 @@ class Statistics:
            `>>guildstatus`
             Display pie chart showing current guild status.
         '''
+        self.no_access_for_opt_out(ctx)
         await ctx.trigger_typing()
         statuses = (
             {"name": "online", "count": 0, "color": discord.Colour.green().to_rgba()},
@@ -234,6 +252,7 @@ class Statistics:
             Display pie chart showing total status of target member.
             Default member is command invoker.
         '''
+        self.no_access_for_opt_out(ctx)
         await ctx.trigger_typing()
         target = member or ctx.author
         statuses = await self.fetch_total_status(target)
@@ -316,6 +335,7 @@ class Statistics:
             Display line chart showing hourly status of target member.
             Default member is command invoker. Default offset target's pre-set timezone, or 0 if not set.
         '''
+        self.no_access_for_opt_out(ctx)
         await ctx.trigger_typing()
         if offset is not None:
             try:
@@ -339,6 +359,7 @@ class Statistics:
             Display stacked area chart showing hourly status percentage of target member.
             Default member is command invoker. Default offset target's pre-set timezone, or 0 if not set.
         '''
+        self.no_access_for_opt_out(ctx)
         await ctx.trigger_typing()
         if offset is not None:
             try:
@@ -381,6 +402,7 @@ class Statistics:
            `>>timezone <offset>`
             Set default offset.
         '''
+        self.no_access_for_opt_out(ctx)
         offset = self.better_offset(offset)
         await self.user_data.update_one({"user_id": ctx.author.id}, {"$set": {"timezone": offset}})
         await ctx.send(f"Default offset has been set to {offset:+d}")
@@ -413,6 +435,20 @@ class Statistics:
         embed.add_field(name="Other", value=the_rest_pages[0], inline=False)
 
         await ctx.send(embed=embed)
+
+    @commands.command(hidden=True)
+    @checks.in_certain_guild(DISCORDPY_GUILD_ID)
+    async def togglestats(self, ctx):
+        await self.check_opt_out()
+        member = ctx.author
+        if member.id in self.opt_out:
+            self.opt_out.remove(member.id)
+            await self.update_opt_out(member, False)
+            await ctx.send("Your status will be recorded from now on.")
+        else:
+            self.opt_out.add(member.id)
+            await self.update_opt_out(member, True)
+            await ctx.send("Your status will not be recorded from now on.")
 
 #==================================================================================================================================================
 
