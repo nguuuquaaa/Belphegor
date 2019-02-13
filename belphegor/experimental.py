@@ -155,9 +155,9 @@ class Statistics:
                     if before:
                         await self.update(before)
 
-    def no_access_for_opt_out(self, ctx):
-        if ctx.author.id in self.opt_out:
-            raise checks.CustomError("...Hey, you opted out of this, remember?")
+    def no_access_for_opt_out(self, member):
+        if member.id in self.opt_out:
+            raise checks.CustomError(f"Hey, {member.name} opted out of this, remember?")
 
     @commands.command()
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
@@ -252,9 +252,9 @@ class Statistics:
             Display pie chart showing total status of target member.
             Default member is command invoker.
         '''
-        self.no_access_for_opt_out(ctx)
-        await ctx.trigger_typing()
         target = member or ctx.author
+        self.no_access_for_opt_out(target)
+        await ctx.trigger_typing()
         statuses = await self.fetch_total_status(target)
         bytes_ = await utils.pie_chart(statuses, title=f"{target.display_name}'s total status", unit="hours", outline=(0, 0, 0, 0), outline_width=10, loop=self.bot.loop)
         await ctx.send(file=discord.File(bytes_, filename="pie_status.png"))
@@ -335,7 +335,8 @@ class Statistics:
             Display line chart showing hourly status of target member.
             Default member is command invoker. Default offset target's pre-set timezone, or 0 if not set.
         '''
-        self.no_access_for_opt_out(ctx)
+        target = member or ctx.author
+        self.no_access_for_opt_out(target)
         await ctx.trigger_typing()
         if offset is not None:
             try:
@@ -344,7 +345,6 @@ class Statistics:
                 return await ctx.send("Offset should be an integer.")
             else:
                 offset = self.better_offset(offset)
-        target = member or ctx.author
         offset, statuses = await self.fetch_hourly_status(target, offset=offset)
         title = f"{target.display_name}'s hourly status (offset {offset:+d})"
         bytes_ = await utils.line_chart(statuses, unit_y="hours", unit_x="time\nof day", title=title, loop=self.bot.loop)
@@ -359,7 +359,8 @@ class Statistics:
             Display stacked area chart showing hourly status percentage of target member.
             Default member is command invoker. Default offset target's pre-set timezone, or 0 if not set.
         '''
-        self.no_access_for_opt_out(ctx)
+        target = member or ctx.author
+        self.no_access_for_opt_out(target)
         await ctx.trigger_typing()
         if offset is not None:
             try:
@@ -368,7 +369,6 @@ class Statistics:
                 return await ctx.send("Offset should be an integer.")
             else:
                 offset = self.better_offset(offset)
-        target = member or ctx.author
         offset, statuses = await self.fetch_hourly_status(target, offset=offset)
 
         #transform to percentage
@@ -402,7 +402,7 @@ class Statistics:
            `>>timezone <offset>`
             Set default offset.
         '''
-        self.no_access_for_opt_out(ctx)
+        self.no_access_for_opt_out(ctx.author)
         offset = self.better_offset(offset)
         await self.user_data.update_one({"user_id": ctx.author.id}, {"$set": {"timezone": offset}})
         await ctx.send(f"Default offset has been set to {offset:+d}")
