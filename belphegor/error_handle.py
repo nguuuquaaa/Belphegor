@@ -48,6 +48,8 @@ class ErrorHandle:
                 await ctx.send(error)
             elif isinstance(error, Image.DecompressionBombError):
                 await ctx.send("...this is a decompression bomb, isn't it.")
+            elif isinstance(error, (discord.NotFound,)):
+                pass
             else:
                 prt_err = "".join(traceback.format_exception(type(error), error, error.__traceback__, 5)).replace("`", "\u200b`")
                 await ctx.send(
