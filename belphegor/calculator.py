@@ -90,6 +90,9 @@ def radians(deg):
     else:
         raise CommonParseError
 
+def round_float(number):
+    return number.round()
+
 #==================================================================================================================================================
 
 class ParseError(Exception):
@@ -185,7 +188,10 @@ class BaseParse:
         "max":      max,
         "min":      min,
         "conj":     sympy.conjugate,
-        "gamma":    sympy.gamma
+        "gamma":    sympy.gamma,
+        "floor":    sympy.floor,
+        "ceil":     sympy.ceiling,
+        "round":    round_float
     }
     SPECIAL_OPS = {
         "^":        pow,
@@ -898,7 +904,7 @@ class Calculator:
 
             **Acceptable expressions:**
              - Operators `+` , `-` , `*` , `/` (true div), `//` (div mod), `%` (mod), `^`|`**` (pow), `!` (factorial)
-             - Functions `sin`, `cos`, `tan`, `cot`, `arcsin`|`asin`, `arccos`|`acos`, `arctan`|`atan`, `log` (base 10), `ln` (natural log), `sqrt` (square root), `cbrt` (cube root), `root` (nth root), `abs` (absolute value), `nCk` (combination), `sign`|`sgn` (sign function), `gcd`|`gcf` (greatest common divisor/factor), `lcm` (least common multiple), `max`, `min`, `gamma`
+             - Functions `sin`, `cos`, `tan`, `cot`, `arcsin`|`asin`, `arccos`|`acos`, `arctan`|`atan`, `log` (base 10), `ln` (natural log), `sqrt` (square root), `cbrt` (cube root), `root` (nth root), `abs` (absolute value), `nCk` (combination), `sign`|`sgn` (sign function), `gcd`|`gcf` (greatest common divisor/factor), `lcm` (least common multiple), `max`, `min`, `gamma`, `floor`, `ceil`
              - Constants `e`, `pi`|`π`, `tau`|`τ`, `i` (imaginary), `inf`|`∞` (infinity, use at your own risk)
              - Enclosed `()`, `[]`, `{}`, `\u2308 \u2309` (ceil), `\u230a \u230b` (floor)
              - Binary/octal/hexadecimal mode. Put `bin:`, `oct:`, `hex:` at the start to use that mode in current line. Default to decimal (`dec:`) mode (well of course)
