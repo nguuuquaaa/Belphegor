@@ -76,9 +76,13 @@ class Statistics:
             for key, value in all_users.items():
                 self.all_users[key] = MemberStats(value.id, last_updated=value.last_updated)
 
+        self.next_update_time = utils.now_time()
+        self.all_requests = bot.saved_stuff.pop("status_updates", [])
+
     def __unload(self):
         self.bot.saved_stuff["all_users"] = self.all_users
         self.bot.saved_stuff["command_run_count"] = self.command_run_count
+        self.bot.saved_stuff["status_updates"] = self.all_requests
 
     def get_update_request(self, member_stats, member=None):
         if member:
@@ -87,7 +91,7 @@ class Statistics:
             g = self.bot.get_guild(DISCORDPY_GUILD_ID)
             m = g.get_member(member_stats.id)
             if not m:
-                return []
+                return
 
         items = member_stats.process_status(m.status.value, update=True)
         return pymongo.UpdateOne(
@@ -109,15 +113,16 @@ class Statistics:
 
     async def update_all(self):
         await self.check_opt_out()
-        all_reqs = []
+        all_reqs = self.all_requests.copy()
         for member_stats in self.all_users.values():
             if member_stats.id in self.opt_out:
                 continue
             req = self.get_update_request(member_stats)
-            all_reqs.append(req)
-            if len(all_reqs) >= 100:
-                await self.user_data.bulk_write(all_reqs)
-                all_reqs.clear()
+            if req:
+                all_reqs.append(req)
+                if len(all_reqs) >= 100:
+                    await self.user_data.bulk_write(all_reqs)
+                    all_reqs.clear()
         if all_reqs:
             await self.user_data.bulk_write(all_reqs)
 
@@ -132,8 +137,19 @@ class Statistics:
             return
         member_stats = self.all_users[member.id]
         req = self.get_update_request(member_stats, member)
-        if req:
-            await self.user_data.bulk_write([req])
+        now = utils.now_time()
+        if now >= self.next_update_time or len(self.all_requests) >= 100:
+            if self.all_requests:
+                try:
+                    await self.user_data.bulk_write(self.all_requests)
+                except:
+                    print(self.all_requests)
+                finally:
+                    self.all_requests.clear()
+            self.next_update_time = now + timedelta(seconds=60)
+        else:
+            if req:
+                self.all_requests.append(req)
 
     async def on_member_join(self, member):
         if member.guild.id == DISCORDPY_GUILD_ID:
@@ -439,6 +455,10 @@ class Statistics:
     @commands.command(hidden=True)
     @checks.in_certain_guild(DISCORDPY_GUILD_ID)
     async def togglestats(self, ctx):
+        '''
+           `>>togglestats`
+            Toggle status recording for them chart commands.
+        '''
         await self.check_opt_out()
         member = ctx.author
         if member.id in self.opt_out:

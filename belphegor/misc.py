@@ -1092,7 +1092,7 @@ class Misc:
         rc[mask] = (maxc - r)[mask] / (maxc - minc)[mask]
         gc[mask] = (maxc - g)[mask] / (maxc - minc)[mask]
         bc[mask] = (maxc - b)[mask] / (maxc - minc)[mask]
-        hsv[..., 0] = np.select([r==maxc, g==maxc], [bc - gc, 2.0 + rc - bc], default=4.0+gc-rc)
+        hsv[..., 0] = np.select([r==maxc, g==maxc], [bc-gc, 2.0+rc-bc], default=4.0+gc-rc)
         hsv[..., 0] = (hsv[..., 0] / 6.0) % 1.0
         return hsv
 
