@@ -499,13 +499,21 @@ async def line_chart(
 
         #calculate marks and draw axis
         max_count = max((max(s["count"].values()) for s in data))
+        min_count = min((min(s["count"].values()) for s in data))
         digits = -1
-        while max_count > 10**digits:
+        max_abs = max(abs(max_count), abs(min_count))
+        while max_abs > 10**digits:
             digits += 1
         digits -= 1
 
         each = 10**digits
         item = 0
+        if min_count < 0:
+            while item > min_count:
+                item -= each
+            min_count = item
+        else:
+            min_count = 0
         y_keys = []
         while item < max_count:
             item += each
@@ -520,9 +528,9 @@ async def line_chart(
         for item in data:
             xy = []
             for i, k in enumerate(x_keys):
-                value = item["count"][i]
+                value = item["count"][k]
                 xy.append(50+(i+1/2)*each_width)
-                xy.append(350-value/y_count/each*300)
+                xy.append(350-(value-min_count)/y_count/each*300)
             image.draw_line(xy, fill=item["color"], width=2)
 
         #draw legends
@@ -577,7 +585,7 @@ async def stacked_area_chart(
         for item in reversed(data):
             xy = [650-each_width/2, 350, 50+each_width/2, 350]
             for i, k in enumerate(x_keys):
-                value = item["count"][i]
+                value = item["count"][k]
                 xy.append(50+(i+1/2)*each_width)
                 xy.append(350-value/y_count/each*300)
             image.draw_polygon(xy, fill=item["color"])
@@ -641,7 +649,7 @@ async def bar_chart(
         y_count = len(y_keys)
         for index, item in enumerate(data):
             for i, k in enumerate(x_keys):
-                value = item["count"][i]
+                value = item["count"][k]
                 x = 50 + each_width * i + each_width / 10 + each_bar * index
                 y = 350-value/y_count/each*300
                 image.draw_rectangle((x, y, x+each_bar, 350), fill=item["color"])

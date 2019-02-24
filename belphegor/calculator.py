@@ -763,9 +763,13 @@ class MathParse(BaseParse):
                     if var_name[0] in self.digits:
                         raise ParseError("Name should not start with digit.")
 
-                    for kind in (*self.BUILTINS, self.user_functions):
+                    for kind in self.BUILTINS:
                         if var_name in kind:
                             raise ParseError(f"Name {var_name} is already taken.")
+
+                    for kind in (self.user_functions, self.user_variables):
+                        if var_name in kind:
+                            kind.pop(var_name)
 
                     the_rest = stuff[0][len(m.group(0)):].strip()
                     if not the_rest:
@@ -794,7 +798,7 @@ class MathParse(BaseParse):
                                     a = ma.group(1)
                                     if a[0] in self.digits:
                                         raise ParseError(f"Argument name should not start with digit.")
-                                    for kind in (*self.BUILTINS, self.user_variables):
+                                    for kind in self.BUILTINS:
                                         if a in kind:
                                             raise ParseError(f"Don't use \"{utils.discord_escape(a)}\" as argument, it's already taken.")
                                     args.append(a)
@@ -904,7 +908,7 @@ class Calculator:
 
             **Acceptable expressions:**
              - Operators `+` , `-` , `*` , `/` (true div), `//` (div mod), `%` (mod), `^`|`**` (pow), `!` (factorial)
-             - Functions `sin`, `cos`, `tan`, `cot`, `arcsin`|`asin`, `arccos`|`acos`, `arctan`|`atan`, `log` (base 10), `ln` (natural log), `sqrt` (square root), `cbrt` (cube root), `root` (nth root), `abs` (absolute value), `nCk` (combination), `sign`|`sgn` (sign function), `gcd`|`gcf` (greatest common divisor/factor), `lcm` (least common multiple), `max`, `min`, `gamma`, `floor`, `ceil`
+             - Functions `sin`, `cos`, `tan`, `cot`, `arcsin`|`asin`, `arccos`|`acos`, `arctan`|`atan`, `log` (base 10), `ln` (natural log), `sqrt` (square root), `cbrt` (cube root), `root` (nth root), `abs` (absolute value), `nCk` (combination), `sign`|`sgn` (sign function), `gcd`|`gcf` (greatest common divisor/factor), `lcm` (least common multiple), `max`, `min`, `gamma`, `floor`, `ceil`, `round`
              - Constants `e`, `pi`|`π`, `tau`|`τ`, `i` (imaginary), `inf`|`∞` (infinity, use at your own risk)
              - Enclosed `()`, `[]`, `{}`, `\u2308 \u2309` (ceil), `\u230a \u230b` (floor)
              - Binary/octal/hexadecimal mode. Put `bin:`, `oct:`, `hex:` at the start to use that mode in current line. Default to decimal (`dec:`) mode (well of course)

@@ -8,6 +8,7 @@ import pymongo
 from datetime import datetime, timedelta
 import pytz
 import collections
+import json
 
 #==================================================================================================================================================
 
@@ -182,7 +183,7 @@ class Statistics:
            `>>guildstatus`
             Display pie chart showing current guild status.
         '''
-        self.no_access_for_opt_out(ctx)
+        self.no_access_for_opt_out(ctx.author)
         await ctx.trigger_typing()
         statuses = (
             {"name": "online", "count": 0, "color": discord.Colour.green().to_rgba()},
@@ -275,6 +276,72 @@ class Statistics:
         bytes_ = await utils.pie_chart(statuses, title=f"{target.display_name}'s total status", unit="hours", outline=(0, 0, 0, 0), outline_width=10, loop=self.bot.loop)
         await ctx.send(file=discord.File(bytes_, filename="pie_status.png"))
 
+    async def fetch_daily_status(self, member):
+        now = utils.now_time()
+        mark = int((now - BEGINNING).total_seconds() / 3600)
+        member_data = [s async for s in self.user_data.aggregate([
+            {
+                "$match": {"user_id": member.id}
+            },
+            {
+                "$unwind": "$status"
+            },
+            {
+                "$redact": {
+                    "$cond": {
+                        "if": {"$lt": ["$status.mark", mark-720]},
+                        "then": "$$PRUNE",
+                        "else": "$$KEEP"
+                    }
+                }
+            },
+            {
+                "$group": {
+                    "_id": {"stt": "$status.stt", "day": {"$floor": {"$divide": [{"$subtract": ["$status.mark", mark]}, 24]}}},
+                    "dur": {"$sum": "$status.dur"}
+                }
+            }
+        ])]
+
+        statuses = (
+            {"name": "online", "count": collections.OrderedDict(((i, 0) for i in range(30, -1, -1))), "color": discord.Colour.green().to_rgba()},
+            {"name": "dnd", "count": collections.OrderedDict(((i, 0) for i in range(30, -1, -1))), "color": discord.Colour.red().to_rgba()},
+            {"name": "idle", "count": collections.OrderedDict(((i, 0) for i in range(30, -1, -1))), "color": discord.Colour.orange().to_rgba()},
+            {"name": "offline", "count": collections.OrderedDict(((i, 0) for i in range(30, -1, -1))), "color": discord.Colour.light_grey().to_rgba()}
+        )
+
+        for item in statuses:
+            for day in range(-30, 1):
+                data = utils.get_element(member_data, lambda x: x["_id"]["day"]==day and x["_id"]["stt"]==item["name"])
+                if data:
+                    item["count"][-day] = data["dur"]
+            if item["name"] == member.status.value:
+                processed_stt = self.all_users[member.id].process_status(member.status.value)
+                for inst in processed_stt:
+                    item["count"][-(inst["mark"]-mark)//24] += inst["dur"]
+
+        return statuses
+
+    @commands.command()
+    @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
+    @checks.in_certain_guild(DISCORDPY_GUILD_ID)
+    async def linestatus(self, ctx, member: discord.Member=None):
+        '''
+           `>>linestatus <optional: member>`
+            Display line chart showing daily status of target member.
+            Default member is command invoker. Default offset target's pre-set timezone, or 0 if not set.
+        '''
+        target = member or ctx.author
+        self.no_access_for_opt_out(target)
+        await ctx.trigger_typing()
+        statuses = await self.fetch_daily_status(target)
+        title = f"{target.display_name}'s daily status"
+        bytes_ = await utils.line_chart(statuses, unit_y="hours", unit_x="past day", title=title, loop=self.bot.loop)
+        await ctx.send(file=discord.File(bytes_, filename="line_status.png"))
+
+    def better_offset(self, offset):
+        return (offset + 11) % 24 - 11
+
     async def fetch_hourly_status(self, member, *, offset):
         now = utils.now_time()
         mark = int((now - BEGINNING).total_seconds() / 3600)
@@ -339,33 +406,6 @@ class Statistics:
 
         return offset, statuses
 
-    def better_offset(self, offset):
-        return (offset + 11) % 24 - 11
-
-    @commands.command()
-    @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
-    @checks.in_certain_guild(DISCORDPY_GUILD_ID)
-    async def linestatus(self, ctx, member: discord.Member=None, offset=None):
-        '''
-           `>>linestatus <optional: member> <optional: offset>`
-            Display line chart showing hourly status of target member.
-            Default member is command invoker. Default offset target's pre-set timezone, or 0 if not set.
-        '''
-        target = member or ctx.author
-        self.no_access_for_opt_out(target)
-        await ctx.trigger_typing()
-        if offset is not None:
-            try:
-                offset = int(offset)
-            except:
-                return await ctx.send("Offset should be an integer.")
-            else:
-                offset = self.better_offset(offset)
-        offset, statuses = await self.fetch_hourly_status(target, offset=offset)
-        title = f"{target.display_name}'s hourly status (offset {offset:+d})"
-        bytes_ = await utils.line_chart(statuses, unit_y="hours", unit_x="time\nof day", title=title, loop=self.bot.loop)
-        await ctx.send(file=discord.File(bytes_, filename="line_status.png"))
-
     @commands.command()
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     @checks.in_certain_guild(DISCORDPY_GUILD_ID)
@@ -410,6 +450,69 @@ class Statistics:
         else:
             await ctx.send(file=discord.File(bytes_, filename="area_status.png"))
 
+    async def fetch_weekly_status(self, member):
+        now = utils.now_time()
+        mark = int((now - BEGINNING).total_seconds() / 3600)
+        member_data = [s async for s in self.user_data.aggregate([
+            {
+                "$match": {"user_id": member.id}
+            },
+            {
+                "$unwind": "$status"
+            },
+            {
+                "$redact": {
+                    "$cond": {
+                        "if": {"$lt": ["$status.mark", mark-672]},
+                        "then": "$$PRUNE",
+                        "else": "$$KEEP"
+                    }
+                }
+            },
+            {
+                "$group": {
+                    "_id": {"stt": "$status.stt", "day": {"$floor": {"$divide": [{"$subtract": ["$status.mark", mark]}, 168]}}},
+                    "dur": {"$sum": "$status.dur"}
+                }
+            }
+        ])]
+
+        statuses = (
+            {"name": "online", "count": collections.OrderedDict(((i, 0) for i in range(4, -1, -1))), "color": discord.Colour.green().to_rgba()},
+            {"name": "dnd", "count": collections.OrderedDict(((i, 0) for i in range(4, -1, -1))), "color": discord.Colour.red().to_rgba()},
+            {"name": "idle", "count": collections.OrderedDict(((i, 0) for i in range(4, -1, -1))), "color": discord.Colour.orange().to_rgba()},
+            {"name": "offline", "count": collections.OrderedDict(((i, 0) for i in range(4, -1, -1))), "color": discord.Colour.light_grey().to_rgba()}
+        )
+
+        for item in statuses:
+            for day in range(-4, 1):
+                data = utils.get_element(member_data, lambda x: x["_id"]["day"]==day and x["_id"]["stt"]==item["name"])
+                if data:
+                    item["count"][-day] = data["dur"]
+            if item["name"] == member.status.value:
+                processed_stt = self.all_users[member.id].process_status(member.status.value)
+                for inst in processed_stt:
+                    item["count"][-(inst["mark"]-mark)//168] += inst["dur"]
+
+        return statuses
+
+    @commands.command()
+    @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
+    @checks.in_certain_guild(DISCORDPY_GUILD_ID)
+    async def barstatus(self, ctx, member: discord.Member=None):
+        '''
+           `>>barstatus <optional: member>`
+            Display bar chart showing weekly status of target member.
+            Default member is command invoker. Default offset target's pre-set timezone, or 0 if not set.
+        '''
+        target = member or ctx.author
+        self.no_access_for_opt_out(target)
+        await ctx.trigger_typing()
+        statuses = await self.fetch_weekly_status(target)
+        title = f"{target.display_name}'s weekly status"
+        bytes_ = await utils.bar_chart(statuses, unit_y="hours", unit_x="past week", title=title, loop=self.bot.loop)
+        await ctx.send(file=discord.File(bytes_, filename="bar_status.png"))
+
     @commands.command()
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @checks.in_certain_guild(DISCORDPY_GUILD_ID)
@@ -446,7 +549,7 @@ class Statistics:
 
         top_cmd_txt = "\n".join((f"{i+1}\u20e3 {x[0]} - {x[1]} times" for i, x in enumerate(top)))
         the_rest = ", ".join((f"{x[0]} ({x[1]})" for x in rest))
-        the_rest_pages = utils.split_page(the_rest, 1000, check=lambda x: x==",", fix="")
+        the_rest_pages = utils.split_page(the_rest, 1000, check=lambda x: x==",")
         embed.add_field(name="Top commands", value=top_cmd_txt, inline=False)
         embed.add_field(name="Other", value=the_rest_pages[0], inline=False)
 

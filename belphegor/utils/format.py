@@ -71,10 +71,7 @@ def split_page(text, split_len, *, check=str.isspace, safe_mode=True, fix="...",
             cur_len += len(word)
         else:
             if len(word) < split_len:
-                cur_node.append(word)
                 description_page.append(f"{fix}{clean(''.join(cur_node))}{fix}")
-                cur_node = []
-                cur_len = 0
             else:
                 left = split_len - cur_len
                 cur_node.append(word[:left])
@@ -82,8 +79,8 @@ def split_page(text, split_len, *, check=str.isspace, safe_mode=True, fix="...",
                 stuff = (f"{fix}{clean(word[i+left:i+split_len+left])}{fix}" for i in range(0, len(word)-left, split_len))
                 description_page.extend(stuff)
                 word = description_page.pop(-1)[len_fix:-len_fix]
-                cur_node = [word]
-                cur_len = len(word)
+            cur_node = [word]
+            cur_len = len(word)
     if cur_node:
         description_page.append(f"{fix}{clean(''.join(cur_node))}")
     else:

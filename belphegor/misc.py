@@ -9,7 +9,7 @@ import re
 from pymongo import ReturnDocument
 import json
 from io import BytesIO
-from PIL import Image, ImageFilter, ImageDraw, ImageFont, ImageOps
+from PIL import Image, ImageFilter, ImageDraw, ImageFont
 import traceback
 import collections
 import time
