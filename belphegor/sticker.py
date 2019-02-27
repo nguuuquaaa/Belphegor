@@ -1,10 +1,9 @@
 import discord
 from discord.ext import commands
+from . import utils
+from .utils import checks, modding
 import re
 from fuzzywuzzy import process
-from . import utils
-from .utils import checks
-import pymongo
 
 #==================================================================================================================================================
 
@@ -14,7 +13,7 @@ NO_WORD_REGEX = re.compile(r"\W+")
 
 #==================================================================================================================================================
 
-class Sticker:
+class Sticker(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.sticker_list = self.bot.db.sticker_list
@@ -29,6 +28,7 @@ class Sticker:
         ):
             self.sticker_regexes[data["guild_id"]] = re.compile(fr"(?<={re.escape(data['sticker_prefix'])})\w+")
 
+    @commands.Cog.listener()
     async def on_message(self, message):
         if message.author.bot:
             return
@@ -42,6 +42,7 @@ class Sticker:
             embed.set_image(url=st["url"])
             await message.channel.send(embed=embed)
 
+    @modding.help(brief=None, category="Tag & sticker", field="Commands", paragraph=1)
     @commands.group()
     async def sticker(self, ctx):
         '''
@@ -51,6 +52,7 @@ class Sticker:
         if ctx.invoked_subcommand is None:
             pass
 
+    @modding.help(brief="Add a sticker", category="Tag & sticker", field="Commands", paragraph=1)
     @sticker.command()
     async def add(self, ctx, name, url):
         '''
@@ -72,6 +74,7 @@ class Sticker:
         else:
             await ctx.send("Url should start with http or https.")
 
+    @modding.help(brief="Edit a sticker", category="Tag & sticker", field="Commands", paragraph=1)
     @sticker.command()
     async def edit(self, ctx, name, url):
         '''
@@ -84,6 +87,7 @@ class Sticker:
         else:
             await ctx.send(f"Sticker {name} edited.")
 
+    @modding.help(brief="Delete a sticker", category="Tag & sticker", field="Commands", paragraph=1)
     @sticker.command()
     async def delete(self, ctx, name):
         '''
@@ -96,6 +100,7 @@ class Sticker:
         else:
             await ctx.send(f"Cannot delete sticker.\nEither sticker doesn't exist or you are not the creator of the sticker.")
 
+    @modding.help(brief="Display all stickers by a user", category="Tag & sticker", field="Commands", paragraph=1)
     @sticker.command(name="list")
     async def cmd_sticker_list(self, ctx, user: discord.User=None):
         '''
@@ -116,17 +121,19 @@ class Sticker:
         else:
             await ctx.send("You haven't created any sticker.")
 
+    @modding.help(brief="Find stickers", category="Tag & sticker", field="Commands", paragraph=1)
     @sticker.command()
     async def find(self, ctx, name):
         '''
             `>>sticker find <name>`
-            Find stickers.
+            Find stickers by name.
         '''
         sticker_names = await self.sticker_list.distinct("name", {})
         relevant = process.extract(name, sticker_names, limit=10)
         text = "\n".join((f"{r[0]} ({r[1]}%)" for r in relevant if r[1]>50))
         await ctx.send(embed=discord.Embed(title="Result:", description=text, colour=discord.Colour.green()))
 
+    @modding.help(brief="Ban a sticker in current server", category="Tag & sticker", field="Commands", paragraph=1)
     @sticker.command()
     @checks.guild_only()
     @checks.manager_only()
@@ -141,6 +148,7 @@ class Sticker:
         else:
             await ctx.deny()
 
+    @modding.help(brief="Unban a sticker in current server", category="Tag & sticker", field="Commands", paragraph=1)
     @sticker.command()
     @checks.guild_only()
     @checks.manager_only()
@@ -155,6 +163,7 @@ class Sticker:
         else:
             await ctx.deny()
 
+    @modding.help(brief="Display current server's sticker banlist", category="Tag & sticker", field="Commands", paragraph=1)
     @sticker.command()
     async def banlist(self, ctx):
         '''
@@ -172,6 +181,7 @@ class Sticker:
         else:
             await ctx.send("This server has no banned sticker.")
 
+    @modding.help(brief="Check/set prefix for sticker", category="Tag & sticker", field="Commands", paragraph=1)
     @sticker.command()
     @checks.guild_only()
     async def prefix(self, ctx, *, new_prefix=None):
@@ -207,6 +217,7 @@ class Sticker:
         else:
             await ctx.send("This action is usable by server managers only.")
 
+    @modding.help(brief="Display sticker info", category="Tag & sticker", field="Commands", paragraph=1)
     @sticker.command(name="info")
     async def cmd_sticker_info(self, ctx, name):
         '''

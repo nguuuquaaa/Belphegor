@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from . import utils
-from .utils import checks, data_type
+from .utils import checks, data_type, modding
 import operator
 import re
 import traceback
@@ -867,7 +867,7 @@ class MathParse(BaseParse):
 
 #==================================================================================================================================================
 
-class Calculator:
+class Calculator(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         try:
@@ -879,7 +879,7 @@ class Calculator:
 
         self.parsers = data_type.AutoCleanupDict(120, loop=bot.loop)
 
-    def __unload(self):
+    def cog_unload(self):
         self.bot.enable_calc_log = self.enable_log
         self.parsers.cleanup()
 
@@ -900,6 +900,7 @@ class Calculator:
             m.user_variables.update(last.user_variables)
             return m
 
+    @modding.help(brief="A calculator with loose input rule", category="Misc", field="Processing", paragraph=0)
     @commands.command(aliases=["calc"])
     async def calculate(self, ctx, *, text):
         '''
@@ -967,6 +968,7 @@ class Calculator:
             self.enable_log = True
             await ctx.confirm()
 
+    @modding.help(category="Misc", field="Processing", paragraph=0)
     @commands.group()
     async def solve(self, ctx):
         '''
@@ -976,6 +978,7 @@ class Calculator:
         if ctx.invoked_subcommand is None:
             pass
 
+    @modding.help(brief="Solve degree 2 polynominal equation", category="Misc", field="Processing", paragraph=0)
     @solve.command(aliases=["quad", "2nd"])
     async def quadratic(self, ctx, *, stuff):
         '''
@@ -1010,6 +1013,7 @@ class Calculator:
         time_taken = input_time + solution_time
         await ctx.send(f"Result in {1000*(time_taken):.2f}ms\n```\n{r}\n```")
 
+    @modding.help(brief="Solve degree 3 polynominal equation", category="Misc", field="Processing", paragraph=0)
     @solve.command(aliases=["3rd"])
     async def cubic(self, ctx, *, stuff):
         '''

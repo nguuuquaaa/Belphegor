@@ -12,7 +12,7 @@ HAT_IMAGE = [Image.open(f"{config.DATA_PATH}/santa_hat/r_hat_{number+1}.png") fo
 
 #==================================================================================================================================================
 
-class XmasSpecial:
+class XmasSpecial(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 

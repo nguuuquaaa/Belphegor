@@ -1,24 +1,25 @@
 import discord
 from discord.ext import commands
+from . import utils
+from .utils import modding
 import time
 from datetime import datetime, timedelta
 import pytz
 import asyncio
-from . import utils
 import json
 import re
 import weakref
 
 #==================================================================================================================================================
 
-class Remind:
+class Remind(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.active = asyncio.Event()
         self.event_list = bot.db.remind_event_list
         self.reminder = weakref.ref(bot.loop.create_task(self.check_till_eternity()))
 
-    def __unload(self):
+    def cog_unload(self):
         self.reminder().cancel()
 
     async def check_till_eternity(self):
@@ -63,6 +64,7 @@ class Remind:
 
         self.bot.loop.create_task(reminder())
 
+    @modding.help(brief=None, category="Misc", field="Commands", paragraph=2)
     @commands.group(aliases=["reminder"])
     async def remind(self, ctx):
         '''
@@ -72,6 +74,7 @@ class Remind:
         if ctx.invoked_subcommand is None:
             pass
 
+    @modding.help(brief="Set a reminder", category="Misc", field="Commands", paragraph=2)
     @remind.command(name="me")
     async def remind_me(self, ctx, *, remind_text):
         '''
@@ -104,6 +107,7 @@ class Remind:
         else:
             await ctx.send("Can't read the time.")
 
+    @modding.help(brief="Display all your reminders", category="Misc", field="Commands", paragraph=2)
     @remind.command(name="list")
     async def remind_list(self, ctx):
         '''
@@ -127,6 +131,7 @@ class Remind:
         else:
             await ctx.send("You have no reminder.")
 
+    @modding.help(brief="Delete a reminder", category="Misc", field="Commands", paragraph=2)
     @remind.command(name="delete")
     async def remind_delete(self, ctx, position: int):
         '''

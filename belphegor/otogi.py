@@ -355,7 +355,7 @@ INFOBOX_FUNCS = {
 
 #==================================================================================================================================================
 
-class Otogi:
+class Otogi(commands.Cog):
     '''
     Otogi daemon info and summon simulation.
     '''
@@ -857,6 +857,7 @@ class Otogi:
     async def batch_search(self, id_list):
         return {daemon["id"]: daemon async for daemon in self.daemon_collection.find({"id": {"$in": id_list}}, projection={"_id": False, "id": True, "name": True, "rarity": True})}
 
+    @modding.help(brief="~~salt~~ Lunchtime summon simulation", category="Otogi", field="Simulation", paragraph=0)
     @commands.group(aliases=["ls"])
     @commands.cooldown(rate=1, per=1, type=commands.BucketType.user)
     async def lunchsummon(self, ctx):
@@ -877,7 +878,13 @@ class Otogi:
                 rarity = 3
             pool = await self.summon_pool.find_one({"rarity": rarity})
             daemon_id = random.choice(pool["pool"])
-            await self.player_list.find_one_and_update({"id": id}, {"$push": {"daemons": {"$each": [{"id": daemon_id, "lb": 0}], "$sort": {"id": 1, "lb": -1}}}})
+            await self.player_list.find_one_and_update(
+                {"id": id},
+                {
+                    "$inc": {"total_attempts": 1},
+                    "$push": {"daemons": {"$each": [{"id": daemon_id, "lb": 0}], "$sort": {"id": 1, "lb": -1}}}
+                }
+            )
             daemon = await ctx.search(daemon_id, self.daemon_collection, cls=Daemon, atts=["id"], name_att="name", prompt=False)
             embed = discord.Embed(title=f"{ctx.author.display_name} summoned {daemon.name}!", colour=discord.Colour.orange())
             scale_url = daemon.true_image_url
@@ -890,6 +897,7 @@ class Otogi:
             embed.set_image(url=scale_url)
             await ctx.send(embed=embed)
 
+    @modding.help(brief="Summon until a certain daemon", category="Otogi", field="Simulation", paragraph=0)
     @lunchsummon.command()
     async def till(self, ctx, *, name):
         '''
@@ -926,6 +934,7 @@ class Otogi:
                     break
         await ctx.send(f"It took {result} summons to get {daemon.name}.")
 
+    @modding.help(brief="Display summon pool", category="Otogi", field="Simulation", paragraph=0)
     @lunchsummon.command(name="pool")
     async def show_summon_pool(self, ctx):
         '''
@@ -946,6 +955,7 @@ class Otogi:
         )
         await paging.navigate(ctx)
 
+    @modding.help(brief="Show your or a player's box", category="Otogi", field="Simulation", paragraph=1)
     @commands.command()
     async def mybox(self, ctx, *, member: discord.Member=None):
         '''
@@ -1016,6 +1026,7 @@ class Otogi:
         else:
             return 0
 
+    @modding.help(brief="Sell a daemon", category="Otogi", field="Simulation", paragraph=1)
     @commands.group(invoke_without_command=True)
     async def mochi(self, ctx, *, names):
         '''
@@ -1045,6 +1056,7 @@ class Otogi:
         await self.player_list.update_one({"id": ctx.author.id}, {"$inc": {"mochi": total_mochi}, "$set": {"daemons": player["daemons"]}})
         await ctx.send(f"{ctx.author.display_name} sold {number_of_daemons} daemon(s) for {total_mochi}{self.emojis['mochi']}.\n{len(names)-number_of_daemons} failed.")
 
+    @modding.help(brief="Sell all daemons with given name", category="Otogi", field="Simulation", paragraph=1)
     @mochi.command()
     async def bulk(self, ctx, *, names):
         '''
@@ -1073,6 +1085,7 @@ class Otogi:
         await self.player_list.update_one({"id": ctx.author.id}, {"$inc": {"mochi": total_mochi}, "$set": {"daemons": player["daemons"]}})
         await ctx.send(f"{ctx.author.display_name} sold {number_of_daemons} daemon(s) for {total_mochi}{self.emojis['mochi']}.")
 
+    @modding.help(brief="Sell all daemons with given rarity", category="Otogi", field="Simulation", paragraph=1)
     @mochi.command()
     async def all(self, ctx, rarity: int):
         '''
@@ -1094,6 +1107,7 @@ class Otogi:
         await self.player_list.update_one({"id": ctx.author.id}, {"$inc": {"mochi": total_mochi}, "$set": {"daemons": player["daemons"]}})
         await ctx.send(f"{ctx.author.display_name} sold all {rarity}* daemons for {total_mochi}{self.emojis['mochi']}.")
 
+    @modding.help(brief="Give someone a daemon", category="Otogi", field="Simulation", paragraph=2)
     @commands.command()
     async def gift(self, ctx, member: discord.Member, *, name):
         '''
@@ -1125,6 +1139,7 @@ class Otogi:
         ])
         await ctx.send(f"{ctx.author.display_name} gave {member.display_name} {daemon.name} lb{dm['lb']}.")
 
+    @modding.help(brief="Ask someone for a daemon", category="Otogi", field="Simulation", paragraph=2)
     @commands.command()
     async def gimme(self, ctx, member: discord.Member, *, data):
         '''
@@ -1185,6 +1200,7 @@ class Otogi:
             else:
                 first += 1
 
+    @modding.help(brief="Limit break all daemons", category="Otogi", field="Simulation", paragraph=1)
     @commands.command(aliases=["lb"])
     async def limitbreak(self, ctx, *, name=None):
         '''
@@ -1220,6 +1236,7 @@ class Otogi:
         await self.stat_sheet.find_one_and_replace({}, result)
         await ctx.message.add_reaction("\u2705")
 
+    @modding.help(brief="Nuker rank", category="Otogi", field="Database", paragraph=1)
     @commands.command(aliases=["nuker"])
     async def nukers(self, ctx):
         '''
@@ -1245,6 +1262,7 @@ class Otogi:
         )
         await paging.navigate(ctx)
 
+    @modding.help(brief="Auto attack rank", category="Otogi", field="Database", paragraph=1)
     @commands.command(aliases=["auto"])
     async def autoattack(self, ctx):
         '''
@@ -1269,6 +1287,7 @@ class Otogi:
         )
         await paging.navigate(ctx)
 
+    @modding.help(brief="List of debuffers", category="Otogi", field="Database", paragraph=1)
     @commands.command(aliases=["debuffer"])
     async def debuffers(self, ctx):
         '''
@@ -1298,6 +1317,7 @@ class Otogi:
         )
         await paging.navigate(ctx)
 
+    @modding.help(brief="List of buffers", category="Otogi", field="Database", paragraph=1)
     @commands.command(aliases=["buffer"])
     async def buffers(self, ctx):
         '''
@@ -1326,6 +1346,7 @@ class Otogi:
         )
         await paging.navigate(ctx)
 
+    @modding.help(brief="Guild Conquest STR rank", category="Otogi", field="Database", paragraph=1)
     @commands.command()
     async def gcqstr(self, ctx):
         '''
@@ -1462,6 +1483,7 @@ class Otogi:
         )
         await paging.navigate(ctx)
 
+    @modding.help(brief="Calculate stats", category="Otogi", field="Database", paragraph=0)
     @commands.command()
     async def stat(self, ctx, max_stat: int, rarity: int, level: int):
         '''
@@ -1474,6 +1496,7 @@ class Otogi:
             result = mlb_stat(max=max_stat, rarity=rarity, level_inc=level-(40+10*rarity))
             await ctx.send(result)
 
+    @modding.help(brief="Calculate skill damage/percentage", category="Otogi", field="Database", paragraph=0)
     @commands.command()
     async def skill(self, ctx, max_skill, rarity: int, level: int):
         '''

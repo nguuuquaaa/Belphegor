@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from . import utils
-from .utils import token
+from .utils import token, modding
 import multiprocessing
 from selenium import webdriver
 from selenium.webdriver.remote.webdriver import WebDriver
@@ -132,6 +132,7 @@ class GoogleEngine:
                 elem.click()
 
                 #there's a popup here so dismiss it
+                time.sleep(1)
                 alert = driver.switch_to.alert
                 alert.dismiss()
         except:
@@ -393,14 +394,14 @@ class GoogleEngine:
 
 #==================================================================================================================================================
 
-class Google:
+class Google(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
         self.google_result = weakref.ref(bot.loop.create_task(self.google_result_queue()))
         self.orders = {}
 
-    def __unload(self):
+    def cog_unload(self):
         gs = self.google_result()
         if gs:
             gs.cancel()
@@ -419,13 +420,15 @@ class Google:
             else:
                 self.orders[ret[0]].set_result(ret[1])
 
+    @modding.help(brief="Google search", category="Misc", field="Commands", paragraph=2)
     @commands.command(aliases=["g"])
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     async def google(self, ctx, *, query):
         '''
             `>>google <query>`
             Google search.
-            Safe search is enabled in non-nsfw channels and disabled in nsfw channels.
+            ~~Safe search is enabled in non-nsfw channels and disabled in nsfw channels.~~
+            Safe saerch is alway enabled now.
             There's a 10-second cooldown per user.
         '''
         await ctx.trigger_typing()
@@ -458,6 +461,7 @@ class Google:
         if isinstance(error, commands.CommandOnCooldown):
             await ctx.send("Whoa slow down your Google search! You can only search once every 10 seconds.")
 
+    @modding.help(brief="Google, but translate", category="Misc", field="Commands", paragraph=2)
     @commands.command(aliases=["translate", "trans"])
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     async def gtrans(self, ctx, *, search):

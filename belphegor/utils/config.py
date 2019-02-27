@@ -18,9 +18,9 @@ CHUNK_SIZE = 512 * 1024
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36"
 
 all_extensions = [
+    "belphegor.override",
     "belphegor.admin",
     "belphegor.error_handle",
-    "belphegor.override",
     "belphegor.guild",
     "belphegor.otogi",
     "belphegor.pso2",

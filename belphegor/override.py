@@ -1,17 +1,21 @@
 import discord
 from discord.ext import commands
 
+#==================================================================================================================================================
+
 saved_stuff = {}
 
 #==================================================================================================================================================
 
-class CustomEvent:
+class CustomEvent(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
         self.bot.dispatch("reaction_add_or_remove", reaction, user)
 
+    @commands.Cog.listener()
     async def on_reaction_remove(self, reaction, user):
         self.bot.dispatch("reaction_add_or_remove", reaction, user)
 
@@ -23,10 +27,10 @@ def to_rgba(self, alpha=255):
 
 def parse_message_delete_bulk(self, data):
     raw = discord.raw_models.RawBulkMessageDeleteEvent(data)
-    self.dispatch('raw_bulk_message_delete', raw)
+    self.dispatch("raw_bulk_message_delete", raw)
 
     to_be_deleted = [message for message in self._messages if message.id in raw.message_ids]
-    self.dispatch('bulk_message_delete', to_be_deleted)
+    self.dispatch("bulk_message_delete", to_be_deleted)
     for msg in to_be_deleted:
         self._messages.remove(msg)
 
@@ -40,4 +44,4 @@ def setup(bot):
 
 def teardown(bot):
     del discord.Colour.to_rgba
-    discord.state.ConnectionState.parse_message_delete_bulk = saved_stuff["bulk"]
+    discord.state.ConnectionState.parse_message_delete_bulk = saved_stuff.pop("bulk")

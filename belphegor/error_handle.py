@@ -7,13 +7,13 @@ from PIL import Image
 
 #==================================================================================================================================================
 
-class ErrorHandle:
+class ErrorHandle(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.set_error_handle()
         bot.loop.create_task(self.get_wh())
 
-    def __unload(self):
+    def cog_unload(self):
         self.bot.on_error = self.old_on_error
         del self.bot.error_hook
 
@@ -33,6 +33,7 @@ class ErrorHandle:
         self.error_hook = (await ch.webhooks())[0]
         self.bot.error_hook = self.error_hook
 
+    @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
         ignored = (commands.DisabledCommand, commands.CommandNotFound, commands.UserInputError, commands.CommandOnCooldown)
         if isinstance(error, commands.CheckFailure):

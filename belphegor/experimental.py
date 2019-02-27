@@ -55,7 +55,7 @@ class MemberStats:
 
 #==================================================================================================================================================
 
-class Statistics:
+class Statistics(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.user_data = bot.db.user_data
@@ -80,7 +80,7 @@ class Statistics:
         self.next_update_time = utils.now_time()
         self.all_requests = bot.saved_stuff.pop("status_updates", [])
 
-    def __unload(self):
+    def cog_unload(self):
         self.bot.saved_stuff["all_users"] = self.all_users
         self.bot.saved_stuff["command_run_count"] = self.command_run_count
         self.bot.saved_stuff["status_updates"] = self.all_requests
@@ -152,14 +152,17 @@ class Statistics:
             if req:
                 self.all_requests.append(req)
 
+    @commands.Cog.listener()
     async def on_member_join(self, member):
         if member.guild.id == DISCORDPY_GUILD_ID:
             self.all_users[member.id] = MemberStats(member.id, last_updated=utils.now_time())
 
+    @commands.Cog.listener()
     async def on_member_remove(self, member):
         if member.guild.id == DISCORDPY_GUILD_ID:
             self.all_users.pop(member.id)
 
+    @commands.Cog.listener()
     async def on_member_update(self, before, after):
         if before.guild.id == DISCORDPY_GUILD_ID:
             if before.status != after.status:
@@ -526,6 +529,7 @@ class Statistics:
         await self.user_data.update_one({"user_id": ctx.author.id}, {"$set": {"timezone": offset}})
         await ctx.send(f"Default offset has been set to {offset:+d}")
 
+    @commands.Cog.listener()
     async def on_command_completion(self, ctx):
         cmd = ctx.command.qualified_name
         self.command_run_count[cmd] = self.command_run_count.get(cmd, 0) + 1

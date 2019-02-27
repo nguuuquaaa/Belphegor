@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from . import utils
-from .utils import checks, config
+from .utils import checks, config, modding
 import aiohttp
 import json
 import xmltodict
@@ -26,7 +26,7 @@ RATING = {
 
 #==================================================================================================================================================
 
-class RandomImage:
+class RandomImage(commands.Cog):
     '''
     Random pictures from various image boards.
     Also sauce find. Since everyone needs sauce.
@@ -53,6 +53,7 @@ class RandomImage:
             await ctx.send("Query failed. Please try again.")
         return new_func
 
+    @modding.help(category="Image", field="Commands", paragraph=0)
     @commands.group(aliases=["random"])
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     async def r(self, ctx):
@@ -219,6 +220,7 @@ class RandomImage:
         embed.set_image(url=f"https:{img_link['href']}")
         return embed
 
+    @modding.help(brief="[Danbooru](https://danbooru.donmai.us/)", category="Image", field="Commands", paragraph=0)
     @r.command(aliases=["d",])
     async def danbooru(self, ctx, *tags):
         '''
@@ -227,6 +229,7 @@ class RandomImage:
         '''
         await self.get_image_danbooru(ctx, tags, safe=True)
 
+    @modding.help(brief="[NSFW Danbooru](https://danbooru.donmai.us)", category="Image", field="Commands", paragraph=1)
     @r.command(aliases=["dh"])
     @checks.nsfw()
     async def danbooru_h(self, ctx, *tags):
@@ -237,6 +240,7 @@ class RandomImage:
         '''
         await self.get_image_danbooru(ctx, tags, safe=False)
 
+    @modding.help(brief="[Konachan](http://konachan.net)", category="Image", field="Commands", paragraph=0)
     @r.command(aliases=["k",])
     async def konachan(self, ctx, *tags):
         '''
@@ -245,6 +249,7 @@ class RandomImage:
         '''
         await self.get_image_konachan(ctx, tags, safe=True)
 
+    @modding.help(brief="[NSFW Konachan](http://konachan.com)", category="Image", field="Commands", paragraph=1)
     @r.command(aliases=["kh",])
     @checks.nsfw()
     async def konachan_h(self, ctx, *tags):
@@ -255,6 +260,7 @@ class RandomImage:
         '''
         await self.get_image_konachan(ctx, tags, safe=False)
 
+    @modding.help(brief="[Safebooru](https://safebooru.org)", category="Image", field="Commands", paragraph=0)
     @r.command(aliases=["s",])
     async def safebooru(self, ctx, *tags):
         '''
@@ -263,6 +269,7 @@ class RandomImage:
         '''
         await self.get_image_safebooru(ctx, tags, safe=True)
 
+    @modding.help(brief="[Yandere](https://yande.re)", category="Image", field="Commands", paragraph=0)
     @r.command(aliases=["y",])
     async def yandere(self, ctx, *tags):
         '''
@@ -271,6 +278,7 @@ class RandomImage:
         '''
         await self.get_image_yandere(ctx, tags, safe=True)
 
+    @modding.help(brief="[NSFW Sankaku Complex](https://chan.sankakucomplex.com)", category="Image", field="Commands", paragraph=1)
     @r.command(aliases=["sc",])
     @checks.nsfw()
     async def sancom(self, ctx, *tags):
@@ -294,6 +302,7 @@ class RandomImage:
             self.retry = number
             await ctx.send(f"Number of retries has been set to {number}.")
 
+    @modding.help(brief="Get sauce", category="Image", field="Commands", paragraph=2)
     @commands.command()
     async def saucenao(self, ctx, url=None):
         '''

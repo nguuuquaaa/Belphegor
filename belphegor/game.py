@@ -1,14 +1,14 @@
 import discord
 from discord.ext import commands
 from . import board_game
-from .utils import config, checks
+from .utils import config, checks, modding
 import random
 import asyncio
 import json
 
 #==================================================================================================================================================
 
-class Game:
+class Game(commands.Cog):
     '''
         Play board games with other users.
     '''
@@ -31,12 +31,13 @@ class Game:
                     self.games[game_data["game_id"]] = game
         return game
 
+    @modding.help(brief="Play co ca ngua", category="Games", field="Games", paragraph=0)
     @commands.command()
     @checks.guild_only()
     async def cangua(self, ctx, *members: discord.Member):
         '''
             `>>cangua <optional: list of members>`
-            Play ca ngua with the members in question.
+            Play ca ngua (a variation of [Ludo](https://en.wikipedia.org/wiki/Ludo_%28board_game%29)) with the members in question.
             Each user can only play one board game across all servers at a time.
             Bots and those who are already playing are excluded.
             If command is invoked without argument then the rules is displayed instead.
@@ -82,6 +83,7 @@ class Game:
             )
             await ctx.send(embed=embed)
 
+    @modding.help(brief="Check if a member is playing game", category="Games", field="Universal commands", paragraph=1)
     @commands.command()
     @checks.guild_only()
     async def whatgame(self, ctx, member: discord.Member=None):
@@ -111,6 +113,7 @@ class Game:
             if ctx.author.id == current_game.current_player.member.id:
                 await current_game.cmd_roll()
 
+    @modding.help(brief="Abandon current game", category="Games", field="Universal commands", paragraph=0)
     @commands.command()
     @checks.guild_only()
     async def abandon(self, ctx):
@@ -131,6 +134,7 @@ class Game:
             if check:
                 await current_game.cmd_abandon(ctx.author.id)
 
+    @modding.help(brief="Ask players to end current game", category="Games", field="Universal commands", paragraph=0)
     @commands.command()
     @checks.guild_only()
     async def gameover(self, ctx):

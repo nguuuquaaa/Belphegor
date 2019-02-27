@@ -1,12 +1,12 @@
 import discord
 from discord.ext import commands
-from fuzzywuzzy import process
 from . import utils
-from .utils import checks
+from .utils import checks, modding
+from fuzzywuzzy import process
 
 #==================================================================================================================================================
 
-class Tag:
+class Tag(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.tag_list = bot.db.tag_list
@@ -25,6 +25,7 @@ class Tag:
                     tag = await self.tag_list.find_one({"guild_id": guild.id, "name": alias_of})
         return tag
 
+    @modding.help(brief="Get tag with given name", category="Tag & sticker", field="Commands", paragraph=0)
     @commands.group(name="tag", invoke_without_command=True)
     @checks.guild_only()
     async def tag_cmd(self, ctx, *, name):
@@ -38,6 +39,7 @@ class Tag:
         else:
             await ctx.send(tag["content"])
 
+    @modding.help(brief="Create a tag", category="Tag & sticker", field="Commands", paragraph=0)
     @tag_cmd.command()
     @checks.guild_only()
     async def create(self, ctx, name, *, content):
@@ -53,6 +55,7 @@ class Tag:
         else:
             await ctx.send(f"Tag {name} created.")
 
+    @modding.help(brief="Edit a tag", category="Tag & sticker", field="Commands", paragraph=0)
     @tag_cmd.command()
     @checks.guild_only()
     async def edit(self, ctx, name, *, content):
@@ -70,6 +73,7 @@ class Tag:
         else:
             await ctx.send(f"Tag {name} edited.")
 
+    @modding.help(brief="Add an alias to another tag", category="Tag & sticker", field="Commands", paragraph=0)
     @tag_cmd.command()
     @checks.guild_only()
     async def alias(self, ctx, name, *, alias_of):
@@ -91,13 +95,14 @@ class Tag:
             await self.tag_list.update_one({"guild_id": ctx.guild.id, "name": alias_of, "aliases": {"$nin": [name]}}, {"$push": {"aliases": name}})
             await ctx.send(f"Tag alias {name} for {alias_of} created.")
 
+    @modding.help(brief="Delete a tag", category="Tag & sticker", field="Commands", paragraph=0)
     @tag_cmd.command()
     @checks.guild_only()
     async def delete(self, ctx, *, name):
         '''
             `>>tag delete <name>`
             Delete a tag you own.
-            Server managers can still delete other people' tags tho.
+            Server managers can still delete other people' tags.
         '''
         if ctx.channel.permissions_for(ctx.author).manage_guild:
             q = {}
@@ -115,18 +120,20 @@ class Tag:
         else:
             await ctx.send(f"Cannot delete tag.\nEither tag doesn't exist or you are not the creator of the tag.")
 
+    @modding.help(brief="Find tags", category="Tag & sticker", field="Commands", paragraph=0)
     @tag_cmd.command()
     @checks.guild_only()
     async def find(self, ctx, *, name):
         '''
             `>>tag find <name>`
-            Find tags.
+            Find tags with given name.
         '''
         tag_names = await self.tag_list.distinct("name", {"guild_id": ctx.guild.id})
         relevant = process.extract(name, tag_names, limit=10)
         text = "\n".join((f"{r[0]} ({r[1]}%)" for r in relevant if r[1]>50))
         await ctx.send(f"Result:\n```\n{text}\n```")
 
+    @modding.help(brief="Display all tags in current server", category="Tag & sticker", field="Commands", paragraph=0)
     @tag_cmd.command(name="all")
     @checks.guild_only()
     async def cmd_tag_all(self, ctx):
@@ -146,6 +153,7 @@ class Tag:
         else:
             await ctx.send("This server has no tag.")
 
+    @modding.help(brief="Display all tags by member", category="Tag & sticker", field="Commands", paragraph=0)
     @tag_cmd.command(name="list")
     @checks.guild_only()
     async def cmd_tag_list(self, ctx, member: discord.Member=None):
@@ -167,6 +175,7 @@ class Tag:
         else:
             await ctx.send("You haven't created any tag.")
 
+    @modding.help(brief="Display tag info", category="Tag & sticker", field="Commands", paragraph=0)
     @tag_cmd.command(name="info")
     @checks.guild_only()
     async def cmd_tag_info(self, ctx, *, name):

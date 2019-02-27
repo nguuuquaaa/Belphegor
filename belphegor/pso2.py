@@ -257,7 +257,7 @@ class Unit(data_type.BaseObject):
 
 #==================================================================================================================================================
 
-class PSO2:
+class PSO2(commands.Cog):
     '''
     PSO2 info.
     '''
@@ -295,7 +295,7 @@ class PSO2:
         self.incoming_events = data_type.Observer()
         self.boost_remind_forever = weakref.ref(bot.loop.create_task(self.boost_remind()))
 
-    def __unload(self):
+    def cog_unload(self):
         try:
             self.eq_alert_forever().cancel()
         except:
@@ -311,6 +311,7 @@ class PSO2:
             `>>chip <name>`
             Display a PSO2es chip info.
             Chip name is case-insensitive and can be either EN or JP.
+            I'm not maintaining this anymore.
         '''
         chip = await ctx.search(
             name, self.chip_library,
@@ -321,6 +322,7 @@ class PSO2:
             return
         await ctx.send(embed=chip.embed_form(self))
 
+    @modding.help(brief="Display weapon info", category="PSO2", field="Database", paragraph=0)
     @commands.group(name="weapon", aliases=["w",], invoke_without_command=True)
     async def cmd_weapon(self, ctx, *, name):
         '''
@@ -462,6 +464,7 @@ class PSO2:
             result.append(new_weapon)
         return result
 
+    @modding.help(brief="Search weapons with given conditions", category="PSO2", field="Database", paragraph=0)
     @cmd_weapon.command(name="filter")
     async def w_filter(self, ctx, *, data: modding.KeyValue()):
         '''
@@ -564,6 +567,7 @@ class PSO2:
         await self.weapon_list.insert_many(weapons)
         await msg.edit(content="Done.")
 
+    @modding.help(brief="Search for items", category="PSO2", field="Database", paragraph=1)
     @commands.command(name="item", aliases=["i"])
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     async def cmd_item(self, ctx, *, data: modding.KeyValue(multiline=False, clean=False)):
@@ -602,11 +606,13 @@ class PSO2:
         )
         await paging.navigate(ctx)
 
+    @modding.help(brief="Check item price", category="PSO2", field="Database", paragraph=1)
     @commands.command(name="price")
     async def cmd_price(self, ctx, *, name):
         '''
             `>>price <name>`
             Check the price of an item.
+            Quite outdated, better just go ingame.
         '''
         async with ctx.typing():
             params = {"name": name}
@@ -755,6 +761,7 @@ class PSO2:
             h = 12
         return f":clock{h}{m}:"
 
+    @modding.help(brief="Display EQ schedule for the next 3 hours", category="PSO2", field="EQ", paragraph=0)
     @commands.command(name="eq")
     async def nexteq(self, ctx):
         '''
@@ -796,6 +803,7 @@ class PSO2:
             embed.description = "There's no EQ for the next 3 hours."
         await ctx.send(embed=embed)
 
+    @modding.help(brief="Display unit info", category="PSO2", field="Database", paragraph=0)
     @commands.group(name="unit", aliases=["u"], invoke_without_command=True)
     async def cmd_unit(self, ctx, *, name):
         '''
@@ -918,6 +926,7 @@ class PSO2:
                 category_units.append(unit)
             return category_units
 
+    @modding.help(brief="Display daily orders/featured quests", category="PSO2", field="EQ", paragraph=0)
     @commands.command(name="daily", aliases=["dailyorder"])
     async def cmd_daily_order(self, ctx, query_date=""):
         '''
@@ -1009,6 +1018,7 @@ class PSO2:
         events = await self.bot.loop.run_in_executor(None, self.get_calendar_events, "pso2emgquest@gmail.com")
         self.incoming_events.assign(events)
 
+    @modding.help(brief="Display current week's boost events", category="PSO2", field="EQ", paragraph=0)
     @commands.group(name="boost")
     async def cmd_boost(self, ctx):
         '''
@@ -1112,6 +1122,7 @@ class PSO2:
                 else:
                     continue
 
+    @modding.help(brief="ARKS language", category="PSO2", field="Database", paragraph=1)
     @commands.command(aliases=["pt"])
     async def pso2text(self, ctx, *, text):
         '''

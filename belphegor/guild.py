@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from . import utils
-from .utils import checks, config
+from .utils import checks, config, modding
 import asyncio
 import unicodedata
 from io import BytesIO
@@ -16,7 +16,7 @@ DEFAULT_WELCOME = "Eeeeehhhhhh, go away {mention}, I don't want any more work...
 
 #==================================================================================================================================================
 
-class Guild:
+class Guild(commands.Cog):
     '''
     Doing stuff related to server.
     '''
@@ -27,6 +27,7 @@ class Guild:
         self.banned_emojis = set()
         self.autorole_registration = {}
 
+    @modding.help(brief="Set up bot settings", category="Guild", field="Server management", paragraph=0)
     @commands.group(name="set")
     @checks.guild_only()
     @checks.manager_only()
@@ -35,20 +36,21 @@ class Guild:
             `>>set`
             Base command. Does nothing by itself, but with subcommands can be used to set up several bot functions in server.
             Subcommands include:
-                  `welcome` - Welcome channel
-                  `welcomemessage` - Welcome message
-                  `dmrule` - Message that will be DM'ed to newly joined member
-                  `nsfwrole` - NSFW role, for use with `>>creampie` and `>>censored` command
-                  `muterole` - Mute role, for use with `>>mute` and `>>unmute` command
-                  `autorole` - Auto assign/remove role for new member
-                  `prefix` - Server custom prefix
-                  `log` - Activity log channel
-                  `logmessage` - Message log
-                  `eq` - PSO2 EQ Alert
-                  `eqmini` - EQ Alert, but less spammy
+            -`welcome` - Welcome channel
+            -`welcomemessage` - Welcome message
+            -`dmrule` - Message that will be DM'ed to newly joined member
+            -`nsfwrole` - NSFW role, for use with `>>creampie` and `>>censored` command
+            -`muterole` - Mute role, for use with `>>mute` and `>>unmute` command
+            -`autorole` - Auto assign/remove role for new member
+            -`prefix` - Server custom prefix
+            -`log` - Activity log channel
+            -`logmessage` - Message log
+            -`eq` - PSO2 EQ Alert
+            -`eqmini` - EQ Alert, but less spammy
         '''
         pass
 
+    @modding.help(brief="Unset bot settings", category="Guild", field="Server management", paragraph=0)
     @commands.group(name="unset")
     @checks.guild_only()
     @checks.manager_only()
@@ -57,20 +59,21 @@ class Guild:
             `>>unset`
             Base command. Does nothing by itself, but with subcommands can be used to unset bot functions in server.
             Subcommands include:
-                  `welcome` - Welcome channel
-                  `welcomemessage` - Welcome message
-                  `dmrule` - Message that will be DM'ed to newly joined member
-                  `nsfwrole` - NSFW role, for use with `>>creampie` and `>>censored` command
-                  `muterole` - Mute role, for use with `>>mute` and `>>unmute` command
-                  `autorole` - Auto assign/remove role for new member
-                  `prefix` - Server custom prefix
-                  `allprefix` - All server custom prefixes
-                  `log` - Activity log channel
-                  `logmessage` - Message log
-                  `eq` - PSO2 EQ Alert (both normal and minimal)
+            -`welcome` - Welcome channel
+            -`welcomemessage` - Welcome message
+            -`dmrule` - Message that will be DM'ed to newly joined member
+            -`nsfwrole` - NSFW role, for use with `>>creampie` command
+            -`muterole` - Mute role, for use with `>>mute` and `>>unmute` command
+            -`autorole` - Auto assign/remove role for new member
+            -`prefix` - Server custom prefix
+            -`allprefix` - All server custom prefixes
+            -`log` - Activity log channel
+            -`logmessage` - Message log
+            -`eq` - PSO2 EQ Alert (both normal and minimal)
         '''
         pass
 
+    @modding.help(brief="Kick member", category="Guild", field="Server management", paragraph=2)
     @commands.command()
     @checks.guild_only()
     @checks.can_kick()
@@ -81,12 +84,13 @@ class Guild:
         '''
         try:
             await member.kick(reason=reason)
-            await ctx.send(f"{member.name} has been kicked.")
-        except:
+        except discord.Forbidden:
             await ctx.deny()
         else:
+            await ctx.send(f"{member.name} has been kicked.")
             await member.send(f"You have been kicked from {ctx.guild.name} by {ctx.author.mention}.\nReason: {reason}")
 
+    @modding.help(brief="Ban member", category="Guild", field="Server management", paragraph=2)
     @commands.command()
     @checks.guild_only()
     @checks.can_ban()
@@ -95,13 +99,15 @@ class Guild:
             `>>Ban <member> <optional: reason>`
             Ban <member> and DM'ed them with <reason>.
         '''
-        await member.ban(reason=reason)
-        await ctx.send(f"{member.name} has been banned.")
-        await member.send(
-            f"You have been banned from {ctx.guild.name} by {ctx.author.mention}.\nReason: {reason}\n\n"
-            "If you think this action is unjustified, please contact the mod in question to unlift the ban."
-        )
+        try:
+            await member.ban(reason=reason)
+        except discord.Forbidden:
+            await ctx.deny()
+        else:
+            await ctx.send(f"{member.name} has been banned.")
+            await member.send(f"You have been banned from {ctx.guild.name} by {ctx.author.mention}.\nReason: {reason}")
 
+    @modding.help(brief="Unban member", category="Guild", field="Server management", paragraph=2)
     @commands.command()
     @checks.guild_only()
     @checks.can_ban()
@@ -110,10 +116,14 @@ class Guild:
             `>>unban <user ID> <optional: reason>`
             Unban user.
         '''
-        user = await self.bot.get_user_info(user_id)
-        await ctx.guild.unban(user, reason=reason)
-        await ctx.send(f"{user.name} has been unbanned.")
+        try:
+            await ctx.guild.unban(discord.Object(user_id), reason=reason)
+        except discord.NotFound:
+            await ctx.deny()
+        else:
+            await ctx.confirm()
 
+    @modding.help(brief="Ban user not in server", category="Guild", field="Server management", paragraph=2)
     @commands.command()
     @checks.guild_only()
     @checks.can_ban()
@@ -122,9 +132,14 @@ class Guild:
             `>>hackban <user ID> <optional: reason>`
             Ban user who is not currently in server.
         '''
-        await ctx.guild.ban(discord.Object(user_id), reason=reason)
-        await ctx.send(f"{user_id} has been hackbanned.")
+        try:
+            await ctx.guild.unban(discord.Object(user_id), reason=reason)
+        except discord.NotFound:
+            await ctx.deny()
+        else:
+            await ctx.confirm()
 
+    @modding.help(brief="Ban user from current channel", category="Guild", field="Server management", paragraph=1)
     @commands.command()
     @checks.guild_only()
     @checks.manager_only()
@@ -154,17 +169,18 @@ class Guild:
                 check=lambda b, a: a.overwrites_for(member).read_messages is not False,
                 timeout=duration
             )
-        except:
+        except asyncio.TimeoutError:
             await ctx.channel.set_permissions(target=member, read_messages=None)
             await ctx.send(f"{member.mention} has been unbanned from this channel.")
 
+    @modding.help(brief="Mute user from current channel", category="Guild", field="Server management", paragraph=1)
     @commands.command(aliases=["shutup"])
     @checks.guild_only()
     @checks.manager_only()
     async def channelmute(self, ctx, member: discord.Member, *, reason=None):
         '''
             `>>channelmute <member> <optional: reason>`
-            Mute <member> from posting the current channel.
+            Mute <member> from posting in the current channel.
             Can specify mute time in <reason>, i.e. `for 10 minutes`.
             If no mute time is specified, 10 minutes is used.
         '''
@@ -186,7 +202,7 @@ class Guild:
                 check=lambda b, a: a.overwrites_for(member).send_messages is not False,
                 timeout=duration
             )
-        except:
+        except asyncio.TimeoutError:
             await ctx.channel.set_permissions(target=member, send_messages=None)
             await ctx.send(f"{member.mention} has been unmuted from this channel.")
 
@@ -231,35 +247,23 @@ class Guild:
         await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$unset": {"mute_role_id": None}})
         await ctx.confirm()
 
+    @modding.help(brief="Get/remove NSFW role, if applicable", category="Guild", field="Role", paragraph=1)
     @commands.command(aliases=["nsfw"])
     @checks.guild_only()
     async def creampie(self, ctx):
         '''
             `>>creampie`
-            Get NSFW role, if applicable.
+            Get/remove NSFW role, if applicable.
         '''
         role_data = await self.guild_data.find_one({"guild_id": ctx.guild.id, "nsfw_role_id": {"$ne": None}}, projection={"_id": -1, "nsfw_role_id": 1})
         if role_data:
             role = discord.utils.find(lambda r: r.id==role_data["nsfw_role_id"], ctx.guild.roles)
             if role:
-                await ctx.author.add_roles(role)
-                return await ctx.confirm()
-        else:
-            await ctx.send("NSFW role is not set up in this server.")
-
-    @commands.command(aliases=["sfw"])
-    @checks.guild_only()
-    async def censored(self, ctx):
-        '''
-            `>>censored`
-            Remove NSFW role, if applicable.
-        '''
-        role_data = await self.guild_data.find_one({"guild_id": ctx.guild.id, "nsfw_role_id": {"$ne": None}}, projection={"_id": -1, "nsfw_role_id": 1})
-        if role_data:
-            role = discord.utils.find(lambda r: r.id==role_data["nsfw_role_id"], ctx.guild.roles)
-            if role in ctx.author.roles:
-                await ctx.author.remove_roles(role)
-                return await ctx.confirm()
+                if role in ctx.author.roles:
+                    await ctx.author.remove_roles(role)
+                else:
+                    await ctx.author.add_roles(role)
+                await ctx.confirm()
         else:
             await ctx.send("NSFW role is not set up in this server.")
 
@@ -518,7 +522,7 @@ class Guild:
         '''
             `>>set eq <optional: channel>`
             Set <channel> as PSO2 EQ Alert channel. If no channel is provided, use the current channel that the command is invoked in.
-            EQs will be noticed 2h45m, 1h45m, 45m, 15m prior, and currently happening.
+            EQs will be noticed 2h45m, 1h45m, 45m, 15m prior, and at present.
         '''
         target = channel or ctx.channel
         await self.guild_data.update_one(
@@ -555,6 +559,7 @@ class Guild:
         else:
             await ctx.deny()
 
+    @commands.Cog.listener()
     async def on_message(self, message):
         member = message.author
         if member.bot or not message.guild:
@@ -593,6 +598,7 @@ class Guild:
                 )
             await message.delete()
 
+    @commands.Cog.listener()
     async def on_member_join(self, member):
         if member.bot:
             return
@@ -629,6 +635,7 @@ class Guild:
                 if role:
                     await member.add_roles(role)
 
+    @commands.Cog.listener()
     async def on_member_remove(self, member):
         if member.bot:
             return
@@ -647,6 +654,7 @@ class Guild:
                 embed.set_footer(text=utils.format_time(utils.now_time()))
                 await log_channel.send(embed=embed)
 
+    @commands.Cog.listener()
     async def on_member_ban(self, guild, user):
         if user.bot:
             return
@@ -664,6 +672,7 @@ class Guild:
                 embed.set_footer(text=utils.format_time(utils.now_time()))
                 await log_channel.send(embed=embed)
 
+    @commands.Cog.listener()
     async def on_member_update(self, before, after):
         if before.bot:
             return
@@ -705,6 +714,7 @@ class Guild:
                     if log_channel:
                         await log_channel.send(embed=embed)
 
+    @commands.Cog.listener()
     async def on_message_delete(self, message):
         if message.author.bot:
             return
@@ -731,6 +741,7 @@ class Guild:
                     embed.set_footer(text=utils.format_time(utils.now_time()))
                     await log_channel.send(embed=embed)
 
+    @commands.Cog.listener()
     async def on_message_edit(self, before, after):
         if before.author.bot:
             return
@@ -757,6 +768,7 @@ class Guild:
                         await log_channel.send(embed=embed)
 
     #custom event for bulk message delete
+    @commands.Cog.listener()
     async def on_bulk_message_delete(self, messages):
         if messages:
             channel = messages[0].channel
@@ -785,6 +797,7 @@ class Guild:
         else:
             return []
 
+    @modding.help(brief="Get selfrole with given name, if applicable", category="Guild", field="Role", paragraph=0)
     @commands.group(invoke_without_command=True)
     @checks.guild_only()
     async def selfrole(self, ctx, *, name):
@@ -811,6 +824,7 @@ class Guild:
         if isinstance(error, discord.Forbidden):
             await ctx.send("I don't have permissions to do this.")
 
+    @modding.help(brief="Add an existed role to selfrole pool", category="Guild", field="Role", paragraph=0)
     @selfrole.command()
     @checks.guild_only()
     @checks.manager_only()
@@ -827,6 +841,7 @@ class Guild:
         else:
             await ctx.deny()
 
+    @modding.help(brief="Remove a role from selfrole pool", category="Guild", field="Role", paragraph=0)
     @selfrole.command()
     @checks.guild_only()
     @checks.manager_only()
@@ -843,6 +858,7 @@ class Guild:
         else:
             await ctx.deny()
 
+    @modding.help(brief="Remove all selfroles from self", category="Guild", field="Role", paragraph=0)
     @selfrole.command()
     @checks.guild_only()
     async def empty(self, ctx):
@@ -856,6 +872,7 @@ class Guild:
                 await ctx.author.remove_roles(role)
         await ctx.confirm()
 
+    @modding.help(brief="Display server selfrole pool", category="Guild", field="Role", paragraph=0)
     @selfrole.command(name="list", aliases=["pool"])
     @checks.guild_only()
     async def role_list(self, ctx):
@@ -874,6 +891,7 @@ class Guild:
         else:
             await ctx.send("Server has no selfrole.")
 
+    @modding.help(brief="Pie chart showing selfrole distribution", category="Guild", field="Role", paragraph=0)
     @selfrole.command()
     @checks.guild_only()
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
@@ -900,6 +918,7 @@ class Guild:
             else:
                 await ctx.send("There's no one with selfrole.")
 
+    @modding.help(brief="Give member mute role if applicable", category="Guild", field="Server management", paragraph=1)
     @commands.command()
     @checks.guild_only()
     @checks.manager_only()
@@ -936,6 +955,7 @@ class Guild:
         else:
             await ctx.send("Muted role is not set up in this server.")
 
+    @modding.help(brief="Remove mute role from a member", category="Guild", field="Server management", paragraph=1)
     @commands.command()
     @checks.guild_only()
     @checks.manager_only()
@@ -952,6 +972,7 @@ class Guild:
         else:
             await ctx.send("Muted role is not set up in this server.")
 
+    @modding.help(brief="Bulk delete messages", category="Guild", field="Server management", paragraph=3)
     @commands.command()
     @checks.guild_only()
     @checks.manager_only()
@@ -976,6 +997,7 @@ class Guild:
             except discord.NotFound:
                 pass
 
+    @modding.help(brief="Clear reactions from messages", category="Guild", field="Server management", paragraph=3)
     @commands.command()
     @checks.guild_only()
     @checks.manager_only()
@@ -1031,6 +1053,7 @@ class Guild:
                 e_list.append("\n".join([f"`\\U{ord(c):08x}` - {unicodedata.name(c)}" for c in r.emoji]))
         await ctx.send("\n".join(e_list))
 
+    @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
         guild = getattr(user, "guild", None)
         if guild:
@@ -1042,7 +1065,9 @@ class Guild:
                 if e in self.banned_emojis:
                     await reaction.message.remove_reaction(reaction, user)
 
+    @modding.help(brief="Display server prefixes", category="Guild", field="Info", paragraph=0)
     @commands.command(name="prefix")
+    @checks.guild_only()
     async def guild_prefix(self, ctx):
         '''
             `>>prefix`
@@ -1052,7 +1077,9 @@ class Guild:
         prefixes.remove(f"<@!{ctx.me.id}> ")
         await ctx.send(embed=discord.Embed(title=f"Prefixes for {ctx.guild.name}", description="\n".join((f"{i+1}. {p}" for i, p in enumerate(prefixes)))))
 
+    @modding.help(brief="Display server info", category="Guild", field="Info", paragraph=0)
     @commands.command(aliases=["serverinfo"])
+    @checks.guild_only()
     async def guildinfo(self, ctx):
         '''
             `>>serverinfo`
@@ -1077,7 +1104,9 @@ class Guild:
         paging = utils.Paginator(embeds, render=False)
         await paging.navigate(ctx)
 
+    @modding.help(brief="Display role info", category="Guild", field="Info", paragraph=0)
     @commands.command()
+    @checks.guild_only()
     async def roleinfo(self, ctx, *, name):
         '''
             `>>roleinfo <name>`
@@ -1113,6 +1142,7 @@ class Guild:
         else:
             return cmd.qualified_name
 
+    @modding.help(brief="Disable bot commands", category="Guild", field="Server management", paragraph=0)
     @commands.group(name="disable")
     @checks.guild_only()
     @checks.manager_only()
@@ -1120,14 +1150,16 @@ class Guild:
         '''
             `>>disable`
             Base command. Does nothing by itself, but with subcommands can be used to disable certain bot features in server.
+            Note that enabled is the default state, and disabled overwrites and takes precedence over that.
             Subcommands include:
-                  `server` - Disable all bot commands in server
-                  `channel` - Disable all bot commands in a channel
-                  `member` - Prevent member from using bot commands
-                  `command` - Disable a certain command
+            -`server` - Disable all bot commands in server
+            -`channel` - Disable all bot commands in a channel
+            -`member` - Prevent member from using bot commands
+            -`command` - Disable a certain command
         '''
         pass
 
+    @modding.help(brief="Enable bot commands", category="Guild", field="Server management", paragraph=0)
     @commands.group(name="enable")
     @checks.guild_only()
     @checks.manager_only()
@@ -1135,11 +1167,12 @@ class Guild:
         '''
             `>>enable`
             Base command. Does nothing by itself, but with subcommands can be used to enable certain bot features in server.
+            Note that enabled is the default state, and disabled overwrites and takes precedence over that.
             Subcommands include:
-                  `server` - Enable all bot commands in server
-                  `channel` - Enable all bot commands in a channel
-                  `member` - Enable bot commands for member
-                  `command` - Enable a certain command
+            -`server` - Enable all bot commands in server
+            -`channel` - Enable all bot commands in a channel
+            -`member` - Enable bot commands for member
+            -`command` - Enable a certain command
         '''
         pass
 

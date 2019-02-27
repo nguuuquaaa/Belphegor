@@ -1,5 +1,6 @@
+from discord.ext import commands
 from belphegor import utils
-from belphegor.utils import config, token
+from belphegor.utils import config, token, modding
 import logging
 import importlib
 import asyncio
@@ -12,6 +13,24 @@ except:
     pass
 else:
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+
+#modding hax
+def copy(self):
+    ret = self.__class__(self.callback, **self.__original_kwargs__)
+    ret._before_invoke = self._before_invoke
+    ret._after_invoke = self._after_invoke
+    if self.checks != ret.checks:
+        ret.checks = self.checks.copy()
+    if self._buckets != ret._buckets:
+        ret._buckets = self._buckets.copy()
+    try:
+        ret.on_error = self.on_error
+    except AttributeError:
+        pass
+    modding.transfer_modding(self, ret)
+    return ret
+
+commands.Command.copy = copy
 
 #==================================================================================================================================================
 

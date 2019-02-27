@@ -142,7 +142,7 @@ class CharImage:
 
 #==================================================================================================================================================
 
-class Misc:
+class Misc(commands.Cog):
     '''
     Stuff that makes no difference if they aren't there.
     '''
@@ -256,6 +256,7 @@ class Misc:
         except:
             pass
 
+    @commands.Cog.listener()
     async def on_message(self, message):
         if message.author.bot:
             return
@@ -472,7 +473,7 @@ class Misc:
         else:
             await ctx.send("Wha hold your horse with the length.")
 
-    @modding.help(brief="Color", category="Misc", field="Commands", paragraph=2)
+    @modding.help(brief="Color visualize", category="Misc", field="Commands", paragraph=2)
     @commands.command(aliases=["colour"])
     async def color(self, ctx, *args):
         '''
@@ -506,7 +507,6 @@ class Misc:
         e.set_image(url="attachment://color.png")
         await ctx.send(file=f, embed=e)
 
-    @modding.help()
     @commands.command()
     async def pyfuck(self, ctx, *, data):
         '''
@@ -864,7 +864,7 @@ class Misc:
                 delete_after=10
             )
 
-    @modding.help(brief="Block art", category="Misc", field="Commands", paragraph=3)
+    @modding.help(brief="Block ascii art", category="Misc", field="Commands", paragraph=3)
     @ascii.command(name="block")
     async def ascii_block(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t"): int, ("inverse", "i"): bool}, clean=False, multiline=False)=modding.EMPTY):
         '''
@@ -899,7 +899,7 @@ class Misc:
         result = self.convert_image_to_ascii(image, None, per_cut, width, height, 1, 2, threshold, inverse)
         await ctx.send(f"```\n{result}\n```")
 
-    @modding.help(brief="Braille dot art", category="Misc", field="Commands", paragraph=3)
+    @modding.help(brief="Braille dot ascii art", category="Misc", field="Commands", paragraph=3)
     @ascii.command(name="dot")
     async def ascii_dot(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t"): int, ("inverse", "i"): bool}, clean=False, multiline=False)=modding.EMPTY):
         '''
@@ -979,7 +979,6 @@ class Misc:
         result = await self.bot.loop.run_in_executor(None, self.convert_image_to_ascii, image, None, per_cut, width, height, 4, 4, threshold, inverse)
         await ctx.send(f"```\n{result}\n```")
 
-    @modding.help(brief="pong")
     @commands.command(name="ping")
     async def cmd_ping(self, ctx):
         '''
@@ -1004,25 +1003,23 @@ class Misc:
         ]):
             self.auto_rep_disabled.update(data["guild_ids"])
 
-    @modding.help(brief="Enable/disable autorep")
+    @modding.help(brief="Enable/disable autorep", field="Other", paragraph=0)
     @commands.command()
     @checks.guild_only()
     @checks.manager_only()
     async def autorep(self, ctx, mode):
-        if mode in ("on", "off"):
-            guild_id = ctx.guild.id
-            if mode == "off":
-                self.auto_rep_disabled.add(guild_id)
-                await self.guild_data.update_one({"guild_id": guild_id}, {"$set": {"no_auto_rep": True}, "$setOnInsert": {"guild_id": guild_id}}, upsert=True)
-            else:
-                self.auto_rep_disabled.discard(guild_id)
-                await self.guild_data.update_one({"guild_id": guild_id}, {"$unset": {"no_auto_rep": True}})
-            await ctx.confirm()
+        guild_id = ctx.guild.id
+        if guild_id in self.auto_rep_disabled:
+            self.auto_rep_disabled.discard(guild_id)
+            await self.guild_data.update_one({"guild_id": guild_id}, {"$unset": {"no_auto_rep": True}})
+            await ctx.send("Auto-reply has been enabled.")
         else:
-            await ctx.send("Please use on/off.")
+            self.auto_rep_disabled.add(guild_id)
+            await self.guild_data.update_one({"guild_id": guild_id}, {"$set": {"no_auto_rep": True}, "$setOnInsert": {"guild_id": guild_id}}, upsert=True)
+            await ctx.send("Auto-reply has been disabled.")
 
-    @modding.help(brief="Monochrome transformation", category="Misc", field="Commands", paragraph=5)
-    @commands.command(aliases=["ct", "monochrome", "mc"])
+    @modding.help(brief="Monochrome transformation", category="Misc", field="Processing", paragraph=1)
+    @commands.command(aliases=["ct"])
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     async def transform(self, ctx, *, data: modding.KeyValue({("member", "m", ""): discord.Member, ("threshold", "t"): int}, clean=False, multiline=False)=modding.EMPTY):
         '''
@@ -1112,8 +1109,8 @@ class Misc:
         rgb[..., 2] = np.select(conditions, [v, p, t, v, v, q], default=p)
         return rgb.astype("uint8")
 
-    @modding.help(brief="Monochrome transformation", category="Misc", field="Commands", paragraph=5)
-    @commands.command(aliases=["ct2", "monochrome2", "mc2"])
+    @modding.help(brief="Monochrome transformation", category="Misc", field="Processing", paragraph=1)
+    @commands.command(aliases=["ct2"])
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     async def transform2(self, ctx, *, data: modding.KeyValue({("member", "m", ""): discord.Member}, clean=False, multiline=False)=modding.EMPTY):
         '''
@@ -1162,7 +1159,7 @@ class Misc:
         bytes_2 = await self.bot.loop.run_in_executor(None, do_stuff)
         await ctx.send(file=discord.File(bytes_2, "monochrome.png"))
 
-    @modding.help(brief="Turn avatar into sketch", category="Misc", field="Commands", paragraph=5)
+    @modding.help(brief="Turn avatar into sketch", category="Misc", field="Processing", paragraph=1)
     @commands.command()
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     async def sketch(self, ctx, *, data: modding.KeyValue({("member", "m", ""): discord.Member, ("sigma", "s"): int}, clean=False, multiline=False)=modding.EMPTY):
@@ -1204,7 +1201,7 @@ class Misc:
         bytes_2 = await self.bot.loop.run_in_executor(None, do_stuff)
         await ctx.send(file=discord.File(bytes_2, "sketch.png"))
 
-    @modding.help(brief="Turn avatar into sketch", category="Misc", field="Commands", paragraph=5)
+    @modding.help(brief="Turn avatar into sketch", category="Misc", field="Processing", paragraph=1)
     @commands.command()
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     async def sketch2(self, ctx, *, data: modding.KeyValue({("member", "m", ""): discord.Member, ("depth", "d"): int}, clean=False, multiline=False)=modding.EMPTY):

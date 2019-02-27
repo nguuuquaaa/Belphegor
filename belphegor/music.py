@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 import asyncio
 from . import utils
-from .utils import config, token, data_type, checks
+from .utils import config, token, data_type, checks, modding
 from apiclient.discovery import build
 from discord.opus import Encoder as OpusEncoder
 import queue
@@ -358,7 +358,7 @@ class MusicPlayer:
 
 #==================================================================================================================================================
 
-class Music:
+class Music(commands.Cog):
     '''
     Music is life.
     '''
@@ -373,7 +373,7 @@ class Music:
         self.mp_lock = asyncio.Lock()
         self.ytdl_lock = asyncio.Lock()
 
-    def __unload(self):
+    def cog_unload(self):
         for mp in self.music_players.values():
             mp.quit()
 
@@ -394,11 +394,13 @@ class Music:
                 self.music_players[guild.id] = mp
             return mp
 
+    @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
         if member.id == self.bot.user.id:
             if not after.channel:
                 self.music_players.pop(member.guild.id).cancel()
 
+    @modding.help(category="Music", field="Commands", paragraph=0)
     @commands.group(aliases=["m"])
     @checks.guild_only()
     async def music(self, ctx):
@@ -409,6 +411,7 @@ class Music:
         if ctx.invoked_subcommand is None:
             pass
 
+    @modding.help(brief="Join voice channel and play", category="Music", field="Commands", paragraph=0)
     @music.command(aliases=["j"])
     async def join(self, ctx):
         '''
@@ -442,6 +445,7 @@ class Music:
                 music_player.ready_to_play(ctx.channel)
                 await msg.edit(content=f"{self.bot.user.display_name} joined {voice_channel.name}.")
 
+    @modding.help(brief="Leave voice channel", category="Music", field="Commands", paragraph=0)
     @music.command(aliases=["l"])
     async def leave(self, ctx):
         '''
@@ -496,6 +500,7 @@ class Music:
         else:
             return discord.Embed(title=f"{state}{repeat} {current_song_info}", colour=discord.Colour.green())
 
+    @modding.help(brief="Queue a song", category="Music", field="Commands", paragraph=1)
     @music.command(aliases=["q"])
     async def queue(self, ctx, *, name=None):
         '''
@@ -546,6 +551,7 @@ class Music:
         await music_player.queue.put(Song(ctx.message.author, title, f"https://youtu.be/{result['id']['videoId']}"))
         await ctx.send(f"Added **{title}** to queue.")
 
+    @modding.help(brief="Skip current song", category="Music", field="Commands", paragraph=3)
     @music.command(aliases=["s"])
     async def skip(self, ctx):
         '''
@@ -556,6 +562,7 @@ class Music:
         music_player.skip()
         await ctx.confirm()
 
+    @modding.help(brief="Set volume", category="Music", field="Commands", paragraph=3)
     @music.command(aliases=["v"])
     async def volume(self, ctx, vol: int):
         '''
@@ -575,6 +582,7 @@ class Music:
         else:
             await ctx.send("Volume must be between 0 and 200.")
 
+    @modding.help(brief="Toggle repeat mode", category="Music", field="Commands", paragraph=3)
     @music.command(aliases=["r"])
     async def repeat(self, ctx):
         '''
@@ -606,6 +614,7 @@ class Music:
         finally:
             await ctx.message.clear_reactions()
 
+    @modding.help(brief="Delete a song from queue", category="Music", field="Commands", paragraph=1)
     @music.command(aliases=["d"])
     async def delete(self, ctx, position: int):
         '''
@@ -629,6 +638,7 @@ class Music:
         else:
             await ctx.send("Position out of range.")
 
+    @modding.help(brief="Delete all songs from queue", category="Music", field="Commands", paragraph=1)
     @music.command()
     async def purge(self, ctx):
         '''
@@ -646,6 +656,7 @@ class Music:
         if check:
             await music_player.queue.purge()
 
+    @modding.help(brief="Export current queue to JSON file", category="Music", field="Commands", paragraph=4)
     @music.command()
     async def export(self, ctx, *, name="playlist"):
         '''
@@ -662,6 +673,7 @@ class Music:
         bytes_ = json.dumps(jsonable, indent=4, ensure_ascii=False).encode("utf-8")
         await ctx.send(file=discord.File(bytes_, f"{name}.json"))
 
+    @modding.help(brief="Import JSON playlist", category="Music", field="Commands", paragraph=4)
     @music.command(name="import")
     async def music_import(self, ctx):
         '''
@@ -710,6 +722,7 @@ class Music:
                     results.append(Song(message.author, song["snippet"]["title"], f"https://youtu.be/{song['snippet']['resourceId']['videoId']}"))
         return results
 
+    @modding.help(brief="Queue a playlist", category="Music", field="Commands", paragraph=1)
     @music.command(aliases=["p"])
     async def playlist(self, ctx, *, name=None):
         '''
@@ -762,13 +775,14 @@ class Music:
         video = result["items"][0]
         return video
 
+    @modding.help(brief="Display video info", category="Music", field="Commands", paragraph=2)
     @music.command(aliases=["i"])
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     async def info(self, ctx, stuff="0"):
         '''
             `>>music info <optional: either queue position or youtube link>`
             Display video info.
-            If no argument is provided, the currently playing song is used instead.
+            If no argument is provided, the currently playing song (position 0) is used instead.
         '''
         try:
             position = int(stuff)
@@ -838,6 +852,7 @@ class Music:
         paging.set_action("\U0001f1e9", switch)
         await paging.navigate(ctx)
 
+    @modding.help(brief="Toggle play/pause", category="Music", field="Commands", paragraph=3)
     @music.command(aliases=["t"])
     async def toggle(self, ctx):
         '''
@@ -855,6 +870,7 @@ class Music:
                 vc.pause()
                 await ctx.send("Paused.")
 
+    @modding.help(brief="Fast forward", category="Music", field="Commands", paragraph=3)
     @music.command(aliases=["f"])
     async def forward(self, ctx, seconds: int=10):
         '''
@@ -878,6 +894,7 @@ class Music:
 
         await ctx.send("Nothing is playing right now, oi.")
 
+    @modding.help(brief="Change notifying channel", category="Music", field="Commands", paragraph=4)
     @music.command(aliases=["channel"])
     async def setchannel(self, ctx):
         '''
@@ -888,8 +905,9 @@ class Music:
         music_player.channel = ctx.channel
         await ctx.confirm()
 
+    @modding.help(brief="Toggle auto info display", category="Music", field="Commands", paragraph=2)
     @music.command(aliases=["ai"])
-    async def autoinfo(self, ctx):
+    async def toggleautoinfo(self, ctx):
         '''
             `>>music autoinfo`
             Automatic info display.
@@ -897,18 +915,12 @@ class Music:
             This option is reset after each session.
         '''
         music_player = await self.get_music_player(ctx.guild)
-        music_player.auto_info = ctx.message
-        await ctx.confirm()
-
-    @music.command(aliases=["mi"])
-    async def manualinfo(self, ctx):
-        '''
-            `>>music manualinfo`
-            Manual info display.
-        '''
-        music_player = await self.get_music_player(ctx.guild)
-        music_player.auto_info = None
-        await ctx.confirm()
+        if music_player.auto_info is None:
+            music_player.auto_info = ctx.message
+            await ctx.send("Auto-info mode is on.")
+        else:
+            music_player.auto_info = None
+            await ctx.send("Auto-info mode is off.")
 
 #==================================================================================================================================================
 

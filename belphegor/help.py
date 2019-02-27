@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from . import utils
-from .utils import config
+from .utils import config, modding
 import json
 import re
 import datetime
@@ -9,6 +9,7 @@ import pytz
 import inspect
 import os
 import sys
+import collections
 
 #==================================================================================================================================================
 
@@ -19,9 +20,14 @@ ENGLISH = {
     3: "thrice"
 }
 
+def _return_embed(e):
+    def func():
+        return e
+    return func
+
 #==================================================================================================================================================
 
-class Help:
+class Help(commands.Cog):
     '''
         Help and utility commands.
     '''
@@ -41,319 +47,170 @@ class Help:
         self.setup_help()
 
     def setup_help(self):
+        infodump = {
+            None: {
+                "emoji":    "\u21a9",
+                "desc":     "[Support server](https://discord.gg/qnavjMy)",
+                "thumb":    self.bot.user.avatar_url,
+                "footer":   "Default prefix: >>",
+                "fields":   {
+                    "Categories" : [
+                        [
+                            "`>>help` - Show this message\n"
+                            f"{self.emojis['mochi']} Otogi: Spirit Agents stuff\n"
+                            f"{self.emojis['hu']} PSO2 stuff\n"
+                            "\U0001f3b2 Play board games\n"
+                            "\U0001f5bc Image search/random\n"
+                            "\U0001f3b5 Music\n"
+                            "\U0001f4d4 Role/server stuff\n"
+                            "\U0001f3f7 Tag and sticker\n"
+                            "\u2699 Miscellaneous commands\n\n"
+                            "You can also use `>>help help` to get a rough idea of how to use this help and `>>help <full command name>` to get specific command usage"
+                        ]
+                    ]
+                }
+            },
+            "Otogi": {
+                "emoji":    self.emojis["mochi"],
+                "desc":     \
+                    "Data taken from [Otogi Wikia](http://otogi.wikia.com/) and [Otogi Effective Stats Spreadsheet](https://docs.google.com/spreadsheets/d/1oJnQ5TYL5d9LJ04HMmsuXBvJSAxqhYqcggDZKOctK2k/edit#gid=0)",
+                "thumb":    getattr(self.otogi_guild, "icon_url", None),
+                "footer":   None,
+                "fields":   {}
+            },
+            "PSO2": {
+                "emoji":    self.emojis["hu"],
+                "desc":     \
+                    "Data taken from [swiki](http://pso2es.swiki.jp/), [Arks-Visiphone](http://pso2.arks-visiphone.com/wiki/Main_Page) and DB Kakia.\n\n" \
+                    "Special thanks to ACF for letting me use his EQ API.\n" \
+                    "`>>set eq` - Set EQ alert channel\n"
+                    "`>>set eqmini` - EQ alert, but less spammy\n"
+                    "`>>unset eq` - Unset EQ alert channel",
+                "thumb":    "http://i.imgur.com/aNAG34t.jpg",
+                "footer":   None,
+                "fields":   {}
+            },
+            "Games": {
+                "emoji":    "\U0001f3b2",
+                "desc":     \
+                    "Mostly under construction, but you can play games with your fellow server members.\n" \
+                    "Each game has their own set of commands.",
+                "thumb":    None,
+                "footer":   None,
+                "fields":   {}
+            },
+            "Image": {
+                "emoji":    "\U0001f5bc",
+                "desc":     \
+                    "Get random picture from an image board.\n" \
+                    "Or get image sauce. Everyone loves sauce.",
+                "thumb":    None,
+                "footer":   None,
+                "fields":   {}
+            },
+            "Music": {
+                "emoji":    "\U0001f3b5",
+                "desc":     "So many music bots out there but I want to have my own, so here it is.",
+                "thumb":    None,
+                "footer":   None,
+                "fields":   {}
+            },
+            "Guild": {
+                "emoji":    "\U0001f4d4",
+                "desc":     \
+                    "Server-related commands.\n" \
+                    "Cannot be used in DM, obviously.",
+                "thumb":    None,
+                "footer":   None,
+                "fields":   {}
+            },
+            "Tag & sticker": {
+                "emoji":    "\U0001f3f7",
+                "desc":     \
+                    "A tag is a shortcut text.\n" \
+                    "Sometimes you want to copy-paste a goddamn long guide or so (it sucks), but you can just put into a tag with short name then call it later.\n" \
+                    "Tags are server-specific.\n\n" \
+                    "A sticker is just a fancy tag specialized around image.\n" \
+                    "Use $stickername anywhere admidst message to trigger sticker send.\n" \
+                    "Only one sticker shows up per message.\n" \
+                    "Sticker is universal server-wise.",
+                "thumb":    None,
+                "footer":   None,
+                "fields":   {}
+            },
+            "Misc": {
+                "emoji":    "\u2699",
+                "desc":     None,
+                "thumb":    None,
+                "footer":   None,
+                "fields":   {}
+            }
+        }
+
+        bot = self.bot
+
+        command_set = set()
+        for command in (cmd for cmd in bot.all_commands.values() if not (cmd in command_set or command_set.add(cmd))):
+            try:
+                category = getattr(command, "category")
+            except AttributeError:
+                continue
+
+            field = command.field
+            brief = command.brief
+            paragraph = command.paragraph
+
+            embed_info = infodump[category]["fields"]
+            if field in embed_info:
+                field_info = embed_info[field]
+            else:
+                field_info = []
+                embed_info[field] = field_info
+            while paragraph + 1 > len(field_info):
+                field_info.append([])
+
+            paragraph_info = field_info[paragraph]
+
+            usage = ", ".join((f"`>>{n}`" for n in sorted((command.name, *command.aliases))))
+            if brief:
+                paragraph_info.append(f"{usage} - {brief}")
+            else:
+                paragraph_info.append(usage)
+
+            for subcommand in getattr(command, "commands", ()):
+                try:
+                    sub_category = getattr(subcommand, "category")
+                except AttributeError:
+                    continue
+                subparagraph = subcommand.paragraph
+                while subparagraph + 1 > len(field_info):
+                    field_info.append([])
+                paragraph_info = field_info[subparagraph]
+                paragraph_info.append(f"\u2517 {subcommand.name} - {subcommand.brief}")
+
         paging = utils.Paginator([])
+        for category, data in infodump.items():
+            embed = discord.Embed(title=f"{data['emoji']} {category}", description=data["desc"] or discord.Embed.Empty, colour=discord.Colour.teal())
+            for name, field_info in data["fields"].items():
+                total = ("\n".join(p) for p in field_info)
+                embed.add_field(name=name, value="\n\n".join(("\n".join(p) for p in field_info)), inline=False)
 
-        #base help
-        base_embed = discord.Embed(
-            title=f"{self.emojis['ranged']} {self.bot.user}",
-            colour=discord.Colour.teal(),
-            description="[Join support server](https://discord.gg/qnavjMy)"
-        )
-        base_embed.set_thumbnail(url=self.bot.user.avatar_url)
-        base_embed.add_field(
-            name="Categories",
-            value=
-                "`>>help` - Show this message\n"
-                f"{self.emojis['mochi']} Otogi: Spirit Agents stuff\n"
-                f"{self.emojis['hu']} PSO2 stuff\n"
-                "\U0001f3b2 Play board games\n"
-                "\U0001f5bc Image search/random\n"
-                "\U0001f3b5 Music\n"
-                "\U0001f4d4 Role/server-related stuff\n"
-                "\U0001f3f7 Tag and sticker\n"
-                "\u2699 Miscellaneous commands\n\n"
-                "You can also use `>>help help` to get a rough idea of how to use this help and `>>help <full command name>` to get specific command usage",
-            inline=False
-        )
-        base_embed.add_field(
-            name="Other",
-            value=
-                "`>>invite` - Invite link\n"
-                "`>>stats`, `>>about` - Bot info\n"
-                "`>>feedback` - Feedback anything\n"
-                "`>>autorep on/off` - Enable/disable autorep",
-            inline=False
-        )
-        base_embed.add_field(
-            name="Autorep",
-            value=
-                "`ping` - pong\n"
-                "`\\o\\` `/o/` `/o\\` `\\o/` - `/o/` `\\o\\` `\\o/` `/o\\`\n",
-            inline=False
-        )
-        base_embed.set_footer(text="Default prefix: >> or bot mention")
-        paging.set_action("\u21a9", lambda: base_embed)
+            thumb = data["thumb"]
+            if thumb:
+                embed.set_thumbnail(url=thumb)
 
-        #otogi
-        otogi_embed = discord.Embed(title=f"{self.emojis['mochi']} Otogi Spirit Agents", colour=discord.Colour.teal())
-        try:
-            embed.set_thumbnail(url=self.otogi_guild.icon_url)
-        except:
-            pass
-        otogi_embed.add_field(
-            name="Database",
-            value=
-                "`>>d`, `>>daemon` - Check a daemon info\n"
-                "\u2517 `filter` - Find daemons with given conditions\n"
-                "Note: Data taken from [Otogi Wikia](http://otogi.wikia.com/)\n\n"
-                "`>>nuker(s)` - Nuker rank\n"
-                "`>>auto` - Auto attack rank\n"
-                "`>>buffer(s)`, `>>debuffer(s)` - List of supporters\n"
-                "Note: Data taken from [Otogi Effective Stats Spreadsheet](https://docs.google.com/spreadsheets/d/1oJnQ5TYL5d9LJ04HMmsuXBvJSAxqhYqcggDZKOctK2k/edit#gid=0)\n"
-                "`>>gcqstr` - Guild Conquest STR rank",
-            inline=False
-        )
-        otogi_embed.add_field(
-            name="Simulation",
-            value=
-                "`>>ls` - ~~salt~~ Lunchtime summon simulation\n"
-                "\u2517 `till` - Estimate how many summons a certain daemon\n"
-                "\u2517 `pool` - Display current summon pool\n\n"
-                "`>>mybox` - Show your or a player's box\n"
-                "`>>lb`, `>>limitbreak` - Limit break your daemons\n\n"
-                "`>>mochi` - Sell a certain daemon\n"
-                "\u2517 `bulk` - Sell all daemons with given name\n"
-                "\u2517 `all` - Sell all daemons with given rarity\n\n"
-                "`>>gift` - Gift someone a daemon\n"
-                "`>>gimme` - Ask someone to trade you a daemon",
-            inline=False
-        )
-        paging.set_action(self.emojis["mochi"], lambda: otogi_embed)
+            footer = data["footer"]
+            if footer:
+                embed.set_footer(text=footer)
 
-        #pso2
-        pso2_embed = discord.Embed(title=f"{self.emojis['hu']} PSO2", colour=discord.Colour.teal())
-        pso2_embed.set_thumbnail(url="http://i.imgur.com/aNAG34t.jpg")
-        pso2_embed.add_field(
-            name="Database",
-            value=
-                "`>>c`, `>>chip` - Check a chip info\n"
-                "Note: Data taken from [swiki](http://pso2es.swiki.jp/)\n\n"
-                "`>>w`, `>>weapon` - Check a weapon info\n"
-                "\u2517 `filter` - Find weapons with given conditions\n"
-                "`>>u`, `>>unit` - Check a unit info\n"
-                "Note: Data taken from [Arks-Visiphone](http://pso2.arks-visiphone.com/wiki/Main_Page)\n\n"
-                "`>>i`, `>>item` - Search for items\n"
-                "`>>price` - Check item price, quite outdated\n"
-                "Note: Data taken from DB Kakia\n\n"
-                "`>>pso2text` - ARKS language\n"
-                "`>>eq` - Display EQ schedule for the next 3 hours\n"
-                "`>>daily` - Display daily orders/featured quests\n"
-                "`>>boost` - Display current week's boost events",
-            inline=False
-        )
-        pso2_embed.add_field(
-            name="EQ Alert",
-            value=
-                "`>>set eq` - Set EQ alert channel\n"
-                "`>>set eqmini` - EQ alert, but less spammy\n"
-                "`>>unset eq` - Unset EQ alert channel\n"
-                "Special thanks to ACF for letting me use his EQ API.",
-            inline=False
-        )
-        paging.set_action(self.emojis["hu"], lambda: pso2_embed)
-
-
-        #game
-        game_embed = discord.Embed(
-            title="\U0001f3b2 Board game",
-            description=
-                "Mostly under construction, but you can play games with your fellow server members.\n"
-                "Each game has their own set of commands.",
-            colour=discord.Colour.teal()
-        )
-        game_embed.add_field(
-            name="Games",
-            value=
-                "~~`>>monopoly` - Play monopoly~~ (I'm lazy okay)\n"
-                "`>>cangua` - Play co ca ngua",
-            inline=False
-        )
-        game_embed.add_field(
-            name="Universal commands",
-            value=
-                "`>>abandon` - Abandon current game\n"
-                "`>>gameover` - Ask players to end current game\n\n"
-                "`>>whatgame` - Check if a member is playing game",
-            inline=False
-        )
-        paging.set_action("\U0001f3b2", lambda: game_embed)
-
-        #image
-        image_embed = discord.Embed(
-            title="\U0001f5bc Image",
-            description="Get random picture from an image board.\nOr get image sauce. Everyone loves sauce.",
-            colour=discord.Colour.teal()
-        )
-        image_embed.add_field(
-            name="Commands",
-            value=
-                "`>>r`, `>>random`\n"
-                "\u2517 `d`, `danbooru` - [Danbooru](https://danbooru.donmai.us)\n"
-                "\u2517 `s`, `safebooru` - [Safebooru](https://safebooru.org)\n"
-                "\u2517 `k`, `konachan` - [Konachan](http://konachan.net)\n"
-                "\u2517 `y`, `yandere` - [Yandere](https://yande.re)\n\n"
-                "\u2517 `dh`, `danbooru_h` - [NSFW Danbooru](https://danbooru.donmai.us)\n"
-                "\u2517 `kh`, `konachan_h` - [NSFW Konachan](http://konachan.com)\n"
-                "\u2517 `sc`, `sancom` - [NSFW Sankaku Complex](https://chan.sankakucomplex.com)\n\n"
-                "`>>saucenao` - Find the sauce of an uploaded pic or url",
-            inline=False
-        )
-        paging.set_action("\U0001f5bc", lambda: image_embed)
-
-        #music
-        music_embed = discord.Embed(title="\U0001f3b5 Music", description="So many music bots out there but I want to have my own, so here it is.", colour=discord.Colour.teal())
-        music_embed.set_thumbnail(url="http://i.imgur.com/HKIOv84.png")
-        music_embed.add_field(
-            name="Commands",
-            value=
-                "`>>m`, `>>music`\n"
-                f"\u2517 `j`, `join` - Have {self.bot.user.name} join the voice channel you are\n"
-                "\u2517                    currently in and play everything in queue\n"
-                f"\u2517 `l`, `leave` - Have {self.bot.user.name} leave the voice channel\n\n"
-                "\u2517 `q`, `queue` - Search Youtube and queue a song\n"
-                "\u2517 `p`, `playlist` - Search Youtube and queue a playlist\n\n"
-                "\u2517 `i`, `info` - Display video info, default current song (position 0)\n"
-                "\u2517 `ai`, `autoinfo` - Auto info display mode\n"
-                "\u2517 `mi`, `manualinfo` - Manual info display mode\n\n"
-                "\u2517 `t`, `toggle` - Toggle play/pause\n"
-                "\u2517 `v`, `volume` - Set volume, must be between 0 and 200\n"
-                "\u2517 `f`, `forward` - Fast forward, default 10 (seconds)\n"
-                "\u2517 `s`, `skip` - Skip current song\n"
-                "\u2517 `r`, `repeat` - Toggle repeat mode\n\n"
-                "\u2517 `d`, `delete` - Delete a song from queue with given position\n"
-                "\u2517 `purge` - Purge all songs from queue\n\n"
-                "\u2517 `setchannel` - Change notifying channel\n"
-                "\u2517 `export` - Export current queue to JSON file\n"
-                "\u2517 `import` - Import JSON playlist",
-            inline=False
-        )
-        paging.set_action("\U0001f3b5", lambda: music_embed)
-
-        #guild
-        guild_embed = discord.Embed(
-            title="\U0001f4d4 Server",
-            description=
-                "Server-related commands.\n"
-                "Cannot be used in DM, obviously.",
-            colour=discord.Colour.teal()
-        )
-        guild_embed.add_field(
-            name="Server management",
-            value=
-                "`>>set`\n"
-                "`>>unset`\n"
-                "These 2 commands are used to set up stuff. Server-manager only.\n"
-                "More detail via `>>help set` and `>>help unset`.\n\n"
-                "`>>channelmute` - Mute a member in current channel\n"
-                "`>>channelban` - Ban a member from current channel\n"
-                "`>>mute` - Give a member \"Muted\" role if exists\n"
-                "`>>unmute` - Remove \"Muted\" role from a member\n\n"
-                "`>>kick` - Kick member\n"
-                "`>>ban` - Ban member\n"
-                "`>>hackban` - Ban user not in server\n"
-                "`>>unban` - Unban member\n\n"
-                "`>>purge` - Bulk delete messages\n"
-                "`>>purgereact` - Clear reactions of messages",
-            inline=False
-        )
-        guild_embed.add_field(
-            name="Role",
-            value=
-                "`>>selfrole` - Get selfrole with given name, if applicable\n"
-                "\u2517 `empty` - Remove all selfroles\n"
-                "\u2517 `list` - Display server selfrole pool\n"
-                "\u2517 `distribution` - Pie chart showing selfrole distribution\n"
-                "\u2517 `add` - Add an existed role to selfrole pool\n"
-                "\u2517 `remove` - Remove a role from selfrole pool\n\n"
-                "`>>creampie` - Get NSFW role, if applicable\n"
-                "`>>censored` - Remove NSFW role, if applicable",
-            inline=False
-        )
-        guild_embed.add_field(
-            name="Info",
-            value=
-                "`>>prefix` - Display server prefixes\n"
-                "`>>serverinfo` - Display server info\n"
-                "`>>roleinfo` - Display role info",
-            inline=False
-        )
-        paging.set_action("\U0001f4d4", lambda: guild_embed)
-
-        #tag & sticker
-        tag_embed = discord.Embed(
-            title="\U0001f3f7 Tag and sticker",
-            description=
-                "A tag is a shortcut text.\n"
-                "Sometimes you want to copy-paste a goddamn long guide or so (it sucks), but you can just put into a tag with short name then call it later.\n"
-                "Tags are server-specific.\n\n"
-                "A sticker is just a fancy tag specialized around image.\n"
-                "Use $stickername anywhere admidst message to trigger sticker send.\n"
-                "Only one sticker shows up per message.\n"
-                "Sticker is universal server-wise.",
-            colour=discord.Colour.teal()
-        )
-        tag_embed.add_field(
-            name="Commands",
-            value=
-                "`>>tag` - Get tag with given name\n"
-                "\u2517 `create` - Create a tag\n"
-                "\u2517 `alias` - Create an alias to another tag\n"
-                "\u2517 `edit` - Edit a tag\n"
-                "\u2517 `delete` - Delete a tag\n"
-                "\u2517 `info` - Tag info\n"
-                "\u2517 `find` - Find tags\n"
-                "\u2517 `list` - All tags by member\n"
-                "\u2517 `all` - All tags of current server\n\n"
-                "`>>sticker`\n"
-                "\u2517 `add` - Add a sticker\n"
-                "\u2517 `edit` - Edit a sticker\n"
-                "\u2517 `delete` - Delete a sticker\n"
-                "\u2517 `info` - Sticker info\n"
-                "\u2517 `find` - Find stickers\n"
-                "\u2517 `list` - All stickers by member\n"
-                "\u2517 `prefix` - Check/set server custom sticker prefix\n"
-                "\u2517 `ban` - Ban a sticker in current server\n"
-                "\u2517 `unban` - Unban a sticker in current server",
-            inline=False
-        )
-        paging.set_action("\U0001f3f7", lambda: tag_embed)
-
-        #misc
-        misc_embed = discord.Embed(title="\u2699 Miscellaneous", description="Pretty much self-explanatory.", colour=discord.Colour.teal())
-        misc_embed.add_field(
-            name="Commands",
-            value=
-                f"`>>jkp`, `>>jankenpon` - Play jankenpon with {self.bot.user.name}\n"
-                "`>>dice` - Roll dices\n"
-                "`>>poll` - Make a poll\n\n"
-                "`>>fancy` - Fancilize a sentence\n"
-                "`>>glitch` - Z̜͍̊ă̤̥ḷ̐́ģͮ͛ò̡͞ ͥ̉͞ť͔͢e̸̷̅x̠ͯͧt̰̱̾\n"
-                "\u2517 `m`, `meaningless` - ĜþŞ¶ōÙđĔł ĝĖĘ Ùľ© ¼Ħâ Ŗėēů®³ĸ¤²\n\n"
-                "`>>avatar` - Get your or a user avatar\n"
-                "`>>g`, `>>google` - Google search\n"
-                "`>>gtrans`, `>>translate` - Google, but translate\n"
-                "`>>remind`\n"
-                "\u2517 `me` - Set a reminder\n"
-                "\u2517 `list` - Display all your reminders\n"
-                "\u2517 `delete` - Delete a reminder\n\n"
-                "`>>char` - Get unicode character info.\n"
-                "`>>color`, `>>colour` - Visualize color's code\n"
-                "`>>choose` - Choose random\n"
-                "`>>calc` - Calculator\n"
-                "`>>solve`\n"
-                "\u2517 `quad` - Solve degree 2 polynominal equation\n"
-                "\u2517 `cubic` - Solve degree 3 polynominal equation\n"
-                "`>>ascii` - Grayscale ASCII art\n"
-                "\u2517 `biggur` - Biggur grayscale ASCII art\n"
-                "\u2517 `block` - Block art\n"
-                "\u2517 `edge` - Edge-detection ASCII art\n"
-                "\u2517 `dot` - Braille dot art\n"
-                "\u2517 `moon` - Moon emoji art",
-            inline=False
-        )
-        paging.set_action("\u2699", lambda: misc_embed)
+            paging.set_action(data["emoji"], _return_embed(embed))
 
         self.help_paging = paging
+
+    @commands.Cog.listener()
+    async def on_command_completion(self, ctx):
+        if ctx.command.name == "reload":
+            self.setup_help()
 
     @commands.command()
     async def help(self, ctx, *, command_name=None):
@@ -439,6 +296,7 @@ class Help:
         all_webhooks = await feedback_channel.webhooks()
         self.feedback_wh = all_webhooks[0]
 
+    @modding.help(brief="Feedback anything", category=None, field="Other", paragraph=0)
     @commands.command()
     async def feedback(self, ctx, *, content):
         '''
@@ -450,6 +308,7 @@ class Help:
         await self.feedback_wh.execute(embed=embed, username=str(ctx.author), avatar_url=ctx.author.avatar_url_as(format="png"))
         await ctx.confirm()
 
+    @modding.help(brief="Bot info", category=None, field="Other", paragraph=0)
     @commands.command(aliases=["about"])
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     async def stats(self, ctx):
@@ -523,6 +382,7 @@ class Help:
 
         await ctx.send(embed=embed)
 
+    @modding.help(brief="Invite link", category=None, field="Other", paragraph=0)
     @commands.command()
     async def invite(self, ctx):
         '''

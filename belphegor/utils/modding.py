@@ -3,6 +3,8 @@ from discord.ext import commands
 from . import format
 import multidict
 
+#==================================================================================================================================================
+
 class MultiDict(multidict.MultiDict):
     def geteither(self, *keys, default=None):
         for key in keys:
@@ -126,6 +128,8 @@ class KeyValue(commands.Converter):
 
         return ret
 
+#==================================================================================================================================================
+
 def help(**kwargs):
     def wrapper(command):
         command.brief = kwargs.pop("brief", None)
@@ -134,3 +138,14 @@ def help(**kwargs):
         command.paragraph = kwargs.pop("paragraph", 0)
         return command
     return wrapper
+
+def transfer_modding(from_, to_):
+    try:
+        ctgr = from_.category
+    except AttributeError:
+        pass
+    else:
+        to_.brief = from_.brief
+        to_.category = from_.category
+        to_.field = from_.field
+        to_.paragraph = from_.paragraph
