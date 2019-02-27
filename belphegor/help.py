@@ -152,7 +152,7 @@ class Help(commands.Cog):
         command_set = set()
         for command in (cmd for cmd in bot.all_commands.values() if not (cmd in command_set or command_set.add(cmd))):
             try:
-                category = getattr(command, "category")
+                category = command.category
             except AttributeError:
                 continue
 
@@ -179,7 +179,7 @@ class Help(commands.Cog):
 
             for subcommand in getattr(command, "commands", ()):
                 try:
-                    sub_category = getattr(subcommand, "category")
+                    sub_category = subcommand.category
                 except AttributeError:
                     continue
                 subparagraph = subcommand.paragraph
