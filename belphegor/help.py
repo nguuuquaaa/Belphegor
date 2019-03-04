@@ -192,8 +192,8 @@ class Help(commands.Cog):
         for category, data in infodump.items():
             embed = discord.Embed(title=f"{data['emoji']} {category}", description=data["desc"] or discord.Embed.Empty, colour=discord.Colour.teal())
             for name, field_info in data["fields"].items():
-                total = ("\n".join(p) for p in field_info)
-                embed.add_field(name=name, value="\n\n".join(("\n".join(p) for p in field_info)), inline=False)
+                total = ("\n".join(p) for p in field_info if p)
+                embed.add_field(name=name, value="\n\n".join(total), inline=False)
 
             thumb = data["thumb"]
             if thumb:

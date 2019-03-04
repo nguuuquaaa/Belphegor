@@ -898,7 +898,7 @@ class Guild(commands.Cog):
     async def distribution(self, ctx):
         '''
             `>>selfrole distribution`
-            Draw a piechart showing server selfrole distribution.
+            Draw a chart showing server selfrole distribution.
         '''
         async with ctx.typing():
             roles = await self.get_selfroles(ctx.guild)
@@ -906,13 +906,17 @@ class Guild(commands.Cog):
                 return await ctx.send("Server has no selfrole.")
             colors = {(0, 0, 0), (255, 255, 255)}
             check_roles = []
+            all_members = set()
             for role in roles:
+                all_members.update(role.members)
                 rgb = role.colour.to_rgb()
                 while rgb in colors:
                     rgb = (random.randrange(256), random.randrange(256), random.randrange(256))
                 colors.add(rgb)
-                check_roles.append({"name": role.name, "count": len(role.members), "color": rgb})
-            bytes_ = await utils.pie_chart(check_roles)
+                check_roles.append({"name": role.name, "count": {"": len(role.members)}, "color": utils.adjust_alpha(rgb, 255)})
+            check_roles.append({"name": "All with selfroles", "count": {"": len(all_members)}, "color": (255, 255, 255, 255)})
+
+            bytes_ = await utils.bar_chart(check_roles, unit_y="members", unit_x="", loop=self.bot.loop)
             if bytes_:
                 await ctx.send(file=discord.File(bytes_, filename="distribution.png"))
             else:

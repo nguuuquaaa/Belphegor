@@ -339,11 +339,13 @@ class Misc(commands.Cog):
         '''
         await ctx.send("Go away.")
 
+    @modding.help(brief="Echo text", category=None, field="Other", paragraph=0)
     @commands.group(invoke_without_command=True)
     async def say(self, ctx, *, something: commands.clean_content):
         '''
             `>>say <text goes here>`
             Echo text.
+            Also to test send message permissions.
         '''
         await ctx.send(something)
 
@@ -654,7 +656,7 @@ class Misc(commands.Cog):
         t = lstrip_generator(("".join(chars[i:i+width]).rstrip() for i in range(0, len(chars), width)))
         return "\n".join(t)
 
-    @modding.help(brief="Grayscale ascii art", category="Misc", field="Commands", paragraph=3)
+    @modding.help(brief="Grayscale ascii art", category="Misc", field="Processing", paragraph=2)
     @commands.group(invoke_without_command=True)
     async def ascii(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member}, clean=False, multiline=False)=modding.EMPTY):
         '''
@@ -678,7 +680,7 @@ class Misc(commands.Cog):
         text = self.to_ascii(image, 64, 30)
         await ctx.send(f"```\n{text}\n```")
 
-    @modding.help(brief="Bigger grayscale ascii art", category="Misc", field="Commands", paragraph=3)
+    @modding.help(brief="Bigger grayscale ascii art", category="Misc", field="Processing", paragraph=2)
     @ascii.command(name="big", aliases=["bigger", "biggur"])
     async def big_ascii(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("width", "w"): int}, clean=False, multiline=False)=modding.EMPTY):
         '''
@@ -784,7 +786,7 @@ class Misc(commands.Cog):
 
         return threshold, width, height
 
-    @modding.help(brief="Edge-detection ascii art", category="Misc", field="Commands", paragraph=3)
+    @modding.help(brief="Edge-detection ascii art", category="Misc", field="Processing", paragraph=2)
     @ascii.command(name="edge")
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     async def ascii_edge(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t", "blur", "b"): int, ("weight", "w"): float, ("edge", "e", "inverse", "i"): bool}, clean=False, multiline=False)=modding.EMPTY):
@@ -864,7 +866,7 @@ class Misc(commands.Cog):
                 delete_after=10
             )
 
-    @modding.help(brief="Block ascii art", category="Misc", field="Commands", paragraph=3)
+    @modding.help(brief="Block ascii art", category="Misc", field="Processing", paragraph=2)
     @ascii.command(name="block")
     async def ascii_block(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t"): int, ("inverse", "i"): bool}, clean=False, multiline=False)=modding.EMPTY):
         '''
@@ -899,7 +901,7 @@ class Misc(commands.Cog):
         result = self.convert_image_to_ascii(image, None, per_cut, width, height, 1, 2, threshold, inverse)
         await ctx.send(f"```\n{result}\n```")
 
-    @modding.help(brief="Braille dot ascii art", category="Misc", field="Commands", paragraph=3)
+    @modding.help(brief="Braille dot ascii art", category="Misc", field="Processing", paragraph=2)
     @ascii.command(name="dot")
     async def ascii_dot(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t"): int, ("inverse", "i"): bool}, clean=False, multiline=False)=modding.EMPTY):
         '''
@@ -943,7 +945,7 @@ class Misc(commands.Cog):
         else:
             await ctx.send(f"\u200b{result}")
 
-    @modding.help(brief="Moon emoji art", category="Misc", field="Commands", paragraph=3)
+    @modding.help(brief="Moon emoji art", category="Misc", field="Processing", paragraph=2)
     @ascii.command(name="moon")
     async def ascii_moon(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t"): int, ("inverse", "i"): bool}, clean=False, multiline=False)=modding.EMPTY):
         '''
@@ -979,6 +981,7 @@ class Misc(commands.Cog):
         result = await self.bot.loop.run_in_executor(None, self.convert_image_to_ascii, image, None, per_cut, width, height, 4, 4, threshold, inverse)
         await ctx.send(f"```\n{result}\n```")
 
+    @modding.help(brief="pong", category=None, field="Other", paragraph=0)
     @commands.command(name="ping")
     async def cmd_ping(self, ctx):
         '''
@@ -1003,11 +1006,16 @@ class Misc(commands.Cog):
         ]):
             self.auto_rep_disabled.update(data["guild_ids"])
 
-    @modding.help(brief="Enable/disable autorep", field="Other", paragraph=0)
+    @modding.help(brief="Enable/disable auto-reply", field="Other", paragraph=0)
     @commands.command()
     @checks.guild_only()
     @checks.manager_only()
-    async def autorep(self, ctx, mode):
+    async def autorep(self, ctx):
+        '''
+            `>>autorep`
+            Enable/disable auto-reply.
+            This includes ping, \\o\\ /o/ \\o/ /o\\ and stickers.
+        '''
         guild_id = ctx.guild.id
         if guild_id in self.auto_rep_disabled:
             self.auto_rep_disabled.discard(guild_id)

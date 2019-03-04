@@ -20,6 +20,7 @@ class Sticker(commands.Cog):
         self.guild_data = bot.db.guild_data
         self.sticker_regexes = {}
         bot.loop.create_task(self.get_all_prefixes())
+        self.auto_rep_disabled = bot.get_cog("Misc").auto_rep_disabled
 
     async def get_all_prefixes(self):
         async for data in self.guild_data.find(
@@ -32,15 +33,24 @@ class Sticker(commands.Cog):
     async def on_message(self, message):
         if message.author.bot:
             return
-        result = self.sticker_regexes.get(getattr(message.guild, "id", None), DEFAULT_PREFIX_REGEX).findall(message.content)
+        gid = getattr(message.guild, "id", None)
+        if gid in self.auto_rep_disabled:
+            return
+        result = self.sticker_regexes.get(gid, DEFAULT_PREFIX_REGEX).findall(message.content)
         query = {"name": {"$in": result}}
         if message.guild:
-            query["banned_guilds"] = {"$not": {"$eq": message.guild.id}}
+            query["banned_guilds"] = {"$not": {"$eq": gid}}
         st = await self.sticker_list.find_one_and_update(query, {"$inc": {"uses": 1}}, projection={"_id": False, "url": True})
         if st:
             embed = discord.Embed()
             embed.set_image(url=st["url"])
             await message.channel.send(embed=embed)
+
+    @commands.Cog.listener()
+    async def on_command_completion(self, ctx):
+        if ctx.command.name == "reload":
+            if ctx.args[2] == "misc":
+                self.auto_rep_disabled = self.bot.get_cog("Misc").auto_rep_disabled
 
     @modding.help(brief=None, category="Tag & sticker", field="Commands", paragraph=1)
     @commands.group()

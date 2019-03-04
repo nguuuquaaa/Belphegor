@@ -434,15 +434,17 @@ class Statistics(commands.Cog):
         x_keys = statuses[0]["count"].keys()
         totals = collections.OrderedDict(((key, sum((item["count"][key] for item in statuses))) for key in x_keys))
         draw_data = []
-        accumulate = {}
         for d in statuses:
             item = {"name": d["name"], "color": d["color"]}
             count = collections.OrderedDict()
             for key, value in d["count"].items():
-                count[key] = value / totals[key] * 100 + accumulate.get(key, 0)
+                t = totals[key]
+                if t > 0:
+                    count[key] = value / t * 100
+                else:
+                    count[key] = 0
             item["count"] = count
             draw_data.append(item)
-            accumulate = count
 
         #draw
         title = f"{target.display_name}'s hourly status (offset {offset:+d})"

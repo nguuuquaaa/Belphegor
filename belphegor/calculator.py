@@ -900,7 +900,7 @@ class Calculator(commands.Cog):
             m.user_variables.update(last.user_variables)
             return m
 
-    @modding.help(brief="A calculator with loose input rule", category="Misc", field="Processing", paragraph=0)
+    @modding.help(brief="A calculator with input rule close to handwritten", category="Misc", field="Processing", paragraph=0)
     @commands.command(aliases=["calc"])
     async def calculate(self, ctx, *, text):
         '''

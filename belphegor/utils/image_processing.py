@@ -5,6 +5,7 @@ import asyncio
 import math
 import random
 import collections
+import itertools
 
 #==================================================================================================================================================
 
@@ -563,7 +564,8 @@ async def stacked_area_chart(
         image.add_font("axis", f"{config.DATA_PATH}/font/arialunicodems.ttf", size=12)
 
         #calculate marks
-        max_count = max((max(s["count"].values()) for s in data))
+        accumulate = [list(itertools.accumulate(x)) for x in zip(*(i["count"].values() for i in data))]
+        max_count = max((max(s) for s in accumulate))
         digits = -1
         while max_count > 10**digits + EPSILON:
             digits += 1
@@ -582,10 +584,10 @@ async def stacked_area_chart(
         each_width = 600 / len(x_keys)
         y_count = len(y_keys)
 
-        for item in reversed(data):
+        for index, item in reversed(list(enumerate(data))):
             xy = [650-each_width/2, 350, 50+each_width/2, 350]
             for i, k in enumerate(x_keys):
-                value = item["count"][k]
+                value = accumulate[i][index]
                 xy.append(50+(i+1/2)*each_width)
                 xy.append(350-value/y_count/each*300)
             image.draw_polygon(xy, fill=item["color"])

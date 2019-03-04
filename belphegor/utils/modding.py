@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from . import format
 import multidict
+import functools
 
 #==================================================================================================================================================
 
@@ -130,16 +131,7 @@ class KeyValue(commands.Converter):
 
 #==================================================================================================================================================
 
-def help(**kwargs):
-    def wrapper(command):
-        command.brief = kwargs.pop("brief", None)
-        command.category = kwargs.pop("category", None)
-        command.field = kwargs.pop("field", "Commands")
-        command.paragraph = kwargs.pop("paragraph", 0)
-        return command
-    return wrapper
-
-def transfer_modding(from_, to_):
+def _transfer_modding(from_, to_):
     try:
         ctgr = from_.category
     except AttributeError:
@@ -149,3 +141,24 @@ def transfer_modding(from_, to_):
         to_.category = from_.category
         to_.field = from_.field
         to_.paragraph = from_.paragraph
+
+#modding.help hax, so new attributes are preserved when creating a commands.Cog instance
+def _wrap_transfer(func):
+    @functools.wraps(func)
+    def new_func(self):
+        ret = func(self)
+        _transfer_modding(self, ret)
+        return ret
+    return new_func
+
+commands.Command.copy = _wrap_transfer(commands.Command.copy)
+#end hax
+
+def help(**kwargs):
+    def wrapper(command):
+        command.brief = kwargs.pop("brief", None)
+        command.category = kwargs.pop("category", None)
+        command.field = kwargs.pop("field", "Commands")
+        command.paragraph = kwargs.pop("paragraph", 0)
+        return command
+    return wrapper
