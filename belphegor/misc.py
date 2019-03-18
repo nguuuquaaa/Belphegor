@@ -475,6 +475,29 @@ class Misc(commands.Cog):
         else:
             await ctx.send("Wha hold your horse with the length.")
 
+    def get_rgb(self, rgb):
+        rg, b = divmod(rgb, 256)
+        r, g = divmod(rg, 256)
+        if r < 0 or r > 255:
+            raise checks.CustomError("RGB value out of range.")
+        else:
+            return r, g, b
+
+    def rgb_to_cmyk(self, r, g, b, *, scale=100):
+        if (r == 0) and (g == 0) and (b == 0):
+            return 0, 0, 0, scale
+
+        c = 1 - r / 255
+        m = 1 - g / 255
+        y = 1 - b / 255
+
+        k = min(c, m, y)
+        c = (c - k) / (1 - k)
+        m = (m - k) / (1 - k)
+        y = (y - k) / (1 - k)
+
+        return tuple(int(round(i*scale)) for i in (c, m, y, k))
+
     @modding.help(brief="Color visualize", category="Misc", field="Commands", paragraph=2)
     @commands.command(aliases=["colour"])
     async def color(self, ctx, *args):
@@ -494,19 +517,33 @@ class Misc(commands.Cog):
             elif i.startswith("#"):
                 i = i[1:]
             try:
-                c = discord.Colour(int(i, 16))
+                rgb = int(i, 16)
             except ValueError:
-                return await ctx.send("Oi, that's not color code at all.")
+                return await ctx.send("Oi this is not color code at all.")
             else:
-                rgb = c.to_rgb()
+                rgb = self.get_rgb(rgb)
         else:
             return await ctx.send("Do you even try?")
         pic = Image.new("RGB", (50, 50), rgb)
         bytes_ = BytesIO()
         pic.save(bytes_, "png")
+
+        rgb_value = rgb[0] * 256 * 256 + rgb[1] * 256 + rgb[2]
         f = discord.File(bytes_.getvalue(), filename="color.png")
-        e = discord.Embed(title=f"#{c.value:06X}", colour=c)
-        e.set_image(url="attachment://color.png")
+        e = discord.Embed(title=f"#{rgb_value:X}", colour=rgb_value)
+        e.set_thumbnail(url="attachment://color.png")
+        e.add_field(name="RGB", value=", ".join((str(v) for v in rgb)))
+
+        hsv = colorsys.rgb_to_hsv(rgb[0]/255, rgb[1]/255, rgb[2]/255)
+        hsv = tuple(int(round(i)) for i in (hsv[0]*360, hsv[2]*100, hsv[1]*100))
+        e.add_field(name="HSV", value=f"{hsv[0]}\u00b0, {hsv[1]}%, {hsv[2]}%")
+
+        hls = colorsys.rgb_to_hls(rgb[0]/255, rgb[1]/255, rgb[2]/255)
+        hsl = tuple(int(round(i)) for i in (hls[0]*360, hls[2]*100, hls[1]*100))
+        e.add_field(name="HSL", value=f"{hsl[0]}\u00b0, {hsl[1]}%, {hsl[2]}%")
+
+        cmyk = self.rgb_to_cmyk(*rgb)
+        e.add_field(name="CMYK", value=", ".join((f"{v}%" for v in cmyk)))
         await ctx.send(file=f, embed=e)
 
     @commands.command()
@@ -1044,6 +1081,8 @@ class Misc(commands.Cog):
             rgb = int(rgb, 16)
         except ValueError:
             return await ctx.send("Input is not RGB in hex format.")
+        else:
+            r, g, b = self.get_rgb(rgb)
         threshold = data.geteither("threshold", "t", default=150)
         self.check_threshold(threshold, max=255*4)
         size = data.geteither("size", "s")
@@ -1055,11 +1094,6 @@ class Misc(commands.Cog):
 
         await ctx.trigger_typing()
         bytes_ = await self.bot.fetch(url)
-
-        rg, b = divmod(rgb, 256)
-        r, g = divmod(rg, 256)
-        if r < 0 or r > 255:
-            return await ctx.send("RGB value out of range.")
 
         def do_stuff():
             image = Image.open(BytesIO(bytes_)).convert("RGBA")
@@ -1117,15 +1151,31 @@ class Misc(commands.Cog):
         rgb[..., 2] = np.select(conditions, [v, p, t, v, v, q], default=p)
         return rgb.astype("uint8")
 
+    def curve_reform(self, arr, v):
+        if v == 0:
+            arr = np.where(arr<=255, 0, 255)
+        elif v == 1:
+            pass
+        else:
+            m = 255 * v ** 2 / (4 - 4 * v)
+            arr = m * (255 + m) / (255 + m - arr) - m
+        return arr
+
+    def linear_reform(self, arr, v):
+        iv =  255 * (1 - v / 2)
+        arr = np.where(arr<=iv, arr*(255-iv)/iv, (arr-iv)*iv/(255-iv)+255-iv)
+        return arr
+
     @modding.help(brief="Monochrome transformation", category="Misc", field="Processing", paragraph=1)
     @commands.command(aliases=["ct2"])
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     async def transform2(self, ctx, *, data: modding.KeyValue({("member", "m", ""): discord.Member}, clean=False, multiline=False)=modding.EMPTY):
         '''
-            `>>transform2 <keyword: _|member|m> <keyword: rgb>`
+            `>>transform2 <keyword: _|member|m> <keyword: rgb> <keyword: mode>`
             Apply a monochrome transformation to member avatar.
             Default member is command invoker.
             Rgb is in hex format, default is 7289da (blurple).
+            Mode is either linear or curve, default is linear.
         '''
         target = data.geteither("member", "m", "", default=ctx.author)
         url = strip_url(data.get("url", target.avatar_url_as(format="png")))
@@ -1134,8 +1184,14 @@ class Misc(commands.Cog):
             rgb = int(rgb, 16)
         except ValueError:
             return await ctx.send("Input is not RGB in hex format.")
+        else:
+            r, g, b = self.get_rgb(rgb)
         threshold = data.geteither("threshold", "t", default=150)
         self.check_threshold(threshold, max=255*4)
+        mode = data.get("mode", "linear")
+        mode_func = getattr(self, f"{mode}_reform", None)
+        if mode_func is None:
+            return await ctx.send("Mode must be either linear or curve.")
         size = data.geteither("size", "s")
         if size:
             try:
@@ -1146,10 +1202,6 @@ class Misc(commands.Cog):
         await ctx.trigger_typing()
         bytes_ = await self.bot.fetch(url)
 
-        rg, b = divmod(rgb, 256)
-        r, g = divmod(rg, 256)
-        if r < 0 or r > 255:
-            return await ctx.send("RGB value out of range.")
         h, s, v = colorsys.rgb_to_hsv(r/255, g/255, b/255)
 
         def do_stuff():
@@ -1157,9 +1209,7 @@ class Misc(commands.Cog):
             a = np.array(image)
             hsv = self.rgb_to_hsv(a)
             hsv[..., 0] = h
-            temp = hsv[..., 2]
-            iv =  255 * (1 - v / 2)
-            hsv[..., 2] = np.where(temp<=iv, temp*(255-iv)/iv, (temp-iv)*iv/(255-iv)+255-iv)
+            hsv[..., 2] = mode_func(hsv[..., 2], v)
             rgb = self.hsv_to_rgb(hsv)
             image = Image.fromarray(rgb)
 
