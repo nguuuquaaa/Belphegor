@@ -779,7 +779,7 @@ class MathParse(BaseParse):
                         if self.text.strip() == "counter":
                             x = var_name
                             self.user_variables[x] = NoValue(x)
-                            results.append(f"Defined {x}")
+                            results.append(f"Counter {x}")
                             continue
                         else:
                             pass

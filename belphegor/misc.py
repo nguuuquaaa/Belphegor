@@ -1157,6 +1157,9 @@ class Misc(commands.Cog):
             a = np.array(image)
             hsv = self.rgb_to_hsv(a)
             hsv[..., 0] = h
+            temp = hsv[..., 2]
+            iv =  255 * (1 - v / 2)
+            hsv[..., 2] = np.where(temp<=iv, temp*(255-iv)/iv, (temp-iv)*iv/(255-iv)+255-iv)
             rgb = self.hsv_to_rgb(hsv)
             image = Image.fromarray(rgb)
 

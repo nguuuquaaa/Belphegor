@@ -384,27 +384,26 @@ class PSO2(commands.Cog):
                     else:
                         t = orig_att
                     special = t
-                    q = {
-                        "properties": {
-                            "$elemMatch": {
-                                "$or": [
-                                    {
-                                        "name": {
-                                            "$regex": re_value,
-                                            "$options": "i"
-                                        }
-                                    },
-                                    {
-                                        "description": {
-                                            "$regex": re_value,
-                                            "$options": "i"
-                                        }
+                    q = {"properties": query.pop("properties", {"$all": []})}
+                    q["properties"]["$all"].append({
+                        "$elemMatch": {
+                            "$or": [
+                                {
+                                    "name": {
+                                        "$regex": re_value,
+                                        "$options": "i"
                                     }
-                                ],
-                                "type": t
-                            }
+                                },
+                                {
+                                    "description": {
+                                        "$regex": re_value,
+                                        "$options": "i"
+                                    }
+                                }
+                            ],
+                            "type": t
                         }
-                    }
+                    })
                 elif orig_att in ("ssa_slots", "slots", "slot", "classes", "class"):
                     if orig_att in ("ssa_slots", "slots", "slot"):
                         t = "ssa_slots"
@@ -427,7 +426,7 @@ class PSO2(commands.Cog):
             ret = []
             for key, value in weapon.items():
                 if key == "properties":
-                    for v in value:
+                    for v in reversed(value):
                         if v["type"] == special:
                             break
                     else:
@@ -457,7 +456,7 @@ class PSO2(commands.Cog):
                     ret.append(desc)
                 elif key == "rarity":
                     icon = self.emojis[f"star_{(value-1)//3}"]
-                    ret.append(f"`{value}` {icon}")
+                    ret.append(f"{value}{icon}")
                 else:
                     ret.append(f"{key}: {desc}")
             new_weapon["value"] = "\n".join(ret)
@@ -469,12 +468,12 @@ class PSO2(commands.Cog):
     async def w_filter(self, ctx, *, data: modding.KeyValue()):
         '''
             `>>w filter <criteria>`
-            Find all weapons with <criteria>.
-            Criteria can contain multiple lines, each with format `<attribute>=<value>`.
+            Find all weapons with criteria.
+            Criteria can contain multiple lines, each with format `attribute=value`.
             Available attributes:
             - en_name
             - jp_name
-            - category (note: look for the weapon emojis' name)
+            - category (sword, wl, partisan, td, ds, knuckle, katana, db, gs, rifle, launcher, tmg, bow, rod, talis, wand, jb, takt)
             - rarity
             - atk
             - properties/potential(pot)/ability(abi)/pa/saf/s_class(ssa_saf)
@@ -575,7 +574,7 @@ class PSO2(commands.Cog):
             `>>item <name> <keyword: desc|description>`
             Find PSO2 items.
             Name given is case-insensitive, and can be either EN or JP.
-            Description is used to filtered result.
+            Description is used to filter result.
         '''
         await ctx.trigger_typing()
         name = data.getall("", None)

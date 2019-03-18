@@ -729,6 +729,7 @@ class Guild(commands.Cog):
             if guild_data.get("log_message"):
                 log_channel = guild.get_channel(guild_data.get("log_channel_id"))
                 if log_channel:
+                    file_ = None
                     embed = discord.Embed(colour=discord.Colour.dark_orange())
                     embed.add_field(name="Event", value="message_delete", inline=False)
                     embed.add_field(name="ID", value=message.id)
@@ -737,9 +738,18 @@ class Guild(commands.Cog):
                     if message.content:
                         embed.add_field(name="Content", value=f"{message.content[:1000]}" if len(message.content)>1000 else message.content, inline=False)
                     if message.attachments:
-                        embed.add_field(name="Attachments", value="\n".join([a.url for a in message.attachments]))
+                        a = message.attachments[0]
+                        try:
+                            bytes_ = await self.bot.fetch(a.proxy_url)
+                        except error.CustomError:
+                            rest = message.attachments
+                        else:
+                            file_ = discord.File(bytes_, a.filename)
+                            rest = message.attachments[1:]
+                        if rest:
+                            embed.add_field(name="Attachments", value="\n".join((a.proxy_url for a in rest)))
                     embed.set_footer(text=utils.format_time(utils.now_time()))
-                    await log_channel.send(embed=embed)
+                    await log_channel.send(embed=embed, file=file_)
 
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):

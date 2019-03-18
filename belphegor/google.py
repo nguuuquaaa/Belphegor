@@ -256,8 +256,9 @@ class GoogleEngine:
                 embed = discord.Embed(title="Search result:", description=description, colour=discord.Colour.dark_orange())
                 try:
                     raw_img_url = URL(img_box.find("a")["href"])
-                    img_url = raw_img_url.query.get("imgurl")
-                    embed.set_thumbnail(url=img_url)
+                    img_url = raw_img_url.query.get("imgurl", "")
+                    if img_url.startswith(("http://", "https://")):
+                        embed.set_thumbnail(url=img_url)
                 except:
                     pass
                 embed.add_field(name="See also:", value="\n\n".join((f"[{utils.discord_escape(t[0])}]({utils.safe_url(t[1])})" for t in search_results[:4])), inline=True)
@@ -531,6 +532,8 @@ def setup(bot):
     bot.saved_stuff["google"] = process
 
 def teardown(bot):
+    search_queue.close()
+    result_queue.close()
     process = bot.saved_stuff.pop("google")
     process.terminate()
     process.close()

@@ -50,7 +50,7 @@ class Help(commands.Cog):
         infodump = {
             None: {
                 "emoji":    "\u21a9",
-                "desc":     "[Support server](https://discord.gg/qnavjMy)",
+                "desc":     "[Support server but not really active](https://discord.gg/qnavjMy)",
                 "thumb":    self.bot.user.avatar_url,
                 "footer":   "Default prefix: >>",
                 "fields":   {
@@ -65,14 +65,14 @@ class Help(commands.Cog):
                             "\U0001f4d4 Role/server stuff\n"
                             "\U0001f3f7 Tag and sticker\n"
                             "\u2699 Miscellaneous commands\n\n"
-                            "You can also use `>>help help` to get a rough idea of how to use this help and `>>help <full command name>` to get specific command usage"
+                            "You can also use `>>help help` to get a rough idea of how to use this help and `>>help <full command name>` to get specific command usage."
                         ]
                     ]
                 }
             },
             "Otogi": {
                 "emoji":    self.emojis["mochi"],
-                "desc":     \
+                "desc":
                     "Data taken from [Otogi Wikia](http://otogi.wikia.com/) and [Otogi Effective Stats Spreadsheet](https://docs.google.com/spreadsheets/d/1oJnQ5TYL5d9LJ04HMmsuXBvJSAxqhYqcggDZKOctK2k/edit#gid=0)",
                 "thumb":    getattr(self.otogi_guild, "icon_url", None),
                 "footer":   None,
@@ -80,9 +80,9 @@ class Help(commands.Cog):
             },
             "PSO2": {
                 "emoji":    self.emojis["hu"],
-                "desc":     \
-                    "Data taken from [swiki](http://pso2es.swiki.jp/), [Arks-Visiphone](http://pso2.arks-visiphone.com/wiki/Main_Page) and DB Kakia.\n\n" \
-                    "Special thanks to ACF for letting me use his EQ API.\n" \
+                "desc":
+                    "Data taken from [swiki](http://pso2es.swiki.jp/), [Arks-Visiphone](http://pso2.arks-visiphone.com/wiki/Main_Page) and DB Kakia.\n\n"
+                    "Special thanks to ACF for letting me use his EQ API.\n"
                     "`>>set eq` - Set EQ alert channel\n"
                     "`>>set eqmini` - EQ alert, but less spammy\n"
                     "`>>unset eq` - Unset EQ alert channel",
@@ -92,8 +92,8 @@ class Help(commands.Cog):
             },
             "Games": {
                 "emoji":    "\U0001f3b2",
-                "desc":     \
-                    "Mostly under construction, but you can play games with your fellow server members.\n" \
+                "desc":
+                    "Mostly under construction, but you can play games with your fellow server members.\n"
                     "Each game has their own set of commands.",
                 "thumb":    None,
                 "footer":   None,
@@ -101,8 +101,8 @@ class Help(commands.Cog):
             },
             "Image": {
                 "emoji":    "\U0001f5bc",
-                "desc":     \
-                    "Get random picture from an image board.\n" \
+                "desc":
+                    "Get random picture from an image board.\n"
                     "Or get image sauce. Everyone loves sauce.",
                 "thumb":    None,
                 "footer":   None,
@@ -117,8 +117,8 @@ class Help(commands.Cog):
             },
             "Guild": {
                 "emoji":    "\U0001f4d4",
-                "desc":     \
-                    "Server-related commands.\n" \
+                "desc":
+                    "Server-related commands.\n"
                     "Cannot be used in DM, obviously.",
                 "thumb":    None,
                 "footer":   None,
@@ -126,13 +126,13 @@ class Help(commands.Cog):
             },
             "Tag & sticker": {
                 "emoji":    "\U0001f3f7",
-                "desc":     \
-                    "A tag is a shortcut text.\n" \
-                    "Sometimes you want to copy-paste a goddamn long guide or so (it sucks), but you can just put into a tag with short name then call it later.\n" \
-                    "Tags are server-specific.\n\n" \
-                    "A sticker is just a fancy tag specialized around image.\n" \
-                    "Use $stickername anywhere admidst message to trigger sticker send.\n" \
-                    "Only one sticker shows up per message.\n" \
+                "desc":
+                    "A tag is a shortcut text.\n"
+                    "Sometimes you want to copy-paste a goddamn long guide or so (it sucks), but you can just put into a tag with short name then call it later.\n"
+                    "Tags are server-specific.\n\n"
+                    "A sticker is just a fancy tag specialized around image.\n"
+                    "Use $stickername anywhere admidst message to trigger sticker send.\n"
+                    "Only one sticker shows up per message.\n"
                     "Sticker is universal server-wise.",
                 "thumb":    None,
                 "footer":   None,
@@ -190,7 +190,11 @@ class Help(commands.Cog):
 
         paging = utils.Paginator([])
         for category, data in infodump.items():
-            embed = discord.Embed(title=f"{data['emoji']} {category}", description=data["desc"] or discord.Embed.Empty, colour=discord.Colour.teal())
+            if category is None:
+                title = f"{self.emojis['ranged']} {self.bot.user}"
+            else:
+                title = f"{data['emoji']} {category}"
+            embed = discord.Embed(title=title, description=data["desc"] or discord.Embed.Empty, colour=discord.Colour.teal())
             for name, field_info in data["fields"].items():
                 total = ("\n".join(p) for p in field_info if p)
                 embed.add_field(name=name, value="\n\n".join(total), inline=False)
@@ -309,17 +313,18 @@ class Help(commands.Cog):
         await ctx.confirm()
 
     @modding.help(brief="Bot info", category=None, field="Other", paragraph=0)
-    @commands.command(aliases=["about"])
+    @commands.command()
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
-    async def stats(self, ctx):
+    async def about(self, ctx):
         '''
-            `>>stats`
-            Bot stats.
+            `>>about`
+            Bot info.
         '''
         await ctx.trigger_typing()
-        owner = self.bot.get_user(config.OWNER_ID)
+        bot = self.bot
+        owner = bot.get_user(config.OWNER_ID)
         bytes_ = await utils.fetch(
-            self.bot.session,
+            bot.session,
             "https://api.github.com/repos/nguuuquaaa/Belphegor/commits",
             headers={"User-Agent": owner.name}
         )
@@ -341,31 +346,37 @@ class Help(commands.Cog):
                 else:
                     dt = f" ({delta%60}s ago)"
             desc.append(f"[`{c['sha'][:7]}`]({c['html_url']}) {c['commit']['message']}{dt}")
-        embed = discord.Embed(colour=discord.Colour.blue())
+        embed = discord.Embed(
+            description=
+                f"{bot.user.name} is a multi-purpose bot with lots of experimental and unnecessary commands.\n"
+                "Also PSO2 and Otogi stuff. These works at least.",
+            colour=discord.Colour.blue()
+        )
+        embed.set_author(name=str(bot.user), icon_url=bot.user.avatar_url)
         embed.add_field(name="Lastest changes", value="\n".join(desc), inline=False)
         embed.add_field(name="Owner", value=owner.mention if owner in getattr(ctx.guild, "members", ()) else str(owner))
         v = sys.version_info
         embed.add_field(name="Written in", value=f"{self.emojis['python']} {v.major}.{v.minor}.{v.micro}")
         embed.add_field(name="Library", value="[discord.py\\[rewrite\\]](https://github.com/Rapptz/discord.py/tree/rewrite)")
-        embed.add_field(name="Created at", value=str(self.bot.user.created_at)[:10])
-        process = self.bot.process
+        embed.add_field(name="Created at", value=str(bot.user.created_at)[:10])
+        process = bot.process
         with process.oneshot():
             cpu_percentage = process.cpu_percent(None)
-            embed.add_field(name="Process", value=f"CPU: {(cpu_percentage/self.bot.cpu_count):.2f}%\nRAM: {(process.memory_full_info().uss/1024/1024):.2f} MBs")
-        uptime = int((now_time - self.bot.start_time).total_seconds())
+            embed.add_field(name="Process", value=f"CPU: {(cpu_percentage/bot.cpu_count):.2f}%\nRAM: {(process.memory_full_info().uss/1024/1024):.2f} MBs")
+        uptime = int((now_time - bot.start_time).total_seconds())
         d, h = divmod(uptime, 86400)
         h, m = divmod(h, 3600)
         m, s = divmod(m, 60)
         embed.add_field(name="Uptime", value=f"{d}d {h}h{m}m{s}s")
 
-        embed.add_field(name="Servers", value=f"{len(self.bot.guilds)} servers")
+        embed.add_field(name="Servers", value=f"{len(bot.guilds)} servers")
         ch_count = 0
         txt_count = 0
         ctgr_count = 0
         voice_count = 0
         member_count = 0
         off_members = set()
-        for g in self.bot.guilds:
+        for g in bot.guilds:
             ch_count += len(g.channels)
             txt_count += len(g.text_channels)
             ctgr_count += len(g.categories)
@@ -375,7 +386,7 @@ class Help(commands.Cog):
                 if m.status is discord.Status.offline:
                     off_members.add(m.id)
         off_count = len(off_members)
-        user_count = len(self.bot.users)
+        user_count = len(bot.users)
         embed.add_field(name="Members", value=f"{member_count} members\n{user_count} unique\n{user_count-off_count} online\n{off_count} offline")
         embed.add_field(name="Channels", value=f"{ch_count} total\n{ctgr_count} categories\n{txt_count} text channels\n{voice_count} voice channels")
         embed.set_footer(text=utils.format_time(now_time.astimezone()))
@@ -406,7 +417,19 @@ class Help(commands.Cog):
         perms.speak = True
         perms.use_voice_activation = True
         perms.external_emojis = True
-        await ctx.send(f"<{discord.utils.oauth_url(ctx.me.id, perms)}>")
+
+        minimal = discord.Permissions()
+        minimal.read_messages = True
+        minimal.send_messages = True
+        minimal.embed_links = True
+        minimal.attach_files = True
+        minimal.add_reactions = True
+        minimal.external_emojis = True
+
+        await ctx.send(
+            f"Full perms: <{discord.utils.oauth_url(ctx.me.id, perms)}>\n"
+            f"Minimal: <{discord.utils.oauth_url(ctx.me.id, minimal)}>"
+        )
 
     @commands.command()
     async def source(self, ctx, *, name=None):

@@ -436,7 +436,6 @@ class Otogi(commands.Cog):
                 p = {att: True}
             except:
                 re_value = ".*?".join(map(re.escape, value.split()))
-                p = None
                 if orig_att in ("va", "seiyuu"):
                     att = "voice_actor"
                 elif orig_att in ("illu", "artist"):
@@ -453,39 +452,36 @@ class Otogi(commands.Cog):
                     att = "daemon_type"
                 elif orig_att == "skill":
                     att = "skills"
-                    p = {"skills.$": True}
                 elif orig_att in ("abi", "ability"):
                     att = "abilities"
-                    p = {"abilities.$": True}
                 elif orig_att == "bond":
                     att = "bonds"
-                    p = {"bonds.$": True}
                 else:
                     att = orig_att
-                if p:
-                    q = {
-                        att: {
-                            "$elemMatch": {
-                                "$or": [
-                                    {
-                                        "name": {
-                                            "$regex": re_value,
-                                            "$options": "i"
-                                        }
-                                    },
-                                    {
-                                        "effect": {
-                                            "$regex": re_value,
-                                            "$options": "i"
-                                        }
+                if att in ("abilities", "skills", "bonds"):
+                    q = {att: query.pop(att, {"$all": []})}
+                    q[att]["$all"].append({
+                        "$elemMatch": {
+                            "$or": [
+                                {
+                                    "name": {
+                                        "$regex": re_value,
+                                        "$options": "i"
                                     }
-                                ]
-                            }
+                                },
+                                {
+                                    "effect": {
+                                        "$regex": re_value,
+                                        "$options": "i"
+                                    }
+                                }
+                            ]
                         }
-                    }
+                    })
+
                 else:
                     q = {att: {"$regex": re_value, "$options": "i"}}
-                    p = {att: True}
+                p = {att: True}
             query.update(q)
             projection.update(p)
 
@@ -495,11 +491,8 @@ class Otogi(commands.Cog):
             new_daemon["name"] = daemon.pop("name")
             r = ""
             for key, value in daemon.items():
-                while value:
-                    if isinstance(value, list):
-                        value = value[0]
-                    else:
-                        break
+                if isinstance(value, list):
+                    value = value[0]
                 if isinstance(value, dict):
                     value = f"{value['name']}: {value['effect']}"
                 try:
@@ -542,7 +535,7 @@ class Otogi(commands.Cog):
             - notes_and_trivia
             - description
         '''
-        attrs = [(k.lower(), v.lower()) for k, v in data.items()]
+        attrs = [(k.lower(), v.lower()) for k, v in data.items() if k and v]
         result = await self._search_att(attrs)
         if result:
             paging = utils.Paginator(

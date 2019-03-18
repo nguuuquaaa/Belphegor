@@ -63,6 +63,7 @@ class Statistics(commands.Cog):
         self.belphegor_config = bot.db.belphegor_config
 
         self.command_run_count = bot.saved_stuff.pop("command_run_count", {})
+        self.recent_commands = bot.saved_stuff.pop("recent_commands", collections.deque(maxlen=20))
 
         now = utils.now_time()
         self.all_users = {}
@@ -84,6 +85,7 @@ class Statistics(commands.Cog):
         self.bot.saved_stuff["all_users"] = self.all_users
         self.bot.saved_stuff["command_run_count"] = self.command_run_count
         self.bot.saved_stuff["status_updates"] = self.all_requests
+        self.bot.saved_stuff["recent_commands"] = self.recent_commands
 
     def get_update_request(self, member_stats, member=None):
         if member:
@@ -307,21 +309,23 @@ class Statistics(commands.Cog):
         ])]
 
         statuses = (
-            {"name": "online", "count": collections.OrderedDict(((i, 0) for i in range(30, -1, -1))), "color": discord.Colour.green().to_rgba()},
-            {"name": "dnd", "count": collections.OrderedDict(((i, 0) for i in range(30, -1, -1))), "color": discord.Colour.red().to_rgba()},
-            {"name": "idle", "count": collections.OrderedDict(((i, 0) for i in range(30, -1, -1))), "color": discord.Colour.orange().to_rgba()},
-            {"name": "offline", "count": collections.OrderedDict(((i, 0) for i in range(30, -1, -1))), "color": discord.Colour.light_grey().to_rgba()}
+            {"name": "online", "count": collections.OrderedDict(((i, 0) for i in range(30, 0, -1))), "color": discord.Colour.green().to_rgba()},
+            {"name": "dnd", "count": collections.OrderedDict(((i, 0) for i in range(30, 0, -1))), "color": discord.Colour.red().to_rgba()},
+            {"name": "idle", "count": collections.OrderedDict(((i, 0) for i in range(30, 0, -1))), "color": discord.Colour.orange().to_rgba()},
+            {"name": "offline", "count": collections.OrderedDict(((i, 0) for i in range(30, 0, -1))), "color": discord.Colour.light_grey().to_rgba()}
         )
 
         for item in statuses:
-            for day in range(-30, 1):
+            for day in range(-30, 0):
                 data = utils.get_element(member_data, lambda x: x["_id"]["day"]==day and x["_id"]["stt"]==item["name"])
                 if data:
                     item["count"][-day] = data["dur"]
             if item["name"] == member.status.value:
                 processed_stt = self.all_users[member.id].process_status(member.status.value)
                 for inst in processed_stt:
-                    item["count"][-(inst["mark"]-mark)//24] += inst["dur"]
+                    _x = -(inst["mark"]-mark)//24
+                    if _x < 0:
+                        item["count"][_x] += inst["dur"]
 
         return statuses
 
@@ -476,28 +480,30 @@ class Statistics(commands.Cog):
             },
             {
                 "$group": {
-                    "_id": {"stt": "$status.stt", "day": {"$floor": {"$divide": [{"$subtract": ["$status.mark", mark]}, 168]}}},
+                    "_id": {"stt": "$status.stt", "week": {"$floor": {"$divide": [{"$subtract": ["$status.mark", mark]}, 168]}}},
                     "dur": {"$sum": "$status.dur"}
                 }
             }
         ])]
 
         statuses = (
-            {"name": "online", "count": collections.OrderedDict(((i, 0) for i in range(4, -1, -1))), "color": discord.Colour.green().to_rgba()},
-            {"name": "dnd", "count": collections.OrderedDict(((i, 0) for i in range(4, -1, -1))), "color": discord.Colour.red().to_rgba()},
-            {"name": "idle", "count": collections.OrderedDict(((i, 0) for i in range(4, -1, -1))), "color": discord.Colour.orange().to_rgba()},
-            {"name": "offline", "count": collections.OrderedDict(((i, 0) for i in range(4, -1, -1))), "color": discord.Colour.light_grey().to_rgba()}
+            {"name": "online", "count": collections.OrderedDict(((i, 0) for i in range(4, 0, -1))), "color": discord.Colour.green().to_rgba()},
+            {"name": "dnd", "count": collections.OrderedDict(((i, 0) for i in range(4, 0, -1))), "color": discord.Colour.red().to_rgba()},
+            {"name": "idle", "count": collections.OrderedDict(((i, 0) for i in range(4, 0, -1))), "color": discord.Colour.orange().to_rgba()},
+            {"name": "offline", "count": collections.OrderedDict(((i, 0) for i in range(4, 0, -1))), "color": discord.Colour.light_grey().to_rgba()}
         )
 
         for item in statuses:
-            for day in range(-4, 1):
-                data = utils.get_element(member_data, lambda x: x["_id"]["day"]==day and x["_id"]["stt"]==item["name"])
+            for week in range(-4, 0):
+                data = utils.get_element(member_data, lambda x: x["_id"]["week"]==week and x["_id"]["stt"]==item["name"])
                 if data:
-                    item["count"][-day] = data["dur"]
+                    item["count"][-week] = data["dur"]
             if item["name"] == member.status.value:
                 processed_stt = self.all_users[member.id].process_status(member.status.value)
                 for inst in processed_stt:
-                    item["count"][-(inst["mark"]-mark)//168] += inst["dur"]
+                    _x = -(inst["mark"]-mark)//168
+                    if _x < 0:
+                        item["count"][_x] += inst["dur"]
 
         return statuses
 
@@ -535,7 +541,8 @@ class Statistics(commands.Cog):
     async def on_command_completion(self, ctx):
         cmd = ctx.command.qualified_name
         self.command_run_count[cmd] = self.command_run_count.get(cmd, 0) + 1
-        await self.command_data.update_one({"name": cmd}, {"$inc": {"total_count": 1}}, upsert=True)
+        self.recent_commands.append(cmd)
+        #await self.command_data.update_one({"name": cmd}, {"$inc": {"total_count": 1}}, upsert=True)
 
     @commands.command(hidden=True)
     async def topcmd(self, ctx):
@@ -558,6 +565,7 @@ class Statistics(commands.Cog):
         the_rest_pages = utils.split_page(the_rest, 1000, check=lambda x: x==",")
         embed.add_field(name="Top commands", value=top_cmd_txt, inline=False)
         embed.add_field(name="Other", value=the_rest_pages[0], inline=False)
+        embed.add_field(name="Recent commands", value=", ".join(reversed(self.recent_commands)), inline=False)
 
         await ctx.send(embed=embed)
 
