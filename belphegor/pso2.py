@@ -429,8 +429,6 @@ class PSO2(commands.Cog):
                     for v in reversed(value):
                         if v["type"] == special:
                             break
-                    else:
-                        continue
                     value = v
                     desc = f"{value['name']}\n{value['description']}"
                 elif key == "atk":

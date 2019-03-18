@@ -741,7 +741,7 @@ class Guild(commands.Cog):
                         a = message.attachments[0]
                         try:
                             bytes_ = await self.bot.fetch(a.proxy_url)
-                        except error.CustomError:
+                        except checks.CustomError:
                             rest = message.attachments
                         else:
                             file_ = discord.File(bytes_, a.filename)
