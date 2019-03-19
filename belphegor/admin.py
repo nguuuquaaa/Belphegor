@@ -32,51 +32,31 @@ class Admin(commands.Cog):
         self.bot = bot
         self.belphegor_config = bot.db.belphegor_config
 
-    async def reload_extension(self, ctx, extension):
-        try:
-            self.bot.unload_extension(extension)
-            self.bot.load_extension(extension)
-            print(f"Reloaded {extension}")
-            await ctx.confirm()
-        except:
-            print(f"Failed reloading {extension}:\n{traceback.format_exc()}")
-            await ctx.deny()
-
-    async def reload_all_extensions(self, ctx):
-        for extension in tuple(self.bot.extensions.keys()):
-            self.bot.unload_extension(extension)
-        check = True
-        for extension in self.bot.initial_extensions:
-            try:
-                self.bot.load_extension(extension)
-                print(f"Reloaded {extension}")
-            except Exception as e:
-                print(f"Failed reloading {extension}:\n{traceback.format_exc()}")
-                check = False
-        if check:
-            await ctx.confirm()
-        else:
-            await ctx.deny()
-
     @commands.command(hidden=True)
     @checks.owner_only()
-    async def reload(self, ctx, extension=""):
-        if extension:
-            await self.reload_extension(ctx, f"belphegor.{extension}")
+    async def reload(self, ctx, extension):
+        extension = f"belphegor.{extension}"
+        try:
+            if extension in self.bot.extensions:
+                self.bot.reload_extension(extension)
+            else:
+                self.bot.load_extension(extension)
+        except commands.ExtensionError:
+            await ctx.send(f"```\nFailed reloading {extension}:\n{traceback.format_exc()}```")
         else:
-            await self.reload_all_extensions(ctx)
+            print(f"Reloaded {extension}")
+            await ctx.confirm()
 
     @commands.command(hidden=True)
     @checks.owner_only()
     async def unload(self, ctx, extension):
-        e = f"belphegor.{extension}"
-        if e in self.bot.extensions:
-            self.bot.unload_extension(e)
-            print(f"Unloaded {e}")
+        extension = f"belphegor.{extension}"
+        if extension in self.bot.extensions:
+            self.bot.unload_extension(extension)
+            print(f"Unloaded {extension}")
             await ctx.confirm()
         else:
-            print(f"Extension {e} doesn't exist.")
-            await ctx.deny()
+            await ctx.send(f"Extension {extension} doesn't exist.")
 
     @commands.command(hidden=True)
     @checks.owner_only()

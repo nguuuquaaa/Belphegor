@@ -16,31 +16,19 @@ import time
 import copy
 import numpy as np
 import aiohttp
-import scipy.ndimage
+from scipy.ndimage import filters
 import colorsys
 
 #==================================================================================================================================================
 
-FANCY_CHARS = {
-    "A": "\U0001F1E6", "B": "\U0001F1E7", "C": "\U0001F1E8", "D": "\U0001F1E9", "E": "\U0001F1EA",
-    "F": "\U0001F1EB", "G": "\U0001F1EC", "H": "\U0001F1ED", "I": "\U0001F1EE", "J": "\U0001F1EF",
-    "K": "\U0001F1F0", "L": "\U0001F1F1", "M": "\U0001F1F2", "N": "\U0001F1F3", "O": "\U0001F1F4",
-    "P": "\U0001F1F5", "Q": "\U0001F1F6", "R": "\U0001F1F7", "S": "\U0001F1F8", "T": "\U0001F1F9",
-    "U": "\U0001F1FA", "V": "\U0001F1FB", "W": "\U0001F1FC", "X": "\U0001F1FD", "Y": "\U0001F1FE",
-    "Z": "\U0001F1FF", "!": "\u2757", "?": "\u2753",
-    "0": "\u0030\u20E3", "1": "\u0031\u20E3", "2": "\u0032\u20E3", "3": "\u0033\u20E3", "4": "\u0034\u20E3",
-    "5": "\u0035\u20E3", "6": "\u0036\u20E3", "7": "\u0037\u20E3", "8": "\u0038\u20E3", "9": "\u0039\u20E3"
-}
+FANCY_CHARS = {chr(0x41+i): chr(0x1F1E6+i) for i in range(26)}
+FANCY_CHARS.update({str(i): f"{i}\u20e3" for i in range(10)})
+FANCY_CHARS["!"] = "\u2757"
+FANCY_CHARS["?"] = "\u2753"
 
-GLITCH_TEXT = "¡¢£¤¥¦§¨©ª«¬®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿĀāĂăĄąĆćĈĉĊċČčĎďĐđĒēĔĕĖėĘęĚěĜĝĞğĠġĢģĤĥĦħĨĩĪīĬĭĮįİıĲĳĴĵĶķĸĹĺĻļĽľĿŀŁłŃńŅņŇňŉŊŋŌōŎŏŐőŒœŔŕŖŗŘřŚśŜŝŞşŠšŢţŤťŦŧŨũŪūŬŭŮůŰűŲųŴŵŶŷŸŹźŻżŽž                    "
+GLITCH_TEXT = "".join((chr(i) for i in range(0xa1, 0x17f) if i!=0xad)) + " " * 20
 
-GLITCH_UP = tuple("̍	̎	̄	̅	̿	̑	̆	̐	͒	͗͑	̇	̈	̊	͂	̓	̈́	͊	͋	͌̃	̂	̌	͐	̀	́	̋	̏	̒	̓̔	̽	̉	ͣ	ͤ	ͥ	ͦ	ͧ	ͨ	ͩͪ	ͫ	ͬ	ͭ	ͮ	ͯ	̾	͛	͆	̚".split())
-
-GLITCH_MIDDLE = tuple("̕	̛	̀	́	͘	̡	̢	̧	̨	̴̵	̶	͏	͜	͝	͞	͟	͠	͢	̸̷	͡	҉".split())
-
-GLITCH_DOWN = tuple("̖	̗	̘	̙	̜	̝	̞	̟	̠	̤̥	̦	̩	̪	̫	̬	̭	̮	̯	̰̱	̲	̳	̹	̺	̻	̼	ͅ	͇	͈͉	͍	͎	͓	͔	͕	͖	͙	͚	̣".split())
-
-GLITCH_ALL = tuple(i for j in (GLITCH_UP, GLITCH_MIDDLE, GLITCH_DOWN) for i in j)
+GLITCH_ALL = "".join((chr(i) for i in range(0x300, 0x370))) + "".join((chr(i) for i in range(0x483, 0x48a)))
 
 QUOTES = {
     "win": [
@@ -117,9 +105,6 @@ MOON_PATTERN = {
     (2, 1): "\U0001f316",
     (2, 2): "\U0001f315"
 }
-
-def strip_url(url):
-    return url.lstrip("<").rstrip(">")
 
 #==================================================================================================================================================
 
@@ -434,22 +419,18 @@ class Misc(commands.Cog):
 
     @modding.help(brief="Z̜͍̊ă̤̥ḷ̐́ģͮ͛ò̡͞ ͥ̉͞ť͔͢e̸̷̅x̠ͯͧt̰̱̾", category="Misc", field="Commands", paragraph=1)
     @commands.group(invoke_without_command=True)
-    async def glitch(self, ctx, *, data: modding.KeyValue(escape=False, clean=False)):
+    async def glitch(self, ctx, *, data: modding.KeyValue({("weight", "w"): int}, multiline=False, escape=True, clean=False)):
         '''
-            `>>glitch <optional: weight> <text>`
+            `>>glitch <text> <keyword: weight|w>`
             Generate Zalgo text.
-            More weight, more weird.
+            More weight, more additional characters.
             Default weight is 20.
         '''
-        text = data.getall("", [])
-        weight = data.getone("weight", None)
-        try:
-            weight = int(weight)
-        except:
-            weight = 20
+        text = data.getalltext("")
+        weight = data.geteither("weight", "w", default=20)
         if 0 < weight <= 50:
             if text:
-                await ctx.send("".join(("".join((c, "".join((random.choice(GLITCH_ALL) for i in range(weight))))) for c in "\n".join(text))))
+                await ctx.send("".join((c+"".join((random.choice(GLITCH_ALL) for i in range(weight))) for c in text)))
             else:
                 await ctx.send("No input text given.")
         else:
@@ -695,20 +676,17 @@ class Misc(commands.Cog):
 
     @modding.help(brief="Grayscale ascii art", category="Misc", field="Processing", paragraph=2)
     @commands.group(invoke_without_command=True)
-    async def ascii(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member}, clean=False, multiline=False)=modding.EMPTY):
+    async def ascii(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, "url": modding.URLConverter()}, clean=False, multiline=False)=modding.EMPTY):
         '''
             `>>ascii <optional: member>`
             ASCII art of member avatar.
             If no member is specified, use your avatar.
         '''
         target = data.geteither("", "member", "m", default=ctx.author)
-        url = strip_url(data.get("url", target.avatar_url))
+        url = data.get("url", target.avatar_url)
 
         await ctx.trigger_typing()
-        try:
-            bytes_ = await self.bot.fetch(url)
-        except aiohttp.InvalidURL:
-            return await ctx.send("Invalid URL.")
+        bytes_ = await self.bot.fetch(url)
         try:
             image = Image.open(BytesIO(bytes_))
         except OSError:
@@ -719,14 +697,14 @@ class Misc(commands.Cog):
 
     @modding.help(brief="Bigger grayscale ascii art", category="Misc", field="Processing", paragraph=2)
     @ascii.command(name="big", aliases=["bigger", "biggur"])
-    async def big_ascii(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("width", "w"): int}, clean=False, multiline=False)=modding.EMPTY):
+    async def big_ascii(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("width", "w"): int, "url": modding.URLConverter()}, clean=False, multiline=False)=modding.EMPTY):
         '''
             `>>ascii big <keyword: _|member|m> <keyword: width|w>`
             Bigger size ASCII art of member avatar, send as txt file due to discord's 2000 characters limit.
             If no member is specified, use your avatar. Default width is 256.
         '''
         target = data.geteither("", "member", "m", default=ctx.author)
-        url = strip_url(data.get("url", target.avatar_url_as(format="png")))
+        url = data.get("url", target.avatar_url_as(format="png"))
         width = data.geteither("width", "w", default=256)
         if width > 1024:
             return await ctx.send("Width should be 1024 or less.")
@@ -734,10 +712,7 @@ class Misc(commands.Cog):
             return await ctx.send("Width should be 64 or more.")
 
         await ctx.trigger_typing()
-        try:
-            bytes_ = await self.bot.fetch(url)
-        except aiohttp.InvalidURL:
-            return await ctx.send("Invalid URL.")
+        bytes_ = await self.bot.fetch(url)
         try:
             image = Image.open(BytesIO(bytes_))
         except OSError:
@@ -826,7 +801,7 @@ class Misc(commands.Cog):
     @modding.help(brief="Edge-detection ascii art", category="Misc", field="Processing", paragraph=2)
     @ascii.command(name="edge")
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
-    async def ascii_edge(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t", "blur", "b"): int, ("weight", "w"): float, ("edge", "e", "inverse", "i"): bool}, clean=False, multiline=False)=modding.EMPTY):
+    async def ascii_edge(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t", "blur", "b"): int, ("weight", "w"): float, ("edge", "e", "inverse", "i"): bool, "url": modding.URLConverter()}, clean=False, multiline=False)=modding.EMPTY):
         '''
             `>>ascii edge <keyword: _|member|m> <keyword: threshold|t> <keyword: blur|b> <keyword: weight> <keyword: size|s>`
             Edge-detection ASCII art of member avatar.
@@ -838,7 +813,7 @@ class Misc(commands.Cog):
             Has cooldown due to heavy processing (someone give me good algorithm pls).
         '''
         target = data.geteither("", "member", "m", default=ctx.author)
-        url = strip_url(data.get("url", target.avatar_url_as(format="png")))
+        url = data.get("url", target.avatar_url_as(format="png"))
         size = data.geteither("size", "s", default="64x30")
         threshold = data.geteither("threshold", "t", default=32)
         blur = data.geteither("blur", "b", default=2)
@@ -857,10 +832,7 @@ class Misc(commands.Cog):
             return await ctx.send("Inverse weight value should be a non-negative number.")
 
         await ctx.trigger_typing()
-        try:
-            bytes_ = await self.bot.fetch(url)
-        except aiohttp.InvalidURL:
-            return await ctx.send("Invalid URL.")
+        bytes_ = await self.bot.fetch(url)
         try:
             image = Image.open(BytesIO(bytes_))
         except OSError:
@@ -905,7 +877,7 @@ class Misc(commands.Cog):
 
     @modding.help(brief="Block ascii art", category="Misc", field="Processing", paragraph=2)
     @ascii.command(name="block")
-    async def ascii_block(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t"): int, ("inverse", "i"): bool}, clean=False, multiline=False)=modding.EMPTY):
+    async def ascii_block(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t"): int, ("inverse", "i"): bool, "url": modding.URLConverter()}, clean=False, multiline=False)=modding.EMPTY):
         '''
             `>>ascii block <keyword: _|member|m> <keyword: threshold|t> <keyword: inverse|i> <keyword: size|s>`
             Block ~~unicode~~ ASCII art of member avatar.
@@ -915,7 +887,7 @@ class Misc(commands.Cog):
             Default size is 64x30.
         '''
         target = data.geteither("", "member", "m", default=ctx.author)
-        url = strip_url(data.get("url", target.avatar_url_as(format="png")))
+        url = data.get("url", target.avatar_url_as(format="png"))
         size = data.geteither("size", "s", default="64x30")
         threshold = data.geteither("threshold", "t", default=128)
         inverse = data.geteither("inverse", "i", default=0)
@@ -923,10 +895,7 @@ class Misc(commands.Cog):
         threshold, width, height = self.get_params(threshold, size)
 
         await ctx.trigger_typing()
-        try:
-            bytes_ = await self.bot.fetch(url)
-        except aiohttp.InvalidURL:
-            return await ctx.send("Invalid URL.")
+        bytes_ = await self.bot.fetch(url)
         try:
             image = Image.open(BytesIO(bytes_))
         except OSError:
@@ -940,7 +909,7 @@ class Misc(commands.Cog):
 
     @modding.help(brief="Braille dot ascii art", category="Misc", field="Processing", paragraph=2)
     @ascii.command(name="dot")
-    async def ascii_dot(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t"): int, ("inverse", "i"): bool}, clean=False, multiline=False)=modding.EMPTY):
+    async def ascii_dot(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t"): int, ("inverse", "i"): bool, "url": modding.URLConverter()}, clean=False, multiline=False)=modding.EMPTY):
         '''
             `>>ascii dot <keyword: _|member|m> <keyword: threshold|t> <keyword: inverse|i> <keyword: size|s>`
             Braille dot ~~unicode~~ ASCII art of member avatar.
@@ -950,7 +919,7 @@ class Misc(commands.Cog):
             Default size is 64x30.
         '''
         target = data.geteither("", "member", "m", default=ctx.author)
-        url = strip_url(data.get("url", target.avatar_url_as(format="png")))
+        url = data.get("url", target.avatar_url_as(format="png"))
         size = data.geteither("size", "s", default="56x32")
         threshold = data.geteither("threshold", "t", default=128)
         inverse = data.geteither("inverse", "i", default=0)
@@ -958,10 +927,7 @@ class Misc(commands.Cog):
         threshold, width, height = self.get_params(threshold, size)
 
         await ctx.trigger_typing()
-        try:
-            bytes_ = await self.bot.fetch(url)
-        except aiohttp.InvalidURL:
-            return await ctx.send("Invalid URL.")
+        bytes_ = await self.bot.fetch(url)
         try:
             image = Image.open(BytesIO(bytes_))
         except OSError:
@@ -984,7 +950,7 @@ class Misc(commands.Cog):
 
     @modding.help(brief="Moon emoji art", category="Misc", field="Processing", paragraph=2)
     @ascii.command(name="moon")
-    async def ascii_moon(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t"): int, ("inverse", "i"): bool}, clean=False, multiline=False)=modding.EMPTY):
+    async def ascii_moon(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t"): int, ("inverse", "i"): bool, "url": modding.URLConverter()}, clean=False, multiline=False)=modding.EMPTY):
         '''
             `>>ascii moon <keyword: _|member|m> <keyword: threshold|t> <keyword: inverse|i> <keyword: size|s>`
             Moon ~~emoji~~ ASCII art of member avatar.
@@ -994,7 +960,7 @@ class Misc(commands.Cog):
             Default size is 20x24.
         '''
         target = data.geteither("", "member", "m", default=ctx.author)
-        url = strip_url(data.get("url", target.avatar_url_as(format="png")))
+        url = data.get("url", target.avatar_url_as(format="png"))
         size = data.geteither("size", "s", default="20x24")
         threshold = data.geteither("threshold", "t", default=128)
         inverse = data.geteither("inverse", "i", default=0)
@@ -1002,10 +968,7 @@ class Misc(commands.Cog):
         threshold, width, height = self.get_params(threshold, size)
 
         await ctx.trigger_typing()
-        try:
-            bytes_ = await self.bot.fetch(url)
-        except aiohttp.InvalidURL:
-            return await ctx.send("Invalid URL.")
+        bytes_ = await self.bot.fetch(url)
         try:
             image = Image.open(BytesIO(bytes_))
         except OSError:
@@ -1066,7 +1029,7 @@ class Misc(commands.Cog):
     @modding.help(brief="Monochrome transformation", category="Misc", field="Processing", paragraph=1)
     @commands.command(aliases=["ct"])
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
-    async def transform(self, ctx, *, data: modding.KeyValue({("member", "m", ""): discord.Member, ("threshold", "t"): int}, clean=False, multiline=False)=modding.EMPTY):
+    async def transform(self, ctx, *, data: modding.KeyValue({("member", "m", ""): discord.Member, ("threshold", "t"): int, "url": modding.URLConverter()}, clean=False, multiline=False)=modding.EMPTY):
         '''
             `>>transform <keyword: _|member|m> <keyword: rgb> <keyword: threshold|t>`
             Apply a monochrome transformation to member avatar.
@@ -1075,7 +1038,7 @@ class Misc(commands.Cog):
             Threshold defines how dark the target image is, default is 150.
         '''
         target = data.geteither("member", "m", "", default=ctx.author)
-        url = strip_url(data.get("url", target.avatar_url_as(format="png")))
+        url = data.get("url", target.avatar_url_as(format="png"))
         rgb = data.get("rgb", "7289da").lstrip("#").lower()
         try:
             rgb = int(rgb, 16)
@@ -1169,7 +1132,7 @@ class Misc(commands.Cog):
     @modding.help(brief="Monochrome transformation", category="Misc", field="Processing", paragraph=1)
     @commands.command(aliases=["ct2"])
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
-    async def transform2(self, ctx, *, data: modding.KeyValue({("member", "m", ""): discord.Member}, clean=False, multiline=False)=modding.EMPTY):
+    async def transform2(self, ctx, *, data: modding.KeyValue({("member", "m", ""): discord.Member, "url": modding.URLConverter()}, clean=False, multiline=False)=modding.EMPTY):
         '''
             `>>transform2 <keyword: _|member|m> <keyword: rgb> <keyword: mode>`
             Apply a monochrome transformation to member avatar.
@@ -1178,7 +1141,7 @@ class Misc(commands.Cog):
             Mode is either linear or curve, default is linear.
         '''
         target = data.geteither("member", "m", "", default=ctx.author)
-        url = strip_url(data.get("url", target.avatar_url_as(format="png")))
+        url = data.get("url", target.avatar_url_as(format="png"))
         rgb = data.get("rgb", "7289da").lstrip("#").lower()
         try:
             rgb = int(rgb, 16)
@@ -1223,14 +1186,14 @@ class Misc(commands.Cog):
     @modding.help(brief="Turn avatar into sketch", category="Misc", field="Processing", paragraph=1)
     @commands.command()
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
-    async def sketch(self, ctx, *, data: modding.KeyValue({("member", "m", ""): discord.Member, ("sigma", "s"): int}, clean=False, multiline=False)=modding.EMPTY):
+    async def sketch(self, ctx, *, data: modding.KeyValue({("member", "m", ""): discord.Member, ("sigma", "s"): int, "url": modding.URLConverter()}, clean=False, multiline=False)=modding.EMPTY):
         '''
             `>>sketch <keyword: _|member|m> <keyword: sigma|s>`
             Turn member avatar into pencil sketch.
             Result is clearer with more sigma. Default sigma is 5, max sigma is 10.
         '''
         target = data.geteither("member", "m", "", default=ctx.author)
-        url = strip_url(data.get("url", target.avatar_url_as(format="png")))
+        url = data.get("url", target.avatar_url_as(format="png"))
         sigma = data.geteither("sigma", "s", default=5)
         if sigma > 10:
             return await ctx.send("Max sigma is 10.")
@@ -1251,7 +1214,7 @@ class Misc(commands.Cog):
             a = np.array(image)
             gray = np.dot(a[:, :, :3], [0.2989, 0.5870, 0.1140])
             invert = 255 - gray
-            blur = scipy.ndimage.filters.gaussian_filter(invert, sigma=sigma)
+            blur = filters.gaussian_filter(invert, sigma=sigma)
             final = dodge(blur, gray)
             image = Image.fromarray(final)
 
@@ -1265,14 +1228,14 @@ class Misc(commands.Cog):
     @modding.help(brief="Turn avatar into sketch", category="Misc", field="Processing", paragraph=1)
     @commands.command()
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
-    async def sketch2(self, ctx, *, data: modding.KeyValue({("member", "m", ""): discord.Member, ("depth", "d"): int}, clean=False, multiline=False)=modding.EMPTY):
+    async def sketch2(self, ctx, *, data: modding.KeyValue({("member", "m", ""): discord.Member, ("depth", "d"): int, "url": modding.URLConverter()}, clean=False, multiline=False)=modding.EMPTY):
         '''
             `>>sketch2 <keyword: _|member|m> <keyword: depth|d>`
             Turn member avatar into pencil sketch.
             Result is more dense with more depth. Default depth is 10, max depth is 100.
         '''
         target = data.geteither("member", "m", "", default=ctx.author)
-        url = strip_url(data.get("url", target.avatar_url_as(format="png")))
+        url = data.get("url", target.avatar_url_as(format="png"))
         depth = data.geteither("depth", "d", default=10)
         if depth > 100:
             return await ctx.send("Max depth is 100.")

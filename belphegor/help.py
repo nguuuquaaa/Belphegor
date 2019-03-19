@@ -52,7 +52,7 @@ class Help(commands.Cog):
                 "emoji":    "\u21a9",
                 "desc":     "[Support server but not really active](https://discord.gg/qnavjMy)",
                 "thumb":    self.bot.user.avatar_url,
-                "footer":   "Default prefix: >>",
+                "footer":   "Universal prefix: bot mention \u2022 Default prefix: >>",
                 "fields":   {
                     "Categories" : [
                         [
@@ -171,7 +171,7 @@ class Help(commands.Cog):
 
             paragraph_info = field_info[paragraph]
 
-            usage = ", ".join((f"`>>{n}`" for n in sorted((command.name, *command.aliases))))
+            usage = ", ".join((f"`>>{n}`" for n in sorted((command.name, *command.aliases), key=lambda x: len(x))))
             if brief:
                 paragraph_info.append(f"{usage} - {brief}")
             else:
@@ -186,7 +186,7 @@ class Help(commands.Cog):
                 while subparagraph + 1 > len(field_info):
                     field_info.append([])
                 paragraph_info = field_info[subparagraph]
-                paragraph_info.append(f"\u2517 {subcommand.name} - {subcommand.brief}")
+                paragraph_info.append(f"\u2517 `{subcommand.name}` - {subcommand.brief}")
 
         paging = utils.Paginator([])
         for category, data in infodump.items():
@@ -238,7 +238,7 @@ class Help(commands.Cog):
 
 
             - `<keyword: _|arg|ument>` is argument in the form of `name=value`.
-            `_`, `arg` and `ument` are name, and `_` means you can omit the name part and just enter `value`. If value contains whitespaces or equal sign, you must enclosed it in quote characters.
+            `_`, `arg` and `ument` are name, and `_` means you can omit the name part and just enter `value`. If value contains whitespaces, you must enclosed it in quote characters.
             Here's a list of all quote characters: `" "`, `‘ ’`, `‚ ‛`, `“ ”`, `„ ‟`, `⹂ ⹂`, `「 」`, `『 』`, `〝 〞`, `﹁ ﹂`, `﹃ ﹄`, `＂ ＂`, `｢ ｣`, `« »`, `‹ ›`, `《 》`, `〈 〉`
             If value contains quote characters you must enclosed it in another quote characters.
             Keyword arguments are non-positional, which mean you can place it in any order whatsoever.

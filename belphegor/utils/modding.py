@@ -1,8 +1,9 @@
 import discord
 from discord.ext import commands
-from . import format
+from . import checks, format
 import multidict
 import functools
+from yarl import URL
 
 #==================================================================================================================================================
 
@@ -26,6 +27,14 @@ class MultiDict(multidict.MultiDict):
         else:
             return delimiter.join((str(t) for t in temp))
 
+    def to_default_dict(self):
+        ret = {}
+        for key, value in self.items():
+            rv = ret.get(key, [])
+            rv.append(value)
+            ret[key] = rv
+        return ret
+
 EMPTY = MultiDict()
 _quotes = commands.view._quotes
 _all_quotes = set((*_quotes.keys(), *_quotes.values()))
@@ -33,6 +42,8 @@ _delimiters = _all_quotes | set(("=",))
 
 def _check_char(c):
     return c.isspace() or c in _delimiters
+
+#==================================================================================================================================================
 
 class KeyValue(commands.Converter):
     def __init__(self, conversion={}, *, escape=False, clean=True, multiline=True):
@@ -77,7 +88,6 @@ class KeyValue(commands.Converter):
             wi = format.split_iter(text, check=_check_char)
             key = ""
             prev_word = ""
-            value = None
 
             while True:
                 try:
@@ -86,8 +96,11 @@ class KeyValue(commands.Converter):
                     break
 
                 if word == "=":
-                    key = prev_word
-                    value = ""
+                    if key:
+                        prev_word = prev_word + "="
+                    else:
+                        key = prev_word
+                        prev_word = ""
                 elif word in _quotes:
                     quote_close = _quotes[word]
                     quote_words = []
@@ -102,32 +115,42 @@ class KeyValue(commands.Converter):
                                 quote_words.append(w)
                                 escape = False
                             elif w == quote_close:
-                                value = "".join(quote_words)
-                                print(value)
-                                await resolve(key, value)
+                                await resolve(key, "".join(quote_words))
                                 key = ""
                                 prev_word = ""
-                                value = None
                                 break
                             else:
                                 if w == "\\":
                                     escape = True
-                                quote_words.append(w)
+                                quote_words.append("\\")
                 elif not word.isspace():
-                    if prev_word and not key and not value:
-                        await resolve("", prev_word)
-                    prev_word = word
-                    if value is not None:
-                        value = word
-                    if key or value:
-                        await resolve(key, value)
-                        key = ""
-                        prev_word = ""
-                        value = None
+                    prev_word = prev_word + word
+                else:
+                    await resolve(key, prev_word)
+                    key = ""
+                    prev_word = ""
             if prev_word:
-                await resolve("", prev_word)
+                await resolve(key, prev_word)
 
         return ret
+
+#==================================================================================================================================================
+
+class URLConverter(commands.Converter):
+    def __init__(self, schemes=["http", "https"]):
+        self.schemes = schemes
+        self._accept_string = "/".join(schemes)
+
+    async def convert(self, ctx, argument):
+        argument = argument.lstrip("<").rstrip(">")
+        url = URL(argument)
+        if url.scheme in self.schemes:
+            if url.scheme and url.host and url.path:
+                return url
+            else:
+                raise commands.BadArgument("Malformed URL.")
+        else:
+            raise checks.CustomError(f"This command accepts url with scheme {self._accept_string} only.")
 
 #==================================================================================================================================================
 
