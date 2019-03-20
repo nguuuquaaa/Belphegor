@@ -342,7 +342,7 @@ class Statistics(commands.Cog):
         self.no_access_for_opt_out(target)
         await ctx.trigger_typing()
         statuses = await self.fetch_daily_status(target)
-        title = f"{target.display_name}'s daily status"
+        title = f"{target.display_name}'s status by day"
         bytes_ = await utils.line_chart(statuses, unit_y="hours", unit_x="past day", title=title, loop=self.bot.loop)
         await ctx.send(file=discord.File(bytes_, filename="line_status.png"))
 
@@ -451,7 +451,7 @@ class Statistics(commands.Cog):
             draw_data.append(item)
 
         #draw
-        title = f"{target.display_name}'s hourly status (offset {offset:+d})"
+        title = f"{target.display_name}'s status by time of day (offset {offset:+d})"
         try:
             bytes_ = await utils.stacked_area_chart(draw_data, unit_y="%", unit_x="time\nof day", title=title, loop=self.bot.loop)
         except ZeroDivisionError:
@@ -520,7 +520,7 @@ class Statistics(commands.Cog):
         self.no_access_for_opt_out(target)
         await ctx.trigger_typing()
         statuses = await self.fetch_weekly_status(target)
-        title = f"{target.display_name}'s weekly status"
+        title = f"{target.display_name}'s status by week"
         bytes_ = await utils.bar_chart(statuses, unit_y="hours", unit_x="past week", title=title, loop=self.bot.loop)
         await ctx.send(file=discord.File(bytes_, filename="bar_status.png"))
 

@@ -517,7 +517,7 @@ class Misc(commands.Cog):
         e.add_field(name="RGB", value=", ".join((str(v) for v in rgb)))
 
         hsv = colorsys.rgb_to_hsv(rgb[0]/255, rgb[1]/255, rgb[2]/255)
-        hsv = tuple(int(round(i)) for i in (hsv[0]*360, hsv[2]*100, hsv[1]*100))
+        hsv = tuple(int(round(i)) for i in (hsv[0]*360, hsv[1]*100, hsv[2]*100))
         e.add_field(name="HSV", value=f"{hsv[0]}\u00b0, {hsv[1]}%, {hsv[2]}%")
 
         hls = colorsys.rgb_to_hls(rgb[0]/255, rgb[1]/255, rgb[2]/255)
@@ -1049,20 +1049,12 @@ class Misc(commands.Cog):
             r, g, b = self.get_rgb(rgb)
         threshold = data.geteither("threshold", "t", default=150)
         self.check_threshold(threshold, max=255*4)
-        size = data.geteither("size", "s")
-        if size:
-            try:
-                width, height = (int(s.strip()) for s in size.split("x"))
-            except ValueError:
-                return await ctx.send("Size must be in widthxheight format.")
 
         await ctx.trigger_typing()
         bytes_ = await self.bot.fetch(url)
 
         def do_stuff():
             image = Image.open(BytesIO(bytes_)).convert("RGBA")
-            if size:
-                image = image.resize((width, height))
             a = np.array(image)
             t = np.dot(a[:, :, :3], [0.2989, 0.5870, 0.1140])
             t = np.array((r/threshold, g/threshold, b/threshold), dtype=np.float32) * t[:, :, None]
@@ -1104,31 +1096,35 @@ class Misc(commands.Cog):
         rgb = np.empty_like(hsv)
         rgb[..., 3:] = hsv[..., 3:]
         h, s, v = hsv[..., 0], hsv[..., 1], hsv[..., 2]
-        i = (h * 6.0).astype("uint8")
-        f = (h * 6.0) - i
-        p = v * (1.0 - s)
-        q = v * (1.0 - s * f)
-        t = v * (1.0 - s * (1.0 - f))
-        i = i % 6
-        conditions = [s == 0.0, i == 1, i == 2, i == 3, i == 4, i == 5]
-        rgb[..., 0] = np.select(conditions, [v, q, p, p, t, v], default=v)
-        rgb[..., 1] = np.select(conditions, [v, v, v, q, p, p], default=t)
-        rgb[..., 2] = np.select(conditions, [v, p, t, v, v, q], default=p)
+
+        x = v * (1 - s * np.abs((h * 6) % 2 - 1))
+        m = v * (1 - s)
+
+        i = (h * 6).astype("uint8") % 6
+        conditions = [i == 0, i == 1, i == 2, i == 3, i == 4, i == 5]
+        rgb[..., 0] = np.select(conditions, [v, x, m, m, x, v])
+        rgb[..., 1] = np.select(conditions, [x, v, v, x, m, m])
+        rgb[..., 2] = np.select(conditions, [m, m, x, v, v, x])
         return rgb.astype("uint8")
 
-    def curve_reform(self, arr, v):
+    def hsv_linear(self, arr, v, scale):
+        iv =  scale - v / 2
         if v == 0:
-            arr = np.where(arr<=255, 0, 255)
-        elif v == 1:
+            arr = np.where(arr<scale, 0, scale)
+        elif v == scale:
             pass
         else:
-            m = 255 * v ** 2 / (4 - 4 * v)
-            arr = m * (255 + m) / (255 + m - arr) - m
+            arr = np.where(arr<iv, arr*(scale-iv)/iv, (arr-iv)*iv/(scale-iv)+scale-iv)
         return arr
 
-    def linear_reform(self, arr, v):
-        iv =  255 * (1 - v / 2)
-        arr = np.where(arr<=iv, arr*(255-iv)/iv, (arr-iv)*iv/(255-iv)+255-iv)
+    def hsv_curve(self, arr, v, scale):
+        if v == 0:
+            arr = np.where(arr<scale, 0, scale)
+        elif v == scale:
+            pass
+        else:
+            m = v ** 2 / (4 * scale - 4 * v)
+            arr = m * (scale + m) / (scale + m - arr) - m
         return arr
 
     @modding.help(brief="Monochrome transformation", category="Misc", field="Processing", paragraph=1)
@@ -1136,11 +1132,12 @@ class Misc(commands.Cog):
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     async def transform2(self, ctx, *, data: modding.KeyValue({("member", "m", ""): discord.Member, "url": modding.URLConverter()}, clean=False, multiline=False)=modding.EMPTY):
         '''
-            `>>transform2 <keyword: _|member|m> <keyword: rgb> <keyword: mode>`
+            `>>transform2 <keyword: _|member|m> <keyword: rgb> <keyword: mode> <keyword: func>`
             Apply a monochrome transformation to member avatar.
             Default member is command invoker.
             Rgb is in hex format, default is 7289da (blurple).
-            Mode is either linear or curve, default is linear.
+            Mode is either hsl or hsv, default is hsl.
+            Func is either linear or curve, default is linear.
         '''
         target = data.geteither("member", "m", "", default=ctx.author)
         url = data.get("url", target.avatar_url_as(format="png"))
@@ -1151,31 +1148,30 @@ class Misc(commands.Cog):
             return await ctx.send("Input is not RGB in hex format.")
         else:
             r, g, b = self.get_rgb(rgb)
-        threshold = data.geteither("threshold", "t", default=150)
-        self.check_threshold(threshold, max=255*4)
-        mode = data.get("mode", "linear")
-        mode_func = getattr(self, f"{mode}_reform", None)
-        if mode_func is None:
-            return await ctx.send("Mode must be either linear or curve.")
-        size = data.geteither("size", "s")
-        if size:
-            try:
-                width, height = (int(s.strip()) for s in size.split("x"))
-            except ValueError:
-                return await ctx.send("Size must be in widthxheight format.")
+
+        mode = data.get("mode", "hsl")
+        if not mode:
+            return await ctx.send("Mode must be either hsl or hsv.")
+        func = data.get("func", "linear")
+        if not func:
+            return await ctx.send("Func must be either linear or curve.")
+        mode_func = getattr(self, f"{mode}_{func}")
 
         await ctx.trigger_typing()
         bytes_ = await self.bot.fetch(url)
 
-        h, s, v = colorsys.rgb_to_hsv(r/255, g/255, b/255)
+        from_rgb = getattr(self, f"rgb_to_{mode}")
+        to_rgb = getattr(self, f"{mode}_to_rgb")
+        h, s, x = from_rgb(np.array([r, g, b]))
 
         def do_stuff():
             image = Image.open(BytesIO(bytes_)).convert("RGBA")
             a = np.array(image)
-            hsv = self.rgb_to_hsv(a)
-            hsv[..., 0] = h
-            hsv[..., 2] = mode_func(hsv[..., 2], v)
-            rgb = self.hsv_to_rgb(hsv)
+            hsx = from_rgb(a)
+            hsx[..., 0] = h
+            hsx[..., 1] = mode_func(hsx[..., 1], s, 1)
+            hsx[..., 2] = mode_func(hsx[..., 2], x, 255)
+            rgb = to_rgb(hsx)
             image = Image.fromarray(rgb)
 
             bio = BytesIO()
@@ -1185,6 +1181,66 @@ class Misc(commands.Cog):
 
         bytes_2 = await self.bot.loop.run_in_executor(None, do_stuff)
         await ctx.send(file=discord.File(bytes_2, "monochrome.png"))
+
+    def rgb_to_hsl(self, rgb):
+        rgb = rgb.astype("float")
+        hsl = np.zeros_like(rgb)
+        hsl[..., 3:] = rgb[..., 3:]
+        r, g, b = rgb[..., 0], rgb[..., 1], rgb[..., 2]
+        maxc = np.max(rgb[..., :3], axis=-1)
+        minc = np.min(rgb[..., :3], axis=-1)
+        hsl[..., 2] = (maxc + minc) / 2
+        mask = maxc != minc
+        hsl[mask, 1] = (maxc - minc)[mask] / (255 - np.abs(maxc + minc - 255))[mask]
+        rc = np.zeros_like(r)
+        gc = np.zeros_like(g)
+        bc = np.zeros_like(b)
+        rc[mask] = (maxc - r)[mask] / (maxc - minc)[mask]
+        gc[mask] = (maxc - g)[mask] / (maxc - minc)[mask]
+        bc[mask] = (maxc - b)[mask] / (maxc - minc)[mask]
+        hsl[..., 0] = np.select([r==maxc, g==maxc], [bc-gc, 2.0+rc-bc], default=4.0+gc-rc)
+        hsl[..., 0] = (hsl[..., 0] / 6.0) % 1.0
+        return hsl
+
+    def hsl_to_rgb(self, hsl):
+        rgb = np.empty_like(hsl)
+        rgb[..., 3:] = hsl[..., 3:]
+        h, s, l = hsl[..., 0], hsl[..., 1], hsl[..., 2]
+
+        c = s * (255 - np.abs(2 * l - 255))
+        x = c * (1 - np.abs((h * 6) % 2 - 1))
+        m = l - c / 2
+        c = c + m
+        x = x + m
+
+        i = (h * 6.0).astype("uint8") % 6
+        conditions = [i == 0, i == 1, i == 2, i == 3, i == 4, i == 5]
+        rgb[..., 0] = np.select(conditions, [c, x, m, m, x, c])
+        rgb[..., 1] = np.select(conditions, [x, c, c, x, m, m])
+        rgb[..., 2] = np.select(conditions, [m, m, x, c, c, x])
+        return rgb.astype("uint8")
+
+    def hsl_linear(self, arr, l, scale):
+        il =  scale - l
+        if l == 0:
+            arr = 0
+        elif l == scale:
+            arr = scale
+        else:
+            arr = np.where(arr<=il, arr*(scale-il)/il, (arr-il)*il/(scale-il)+scale-il)
+        return arr
+
+    def hsl_curve(self, arr, l,  scale):
+        if l == 0:
+            arr = 0
+        elif l == scale:
+            arr = scale
+        elif l == scale / 2:
+            pass
+        else:
+            m = l ** 2 / (scale - 2 * l)
+            arr = m * (scale + m) / (scale + m - arr) - m
+        return arr
 
     @modding.help(brief="Turn avatar into sketch", category="Misc", field="Processing", paragraph=1)
     @commands.command()

@@ -901,7 +901,7 @@ class Guild(commands.Cog):
         else:
             await ctx.send("Server has no selfrole.")
 
-    @modding.help(brief="Pie chart showing selfrole distribution", category="Guild", field="Role", paragraph=0)
+    @modding.help(brief="Bar chart showing selfrole distribution", category="Guild", field="Role", paragraph=0)
     @selfrole.command()
     @checks.guild_only()
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
