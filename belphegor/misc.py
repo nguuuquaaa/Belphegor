@@ -508,9 +508,10 @@ class Misc(commands.Cog):
         pic = Image.new("RGB", (50, 50), rgb)
         bytes_ = BytesIO()
         pic.save(bytes_, "png")
+        bytes_.seek(0)
 
         rgb_value = rgb[0] * 256 * 256 + rgb[1] * 256 + rgb[2]
-        f = discord.File(bytes_.getvalue(), filename="color.png")
+        f = discord.File(bytes_, filename="color.png")
         e = discord.Embed(title=f"#{rgb_value:X}", colour=rgb_value)
         e.set_thumbnail(url="attachment://color.png")
         e.add_field(name="RGB", value=", ".join((str(v) for v in rgb)))
@@ -557,7 +558,7 @@ class Misc(commands.Cog):
         if len(code) < 2000:
             await ctx.send(code)
         else:
-            await ctx.send(file=discord.File(code.encode("utf-8"), filename="fuck_this.py"))
+            await ctx.send(file=discord.File(BytesIO(code.encode("utf-8")), filename="fuck_this.py"))
 
     @modding.help(brief="Random choice", category="Misc", field="Commands", paragraph=2)
     @commands.command(name="choose")
@@ -718,7 +719,7 @@ class Misc(commands.Cog):
         except OSError:
             return await ctx.send("Cannot identify image.")
         text = await self.bot.loop.run_in_executor(None, self.to_ascii, image, width, width//2)
-        await ctx.send(file=discord.File(text.encode("utf-8"), filename=f"ascii_{len(text)}_chars.txt"))
+        await ctx.send(file=discord.File(BytesIO(text.encode("utf-8")), filename=f"ascii_{len(text)}_chars.txt"))
 
     def setup_ascii_chars(self):
         self.chars = {}
@@ -1073,7 +1074,8 @@ class Misc(commands.Cog):
 
             bio = BytesIO()
             image.save(bio, "png")
-            return bio.getvalue()
+            bio.seek(0)
+            return bio
 
         bytes_2 = await self.bot.loop.run_in_executor(None, do_stuff)
         await ctx.send(file=discord.File(bytes_2, "monochrome.png"))
@@ -1178,7 +1180,8 @@ class Misc(commands.Cog):
 
             bio = BytesIO()
             image.save(bio, "png")
-            return bio.getvalue()
+            bio.seek(0)
+            return bio
 
         bytes_2 = await self.bot.loop.run_in_executor(None, do_stuff)
         await ctx.send(file=discord.File(bytes_2, "monochrome.png"))
@@ -1220,7 +1223,8 @@ class Misc(commands.Cog):
 
             bio = BytesIO()
             image.save(bio, "png")
-            return bio.getvalue()
+            bio.seek(0)
+            return bio
 
         bytes_2 = await self.bot.loop.run_in_executor(None, do_stuff)
         await ctx.send(file=discord.File(bytes_2, "sketch.png"))
@@ -1269,7 +1273,8 @@ class Misc(commands.Cog):
 
             bio = BytesIO()
             image.save(bio, "png")
-            return bio.getvalue()
+            bio.seek(0)
+            return bio
 
         bytes_2 = await self.bot.loop.run_in_executor(None, do_stuff)
         await ctx.send(file=discord.File(bytes_2, "sketch2.png"))

@@ -483,7 +483,8 @@ async def pie_chart(
             image.draw_text((250-width/2, 500), title, font="bold")
         bytes_io = BytesIO()
         image.save(bytes_io, format="png", scale=scale)
-        return bytes_io.getvalue()
+        bytes_io.seek(0)
+        return bytes_io
 
     _loop = loop or asyncio.get_event_loop()
     return await _loop.run_in_executor(None, drawing)
@@ -548,7 +549,8 @@ async def line_chart(
 
         bytes_io = BytesIO()
         image.save(bytes_io, format="png", scale=scale)
-        return bytes_io.getvalue()
+        bytes_io.seek(0)
+        return bytes_io
 
     _loop = loop or asyncio.get_event_loop()
     return await _loop.run_in_executor(None, drawing)
@@ -608,7 +610,8 @@ async def stacked_area_chart(
 
         bytes_io = BytesIO()
         image.save(bytes_io, format="png", scale=scale)
-        return bytes_io.getvalue()
+        bytes_io.seek(0)
+        return bytes_io
 
     _loop = loop or asyncio.get_event_loop()
     return await _loop.run_in_executor(None, drawing)
@@ -669,7 +672,8 @@ async def bar_chart(
 
         bytes_io = BytesIO()
         image.save(bytes_io, format="png", scale=scale)
-        return bytes_io.getvalue()
+        bytes_io.seek(0)
+        return bytes_io
 
     _loop = loop or asyncio.get_event_loop()
     return await _loop.run_in_executor(None, drawing)

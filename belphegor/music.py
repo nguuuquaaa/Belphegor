@@ -671,7 +671,7 @@ class Music(commands.Cog):
         for song in music_player.queue:
             jsonable.append({"title": song.title, "url": song.url})
         bytes_ = json.dumps(jsonable, indent=4, ensure_ascii=False).encode("utf-8")
-        await ctx.send(file=discord.File(bytes_, f"{name}.json"))
+        await ctx.send(file=discord.File(BytesIO(bytes_), f"{name}.json"))
 
     @modding.help(brief="Import JSON playlist", category="Music", field="Commands", paragraph=4)
     @music.command(name="import")

@@ -38,10 +38,11 @@ class XmasSpecial(commands.Cog):
                 base_img.paste(resized_hat, (0, 0), resized_hat)
                 pic_bytes = BytesIO()
                 base_img.save(pic_bytes, format="png")
+                pic_bytes.seek(0)
                 return pic_bytes
 
             result = await self.bot.loop.run_in_executor(None, image_process)
-            await ctx.send(file=discord.File(result.getvalue(), filename="santa_hat.png"))
+            await ctx.send(file=discord.File(result, filename="santa_hat.png"))
 
 #==================================================================================================================================================
 

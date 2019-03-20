@@ -471,10 +471,11 @@ class CaNgua:
                         new_map.paste(image_data, horse.location(), mask=image_data)
             pic = BytesIO()
             new_map.save(pic, format="png")
+            pic.seek(0)
             return pic
 
         current_map = await self.bot.run_in_lock(self.lock, image_process)
-        await self.channel.send(file=discord.File(current_map.getvalue(), filename="current_map.png"))
+        await self.channel.send(file=discord.File(current_map, filename="current_map.png"))
 
     async def cmd_info_turn(self):
         async with self.lock:

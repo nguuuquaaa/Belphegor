@@ -1141,7 +1141,8 @@ class PSO2(commands.Cog):
         draw.text((3, 3), text, font=font, fill=(255, 255, 255, 255))
         b = BytesIO()
         image.save(b, "png")
-        await ctx.send(file=discord.File(b.getvalue(), "pso2.png"))
+        b.seek(0)
+        await ctx.send(file=discord.File(b, "pso2.png"))
 
 #==================================================================================================================================================
 

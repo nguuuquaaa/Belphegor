@@ -5,6 +5,7 @@ from .utils import config, checks, modding
 import random
 import asyncio
 import json
+from io import BytesIO
 
 #==================================================================================================================================================
 
@@ -255,7 +256,7 @@ class Game(commands.Cog):
         simple_player_data = await self.player_list.find_one({"member_id": ctx.author.id})
         game_data = await self.game_list.find_one({"game_id": simple_player_data["game_id"]})
         game_data.pop("_id")
-        await ctx.send(file=discord.File(json.dumps(game_data, indent=4, ensure_ascii=False).encode("utf-8"), filename="gamedata.json"))
+        await ctx.send(file=discord.File(BytesIO(json.dumps(game_data, indent=4, ensure_ascii=False).encode("utf-8")), "gamedata.json"))
 
 #==================================================================================================================================================
 

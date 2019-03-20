@@ -744,7 +744,7 @@ class Guild(commands.Cog):
                         except checks.CustomError:
                             rest = message.attachments
                         else:
-                            file_ = discord.File(bytes_, a.filename)
+                            file_ = discord.File(BytesIO(bytes_), a.filename)
                             rest = message.attachments[1:]
                         if rest:
                             embed.add_field(name="Attachments", value="\n".join((a.proxy_url for a in rest)))
@@ -797,7 +797,7 @@ class Guild(commands.Cog):
                         embed.add_field(name="Channel", value=channel.mention)
                         embed.set_footer(text=utils.format_time(utils.now_time()))
                         all_text = "\n".join((f"{m.created_at.strftime('%Y-%m-%d %I:%M:%S')} {m.id: <18} {m.author}\n{textwrap.indent(m.content, '    ')}" for m in messages))
-                        await log_channel.send(embed=embed, file=discord.File(all_text.encode("utf-8"), filename="purged_messages.log"))
+                        await log_channel.send(embed=embed, file=discord.File(BytesIO(all_text.encode("utf-8")), filename="purged_messages.log"))
 
     async def get_selfroles(self, guild):
         role_data = await self.guild_data.find_one({"guild_id": guild.id}, projection={"_id": -1, "selfrole_ids": 1})
@@ -1141,7 +1141,8 @@ class Guild(commands.Cog):
             pic = Image.new("RGB", (50, 50), role.colour.to_rgb())
             bytes_ = BytesIO()
             pic.save(bytes_, "png")
-            f = discord.File(bytes_.getvalue(), filename="role_color.png")
+            bytes_.seek(0)
+            f = discord.File(bytes_, filename="role_color.png")
             embed.set_thumbnail(url="attachment://role_color.png")
             await ctx.send(file=f, embed=embed)
 

@@ -12,6 +12,7 @@ import asyncio
 from pymongo import ReturnDocument, UpdateOne, ASCENDING
 import json
 import math
+from io import BytesIO
 
 #==================================================================================================================================================
 SPECIAL = {
@@ -821,7 +822,7 @@ class Otogi(commands.Cog):
             await msg.edit(content=f"Done.\n{utils.progress_bar(i/count)}")
             txt = json.dumps({"done": done, "undone": undone}, indent=4, ensure_ascii=False)
             if len(txt) > 1900:
-                await ctx.send(f"Done: {len(done)}\nUndone: {len(undone)}", file=discord.File(txt.encode("utf-8"), filename="result.json"))
+                await ctx.send(f"Done: {len(done)}\nUndone: {len(undone)}", file=discord.File(BytesIO(txt.encode("utf-8")), filename="result.json"))
             else:
                 await ctx.send(f"Done: {len(done)}\nUndone: {len(undone)}\n```json\n{txt}\n```")
         else:
