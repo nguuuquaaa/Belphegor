@@ -569,12 +569,12 @@ class Statistics(commands.Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.command(hidden=True)
+    @commands.command()
     @checks.in_certain_guild(DISCORDPY_GUILD_ID)
     async def togglestats(self, ctx):
         '''
            `>>togglestats`
-            Toggle status recording for them chart commands.
+            Toggle status recording on/off for them chart commands.
         '''
         await self.check_opt_out()
         member = ctx.author

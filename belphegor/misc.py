@@ -399,7 +399,7 @@ class Misc(commands.Cog):
         for i in range(len(items)):
             self.bot.loop.create_task(message.add_reaction(int_to_emoji[i+1]))
         await asyncio.sleep(duration)
-        message = await ctx.get_message(message.id)
+        message = await ctx.fetch_message(message.id)
         result = {}
         for r in message.reactions:
             if r.emoji in emoji_to_int.keys():
@@ -483,7 +483,7 @@ class Misc(commands.Cog):
     @commands.command(aliases=["colour"])
     async def color(self, ctx, *args):
         '''
-            `>>color <int, hex code or rgb>`
+            `>>color <hex code or r,g,b>`
             Send an image filled with the color in question.
         '''
         if len(args) == 3:
@@ -629,14 +629,14 @@ class Misc(commands.Cog):
         '''
         target = channel or ctx
         try:
-            message = await target.get_message(msg_id)
+            message = await target.fetch_message(msg_id)
         except discord.NotFound:
             await ctx.send("Can't find message.")
         except discord.Forbidden:
             await ctx.send(f"I don't have permissions to access {channel.mention}")
         else:
             embed = discord.Embed(title=f"ID: {msg_id}", description=message.content, colour=0x36393E)
-            embed.add_field(name="Jump url", value=message.jump_url, inline=False)
+            embed.add_field(name="\u200b", value=f"[Jump to message]({message.jump_url})", inline=False)
             embed.set_author(name=message.author.display_name, icon_url=message.author.avatar_url)
             embed.set_footer(text=utils.format_time(message.created_at))
             if message.attachments:
@@ -652,14 +652,14 @@ class Misc(commands.Cog):
         '''
         target = channel or ctx
         try:
-            message = await ctx.get_message(msg_id)
+            message = await ctx.fetch_message(msg_id)
         except discord.NotFound:
             await ctx.send("Can't find message.")
         except discord.Forbidden:
             await ctx.send(f"I don't have permissions to access {channel.mention}")
         else:
             embed = discord.Embed(title=f"ID: {msg_id}", description=utils.split_page(message.content, 2000, safe_mode=True)[0], colour=0x36393E)
-            embed.add_field(name="Jump url", value=message.jump_url, inline=False)
+            embed.add_field(name="\u200b", value=f"[Jump to message]({message.jump_url})", inline=False)
             embed.set_author(name=message.author.display_name, icon_url=message.author.avatar_url)
             embed.set_footer(text=utils.format_time(message.created_at))
             if message.attachments:

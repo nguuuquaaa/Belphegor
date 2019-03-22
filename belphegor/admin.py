@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from . import utils
 from .utils import checks, data_type
-from io import StringIO
+from io import StringIO, BytesIO
 import traceback
 from contextlib import redirect_stdout
 import importlib
@@ -180,7 +180,7 @@ class Admin(commands.Cog):
         if data:
             text = json.dumps(data, indent=4, ensure_ascii=False)
             if len(text) > 1950:
-                await ctx.send(file=discord.File(text.encode("utf-8"), filename="data.json"))
+                await ctx.send(file=discord.File(BytesIO(text.encode("utf-8")), "data.json"))
             else:
                 await ctx.send(f"```json\n{text}\n```")
         else:
@@ -205,7 +205,7 @@ class Admin(commands.Cog):
         if data:
             text = json.dumps(data, indent=4, ensure_ascii=False)
             if len(text) > 1950:
-                await ctx.send(file=discord.File(text.encode("utf-8"), filename="data.json"))
+                await ctx.send(file=discord.File(BytesIO(text.encode("utf-8")), filename="data.json"))
             else:
                 await ctx.send(f"```json\n{text}\n```")
         else:
@@ -239,7 +239,7 @@ class Admin(commands.Cog):
     async def prettify(self, ctx, url, *, params="None"):
         bytes_ = await self.bot.fetch(url, params=eval(params))
         data = BS(bytes_.decode("utf-8"), "lxml")
-        await ctx.send(file=discord.File(data.prettify().encode("utf-8"), filename="data.html"))
+        await ctx.send(file=discord.File(BytesIO(data.prettify().encode("utf-8")), filename="data.html"))
 
     @commands.command(hidden=True)
     @checks.owner_only()

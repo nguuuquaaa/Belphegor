@@ -15,9 +15,9 @@ import collections
 
 #==================================================================================================================================================
 
-PRECISION = 100
-EPSILON = sympy.Float(f"1e-{PRECISION-5}", PRECISION)
+PRECISION = 50
 AFTER_DOT = 20
+EPSILON = sympy.Float(f"1e-{PRECISION-10}", PRECISION)
 INF = sympy.oo
 NAN = sympy.nan
 ZINF = sympy.zoo
@@ -741,7 +741,12 @@ class MathParse(BaseParse):
         if isinstance(number, sympy.Integer):
             return f"{int(number):{self.strfmt}}"
         else:
-            return f"{number.evalf(PRECISION):.{AFTER_DOT}f}".rstrip("0").rstrip(".")
+            nearest = number.round()
+            if sympy.Abs(number - nearest) < EPSILON:
+                return f"{int(nearest):{self.strfmt}}"
+            else:
+                print(number)
+                return f"{number.evalf(PRECISION):.{AFTER_DOT}f}".rstrip("0").rstrip(".")
 
     def result(self):
         results = []
@@ -779,7 +784,7 @@ class MathParse(BaseParse):
                         if self.text.strip() == "counter":
                             x = var_name
                             self.user_variables[x] = NoValue(x)
-                            results.append(f"Counter {x}")
+                            results.append(f"Set {x} as counter")
                             continue
                         else:
                             pass
