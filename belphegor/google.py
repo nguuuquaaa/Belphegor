@@ -1,154 +1,31 @@
 import discord
 from discord.ext import commands
 from . import utils
-from .utils import token, modding
-import multiprocessing
-from selenium import webdriver
-from selenium.webdriver.remote.webdriver import WebDriver
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.chrome.options import Options
-import os
-import sys
+from .utils import modding, config, checks
 from bs4 import BeautifulSoup as BS
+import aiohttp
 import asyncio
-import weakref
-import traceback
-import functools
-import queue
-import time
-import signal
-from yarl import URL
-from urllib.parse import quote
 
 #==================================================================================================================================================
 
-def try_coro(func):
-    @functools.wraps(func)
-    async def new_func(*args, **kwargs):
-        try:
-            return await func(*args, **kwargs)
-        except asyncio.CancelledError:
-            pass
-        except:
-            traceback.print_exc()
-    return new_func
+class Google(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+        self.google_session = aiohttp.ClientSession()
+        self.google_lock = asyncio.Lock()
+        self.google_headers = {
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Accept-Encoding": "gzip, deflate, sdch",
+            "Connection": "keep-alive",
+            "User-Agent": config.USER_AGENT
+        }
 
-def try_sync(func):
-    @functools.wraps(func)
-    def new_func(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except:
-            traceback.print_exc()
-    return new_func
+    def cog_unload(self):
+        self.bot.create_task_and_count(self.google_session.close())
 
-search_queue = multiprocessing.Queue()
-result_queue = multiprocessing.Queue()
-
-#==================================================================================================================================================
-
-BASE_URL = "https://www.google.com"
-
-class GoogleEngine:
-    def __init__(self, driver):
-        self.driver = driver
-
-    @classmethod
-    def setup_browser(cls, *, user_agent=None, proxy_host=None, proxy_port=None, email=None, password=None, safe=False):
-        options = Options()
-        options.add_argument("--headless")
-        if user_agent:
-            options.add_argument("--user-agent"+user_agent)
-        options.add_argument("--incognito")
-        options.add_argument("--window-size=1920,1080")
-
-        if sys.platform == "win32":
-            options.add_argument("--disable-gpu")
-        else:
-            options.add_argument("--disable-dev-shm-usage")
-            options.add_argument("--no-sandbox")
-
-        if proxy_host and proxy_port:
-            options.add_argument(f"--proxy-server={proxy_host}:{proxy_port}")
-
-        cwd = os.getcwd()
-        try:
-            driver = webdriver.Chrome(f"{cwd}/chromedriver", options=options)
-            driver.get(BASE_URL)
-
-            #login
-            elem = driver.find_element_by_css_selector("a#gb_70")
-            elem.click()
-
-            #email
-            email = email or token.G_EMAIL
-            elem = driver.find_element_by_css_selector("input[type=email]")
-            elem.clear()
-            elem.send_keys(email)
-            elem.send_keys(Keys.RETURN)
-
-            #password
-            password = password or token.G_PASSWORD
-            elem = driver.find_element_by_css_selector("input[type=password]")
-            elem.clear()
-            elem.send_keys(password)
-            elem.send_keys(Keys.RETURN)
-
-            #in case we get "you need to update these shit"
-            driver.get(BASE_URL)
-
-            #switch to English
-            try:
-                elem = driver.find_element_by_css_selector("#gws-output-pages-elements-homepage_additional_languages__als > div > a:nth-child(1)")
-            except:
-                pass
-            else:
-                if elem.text.strip() == "English":
-                    elem.click()
-
-            #if safe search is on
-            if safe:
-                #first do a random search
-                elem = driver.find_element_by_css_selector("input[name=q]")
-                elem.clear()
-                elem.send_keys("google")
-                elem.send_keys(Keys.RETURN)
-
-                #then open search preference
-                elem = driver.find_element_by_css_selector("#abar_button_opt")
-                elem.click()
-
-                elem = driver.find_element_by_css_selector("#lb > div > a:nth-child(1)")
-                elem.click()
-
-                #switch safe search on
-                #sometimes this doesn't load immediately, so wait a bit_length
-                time.sleep(1)
-                elem = driver.find_element_by_css_selector("#ssc > span > div")
-                elem.click()
-
-                #and save
-                elem = driver.find_element_by_css_selector("#form-buttons > div.jfk-button-action")
-                elem.click()
-
-                #there's a popup here so dismiss it
-                time.sleep(1)
-                alert = driver.switch_to.alert
-                alert.dismiss()
-        except:
-            print("error, written source to g.html")
-            with open("g.html", "w", encoding="utf-8") as f:
-                f.write(driver.page_source)
-            driver.get(BASE_URL)
-
-        return cls(driver)
-
-    def search(self, query):
-        elem = self.driver.find_element_by_css_selector("input[name=q]")
-        elem.clear()
-        elem.send_keys(query)
-        elem.send_keys(Keys.RETURN)
-        soup = BS(self.driver.page_source, "lxml")
+    def _parse_google(self, html):
+        soup = BS(html, "lxml")
         for script in soup("script"):
             script.decompose()
 
@@ -387,40 +264,6 @@ class GoogleEngine:
         other = "\n\n".join((f"<{r[1]}>" for r in search_results[1:5]))
         return f"**Search result:**\n{search_results[0][1]}\n**See also:**\n{other}"
 
-    def close(self):
-        self.driver.close()
-
-    def quit(self):
-        self.driver.quit()
-
-#==================================================================================================================================================
-
-class Google(commands.Cog):
-    def __init__(self, bot):
-        self.bot = bot
-
-        self.google_result = weakref.ref(bot.loop.create_task(self.google_result_queue()))
-        self.orders = {}
-
-    def cog_unload(self):
-        gs = self.google_result()
-        if gs:
-            gs.cancel()
-
-    @try_coro
-    async def google_result_queue(self):
-        loop = self.bot.loop
-        while True:
-            try:
-                ret = await loop.run_in_executor(None, result_queue.get, True, 5)
-            except queue.Empty:
-                continue
-
-            if isinstance(ret[1], Exception):
-                self.orders[ret[0]].set_exception(ret[1])
-            else:
-                self.orders[ret[0]].set_result(ret[1])
-
     @modding.help(brief="Google search", category="Misc", field="Commands", paragraph=2)
     @commands.command(aliases=["g"])
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
@@ -428,34 +271,26 @@ class Google(commands.Cog):
         '''
             `>>google <query>`
             Google search.
-            ~~Safe search is enabled in non-nsfw channels and disabled in nsfw channels.~~
-            Safe saerch is alway enabled now.
             There's a 10-second cooldown per user.
         '''
+        params = {
+            "hl": "en",
+            "q": query
+        }
+
         await ctx.trigger_typing()
-
-        safe = not ctx.channel.is_nsfw()
-
-        fut = self.bot.loop.create_future()
-        mid = ctx.message.id
-        self.orders[mid] = fut
-
-        st = time.perf_counter()
-        search_queue.put((mid, safe, query))
-        ed = time.perf_counter()
-
-        result = await fut
-        if isinstance(result, discord.Embed):
-            await ctx.send(embed=result)
-        elif isinstance(result, str):
-            await ctx.send(result)
-        elif not result:
-            await ctx.send("No result found.\nEither query yields nothing or Google blocked me (REEEEEEEEEEEEEEEEEEEEEEEE)")
-        elif isinstance(result, list):
-            paging = utils.Paginator(result, render=False)
-            await paging.navigate(ctx)
-        else:
-            raise result
+        async with self.google_lock:
+            bytes_ = await utils.fetch(self.google_session, "https://www.google.com/search", headers=self.google_headers, params=params, timeout=10)
+            result = self._parse_google(bytes_.decode("utf-8"))
+            if isinstance(result, discord.Embed):
+                await ctx.send(embed=result)
+            elif isinstance(result, str):
+                await ctx.send(result)
+            elif isinstance(result, list):
+                paging = utils.Paginator(result, render=False)
+                await paging.navigate(ctx)
+            else:
+                await ctx.send("No result found.\nEither query yields nothing or Google blocked me (REEEEEEEEEEEEEEEEEEEEEEEE)")
 
     @google.error
     async def google_error(self, ctx, error):
@@ -480,7 +315,7 @@ class Google(commands.Cog):
             "ie": "UTF-8",
             "q": quote(search)
         }
-        bytes_ = await self.bot.fetch("http://translate.google.com/m", params=params)
+        bytes_ = await self.bot.fetch("http://translate.google.com/m", headers=self.google_headers, params=params, timeout=10)
 
         data = BS(bytes_.decode("utf-8"), "lxml")
         tag = data.find("div", class_="t0")
@@ -496,44 +331,5 @@ class Google(commands.Cog):
 
 #==================================================================================================================================================
 
-class RunGoogleInBackground(multiprocessing.Process):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.drivers = ()
-        def quit_sessions(signum, frame):
-            for dr in self.drivers:
-                dr.quit()
-        signal.signal(signal.SIGTERM, quit_sessions)
-
-    @try_sync
-    def run(self):
-        drivers = (GoogleEngine.setup_browser(safe=True),)
-        self.drivers = drivers
-        print("google ready")
-        while True:
-            try:
-                item = search_queue.get(True, 5)
-            except queue.Empty:
-                continue
-            mid = item[0]
-            driver = drivers[0]
-            query = item[2]
-            try:
-                ret = driver.search(query)
-            except Exception as e:
-                ret = e
-            finally:
-                result_queue.put((mid, ret))
-
 def setup(bot):
-    process = RunGoogleInBackground(daemon=True)
-    process.start()
     bot.add_cog(Google(bot))
-    bot.saved_stuff["google"] = process
-
-def teardown(bot):
-    search_queue.close()
-    result_queue.close()
-    process = bot.saved_stuff.pop("google")
-    process.terminate()
-    process.close()
