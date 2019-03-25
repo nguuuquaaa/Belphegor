@@ -425,17 +425,16 @@ class Otogi(commands.Cog):
         for attr in attrs:
             orig_att = attr[0]
             value = attr[1]
-            try:
-                re_value = int(value)
+            if orig_att in ("atk", "max_atk", "hp", "max_hp", "rarity", "mlb_atk", "mlb_hp"):
                 if orig_att == "atk":
                     att = "max_atk"
                 elif orig_att == "hp":
                     att = "max_hp"
                 else:
                     att = orig_att
-                q = {att: re_value}
+                q = {att: value.to_query()}
                 p = {att: True}
-            except:
+            else:
                 re_value = ".*?".join(map(re.escape, value.split()))
                 if orig_att in ("va", "seiyuu"):
                     att = "voice_actor"
@@ -511,19 +510,19 @@ class Otogi(commands.Cog):
 
     @modding.help(brief="Find daemons with given conditions", category="Otogi", field="Database", paragraph=0)
     @cmd_daemon.command(name="filter")
-    async def cmd_daemon_filter(self, ctx, *, data: modding.KeyValue()):
+    async def cmd_daemon_filter(self, ctx, *, data: modding.KeyValue({("atk", "max_atk", "hp", "max_hp", "rarity", "mlb_atk", "mlb_hp"): modding.EqualityComparison(int)})):
         '''
             `>>daemon filter <criteria>`
             Find all daemons with <criteria>.
-            Criteria can contain multiple lines, each with format `<attribute>=<value>`
+            Criteria can contain multiple lines, each with format `attribute=value`, or `attribute>value`/`attribute<value` if applicable.
             Available attributes:
             - name
             - alias
             - rarity
             - type
             - class
-            - max_atk
-            - max_hp
+            - max_atk(atk)
+            - max_hp(hp)
             - mlb_atk
             - mlb_hp
             - skill
@@ -536,7 +535,7 @@ class Otogi(commands.Cog):
             - notes_and_trivia
             - description
         '''
-        attrs = [(k.lower(), v.lower()) for k, v in data.items() if k and v]
+        attrs = [(k, v) for k, v in data.items() if k and v]
         result = await self._search_att(attrs)
         if result:
             paging = utils.Paginator(

@@ -349,7 +349,7 @@ class PSO2(commands.Cog):
             orig_att = attr[0]
             value = attr[1]
             try:
-                re_value = int(value)
+                re_value = value.to_query()
                 if orig_att == "atk":
                     q = {
                             "$or": [
@@ -367,7 +367,7 @@ class PSO2(commands.Cog):
                 else:
                     q = {orig_att: re_value}
                 p = {orig_att: True}
-            except:
+            except AttributeError:
                 args_list = value.split()
                 re_value = ".*?".join(map(re.escape, args_list))
                 p = None
@@ -463,11 +463,11 @@ class PSO2(commands.Cog):
 
     @modding.help(brief="Search weapons with given conditions", category="PSO2", field="Database", paragraph=0)
     @cmd_weapon.command(name="filter")
-    async def w_filter(self, ctx, *, data: modding.KeyValue()):
+    async def w_filter(self, ctx, *, data: modding.KeyValue({("atk", "rarity"): modding.EqualityComparison(int)})):
         '''
             `>>w filter <criteria>`
             Find all weapons with criteria.
-            Criteria can contain multiple lines, each with format `attribute=value`.
+            Criteria can contain multiple lines, each with format `attribute=value`, or `attribute>value`/`attribute<value` if applicable.
             Available attributes:
             - en_name
             - jp_name
@@ -478,7 +478,7 @@ class PSO2(commands.Cog):
             - classes(class)
             - ssa_slots(slots/slot)
         '''
-        attrs = [(k.lower(), v.lower()) for k, v in data.items()]
+        attrs = [(k, v) for k, v in data.items()]
         result = await self._search_att(attrs)
         if result:
             paging = utils.Paginator(

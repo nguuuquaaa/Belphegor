@@ -7,6 +7,60 @@ from yarl import URL
 
 #==================================================================================================================================================
 
+class NumberRange:
+    def __init__(self, number):
+        self.number = number
+        self.positive_sign = None
+
+    def set_positive_sign(self, positive_sign):
+        self.positive_sign = positive_sign
+        return self
+
+    def to_query(self):
+        if self.positive_sign is True:
+            return {"$gt": self.number}
+        elif self.positive_sign is False:
+            return {"$lt": self.number}
+        else:
+            return self.number
+
+class EqualityComparison(commands.Converter):
+    def __init__(self, type):
+        self.type = type
+
+    async def convert(self, ctx, argument):
+        try:
+            return NumberRange(self.type(argument))
+        except ValueError:
+            raise commands.BadArgument("Input must be a number.")
+
+#==================================================================================================================================================
+
+def _greater_than(number):
+    try:
+        return number.set_positive_sign(True)
+    except AttributeError:
+        raise commands.BadArgument("Input must be a number.")
+
+def _less_than(number):
+    try:
+        return number.set_positive_sign(False)
+    except AttributeError:
+        raise commands.BadArgument("Input must be a number.")
+
+def _equal(anything):
+    return anything
+
+def _get_handle(sign):
+    if sign == ">":
+        return _greater_than
+    elif sign == "<":
+        return _less_than
+    else:
+        return _equal
+
+#==================================================================================================================================================
+
 class MultiDict(multidict.MultiDict):
     def geteither(self, *keys, default=None):
         for key in keys:
@@ -36,14 +90,16 @@ class MultiDict(multidict.MultiDict):
         return ret
 
 EMPTY = MultiDict()
+
+#==================================================================================================================================================
+
 _quotes = commands.view._quotes
 _all_quotes = set((*_quotes.keys(), *_quotes.values()))
-_delimiters = _all_quotes | set(("=",))
+_equality = set(("=", ">", "<"))
+_delimiters = _all_quotes | _equality
 
 def _check_char(c):
     return c.isspace() or c in _delimiters
-
-#==================================================================================================================================================
 
 class KeyValue(commands.Converter):
     def __init__(self, conversion={}, *, escape=False, clean=True, multiline=True):
@@ -66,28 +122,35 @@ class KeyValue(commands.Converter):
         text = self.clean(argument)
         ret = MultiDict()
 
-        async def resolve(key, value):
+        async def resolve(key, value, handle):
             if self.escape:
                 value = value.encode("raw_unicode_escape").decode("unicode_escape")
             conv = self.conversion.get(key)
             if conv:
                 value = await ctx.command.do_conversion(ctx, conv, value, key)
-            ret.add(key, value)
+            ret.add(key, handle(value))
 
         if self.multiline:
             for line in text.splitlines():
                 line = line.strip()
                 if line:
-                    key, sep, value = line.partition("=")
-                    if sep:
-                        key, value = key.strip(), value.strip()
+                    for i, c in enumerate(line):
+                        if c in _equality:
+                            handle = _get_handle(c)
+                            key = line[:i]
+                            value = line[i+1:]
+                            break
                     else:
-                        key, value = "", key.strip()
-                    await resolve(key, value)
+                        handle = _equal
+                        key = ""
+                        value = line
+                    key, value = key.strip(), value.strip()
+                    await resolve(key, value, handle)
         else:
             wi = format.split_iter(text, check=_check_char)
             key = ""
             prev_word = ""
+            handle = _equal
 
             while True:
                 try:
@@ -95,13 +158,16 @@ class KeyValue(commands.Converter):
                 except StopIteration:
                     break
 
-                if word == "=":
+                if word in _equality:
                     if key:
-                        prev_word = prev_word + "="
+                        prev_word = prev_word + word
                     else:
                         key = prev_word
                         prev_word = ""
+                        handle = _get_handle(word)
                 elif word in _quotes:
+                    if prev_word:
+                        raise commands.BadArgument("Quote character must be placed at the start.")
                     quote_close = _quotes[word]
                     quote_words = []
                     escape = False
@@ -115,22 +181,21 @@ class KeyValue(commands.Converter):
                                 quote_words.append(w)
                                 escape = False
                             elif w == quote_close:
-                                await resolve(key, "".join(quote_words))
-                                key = ""
-                                prev_word = ""
+                                prev_word = "".join(quote_words)
                                 break
                             else:
                                 if w == "\\":
                                     escape = True
-                                quote_words.append("\\")
+                                quote_words.append(w)
                 elif not word.isspace():
                     prev_word = prev_word + word
                 else:
-                    await resolve(key, prev_word)
+                    await resolve(key, prev_word, handle)
                     key = ""
                     prev_word = ""
-            if prev_word:
-                await resolve(key, prev_word)
+                    handle = _equal
+            if key or prev_word:
+                await resolve(key, prev_word, handle)
 
         return ret
 
