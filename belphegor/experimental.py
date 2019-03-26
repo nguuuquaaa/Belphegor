@@ -123,11 +123,8 @@ class Statistics(commands.Cog):
             req = self.get_update_request(member_stats)
             if req:
                 all_reqs.append(req)
-                if len(all_reqs) >= 100:
-                    await self.user_data.bulk_write(all_reqs)
-                    all_reqs.clear()
-        if all_reqs:
-            await self.user_data.bulk_write(all_reqs)
+        for i in range(0, len(all_reqs), 100):
+            await self.user_data.bulk_write(all_reqs[i:i+100])
 
         end = utils.now_time()
         end_hour = (end - BEGINNING).total_seconds() / 3600
@@ -143,12 +140,9 @@ class Statistics(commands.Cog):
         now = utils.now_time()
         if now >= self.next_update_time or len(self.all_requests) >= 100:
             if self.all_requests:
-                try:
-                    await self.user_data.bulk_write(self.all_requests)
-                except:
-                    print(self.all_requests)
-                finally:
-                    self.all_requests.clear()
+                all_reqs = self.all_requests.copy()
+                await self.user_data.bulk_write(all_reqs)
+                self.all_requests.clear()
             self.next_update_time = now + timedelta(seconds=60)
         else:
             if req:

@@ -84,7 +84,6 @@ class Help(commands.Cog):
                     "Data taken from [swiki](http://pso2es.swiki.jp/), [Arks-Visiphone](http://pso2.arks-visiphone.com/wiki/Main_Page) and DB Kakia.\n\n"
                     "Special thanks to ACF for letting me use his EQ API.\n"
                     "`>>set eq` - Set EQ alert channel\n"
-                    "`>>set eqmini` - EQ alert, but less spammy\n"
                     "`>>unset eq` - Unset EQ alert channel",
                 "thumb":    "http://i.imgur.com/aNAG34t.jpg",
                 "footer":   None,
@@ -220,7 +219,7 @@ class Help(commands.Cog):
     async def help(self, ctx, *, command_name=None):
         '''
             `>>help <optional: command>`
-            Display help. Navigating by using reactions.
+            **Display help if no command is provided.** Navigating by using reactions.
 
             If you see this
             \u200b    `>>command` - this is
@@ -229,7 +228,7 @@ class Help(commands.Cog):
             Then it means `sub1` and `sub2` are subcommands of `command` and the usage is `>>command` for the parent and `>>command sub1` and `>>command sub2` for subcommands. This usage also reflects in specific command help.
 
 
-            Specific command usage usually has this format
+            **Display specific help if the command provided.** Specific command usage usually has this format:
             ```>>command name <argument> <optional: argument> <keyword: _|arg|ument>```
             - `>>` is the default prefix of Belphegor, some servers may not have this due to custom prefixes.
             - `command name` and `<argument>` are self-explanatory.
@@ -242,6 +241,7 @@ class Help(commands.Cog):
             Here's a list of all quote characters: `" "`, `‘ ’`, `‚ ‛`, `“ ”`, `„ ‟`, `⹂ ⹂`, `「 」`, `『 』`, `〝 〞`, `﹁ ﹂`, `﹃ ﹄`, `＂ ＂`, `｢ ｣`, `« »`, `‹ ›`, `《 》`, `〈 〉`
             If value contains quote characters you must enclosed it in another quote characters.
             Keyword arguments are non-positional, which mean you can place it in any order whatsoever.
+            Example: `>>command key1=value1 key2="value number 2"`
         '''
         if command_name is None:
             await self.help_paging.navigate(ctx, timeout=120)

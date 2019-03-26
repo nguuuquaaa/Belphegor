@@ -37,9 +37,9 @@ def get_element(container, predicate, *, default=None):
     return result
 
 def _insert_spaces(attrs):
-    i = iter(attrs)
-    yield f"${next(i)}"
-    for a in attrs:
+    iter_attrs = iter(attrs)
+    yield f"${next(iter_attrs)}"
+    for a in iter_attrs:
         yield " "
         yield f"${a}"
 

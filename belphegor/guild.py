@@ -46,7 +46,6 @@ class Guild(commands.Cog):
             -`log` - Activity log channel
             -`logmessage` - Message log
             -`eq` - PSO2 EQ Alert
-            -`eqmini` - EQ Alert, but less spammy
         '''
         pass
 
@@ -518,34 +517,26 @@ class Guild(commands.Cog):
         await ctx.confirm()
 
     @cmd_set.command(name="eq", aliases=["eqalert"])
-    async def set_eq_channel(self, ctx, channel: discord.TextChannel=None):
+    async def set_eq_channel(self, ctx, *, data: modding.KeyValue({("", "channel"): discord.TextChannel, "ship": int, "minimal": bool})=modding.EMPTY):
         '''
-            `>>set eq <optional: channel>`
-            Set <channel> as PSO2 EQ Alert channel. If no channel is provided, use the current channel that the command is invoked in.
-            EQs will be noticed 2h45m, 1h45m, 45m, 15m prior, and at present.
+            `>>set eq <keyword: _|channel> <keyword: minimal> <keyword: ship>`
+            Set channel as PSO2 EQ Alert channel. If no channel is provided, use the current channel that the command is invoked in.
+            Minimal is either true or false, which indicates minimal mode. Default is false.
+            Ship can be 1 to 10, or left untouched for all ships.
+            EQs will be noticed 2h45m, 1h45m, 45m, 15m prior, at present in non-minimal mode, and 1h45m, 45m prior in minimal mode.
         '''
-        target = channel or ctx.channel
-        await self.guild_data.update_one(
-            {"guild_id": ctx.guild.id},
-            {"$set": {"eq_channel_id": target.id, "eq_alert_minimal": False}, "$setOnInsert": {"guild_id": ctx.guild.id}},
-            upsert=True
-        )
-        await ctx.confirm()
-
-    @cmd_set.command(name="eqmini", aliases=["minimaleq"])
-    async def set_minimal_eq_channel(self, ctx, channel: discord.TextChannel=None):
-        '''
-            `>>set eq <optional: channel>`
-            Set <channel> as PSO2 EQ Alert channel, in minimal mode. If no channel is provided, use the current channel that the command is invoked in.
-            EQ will only be noticed 1h45m and 45m prior in minimal mode.
-        '''
-        target = channel or ctx.channel
-        await self.guild_data.update_one(
-            {"guild_id": ctx.guild.id},
-            {"$set": {"eq_channel_id": target.id, "eq_alert_minimal": True}, "$setOnInsert": {"guild_id": ctx.guild.id}},
-            upsert=True
-        )
-        await ctx.confirm()
+        target = data.geteither("", "channel", default=ctx.channel)
+        ship = data.get("ship", None)
+        minimal = data.get("minimal", False)
+        if (ship is None) or (0 < ship <= 10):
+            await self.guild_data.update_one(
+                {"guild_id": ctx.guild.id},
+                {"$set": {"eq_channel_id": target.id, "eq_alert_minimal": minimal, "eq_ship": ship}, "$setOnInsert": {"guild_id": ctx.guild.id}},
+                upsert=True
+            )
+            await ctx.confirm()
+        else:
+            await ctx.send("Ship must be 1 to 10.")
 
     @cmd_unset.command(name="eq", aliases=["eqalert"])
     async def unset_eq_channel(self, ctx):
@@ -553,7 +544,7 @@ class Guild(commands.Cog):
             `>>unset eq`
             Unset PSO2 EQ Alert.
         '''
-        result = await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$unset": {"eq_channel_id": "", "eq_alert_minimal": ""}})
+        result = await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$unset": {"eq_channel_id": "", "eq_alert_minimal": "", "eq_ship": ""}})
         if result.modified_count > 0:
             await ctx.confirm()
         else:

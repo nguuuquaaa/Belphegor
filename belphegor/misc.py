@@ -419,10 +419,11 @@ class Misc(commands.Cog):
 
     @modding.help(brief="Z̜͍̊ă̤̥ḷ̐́ģͮ͛ò̡͞ ͥ̉͞ť͔͢e̸̷̅x̠ͯͧt̰̱̾", category="Misc", field="Commands", paragraph=1)
     @commands.group(invoke_without_command=True)
-    async def glitch(self, ctx, *, data: modding.KeyValue({("weight", "w"): int}, multiline=False, escape=True, clean=False)):
+    async def glitch(self, ctx, *, data: modding.KeyValue({("weight", "w"): int}, escape=True)):
         '''
             `>>glitch <text> <keyword: weight|w>`
             Generate Zalgo text.
+            Text is stripped of newline, but you can use \\n for newline character.
             More weight, more additional characters.
             Default weight is 20.
         '''
@@ -572,12 +573,22 @@ class Misc(commands.Cog):
         await ctx.send(random.choice(choices))
 
     @commands.command(name="embed")
-    async def cmd_embed(self, ctx, *, kwargs: modding.KeyValue(escape=True)):
+    async def cmd_embed(self, ctx, *, kwargs: modding.KeyValue(escape=True, clean=True, multiline=True)):
         '''
             `>>embed <data>`
             Display an embed.
             Data input is kwargs-like multiline, which each line has the format of `key=value`.
-            Acceptable key: title, author, author_icon, description, url, colour (in hex), thumbnail, image, footer (text), field (each line add one field in final embed, using format `name|value|optional inline`)
+            Acceptable key:
+            - title
+            - author
+            - author_icon
+            - description
+            - url
+            - colour (in hex)
+            - thumbnail
+            - image
+            - footer (text)
+            - field (each line add one field in final embed, using format `name|value|optional inline`)
         '''
         Empty = discord.Embed.Empty
         embed = discord.Embed(
@@ -677,7 +688,7 @@ class Misc(commands.Cog):
 
     @modding.help(brief="Grayscale ascii art", category="Misc", field="Processing", paragraph=2)
     @commands.group(invoke_without_command=True)
-    async def ascii(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, "url": modding.URLConverter()}, clean=False, multiline=False)=modding.EMPTY):
+    async def ascii(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, "url": modding.URLConverter()})=modding.EMPTY):
         '''
             `>>ascii <optional: member>`
             ASCII art of member avatar.
@@ -698,7 +709,7 @@ class Misc(commands.Cog):
 
     @modding.help(brief="Bigger grayscale ascii art", category="Misc", field="Processing", paragraph=2)
     @ascii.command(name="big", aliases=["bigger", "biggur"])
-    async def big_ascii(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("width", "w"): int, "url": modding.URLConverter()}, clean=False, multiline=False)=modding.EMPTY):
+    async def big_ascii(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("width", "w"): int, "url": modding.URLConverter()})=modding.EMPTY):
         '''
             `>>ascii big <keyword: _|member|m> <keyword: width|w>`
             Bigger size ASCII art of member avatar, send as txt file due to discord's 2000 characters limit.
@@ -802,7 +813,7 @@ class Misc(commands.Cog):
     @modding.help(brief="Edge-detection ascii art", category="Misc", field="Processing", paragraph=2)
     @ascii.command(name="edge")
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
-    async def ascii_edge(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t", "blur", "b"): int, ("weight", "w"): float, ("edge", "e", "inverse", "i"): bool, "url": modding.URLConverter()}, clean=False, multiline=False)=modding.EMPTY):
+    async def ascii_edge(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t", "blur", "b"): int, ("weight", "w"): float, ("edge", "e", "inverse", "i"): bool, "url": modding.URLConverter()})=modding.EMPTY):
         '''
             `>>ascii edge <keyword: _|member|m> <keyword: threshold|t> <keyword: blur|b> <keyword: weight> <keyword: size|s>`
             Edge-detection ASCII art of member avatar.
@@ -878,7 +889,7 @@ class Misc(commands.Cog):
 
     @modding.help(brief="Block ascii art", category="Misc", field="Processing", paragraph=2)
     @ascii.command(name="block")
-    async def ascii_block(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t"): int, ("inverse", "i"): bool, "url": modding.URLConverter()}, clean=False, multiline=False)=modding.EMPTY):
+    async def ascii_block(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t"): int, ("inverse", "i"): bool, "url": modding.URLConverter()})=modding.EMPTY):
         '''
             `>>ascii block <keyword: _|member|m> <keyword: threshold|t> <keyword: inverse|i> <keyword: size|s>`
             Block ~~unicode~~ ASCII art of member avatar.
@@ -910,7 +921,7 @@ class Misc(commands.Cog):
 
     @modding.help(brief="Braille dot ascii art", category="Misc", field="Processing", paragraph=2)
     @ascii.command(name="dot")
-    async def ascii_dot(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t"): int, ("inverse", "i"): bool, "url": modding.URLConverter()}, clean=False, multiline=False)=modding.EMPTY):
+    async def ascii_dot(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t"): int, ("inverse", "i"): bool, "url": modding.URLConverter()})=modding.EMPTY):
         '''
             `>>ascii dot <keyword: _|member|m> <keyword: threshold|t> <keyword: inverse|i> <keyword: size|s>`
             Braille dot ~~unicode~~ ASCII art of member avatar.
@@ -951,7 +962,7 @@ class Misc(commands.Cog):
 
     @modding.help(brief="Moon emoji art", category="Misc", field="Processing", paragraph=2)
     @ascii.command(name="moon")
-    async def ascii_moon(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t"): int, ("inverse", "i"): bool, "url": modding.URLConverter()}, clean=False, multiline=False)=modding.EMPTY):
+    async def ascii_moon(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, ("threshold", "t"): int, ("inverse", "i"): bool, "url": modding.URLConverter()})=modding.EMPTY):
         '''
             `>>ascii moon <keyword: _|member|m> <keyword: threshold|t> <keyword: inverse|i> <keyword: size|s>`
             Moon ~~emoji~~ ASCII art of member avatar.
@@ -1030,7 +1041,7 @@ class Misc(commands.Cog):
     @modding.help(brief="Monochrome transformation", category="Misc", field="Processing", paragraph=1)
     @commands.command(aliases=["ct"])
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
-    async def transform(self, ctx, *, data: modding.KeyValue({("member", "m", ""): discord.Member, ("threshold", "t"): int, "url": modding.URLConverter()}, clean=False, multiline=False)=modding.EMPTY):
+    async def transform(self, ctx, *, data: modding.KeyValue({("member", "m", ""): discord.Member, ("threshold", "t"): int, "url": modding.URLConverter()})=modding.EMPTY):
         '''
             `>>transform <keyword: _|member|m> <keyword: rgb> <keyword: threshold|t>`
             Apply a monochrome transformation to member avatar.
@@ -1130,7 +1141,7 @@ class Misc(commands.Cog):
     @modding.help(brief="Monochrome transformation", category="Misc", field="Processing", paragraph=1)
     @commands.command(aliases=["ct2"])
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
-    async def transform2(self, ctx, *, data: modding.KeyValue({("member", "m", ""): discord.Member, "url": modding.URLConverter()}, clean=False, multiline=False)=modding.EMPTY):
+    async def transform2(self, ctx, *, data: modding.KeyValue({("member", "m", ""): discord.Member, "url": modding.URLConverter()})=modding.EMPTY):
         '''
             `>>transform2 <keyword: _|member|m> <keyword: rgb> <keyword: mode> <keyword: func>`
             Apply a monochrome transformation to member avatar.
@@ -1245,7 +1256,7 @@ class Misc(commands.Cog):
     @modding.help(brief="Turn avatar into sketch", category="Misc", field="Processing", paragraph=1)
     @commands.command()
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
-    async def sketch(self, ctx, *, data: modding.KeyValue({("member", "m", ""): discord.Member, ("sigma", "s"): int, "url": modding.URLConverter()}, clean=False, multiline=False)=modding.EMPTY):
+    async def sketch(self, ctx, *, data: modding.KeyValue({("member", "m", ""): discord.Member, ("sigma", "s"): int, "url": modding.URLConverter()})=modding.EMPTY):
         '''
             `>>sketch <keyword: _|member|m> <keyword: sigma|s>`
             Turn member avatar into pencil sketch.
@@ -1288,7 +1299,7 @@ class Misc(commands.Cog):
     @modding.help(brief="Turn avatar into sketch", category="Misc", field="Processing", paragraph=1)
     @commands.command()
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
-    async def sketch2(self, ctx, *, data: modding.KeyValue({("member", "m", ""): discord.Member, ("depth", "d"): int, "url": modding.URLConverter()}, clean=False, multiline=False)=modding.EMPTY):
+    async def sketch2(self, ctx, *, data: modding.KeyValue({("member", "m", ""): discord.Member, ("depth", "d"): int, "url": modding.URLConverter()})=modding.EMPTY):
         '''
             `>>sketch2 <keyword: _|member|m> <keyword: depth|d>`
             Turn member avatar into pencil sketch.

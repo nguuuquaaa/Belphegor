@@ -510,11 +510,11 @@ class Otogi(commands.Cog):
 
     @modding.help(brief="Find daemons with given conditions", category="Otogi", field="Database", paragraph=0)
     @cmd_daemon.command(name="filter")
-    async def cmd_daemon_filter(self, ctx, *, data: modding.KeyValue({("atk", "max_atk", "hp", "max_hp", "rarity", "mlb_atk", "mlb_hp"): modding.EqualityComparison(int)})):
+    async def cmd_daemon_filter(self, ctx, *, data: modding.KeyValue({("atk", "max_atk", "hp", "max_hp", "rarity", "mlb_atk", "mlb_hp"): modding.Comparison(int)}, multiline=True)):
         '''
             `>>daemon filter <criteria>`
             Find all daemons with <criteria>.
-            Criteria can contain multiple lines, each with format `attribute=value`, or `attribute>value`/`attribute<value` if applicable.
+            Criteria  each with format `attribute=value`, or `attribute>value`/`attribute<value` if applicable.
             Available attributes:
             - name
             - alias
@@ -608,7 +608,7 @@ class Otogi(commands.Cog):
 
     @update.command(hidden=True)
     @checks.owner_only()
-    async def edit(self, ctx, *, data: modding.KeyValue()):
+    async def edit(self, ctx, *, data: modding.KeyValue({("max_atk", "max_hp", "mlb_atk", "mlb_hp", "rarity"): int}, multiline=True)):
         name = data.pop("")
         if not name:
             return await ctx.send("Input the damn daemon ffs.")
@@ -677,7 +677,7 @@ class Otogi(commands.Cog):
 
     @update.command(aliases=["wiki"])
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
-    async def wikia(self, ctx, *, data: modding.KeyValue(multiline=False, clean=False, escape=False)):
+    async def wikia(self, ctx, *, data: modding.KeyValue()):
         '''
             `>>update wikia <name>`
             Update daemon info with the infomation from wikia.

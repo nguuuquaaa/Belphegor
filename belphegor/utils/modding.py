@@ -7,7 +7,7 @@ from yarl import URL
 
 #==================================================================================================================================================
 
-class NumberRange:
+class Equality:
     def __init__(self, number):
         self.number = number
         self.positive_sign = None
@@ -24,13 +24,13 @@ class NumberRange:
         else:
             return self.number
 
-class EqualityComparison(commands.Converter):
+class Comparison(commands.Converter):
     def __init__(self, type):
         self.type = type
 
     async def convert(self, ctx, argument):
         try:
-            return NumberRange(self.type(argument))
+            return Equality(self.type(argument))
         except ValueError:
             raise commands.BadArgument("Input must be a number.")
 
@@ -102,7 +102,7 @@ def _check_char(c):
     return c.isspace() or c in _delimiters
 
 class KeyValue(commands.Converter):
-    def __init__(self, conversion={}, *, escape=False, clean=True, multiline=True):
+    def __init__(self, conversion={}, *, escape=False, clean=False, multiline=False):
         self.escape = escape
         if clean:
             self.clean = format.clean_codeblock
@@ -128,7 +128,7 @@ class KeyValue(commands.Converter):
             conv = self.conversion.get(key)
             if conv:
                 value = await ctx.command.do_conversion(ctx, conv, value, key)
-            ret.add(key, handle(value))
+            ret.add(key.lower(), handle(value))
 
         if self.multiline:
             for line in text.splitlines():
@@ -213,7 +213,7 @@ class URLConverter(commands.Converter):
             if url.scheme and url.host and url.path:
                 return url
             else:
-                raise commands.BadArgument("Malformed URL.")
+                raise checks.CustomError("Malformed URL.")
         else:
             raise checks.CustomError(f"This command accepts url with scheme {self._accept_string} only.")
 

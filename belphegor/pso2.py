@@ -350,6 +350,7 @@ class PSO2(commands.Cog):
             value = attr[1]
             try:
                 re_value = value.to_query()
+                t = orig_att
                 if orig_att == "atk":
                     q = {
                             "$or": [
@@ -364,9 +365,14 @@ class PSO2(commands.Cog):
                                 }
                             ]
                         }
+                elif orig_att in ("satk", "ratk", "tatk"):
+                    t = "atk"
+                    q = {
+                        f"atk.max.{orig_att}": re_value
+                    }
                 else:
                     q = {orig_att: re_value}
-                p = {orig_att: True}
+                p = {t: True}
             except AttributeError:
                 args_list = value.split()
                 re_value = ".*?".join(map(re.escape, args_list))
@@ -463,7 +469,7 @@ class PSO2(commands.Cog):
 
     @modding.help(brief="Search weapons with given conditions", category="PSO2", field="Database", paragraph=0)
     @cmd_weapon.command(name="filter")
-    async def w_filter(self, ctx, *, data: modding.KeyValue({("atk", "rarity"): modding.EqualityComparison(int)})):
+    async def w_filter(self, ctx, *, data: modding.KeyValue({("atk", "satk", "ratk", "tatk", "rarity"): modding.Comparison(int)}, multiline=True)):
         '''
             `>>w filter <criteria>`
             Find all weapons with criteria.
@@ -473,7 +479,7 @@ class PSO2(commands.Cog):
             - jp_name
             - category (sword, wl, partisan, td, ds, knuckle, katana, db, gs, rifle, launcher, tmg, bow, rod, talis, wand, jb, takt)
             - rarity
-            - atk
+            - atk/satk/ratk/tatk
             - properties/potential(pot)/ability(abi)/pa/saf/s_class(ssa_saf)
             - classes(class)
             - ssa_slots(slots/slot)
@@ -567,7 +573,7 @@ class PSO2(commands.Cog):
     @modding.help(brief="Search for items", category="PSO2", field="Database", paragraph=1)
     @commands.command(name="item", aliases=["i"])
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
-    async def cmd_item(self, ctx, *, data: modding.KeyValue(multiline=False, clean=False)):
+    async def cmd_item(self, ctx, *, data: modding.KeyValue()):
         '''
             `>>item <name> <keyword: desc|description>`
             Find PSO2 items.
@@ -693,7 +699,8 @@ class PSO2(commands.Cog):
                 full_desc = []
                 simple_desc = []
                 ship_gen = (f"Ship{ship_number}" for ship_number in range(1, 11))
-                random_eq = "\n".join((f"`Ship {ship[4:]}:` {data[ship]}" for ship in ship_gen if data[ship]))
+                #random_eq = "\n".join((f"`Ship {ship[4:]}:` {data[ship]}" for ship in ship_gen if data[ship]))
+                random_eq_info = {int(ship[4:]): f"`Ship {ship[4:]}:` {data[ship]}" for ship in ship_gen if data[ship]}
 
                 for index, key in enumerate(TIME_LEFT):
                     if data[key]:
@@ -708,38 +715,55 @@ class PSO2(commands.Cog):
                                 if time_left in (2700, 6300):
                                     simple_desc.append(text)
                     if index == 2:
-                        if random_eq:
+                        if random_eq_info:
                             sched_time = start_time + timedelta(hours=1)
                             time_left = int(round((sched_time - now_time).total_seconds(), -1))
                             if time_left == 0:
-                                full_desc.append(f"\u2694 **Now:**\n{random_eq}")
+                                full_desc.append(time_left) #f"\u2694 **Now:**\n{random_eq}")
                             elif time_left > 0:
                                 if time_left in (900, 2700, 6300, 9900):
-                                    req_text = f"\u23f0 **In {utils.seconds_to_text(time_left)}:**\n{random_eq}"
+                                    req_text = time_left #f"\u23f0 **In {utils.seconds_to_text(time_left)}:**\n{random_eq}"
                                     full_desc.append(req_text)
                                     if time_left in (2700, 6300):
                                         simple_desc.append(req_text)
 
-                if full_desc:
-                    full_embed = discord.Embed(title="EQ Alert", description="\n\n".join(full_desc), colour=discord.Colour.red())
-                    full_embed.set_footer(text=utils.jp_time(now_time))
+                all_embed_info = {False: {}, True: {}}
+                all_desc = {False: full_desc, True: simple_desc}
+                if True:
                     async for gd in self.guild_data.find(
-                        {"eq_channel_id": {"$exists": True}, "eq_alert_minimal": {"$ne": True}},
-                        projection={"_id": False, "eq_channel_id": True}
+                        {"eq_channel_id": {"$exists": True}},
+                        projection={"_id": False, "eq_channel_id": True, "eq_alert_minimal": True, "eq_ship": True}
                     ):
                         channel = self.bot.get_channel(gd["eq_channel_id"])
+                        ship = gd.get("eq_ship", None)
                         if channel:
-                            _loop.create_task(try_it(channel.send(embed=full_embed)))
-                if simple_desc:
-                    simple_embed = discord.Embed(title="EQ Alert", description="\n\n".join(simple_desc), colour=discord.Colour.red())
-                    simple_embed.set_footer(text=utils.jp_time(now_time))
-                    async for gd in self.guild_data.find(
-                        {"eq_channel_id": {"$exists": True}, "eq_alert_minimal": {"$eq": True}},
-                        projection={"_id": False, "eq_channel_id": True}
-                    ):
-                        channel = self.bot.get_channel(gd["eq_channel_id"])
-                        if channel:
-                            _loop.create_task(try_it(channel.send(embed=simple_embed)))
+                            minimal = gd.get("eq_alert_minimal", False)
+                            embed_info = all_embed_info[minimal]
+                            if ship in embed_info:
+                                embed = embed_info[ship]
+                            else:
+                                desc = []
+                                for d in all_desc[minimal]:
+                                    if isinstance(d, str):
+                                        desc.append(d)
+                                    else:
+                                        if ship is None:
+                                            r = "\n".join((r[1] for r in sorted(list(random_eq_info.items()), key=lambda x: x[0])))
+                                        else:
+                                            r = random_eq_info.get(ship)
+                                        if r:
+                                            if d == 0:
+                                                desc.append(f"\u2694 **Now:**\n{r}")
+                                            else:
+                                                desc.append(f"\u23f0 **In {utils.seconds_to_text(d)}:**\n{r}")
+                                if desc:
+                                    embed = discord.Embed(title="EQ Alert", description="\n\n".join(desc), colour=discord.Colour.red())
+                                    embed.set_footer(text=utils.jp_time(now_time))
+                                else:
+                                    embed = None
+                                embed_info[ship] = embed
+                            if embed:
+                                _loop.create_task(try_it(channel.send(embed=embed)))
         except asyncio.CancelledError:
             return
         except (ConnectionError, json.JSONDecodeError):
