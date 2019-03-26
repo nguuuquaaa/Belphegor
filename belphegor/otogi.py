@@ -514,7 +514,7 @@ class Otogi(commands.Cog):
         '''
             `>>daemon filter <criteria>`
             Find all daemons with <criteria>.
-            Criteria  each with format `attribute=value`, or `attribute>value`/`attribute<value` if applicable.
+            Criteria cancontain multiple lines, each with format `attribute=value`, or `attribute>value`/`attribute<value` if applicable.
             Available attributes:
             - name
             - alias
