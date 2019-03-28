@@ -315,6 +315,8 @@ class Google(commands.Cog):
             "ie": "UTF-8",
             "q": quote(search)
         }
+        if not ctx.channel.is_nsfw():
+            params["safe"] = "active"
         bytes_ = await self.bot.fetch("http://translate.google.com/m", headers=self.google_headers, params=params, timeout=10)
 
         data = BS(bytes_.decode("utf-8"), "lxml")

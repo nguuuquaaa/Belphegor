@@ -155,6 +155,12 @@ class Admin(commands.Cog):
         else:
             await ctx.deny()
 
+    def str_them(self, s):
+        if (s is None) or isinstance(s, (dict, list, tuple, str, int, float)):
+            return s
+        else:
+            return str(s)
+
     @commands.command(hidden=True)
     @checks.owner_only()
     async def mongo(self, ctx, col, *, raw_query):
@@ -178,7 +184,7 @@ class Admin(commands.Cog):
         except pymongo.errors.OperationFailure as e:
             return await ctx.send(e)
         if data:
-            text = json.dumps(data, indent=4, ensure_ascii=False)
+            text = json.dumps(data, indent=4, ensure_ascii=False, default=self.str_them)
             if len(text) > 1950:
                 await ctx.send(file=discord.File(BytesIO(text.encode("utf-8")), "data.json"))
             else:
@@ -203,7 +209,7 @@ class Admin(commands.Cog):
         except pymongo.errors.OperationFailure as e:
             return await ctx.send(e)
         if data:
-            text = json.dumps(data, indent=4, ensure_ascii=False)
+            text = json.dumps(data, indent=4, ensure_ascii=False, default=self.str_them)
             if len(text) > 1950:
                 await ctx.send(file=discord.File(BytesIO(text.encode("utf-8")), filename="data.json"))
             else:

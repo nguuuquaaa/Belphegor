@@ -698,9 +698,20 @@ class PSO2(commands.Cog):
                 start_time = now_time.replace(minute=0, second=0) + timedelta(hours=jst-1-now_time.hour)
                 full_desc = []
                 simple_desc = []
+
                 ship_gen = (f"Ship{ship_number}" for ship_number in range(1, 11))
-                #random_eq = "\n".join((f"`Ship {ship[4:]}:` {data[ship]}" for ship in ship_gen if data[ship]))
                 random_eq_info = {int(ship[4:]): f"`Ship {ship[4:]}:` {data[ship]}" for ship in ship_gen if data[ship]}
+                if random_eq_info:
+                    sched_time = start_time + timedelta(hours=1)
+                    time_left = int(round((sched_time - now_time).total_seconds(), -1))
+                    if time_left == 0:
+                        full_desc.append(time_left) #f"\u2694 **Now:**\n{random_eq}")
+                    elif time_left > 0:
+                        if time_left in (900, 2700, 6300, 9900):
+                            req_text = time_left #f"\u23f0 **In {utils.seconds_to_text(time_left)}:**\n{random_eq}"
+                            full_desc.append(req_text)
+                            if time_left in (2700, 6300):
+                                simple_desc.append(req_text)
 
                 for index, key in enumerate(TIME_LEFT):
                     if data[key]:
@@ -714,18 +725,6 @@ class PSO2(commands.Cog):
                                 full_desc.append(text)
                                 if time_left in (2700, 6300):
                                     simple_desc.append(text)
-                    if index == 2:
-                        if random_eq_info:
-                            sched_time = start_time + timedelta(hours=1)
-                            time_left = int(round((sched_time - now_time).total_seconds(), -1))
-                            if time_left == 0:
-                                full_desc.append(time_left) #f"\u2694 **Now:**\n{random_eq}")
-                            elif time_left > 0:
-                                if time_left in (900, 2700, 6300, 9900):
-                                    req_text = time_left #f"\u23f0 **In {utils.seconds_to_text(time_left)}:**\n{random_eq}"
-                                    full_desc.append(req_text)
-                                    if time_left in (2700, 6300):
-                                        simple_desc.append(req_text)
 
                 all_embed_info = {False: {}, True: {}}
                 all_desc = {False: full_desc, True: simple_desc}
