@@ -765,11 +765,17 @@ class PSO2(commands.Cog):
                                 _loop.create_task(try_it(channel.send(embed=embed)))
         except asyncio.CancelledError:
             return
-        except (ConnectionError, json.JSONDecodeError):
+        except (ConnectionError, aiohttp.ClientConnectorError):
             await asyncio.sleep(60)
             self.eq_alert_forever = weakref.ref(_loop.create_task(self.eq_alert()))
         except:
-            await self.bot.error_hook.execute(f"```\n{traceback.format_exc()}\n```")
+            try:
+                await self.bot.error_hook.execute(f"```\n{traceback.format_exc()}\n```")
+            except discord.HTTPException:
+                pass
+
+            await asyncio.sleep(900)
+            self.eq_alert_forever = weakref.ref(_loop.create_task(self.eq_alert()))
 
     def get_emoji(self, dt_obj):
         if dt_obj.minute == 0:

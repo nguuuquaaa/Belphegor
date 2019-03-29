@@ -50,11 +50,11 @@ class RandomImage(commands.Cog):
                     return await ctx.send("This query is usable with NSFW commands only.")
                 except KeyError:
                     retries -= 1
-                except json.JSONDecodeError:
+                except (json.JSONDecodeError, aiohttp.ClientConnectorError):
                     return await ctx.send(
                         "Oops, this query returned an error.\n"
                         "Probably network hiccup or something. Or maybe the site went down temporary, idk.\n"
-                        "Just try again."
+                        "Just try again later."
                     )
             await ctx.send("Query failed. Please try again.")
         return new_func
