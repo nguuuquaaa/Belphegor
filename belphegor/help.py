@@ -212,7 +212,7 @@ class Help(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_completion(self, ctx):
-        if ctx.command.name == "reload":
+        if ctx.command.qualified_name in ("reload", "unload"):
             self.setup_help()
 
     @commands.command()
@@ -228,7 +228,7 @@ class Help(commands.Cog):
             Then it means `sub1` and `sub2` are subcommands of `command` and the usage is `>>command` for the parent and `>>command sub1` and `>>command sub2` for subcommands. This usage also reflects in specific command help.
 
 
-            **Display specific help if the command provided.** Specific command usage usually has this format:
+            **Display specific help if the command is provided.** Specific command usage usually has this format:
             ```>>command name <argument> <optional: argument> <keyword: _|arg|ument>```
             - `>>` is the default prefix of Belphegor, some servers may not have this due to custom prefixes.
             - `command name` and `<argument>` are self-explanatory.

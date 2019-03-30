@@ -768,11 +768,11 @@ class PSO2(commands.Cog):
         except (ConnectionError, aiohttp.ClientConnectorError):
             await asyncio.sleep(60)
             self.eq_alert_forever = weakref.ref(_loop.create_task(self.eq_alert()))
-        except:
-            try:
-                await self.bot.error_hook.execute(f"```\n{traceback.format_exc()}\n```")
-            except discord.HTTPException:
-                pass
+        except Exception as e:
+            text = traceback.format_exc()
+            if len(text) > 1950:
+                text = f"{e.__class__.__name__}: {e}"
+            await self.bot.error_hook.execute(f"```\n{text}\n```")
 
             await asyncio.sleep(900)
             self.eq_alert_forever = weakref.ref(_loop.create_task(self.eq_alert()))
