@@ -300,7 +300,7 @@ class Google(commands.Cog):
     @modding.help(brief="Google, but translate", category="Misc", field="Commands", paragraph=2)
     @commands.command(aliases=["translate", "trans"])
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
-    async def gtrans(self, ctx, *, search):
+    async def gtrans(self, ctx, *, query):
         '''
             `>>gtrans <text>`
             Google translate.
@@ -313,7 +313,7 @@ class Google(commands.Cog):
             "hl": "en",
             "sl": "auto",
             "ie": "UTF-8",
-            "q": quote(search)
+            "q": query
         }
         if not ctx.channel.is_nsfw():
             params["safe"] = "active"
@@ -322,7 +322,7 @@ class Google(commands.Cog):
         data = BS(bytes_.decode("utf-8"), "lxml")
         tag = data.find("div", class_="t0")
         embed = discord.Embed(colour=discord.Colour.dark_orange())
-        embed.add_field(name="Detect", value=search)
+        embed.add_field(name="Detect", value=query)
         embed.add_field(name="English", value=tag.get_text())
         await ctx.send(embed=embed)
 

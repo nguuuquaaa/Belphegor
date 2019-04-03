@@ -73,6 +73,28 @@ class Admin(commands.Cog):
 
     @commands.command(hidden=True)
     @checks.owner_only()
+    async def deepreimport(self, ctx, module_name):
+        name = f"belphegor.{module_name}"
+        remove = [name]
+        name_check = name + "."
+        for n in sys.modules:
+            if n.startswith(name_check):
+                remove.append(n)
+
+        for n in remove:
+            sys.modules.pop(n, None)
+
+        try:
+            importlib.import_module(name)
+        except:
+            traceback.print_exc()
+            await ctx.deny()
+        else:
+            print(f"Reimported {name}")
+            await ctx.confirm()
+
+    @commands.command(hidden=True)
+    @checks.owner_only()
     async def status(self, ctx, *, stuff):
         data = stuff.partition(" ")
         await self.bot.change_presence(activity=discord.Activity(type=getattr(discord.ActivityType, data[0]), name=data[2]))
@@ -155,12 +177,6 @@ class Admin(commands.Cog):
         else:
             await ctx.deny()
 
-    def str_them(self, s):
-        if (s is None) or isinstance(s, (dict, list, tuple, str, int, float)):
-            return s
-        else:
-            return str(s)
-
     @commands.command(hidden=True)
     @checks.owner_only()
     async def mongo(self, ctx, col, *, raw_query):
@@ -184,7 +200,7 @@ class Admin(commands.Cog):
         except pymongo.errors.OperationFailure as e:
             return await ctx.send(e)
         if data:
-            text = json.dumps(data, indent=4, ensure_ascii=False, default=self.str_them)
+            text = json.dumps(data, indent=4, ensure_ascii=False, default=repr)
             if len(text) > 1950:
                 await ctx.send(file=discord.File(BytesIO(text.encode("utf-8")), "data.json"))
             else:
@@ -209,7 +225,7 @@ class Admin(commands.Cog):
         except pymongo.errors.OperationFailure as e:
             return await ctx.send(e)
         if data:
-            text = json.dumps(data, indent=4, ensure_ascii=False, default=self.str_them)
+            text = json.dumps(data, indent=4, ensure_ascii=False, default=repr)
             if len(text) > 1950:
                 await ctx.send(file=discord.File(BytesIO(text.encode("utf-8")), filename="data.json"))
             else:

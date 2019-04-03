@@ -236,11 +236,13 @@ class Help(commands.Cog):
             Arguments and optional arguments are positional, which means you must enter input value in order, and if you want to change the last optional argument you must enter the value for all previous arguments too.
 
 
-            - `<keyword: _|arg|ument>` is argument in the form of `name=value`.
-            `_`, `arg` and `ument` are name, and `_` means you can omit the name part and just enter `value`. If value contains whitespaces, you must enclosed it in quote characters.
+            - `<keyword: _|arg|ument>` is argument in the form of `key=value`.
+            `_`, `arg` and `ument` are key, and `_` means you can omit the key part and just enter value.
+            If value contains whitespaces, you must enclosed it in quote characters.
             Here's a list of all quote characters: `" "`, `‘ ’`, `‚ ‛`, `“ ”`, `„ ‟`, `⹂ ⹂`, `「 」`, `『 』`, `〝 〞`, `﹁ ﹂`, `﹃ ﹄`, `＂ ＂`, `｢ ｣`, `« »`, `‹ ›`, `《 》`, `〈 〉`
-            If value contains quote characters you must enclosed it in another quote characters.
+            If value contains quote characters, you must enclosed it in another quote characters.
             Keyword arguments are non-positional, which mean you can place it in any order whatsoever.
+            Keys are case-insentitive.
             Example: `>>command key1=value1 key2="value number 2"`
         '''
         if command_name is None:

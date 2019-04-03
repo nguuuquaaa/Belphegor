@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from . import utils, board_game
+from . import utils, game
 from .utils import config, checks, modding
 import random
 import asyncio
@@ -431,7 +431,10 @@ class Misc(commands.Cog):
         weight = data.geteither("weight", "w", default=20)
         if 0 < weight <= 50:
             if text:
-                await ctx.send("".join((c+"".join((random.choice(GLITCH_ALL) for i in range(weight))) for c in text)))
+                if len(text) <= (2000 // (weight + 1)):
+                    await ctx.send("".join((c+"".join((random.choice(GLITCH_ALL) for i in range(weight))) for c in text)))
+                else:
+                    await ctx.send("Text too long.")
             else:
                 await ctx.send("No input text given.")
         else:
