@@ -40,18 +40,32 @@ class Game(commands.Cog):
         await game.play()
 
     @commands.command(aliases=[])
-    async def maze(self, ctx, *, data: modding.KeyValue({("size", "s"): int})=modding.EMPTY):
+    async def maze(self, ctx, *, data: modding.KeyValue({("size", "s"): int, ("weave", "w"): bool, ("density", "d"): float})=modding.EMPTY):
         '''
-            `>>maze <keyword: size|s>`
+            `>>maze <keyword: mode> <keyword: size|s> <keyword: weave|w> <keyword: density|d>`
             Ramdomize a maze.
+            Mode is either prim or kruskal. Default mode is prim.
             Default size is 20. Max size is 50.
+            Weave is either true or false. Determine if the result is a weave maze and also kind of maze render. Only kruskal mode can produce weave mazes. Default to false.
+            Density determines how many interlacing sections. Default to 0.05. Max density is 0.5.
         '''
         size = data.geteither("size", "s", default=20)
         if size > 50:
             return await ctx.send("Size too big.")
         elif size < 3:
             return await ctx.send("Size too small.")
-        game = MazeRunner(ctx, ctx.author, (size, size))
+        mode = data.get("mode", "prim")
+        if mode not in ("kruskal", "prim"):
+            return await ctx.send("Mode must be either kruskal or prim.")
+        weave = data.geteither("weave", "w", default=False)
+        density = data.geteither("density", "d", default=0.05)
+        if density <= 0:
+            return await ctx.send("Density must be positive.")
+        if density > 0.5:
+            return await ctx.send("Density to large.")
+
+
+        game = await MazeRunner.new(ctx, size, mode=mode, weave=weave, density=density)
         bytes_ = await game.draw_maze()
         await ctx.send(file=discord.File(bytes_, "maze.png"))
 

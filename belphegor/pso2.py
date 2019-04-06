@@ -609,6 +609,11 @@ class PSO2(commands.Cog):
         )
         await paging.navigate(ctx)
 
+    @cmd_item.error
+    async def cmd_item_error(self, ctx, error):
+        if isinstance(error, aiohttp.ClientConnectorError):
+            await ctx.send("Oops it seems I can't reach the database server. Maybe try again later?")
+
     @modding.help(brief="Check item price", category="PSO2", field="Database", paragraph=1)
     @commands.command(name="price")
     async def cmd_price(self, ctx, *, name):
@@ -645,6 +650,11 @@ class PSO2(commands.Cog):
                 await ctx.send(embed=embed)
             else:
                 await ctx.send("Can't find any item with that name.")
+
+    @cmd_item.error
+    async def cmd_price_error(self, ctx, error):
+        if isinstance(error, aiohttp.ClientConnectorError):
+            await ctx.send("Oops it seems I can't reach the database server. Maybe try again later?")
 
     @commands.command()
     async def jptime(self, ctx):
@@ -1156,12 +1166,13 @@ class PSO2(commands.Cog):
             You play PSO2, you know ARKS language.
             Send an image with text written in ARKS language.
         '''
-        if len(text) > 50:
+        if len(text) > 100:
             return await ctx.send("Text too long.")
         for c in text:
             if c.isalnum() or c in "!%&*+;:/?., '-":
                 continue
             else:
+                c = "newline" if c=="\n" else c
                 return await ctx.send(f"Text contains unaccepted character {c}")
         font = ImageFont.truetype(f"{config.DATA_PATH}/font/pso2_font.ttf", size=30)
         x, y = font.getsize(text)

@@ -4,6 +4,7 @@ from .utils import config, checks
 import sys
 import traceback
 from PIL import Image
+import aiohttp
 
 #==================================================================================================================================================
 
