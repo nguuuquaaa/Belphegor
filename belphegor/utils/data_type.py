@@ -260,6 +260,10 @@ class AutoCleanupDict:
     def get(self, key, default=None):
         return self.container.get(key, default)
 
+    def pop(self, key, default=None):
+        self.active.clear()
+        return self.container.pop(key, default)
+
     async def check_deadline(self):
         while True:
             self.active.clear()

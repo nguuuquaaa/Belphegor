@@ -5,6 +5,7 @@ import random
 from PIL import Image, ImageDraw
 from io import BytesIO
 import functools
+import collections
 
 #==================================================================================================================================================
 
@@ -49,8 +50,8 @@ class Maze:
     def connect(self, xy1, xy2):
         i1 = self.ADJACENT.index((xy2[0]-xy1[0], xy2[1]-xy1[1]))
         i2 = 1-i1 if i1<2 else 5-i1
-        self.data[xy1] = self.data[xy1] & ~(0b01 << (6-2*i1))
-        self.data[xy2] = self.data[xy2] & ~(0b01 << (6-2*i2))
+        self.data[xy1] = self.data[xy1] & ~(0b01000000 >> 2*i1)
+        self.data[xy2] = self.data[xy2] & ~(0b01000000 >> 2*i2)
 
     @classmethod
     def prim_algorithm(cls, xy, *, weave=False, density=0):
@@ -93,9 +94,9 @@ class Maze:
         rand = random.random
         choice = random.choice
         connect = self.connect
-        neighbors = self.neighbors
+        adjacent = self.ADJACENT
 
-        all_nodes = {(x, y): Tree() for x, y in np.ndindex(*xy)}
+        all_nodes = {(x, y, i): Tree() for x, y, i in np.ndindex(*xy, 2)}
         walls = []
 
         weave_gacha = (0b11110101, 0b01011111)
@@ -109,39 +110,88 @@ class Maze:
                     if rand() < density:
                         weaveable = choice(weave_gacha)
                         self.data[x, y] = self.data[x, y] & weaveable
-                        for ix, iy in self.ADJACENT:
-                            self.connect((x, y), (x+ix, y+iy))
+                        for ix, iy in adjacent:
+                            connect((x, y), (x+ix, y+iy))
                         walls = [w for w in walls if w not in ((x, y, x, y+1), (x, y, x+1, y), (x-1, y, x, y), (x, y-1, x, y))]
-                        middle = all_nodes.pop((x, y))
-                        for xy1, xy2 in (((x-1, y), (x+1, y)), ((x, y-1), (x, y+1))):
-                            tree1 = all_nodes.get(xy1)
-                            tree2 = all_nodes[xy2]
-                            if tree1:
-                                tree2.connect(tree1)
-                            else:
-                                tree2.connect(middle)
+
+                        if weaveable == 0b11110101:
+                            all_nodes[(x, y, 1)], all_nodes[(x, y, 0)] = all_nodes[(x, y, 0)], all_nodes[(x, y, 1)]
+                        for i, (x1, y1, x2, y2) in enumerate(((x-1, y, x+1, y), (x, y-1, x, y+1))):
+                            v1 = self.data[x1, y1]
+                            h1 = (v1 >> (5-4*i)) & 0b01
+                            tree1 = all_nodes[(x1, y1, h1)]
+                            tree2 = all_nodes[(x2, y2, i)]
+                            h = (weaveable >> (5-4*i)) & 0b01
+                            middle = all_nodes[(x, y, h)]
+                            middle.connect(tree1)
+                            tree2.connect(tree1)
+                        continue
+            all_nodes[(x, y, 0)].connect(all_nodes[(x, y, 1)])
 
         while walls:
             index = randrange(len(walls))
-            wall = walls.pop(index)
-            xy1 = (wall[0], wall[1])
-            xy2 = (wall[2], wall[3])
-            tree1 = all_nodes[xy1]
-            tree2 = all_nodes[xy2]
+            x1, y1, x2, y2 = walls.pop(index)
+            tree1 = all_nodes[(x1, y1, 1)]
+            tree2 = all_nodes[(x2, y2, 1)]
             if tree1.root is not tree2.root:
-                connect(xy1, xy2)
+                connect((x1, y1), (x2, y2))
                 tree2.connect(tree1)
 
         return self
 
+    def movable(self, xyh):
+        x, y, h = xyh
+        v = self.data[x, y]
+        for i in range(4):
+            if (v >> (6-2*i)) & 0b01 == 0 and (v >> (7-2*i)) & 0b01 == h:
+                ix, iy = self.ADJACENT[i]
+                nx = x + ix
+                ny = y + iy
+                nv = self.data[nx, ny]
+                yield (ix, iy), (nx, ny, (nv >> (7-2*i)) & 0b01)
+
+    def solve(self):
+        movable = self.movable
+        adjacent = self.ADJACENT
+
+        out = (self.xy[0]-1, self.xy[1]-1, 1)
+        solution = {(0, 0, 1): (None, None)}
+        stack = collections.deque([(0, 0, 1)])
+        while True:
+            current = stack.pop()
+            for ixy, nxyh in movable(current):
+                if nxyh in solution:
+                    continue
+                solution[nxyh] = (current, ixy)
+                if nxyh == out:
+                    break
+                stack.append(nxyh)
+            else:
+                continue
+            break
+
+        ret = collections.deque()
+        cur = out
+        while True:
+            cur, val = solution[cur]
+            if cur:
+                ret.appendleft(val)
+            else:
+                break
+        return ret
+
 #==================================================================================================================================================
 
 class MazeRunner:
+    CELL_SIZE = 20
+    WEAVE_CELL_SPACE = 3
+
     def __init__(self, ctx, maze, *, mode, weave, density):
         self.ctx = ctx
         self.player = ctx.author
         self.weave = weave
         self.maze = maze
+        self.solution = None
 
     @classmethod
     async def new(cls, ctx, size, *, mode, weave, density):
@@ -152,9 +202,9 @@ class MazeRunner:
             maze = func()
         return cls(ctx, maze, mode=mode, weave=weave, density=density)
 
-    async def draw_maze(self):
+    def _raw_draw(self):
         def draw_non_weave():
-            cell_size = 20
+            cell_size = self.CELL_SIZE
 
             yx = self.maze.xy
             xy = (yx[1]*cell_size, yx[0]*cell_size)
@@ -172,14 +222,11 @@ class MazeRunner:
             draw.rectangle((6, 6, 4+cell_size, 4+cell_size), fill=(120, 255, 120), outline=None)
             draw.rectangle((6+xy[0]-cell_size, 6+xy[1]-cell_size, 4+xy[0], 4+xy[1]), fill=(255, 120, 120), outline=None)
 
-            bytes_ = BytesIO()
-            image.save(bytes_, "png")
-            bytes_.seek(0)
-            return bytes_
+            return image
 
         def draw_weave():
-            cell_size = 20
-            space = 3
+            cell_size = self.CELL_SIZE
+            space = self.WEAVE_CELL_SPACE
             path_size = cell_size - 2 * space
 
             yx = self.maze.xy
@@ -247,9 +294,61 @@ class MazeRunner:
             draw.rectangle((space+1, space+1, cell_size-space-1, cell_size-space-1), fill=(120, 255, 120))
             draw.rectangle((xy[0]-cell_size+space+1, xy[1]-cell_size+space+1, xy[0]-space-1, xy[1]-space-1), fill=(255, 120, 120))
 
+            return image
+
+        return draw_weave() if self.weave else draw_non_weave()
+
+    async def draw_maze(self):
+        def draw_it():
+            image = self._raw_draw()
             bytes_ = BytesIO()
             image.save(bytes_, "png")
             bytes_.seek(0)
             return bytes_
 
-        return await self.ctx.bot.loop.run_in_executor(None, draw_weave if self.weave else draw_non_weave)
+        return await self.ctx.bot.loop.run_in_executor(None, draw_it)
+
+    async def draw_solution(self):
+        if self.solution:
+            solution = self.solution
+        else:
+            solution = self.maze.solve()
+            self.solution = solution
+
+        def draw_it():
+            image = self._raw_draw()
+            draw = ImageDraw.Draw(image)
+            movable = self.maze.movable
+            current = (0, 0, 1)
+            shift = 0 if self.weave else 5
+            cell_size = self.CELL_SIZE
+            half_passage = cell_size // 2 - self.WEAVE_CELL_SPACE
+
+            current_point_x = shift + cell_size // 2
+            current_point_y = shift + cell_size // 2
+            for move in solution:
+                for ixy, nxyh in movable(current):
+                    if ixy == move:
+                        break
+
+                next_point_x = current_point_x + cell_size * ixy[0]
+                next_point_y = current_point_y + cell_size * ixy[1]
+                minus_current = half_passage*(1-current[2])
+                minus_nxyh = half_passage*(1-nxyh[2])
+                draw.line(
+                    (
+                        current_point_y+minus_current*ixy[1], current_point_x+minus_current*ixy[0],
+                        next_point_y-minus_nxyh*ixy[1], next_point_x-minus_nxyh*ixy[0]
+                    ), fill=(0, 0, 160), width=3
+                )
+
+                current = nxyh
+                current_point_x = next_point_x
+                current_point_y = next_point_y
+
+            bytes_ = BytesIO()
+            image.save(bytes_, "png")
+            bytes_.seek(0)
+            return bytes_
+
+        return await self.ctx.bot.loop.run_in_executor(None, draw_it)
