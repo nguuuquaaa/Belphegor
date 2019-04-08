@@ -260,9 +260,15 @@ class AutoCleanupDict:
     def get(self, key, default=None):
         return self.container.get(key, default)
 
+    def _pop_key(self, key, default=None):
+        self.deadline.pop(key, None)
+        value = self.container.pop(key, default)
+        self.loop.create_task(self.on_pop_item(key, value))
+        return value
+
     def pop(self, key, default=None):
-        self.active.clear()
-        return self.container.pop(key, default)
+        self.active.set()
+        return self._pop_key(key, default)
 
     async def check_deadline(self):
         while True:
@@ -272,10 +278,19 @@ class AutoCleanupDict:
                 try:
                     await asyncio.wait_for(self.active.wait(), (first_deadline-format.now_time()).total_seconds())
                 except asyncio.TimeoutError:
-                    self.container.pop(first_key)
-                    self.deadline.pop(first_key)
+                    self._pop_key(first_key)
             else:
                 await self.active.wait()
 
     def cleanup(self):
         self.working_task.cancel()
+
+    def register_event_handler(self, event_name, coro_func):
+        if not asyncio.iscoroutinefunction(coro_func):
+            raise TypeError("Event handler must be a coroutine.")
+
+        setattr(self, "on_"+event_name, coro_func)
+        return coro_func
+
+    async def on_pop_item(self, key, value):
+        pass

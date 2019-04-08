@@ -10,6 +10,8 @@ import collections
 #==================================================================================================================================================
 
 class Tree:
+    __slots__ = ("_root",)
+
     def __init__(self):
         self._root = self
 
@@ -33,10 +35,9 @@ class Tree:
 class Maze:
     ADJACENT = ((-1, 0), (1, 0), (0, -1), (0, 1))
 
-    def __init__(self, xy):
-        self.xy = xy
-        self.data = np.full(xy, 0b11111111, dtype=np.uint8)
-        self.solution = None
+    def __init__(self, data):
+        self.data = data
+        self.xy = data.shape
 
     def neighbors(self, xy):
         x, y = xy
@@ -50,12 +51,13 @@ class Maze:
     def connect(self, xy1, xy2):
         i1 = self.ADJACENT.index((xy2[0]-xy1[0], xy2[1]-xy1[1]))
         i2 = 1-i1 if i1<2 else 5-i1
-        self.data[xy1] = self.data[xy1] & ~(0b01000000 >> 2*i1)
-        self.data[xy2] = self.data[xy2] & ~(0b01000000 >> 2*i2)
+        self.data[xy1] &= ~(0b01000000 >> 2*i1)
+        self.data[xy2] &= ~(0b01000000 >> 2*i2)
 
     @classmethod
     def prim_algorithm(cls, xy, *, weave=False, density=0):
-        self = cls(xy)
+        data = np.full(xy, 0b11111111, dtype=np.uint8)
+        self = cls(data)
         randrange = random.randrange
         choice = random.choice
         connect = self.connect
@@ -89,7 +91,8 @@ class Maze:
 
     @classmethod
     def kruskal_algorithm(cls, xy, *, weave=False, density=0.05):
-        self = cls(xy)
+        data = np.full(xy, 0b11111111, dtype=np.uint8)
+        self = cls(data)
         randrange = random.randrange
         rand = random.random
         choice = random.choice
@@ -231,7 +234,7 @@ class MazeRunner:
 
             yx = self.maze.xy
             xy = (yx[1]*cell_size, yx[0]*cell_size)
-            image = Image.new("RGB", (xy[0]+1, xy[1]+1), (248, 248, 248))
+            image = Image.new("RGB", (xy[0]+1, xy[1]+1), (224, 224, 224))
             draw = ImageDraw.Draw(image)
 
             for (iy, ix), v in np.ndenumerate(self.maze.data):

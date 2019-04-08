@@ -3,7 +3,7 @@ uvloop
 beautifulsoup4
 google-api-python-client
 lxml
-Pillow
+pillow
 psutil
 xmltodict
 youtube-dl

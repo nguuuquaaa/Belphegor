@@ -277,8 +277,8 @@ class Misc(commands.Cog):
             If <member> is not specified, show your avatar instead.
         '''
         member = member or ctx.author
-        embed = discord.Embed(title=f"{member.display_name}'s avatar", url=member.avatar_url)
-        embed.set_image(url=member.avatar_url_as(static_format="png"))
+        embed = discord.Embed(title=f"{member.display_name}'s avatar", url=str(member.avatar_url))
+        embed.set_image(url=str(member.avatar_url_as(static_format="png")))
         await ctx.send(embed=embed)
 
     @modding.help(brief="Roll dices", category="Misc", field="Commands", paragraph=0)
@@ -651,7 +651,7 @@ class Misc(commands.Cog):
         else:
             embed = discord.Embed(title=f"ID: {msg_id}", description=message.content, colour=0x36393E)
             embed.add_field(name="\u200b", value=f"[Jump to message]({message.jump_url})", inline=False)
-            embed.set_author(name=message.author.display_name, icon_url=message.author.avatar_url)
+            embed.set_author(name=message.author.display_name, icon_url=str(message.author.avatar_url))
             embed.set_footer(text=utils.format_time(message.created_at))
             if message.attachments:
                 embed.set_image(url=message.attachments[0].url)
@@ -674,7 +674,7 @@ class Misc(commands.Cog):
         else:
             embed = discord.Embed(title=f"ID: {msg_id}", description=utils.split_page(message.content, 2000, safe_mode=True)[0], colour=0x36393E)
             embed.add_field(name="\u200b", value=f"[Jump to message]({message.jump_url})", inline=False)
-            embed.set_author(name=message.author.display_name, icon_url=message.author.avatar_url)
+            embed.set_author(name=message.author.display_name, icon_url=str(message.author.avatar_url))
             embed.set_footer(text=utils.format_time(message.created_at))
             if message.attachments:
                 embed.set_image(url=message.attachments[0].url)
@@ -693,12 +693,12 @@ class Misc(commands.Cog):
     @commands.group(invoke_without_command=True)
     async def ascii(self, ctx, *, data: modding.KeyValue({("", "member", "m"): discord.Member, "url": modding.URLConverter()})=modding.EMPTY):
         '''
-            `>>ascii <optional: member>`
+            `>>ascii <keyword: _|member|m>`
             ASCII art of member avatar.
             If no member is specified, use your avatar.
         '''
         target = data.geteither("", "member", "m", default=ctx.author)
-        url = data.get("url", target.avatar_url)
+        url = data.get("url", target.avatar_url_as(format="png"))
 
         await ctx.trigger_typing()
         bytes_ = await self.bot.fetch(url)
@@ -719,7 +719,7 @@ class Misc(commands.Cog):
             If no member is specified, use your avatar. Default width is 256.
         '''
         target = data.geteither("", "member", "m", default=ctx.author)
-        url = data.get("url", target.avatar_url_as(format="png"))
+        url = data.get("url", str(target.avatar_url_as(format="png")))
         width = data.geteither("width", "w", default=256)
         if width > 1024:
             return await ctx.send("Width should be 1024 or less.")
@@ -828,7 +828,7 @@ class Misc(commands.Cog):
             Has cooldown due to heavy processing (someone give me good algorithm pls).
         '''
         target = data.geteither("", "member", "m", default=ctx.author)
-        url = data.get("url", target.avatar_url_as(format="png"))
+        url = data.get("url", str(target.avatar_url_as(format="png")))
         size = data.geteither("size", "s", default="64x30")
         threshold = data.geteither("threshold", "t", default=32)
         blur = data.geteither("blur", "b", default=2)
@@ -902,7 +902,7 @@ class Misc(commands.Cog):
             Default size is 64x30.
         '''
         target = data.geteither("", "member", "m", default=ctx.author)
-        url = data.get("url", target.avatar_url_as(format="png"))
+        url = data.get("url", str(target.avatar_url_as(format="png")))
         size = data.geteither("size", "s", default="64x30")
         threshold = data.geteither("threshold", "t", default=128)
         inverse = data.geteither("inverse", "i", default=0)
@@ -934,7 +934,7 @@ class Misc(commands.Cog):
             Default size is 64x30.
         '''
         target = data.geteither("", "member", "m", default=ctx.author)
-        url = data.get("url", target.avatar_url_as(format="png"))
+        url = data.get("url", str(target.avatar_url_as(format="png")))
         size = data.geteither("size", "s", default="56x32")
         threshold = data.geteither("threshold", "t", default=128)
         inverse = data.geteither("inverse", "i", default=0)
@@ -975,7 +975,7 @@ class Misc(commands.Cog):
             Default size is 20x24.
         '''
         target = data.geteither("", "member", "m", default=ctx.author)
-        url = data.get("url", target.avatar_url_as(format="png"))
+        url = data.get("url", str(target.avatar_url_as(format="png")))
         size = data.geteither("size", "s", default="20x24")
         threshold = data.geteither("threshold", "t", default=128)
         inverse = data.geteither("inverse", "i", default=0)
@@ -1053,7 +1053,7 @@ class Misc(commands.Cog):
             Threshold defines how dark the target image is, default is 150.
         '''
         target = data.geteither("member", "m", "", default=ctx.author)
-        url = data.get("url", target.avatar_url_as(format="png"))
+        url = data.get("url", str(target.avatar_url_as(format="png")))
         rgb = data.get("rgb", "7289da").lstrip("#").lower()
         try:
             rgb = int(rgb, 16)
@@ -1154,7 +1154,7 @@ class Misc(commands.Cog):
             Func is either linear or curve, default is linear.
         '''
         target = data.geteither("member", "m", "", default=ctx.author)
-        url = data.get("url", target.avatar_url_as(format="png"))
+        url = data.get("url", str(target.avatar_url_as(format="png")))
         rgb = data.get("rgb", "7289da").lstrip("#").lower()
         try:
             rgb = int(rgb, 16)
@@ -1266,7 +1266,7 @@ class Misc(commands.Cog):
             Result is clearer with more sigma. Default sigma is 5, max sigma is 10.
         '''
         target = data.geteither("member", "m", "", default=ctx.author)
-        url = data.get("url", target.avatar_url_as(format="png"))
+        url = data.get("url", str(target.avatar_url_as(format="png")))
         sigma = data.geteither("sigma", "s", default=5)
         if sigma > 10:
             return await ctx.send("Max sigma is 10.")
@@ -1309,7 +1309,7 @@ class Misc(commands.Cog):
             Result is more dense with more depth. Default depth is 10, max depth is 100.
         '''
         target = data.geteither("member", "m", "", default=ctx.author)
-        url = data.get("url", target.avatar_url_as(format="png"))
+        url = data.get("url", str(target.avatar_url_as(format="png")))
         depth = data.geteither("depth", "d", default=10)
         if depth > 100:
             return await ctx.send("Max depth is 100.")

@@ -768,7 +768,6 @@ class Guild(commands.Cog):
                         embed.set_footer(text=utils.format_time(utils.now_time()))
                         await log_channel.send(embed=embed)
 
-    #custom event for bulk message delete
     @commands.Cog.listener()
     async def on_bulk_message_delete(self, messages):
         if messages:
@@ -1096,7 +1095,7 @@ class Guild(commands.Cog):
         embeds = []
         for page in role_pages:
             embed = discord.Embed(title=guild.name, colour=discord.Colour.blue())
-            embed.set_thumbnail(url=guild.icon_url_as(format="png"))
+            embed.set_thumbnail(url=str(guild.icon_url_as(format="png")))
             embed.add_field(name="ID", value=guild.id)
             embed.add_field(name="Owner", value=guild.owner.mention)
             embed.add_field(name="Created at", value=guild.created_at.strftime("%d-%m-%Y"))

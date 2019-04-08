@@ -18,6 +18,7 @@ class Game(commands.Cog):
     def cog_unload(self):
         self.mazes.cleanup()
 
+    @modding.help(brief="Play Connect Four", category="Games", field="Commands", paragraph=0)
     @commands.command(aliases=["c4"])
     async def connectfour(self, ctx):
         '''
@@ -48,6 +49,7 @@ class Game(commands.Cog):
         pass
 
     @maze.command()
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     async def create(self, ctx, *, data: modding.KeyValue({("size", "s"): int, ("weave", "w"): bool, ("density", "d"): float})=modding.EMPTY):
         '''
             `>>maze create <keyword: mode> <keyword: size|s> <keyword: weave|w> <keyword: density|d>`

@@ -51,7 +51,7 @@ class Help(commands.Cog):
             None: {
                 "emoji":    "\u21a9",
                 "desc":     "[Support server but not really active](https://discord.gg/qnavjMy)",
-                "thumb":    self.bot.user.avatar_url,
+                "thumb":    str(self.bot.user.avatar_url),
                 "footer":   "Universal prefix: bot mention \u2022 Default prefix: >>",
                 "fields":   {
                     "Categories" : [
@@ -59,7 +59,7 @@ class Help(commands.Cog):
                             "`>>help` - Show this message\n"
                             f"{self.emojis['mochi']} Otogi: Spirit Agents stuff\n"
                             f"{self.emojis['hu']} PSO2 stuff\n"
-                            "\U0001f3b2 Play board games\n"
+                            "\U0001f3b2 Play games\n"
                             "\U0001f5bc Image search/random\n"
                             "\U0001f3b5 Music\n"
                             "\U0001f4d4 Role/server stuff\n"
@@ -92,8 +92,8 @@ class Help(commands.Cog):
             "Games": {
                 "emoji":    "\U0001f3b2",
                 "desc":
-                    "Mostly under construction, but you can play games with your fellow server members.\n"
-                    "Each game has their own set of commands.",
+                    "Play games with your fellow server members.\n"
+                    "Each game has its own set of commands.",
                 "thumb":    None,
                 "footer":   None,
                 "fields":   {}
@@ -311,11 +311,11 @@ class Help(commands.Cog):
             Bugs, inconvenience or suggestion, all welcomed.
         '''
         embed = discord.Embed(title=ctx.author.id, description=content)
-        await self.feedback_wh.execute(embed=embed, username=str(ctx.author), avatar_url=ctx.author.avatar_url_as(format="png"))
+        await self.feedback_wh.execute(embed=embed, username=str(ctx.author), avatar_url=str(ctx.author.avatar_url_as(format="png")))
         await ctx.confirm()
 
     @modding.help(brief="Bot info", category=None, field="Other", paragraph=0)
-    @commands.command()
+    @commands.command(aliases=["info"])
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     async def about(self, ctx):
         '''
@@ -354,7 +354,7 @@ class Help(commands.Cog):
                 "Also PSO2 and Otogi stuff. These works at least.",
             colour=discord.Colour.blue()
         )
-        embed.set_author(name=str(bot.user), icon_url=bot.user.avatar_url)
+        embed.set_author(name=str(bot.user), icon_url=str(bot.user.avatar_url))
         embed.add_field(name="Lastest changes", value="\n".join(desc), inline=False)
         embed.add_field(name="Owner", value=owner.mention if owner in getattr(ctx.guild, "members", ()) else str(owner))
         v = sys.version_info

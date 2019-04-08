@@ -986,7 +986,7 @@ class Otogi(commands.Cog):
             paging = utils.Paginator(
                 daemons, 10, book=True,
                 author=f"{target.display_name}'s box:",
-                author_icon=target.avatar_url,
+                author_icon=str(target.avatar_url),
                 title=f"Mochi: {player['mochi']}{self.emojis['mochi']}",
                 prefix=lambda i, n: str(self.emojis["star"])*(n+3),
                 description=lambda i, x, n: f"{x['name']} lb{lbs[x['id']]}",
@@ -995,7 +995,7 @@ class Otogi(commands.Cog):
             await paging.navigate(ctx)
         else:
             embed = discord.Embed(title=f"Mochi: {player['mochi']}{self.emojis['mochi']}", description="Empty", colour=discord.Colour.orange())
-            embed.set_author(name=f"{target.display_name}'s box", icon_url=target.avatar_url)
+            embed.set_author(name=f"{target.display_name}'s box", icon_url=str(target.avatar_url))
             await ctx.send(embed=embed)
 
     def _process_name(self, name):
