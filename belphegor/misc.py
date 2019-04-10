@@ -1349,6 +1349,68 @@ class Misc(commands.Cog):
         bytes_2 = await self.bot.loop.run_in_executor(None, do_stuff)
         await ctx.send(file=discord.File(bytes_2, "sketch2.png"))
 
+    @modding.help(brief="[Elementary cellular automaton](https://en.wikipedia.org/wiki/Elementary_cellular_automaton)", category="Misc", field="Processing", paragraph=0)
+    @commands.command(name="eca")
+    async def elementary_cellular_automaton(self, ctx, rule_number, size="64x60"):
+        '''
+            `>>eca <rule> <optional: size>`
+            [Elementary cellular automaton](https://en.wikipedia.org/wiki/Elementary_cellular_automaton).
+            Rule is either an 8-bit configuration or an int represent those 8 bits.
+            Default size is 64x60.
+        '''
+        try:
+            if len(rule_number) == 8:
+                rule_number = int(rule_number, 2)
+            else:
+                rule_number = int(rule_number)
+                if rule_number > 255 or rule_number < 0:
+                    raise ValueError
+        except ValueError:
+            return await ctx.send("Please input a valid rule number.")
+
+        width, sep, height = size.partition("x")
+        try:
+            width = int(width)
+            height = int(height)
+        except ValueError:
+            return await ctx.send("Please input a size in `widthxheight` format.")
+
+
+        if width < 10:
+            return await ctx.send("Width too small.")
+        if width > 80:
+            return await ctx.send("Width too big.")
+        if height % 2 != 0:
+            height += 1
+        if width * height // 2 > 1950:
+            return await ctx.send("Size too big.")
+
+        rule = np.array([(rule_number>>i)&1 for i in range(8)], dtype=np.uint8).reshape((2, 2, 2))
+        cells = np.random.randint(0, 2, size=(height, width), dtype=np.uint8)
+        for x in range(height-1):
+            for y in range(width):
+                if y == 0:
+                    left = 0
+                    right = cells[x, y+1]
+                elif y == width-1:
+                    left = cells[x, y-1]
+                    right = 0
+                else:
+                    left = cells[x, y-1]
+                    right = cells[x, y+1]
+                mid = cells[x, y]
+                cells[x+1, y] = rule[left, mid, right]
+
+        raw = []
+        for x in range(0, height, 2):
+            line = []
+            for y in range(0, width):
+                cut = cells[x:x+2, y:y+1]
+                line.append(BOX_PATTERN[tuple(cut.flatten())])
+            raw.append("".join(line))
+        out = "\n".join(raw)
+        await ctx.send(f"```\n{out}\n```")
+
 #==================================================================================================================================================
 
 def setup(bot):

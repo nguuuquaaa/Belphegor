@@ -94,9 +94,8 @@ class ConnectFour:
     P2_ICON = "\U0001f535"
     BLANK_ICON = "\u2b1b"
 
-    def __init__(self, ctx, player1, player2):
+    def __init__(self, player1, player2):
         self.game = ConnectFourCore()
-        self.ctx = ctx
         self.player1 = player1
         self.player2 = player2
 
@@ -119,8 +118,7 @@ class ConnectFour:
             yield self.player1
             yield self.player2
 
-    async def play(self):
-        ctx = self.ctx
+    async def play(self, ctx):
         game = self.game
         player_generate = self.generate_next_player()
         embed = self.embed_visualize()
@@ -163,7 +161,7 @@ class ConnectFour:
                 await message.edit(embed=embed)
                 continue
             else:
-                if index == 7:
+                if index is None:
                     await end_game()
                     embed.set_field_at(1, name="Status", value=f"{current_player.mention} abandoned the game.\n{next(player_generate).mention} won the game.", inline=False)
                     await message.edit(embed=embed)

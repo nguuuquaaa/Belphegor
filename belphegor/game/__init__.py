@@ -39,10 +39,12 @@ class Game(commands.Cog):
                 else:
                     break
 
-        game = ConnectFour(ctx, ctx.author, message.author)
+        game = ConnectFour(ctx.author, message.author)
         self.playing.add(ctx.author)
         self.playing.add(message.author)
-        await game.play()
+        await game.play(ctx)
+        self.playing.remove(ctx.author)
+        self.playing.remove(message.author)
 
     @commands.group()
     async def maze(self, ctx):
@@ -74,9 +76,9 @@ class Game(commands.Cog):
         if density > 0.5:
             return await ctx.send("Density to large.")
 
-        game = await MazeRunner.new(ctx, size, mode=mode, weave=weave, density=density)
+        game = await MazeRunner.new(ctx, size, mode=mode, weave=weave, density=density, loop=self.bot.loop)
         self.mazes[ctx.author] = game
-        bytes_ = await game.draw_maze()
+        bytes_ = await game.draw_maze(loop=self.bot.loop)
         await ctx.send(file=discord.File(bytes_, "maze.png"))
 
     @maze.command()
@@ -87,7 +89,7 @@ class Game(commands.Cog):
         '''
         game = self.mazes.pop(ctx.author, None)
         if game:
-            bytes_ = await game.draw_solution()
+            bytes_ = await game.draw_solution(loop=self.bot.loop)
             await ctx.send(file=discord.File(bytes_, "solution.png"))
         else:
             await ctx.send("You haven't created any maze in the last 10 minutes.")

@@ -6,6 +6,7 @@ from PIL import Image, ImageDraw
 from io import BytesIO
 import functools
 import collections
+import asyncio
 
 #==================================================================================================================================================
 
@@ -189,21 +190,21 @@ class MazeRunner:
     CELL_SIZE = 20
     WEAVE_CELL_SPACE = 3
 
-    def __init__(self, ctx, maze, *, mode, weave, density):
-        self.ctx = ctx
-        self.player = ctx.author
+    def __init__(self, player, maze, *, mode, weave, density):
+        self.player = player
         self.weave = weave
         self.maze = maze
         self.solution = None
 
     @classmethod
-    async def new(cls, ctx, size, *, mode, weave, density):
+    async def new(cls, ctx, size, *, mode, weave, density, loop=None):
         func = functools.partial(getattr(Maze, f"{mode}_algorithm"), (size, size), weave=weave, density=density)
         if mode == "kruskal" and size > 30 and weave:
-            maze = await ctx.bot.loop.run_in_executor(None, func)
+            loop = loop or asyncio.get_event_loop()
+            maze = await loop.run_in_executor(None, func)
         else:
             maze = func()
-        return cls(ctx, maze, mode=mode, weave=weave, density=density)
+        return cls(ctx.author, maze, mode=mode, weave=weave, density=density)
 
     def _raw_draw(self):
         def draw_non_weave():
@@ -301,7 +302,7 @@ class MazeRunner:
 
         return draw_weave() if self.weave else draw_non_weave()
 
-    async def draw_maze(self):
+    async def draw_maze(self, loop=None):
         def draw_it():
             image = self._raw_draw()
             bytes_ = BytesIO()
@@ -309,9 +310,10 @@ class MazeRunner:
             bytes_.seek(0)
             return bytes_
 
-        return await self.ctx.bot.loop.run_in_executor(None, draw_it)
+        loop = loop or asyncio.get_event_loop()
+        return await loop.run_in_executor(None, draw_it)
 
-    async def draw_solution(self):
+    async def draw_solution(self, loop=None):
         if self.solution:
             solution = self.solution
         else:
@@ -354,4 +356,5 @@ class MazeRunner:
             bytes_.seek(0)
             return bytes_
 
-        return await self.ctx.bot.loop.run_in_executor(None, draw_it)
+        loop = loop or asyncio.get_event_loop()
+        return await loop.run_in_executor(None, draw_it)
