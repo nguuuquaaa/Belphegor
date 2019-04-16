@@ -607,7 +607,7 @@ class PSO2(commands.Cog):
             description=lambda i, x: f"**EN:** {x['EnName']}\n**JP:** {utils.unifix(x['JpName'])}\n{x['EnDesc'].replace(nl, ' ')}",
             colour=discord.Colour.blue()
         )
-        await paging.navigate(ctx)
+        await paging.navigate(ctx, timeout=300)
 
     @cmd_item.error
     async def cmd_item_error(self, ctx, error):

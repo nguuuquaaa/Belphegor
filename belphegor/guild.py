@@ -1090,7 +1090,7 @@ class Guild(commands.Cog):
             Display server info.
         '''
         guild = ctx.guild
-        roleinfo = ", ".join((r.mention for r in guild.roles))
+        roleinfo = ", ".join((r.mention for r in reversed(guild.roles)))
         role_pages = utils.split_page(roleinfo, 1000, safe_mode=False)
         embeds = []
         for page in role_pages:

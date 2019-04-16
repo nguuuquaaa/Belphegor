@@ -230,7 +230,7 @@ class Paginator:
         for e in self.navigation:
             await message.add_reaction(e)
 
-    async def navigate(self, ctx, *, timeout=60, target=None):
+    async def navigate(self, ctx, *, timeout=120, target=None):
         _bot = ctx.bot
         _loop = _bot.loop
         target = target or ctx.author
@@ -272,7 +272,7 @@ class Paginator:
                 embed = self.navigation[reaction.emoji]()
                 if inspect.isawaitable(embed):
                     embed = await embed
-                if embed:
+                if embed is not None:
                     await message.edit(embed=embed)
                     handle_reaction(message, reaction, user)
                 else:

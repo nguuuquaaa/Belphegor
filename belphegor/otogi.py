@@ -16,8 +16,8 @@ from io import BytesIO
 
 #==================================================================================================================================================
 SPECIAL = {
-    "Commander Yashichi": ("Yashichi", "Commander"),
-    "Earth Defense Force: Helium": ("Helium Elf", "Earth Defense Force")
+    "Commander Yashichi": ("Yashichi", "prefixed"),
+    "Earth Defense Force: Helium": ("Helium Elf", "prefixed")
 }
 
 #==================================================================================================================================================
@@ -63,7 +63,7 @@ class Daemon(data_type.BaseObject):
             bond_name = kwargs.get(f"bond{o}")
             if bond_name:
                 daemon.bonds.append({
-                    "name": strip_ref(bond_name),
+                    "name": strip_ref(bond_name).replace("'''", ""),
                     "effect": kwargs.get(f"bond info{o}")
                 })
 
@@ -146,13 +146,6 @@ class Daemon(data_type.BaseObject):
             return f"{self.max_hp}/{self.mlb_hp}"
         else:
             return self.max_hp or "?"
-
-    @property
-    def true_artwork_url(self):
-        if self.artwork_url:
-            return self.artwork_url
-        else:
-            return config.NO_IMG
 
     @property
     def true_image_url(self):
@@ -239,11 +232,11 @@ class Daemon(data_type.BaseObject):
 
 #==================================================================================================================================================
 
-ref_regex = re.compile(r"\[\[(.+?\]?)\]\]")
 def left_most(m):
     sp = m.group(1).rpartition("|")
     return sp[2]
 
+ref_regex = re.compile(r"\[\[(.+?\]?)\]\]")
 def strip_ref(text):
     return ref_regex.sub(left_most, text).strip()
 
@@ -682,7 +675,7 @@ class Otogi(commands.Cog):
             `>>update wikia <name>`
             Update daemon info with the infomation from wikia.
         '''
-        name = data.get("")
+        name = data.getalltext("")
         if not name:
             return await ctx.send("Input the damn daemon ffs.")
 
@@ -699,7 +692,6 @@ class Otogi(commands.Cog):
 
     async def search_wikia(self, daemon, image_name):
         name = daemon.name
-        alias = daemon.alias
         try:
             bracket_index = name.index("[")
         except ValueError:
@@ -733,10 +725,13 @@ class Otogi(commands.Cog):
                     if isinstance(ret, tuple):
                         new_daemon, kwargs = ret
                         if isinstance(new_daemon, Daemon) and new_daemon.form == form:
-                            break
+                            if kwargs.get("name", name) == name:
+                                break
+                            else:
+                                continue
 
         new_daemon.id = daemon.id
-        new_daemon.name = daemon.name
+        new_daemon.name = name
         new_daemon.alias = daemon.alias
         new_daemon.faction = daemon.faction
         new_daemon.url = f"https://otogi.wikia.com/wiki/{quote(base_name)}"
@@ -808,7 +803,7 @@ class Otogi(commands.Cog):
             for daemon_data in daemons:
                 try:
                     daemon = Daemon(daemon_data)
-                    new_daemon = await self.search_wikia(daemon)
+                    new_daemon = await self.search_wikia(daemon, None)
                     await self.daemon_collection.replace_one({"id": daemon.id}, new_daemon.__dict__)
                 except:
                     undone.append(f"#{daemon.id: 4d} {daemon.name}")

@@ -18,6 +18,7 @@ import numpy as np
 import aiohttp
 from scipy.ndimage import filters
 import colorsys
+import inspect
 
 #==================================================================================================================================================
 
@@ -1375,7 +1376,6 @@ class Misc(commands.Cog):
         except ValueError:
             return await ctx.send("Please input a size in `widthxheight` format.")
 
-
         if width < 10:
             return await ctx.send("Width too small.")
         if width > 80:
@@ -1410,6 +1410,72 @@ class Misc(commands.Cog):
             raw.append("".join(line))
         out = "\n".join(raw)
         await ctx.send(f"```\n{out}\n```")
+
+    def generate_names(self):
+        everything = set()
+        for module in (discord, commands):
+            for submodule in inspect.getmembers(module, inspect.ismodule):
+                submodule_full_name = submodule.__name__.split(".")
+                for name in getattr(submodule, "__all__", dir(submodule)):
+                    if name.startswith("_"):
+                        continue
+                    base_entity = getattr(submodule, name)
+                    if inspect.isclass(base_entity):
+                        everything.append((*submodule_full_name, base_entity.__name__))
+                        for member_name, member in inspect.getmembers(base_entity):
+                            if member_name.startswith("__") and member.__doc__:
+                                everything.append((*submodule_full_name, base_entity.__name__, member_name))
+
+    @commands.command()
+    async def rtfs(self, ctx, name=None):
+        '''
+            `>> rtfs <name>`
+            Read the fucking source.
+        '''
+        base_url = "https://github.com/Rapptz/discord.py/tree/rewrite/discord"
+        if not name:
+            return await ctx.send(f"<{base_url}>")
+        name = name.lower()
+        aliases = {
+            "msg": "message",
+            "color": "colour",
+            "ctx": "context"
+        }
+        checker = [aliases.get(n, n) for n in name.split(".")]
+        if checker[0] in (discord, commands):
+            checker.pop(0)
+
+        stacks = collections.deque(((discord,), (discord.abc,), (commands,)))
+        max_level = len(checker)
+
+        ret = []
+        while stacks:
+            item = stacks.pop()
+            level = len(item) - 1
+            if level == len(checker):
+                cur = item[-1]
+                if inspect.ismodule(cur):
+                    continue
+                try:
+                    rpath = inspect.getfile(cur).partition("discord")[2]
+                except TypeError:
+                    continue
+                lines, firstlineno = inspect.getsourcelines(cur)
+                ret.append((
+                    ".".join((m.__name__ for m in item)).replace("discord.ext.", "").replace("discord.", ""),
+                    f"{base_url}{rpath}#L{firstlineno}-L{firstlineno + len(lines) - 1}"
+                ))
+                continue
+            check = checker[level]
+            for name, member in inspect.getmembers(item[-1]):
+                if not name.startswith("__") and check in name.lower():
+                    stacks.append(item + (member,))
+
+        if ret:
+            embed = discord.Embed(description="\n".join((f"[{r[0]}]({r[1]})" for r in ret[:10])))
+            await ctx.send(embed=embed)
+        else:
+            await ctx.send("Can't find anything.")
 
 #==================================================================================================================================================
 
