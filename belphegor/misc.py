@@ -1411,21 +1411,6 @@ class Misc(commands.Cog):
         out = "\n".join(raw)
         await ctx.send(f"```\n{out}\n```")
 
-    def generate_names(self):
-        everything = set()
-        for module in (discord, commands):
-            for submodule in inspect.getmembers(module, inspect.ismodule):
-                submodule_full_name = submodule.__name__.split(".")
-                for name in getattr(submodule, "__all__", dir(submodule)):
-                    if name.startswith("_"):
-                        continue
-                    base_entity = getattr(submodule, name)
-                    if inspect.isclass(base_entity):
-                        everything.append((*submodule_full_name, base_entity.__name__))
-                        for member_name, member in inspect.getmembers(base_entity):
-                            if member_name.startswith("__") and member.__doc__:
-                                everything.append((*submodule_full_name, base_entity.__name__, member_name))
-
     @commands.command()
     async def rtfs(self, ctx, name=None):
         '''
