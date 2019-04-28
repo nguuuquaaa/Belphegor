@@ -40,11 +40,11 @@ class Game(commands.Cog):
                     break
 
         game = ConnectFour(ctx.author, message.author)
-        self.playing.add(ctx.author)
-        self.playing.add(message.author)
+        self.playing.add(ctx.author.id)
+        self.playing.add(message.author.id)
         await game.play(ctx)
-        self.playing.remove(ctx.author)
-        self.playing.remove(message.author)
+        self.playing.discard(ctx.author.id)
+        self.playing.discard(message.author.id)
 
     @commands.group()
     async def maze(self, ctx):

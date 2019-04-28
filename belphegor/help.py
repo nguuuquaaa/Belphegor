@@ -351,7 +351,7 @@ class Help(commands.Cog):
         embed = discord.Embed(
             description=
                 f"{bot.user.name} is a multi-purpose bot with lots of experimental and unnecessary commands.\n"
-                "Also PSO2 and Otogi stuff. These works at least.",
+                "Also PSO2 and Otogi stuff. These work at least.",
             colour=discord.Colour.blue()
         )
         embed.set_author(name=str(bot.user), icon_url=str(bot.user.avatar_url))
@@ -359,7 +359,7 @@ class Help(commands.Cog):
         embed.add_field(name="Owner", value=owner.mention if owner in getattr(ctx.guild, "members", ()) else str(owner))
         v = sys.version_info
         embed.add_field(name="Written in", value=f"{self.emojis['python']} {v.major}.{v.minor}.{v.micro}")
-        embed.add_field(name="Library", value="[discord.py\\[rewrite\\]](https://github.com/Rapptz/discord.py/tree/rewrite)")
+        embed.add_field(name="Library", value=f"discord.py {discord.__version__}")
         embed.add_field(name="Created at", value=str(bot.user.created_at)[:10])
         process = bot.process
         with process.oneshot():

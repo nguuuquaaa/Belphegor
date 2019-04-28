@@ -699,7 +699,7 @@ class Misc(commands.Cog):
             If no member is specified, use your avatar.
         '''
         target = data.geteither("", "member", "m", default=ctx.author)
-        url = data.get("url", target.avatar_url_as(format="png"))
+        url = data.get("url", str(target.avatar_url_as(format="png")))
 
         await ctx.trigger_typing()
         bytes_ = await self.bot.fetch(url)

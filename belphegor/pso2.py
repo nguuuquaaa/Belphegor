@@ -118,7 +118,8 @@ CLASS_DICT = {
     "Braver":   "br",
     "Bouncer":  "bo",
     "Summoner": "su",
-    "Hero":     "hr"
+    "Hero":     "hr",
+    "Phantom":  "ph"
 }
 TIME_LEFT = ("Now", "HalfHour", "OneLater", "OneHalfLater", "TwoLater", "TwoHalfLater", "ThreeLater", "ThreeHalfLater")
 
@@ -273,7 +274,7 @@ class PSO2(commands.Cog):
         self.emojis = {}
         for emoji_name in (
             "fire", "ice", "lightning", "wind", "light", "dark",
-            "hu", "fi", "ra", "gu", "fo", "te", "br", "bo", "su", "hr",
+            "hu", "fi", "ra", "gu", "fo", "te", "br", "bo", "su", "hr", "ph",
             "satk", "ratk", "tatk", "ability", "potential",
             "pa", "saf", "star_0", "star_1", "star_2", "star_3", "star_4", "rappy"
         ):
@@ -367,9 +368,7 @@ class PSO2(commands.Cog):
                         }
                 elif orig_att in ("satk", "ratk", "tatk"):
                     t = "atk"
-                    q = {
-                        f"atk.max.{orig_att}": re_value
-                    }
+                    q = {f"atk.max.{orig_att}": re_value}
                 else:
                     q = {orig_att: re_value}
                 p = {t: True}

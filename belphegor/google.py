@@ -8,6 +8,21 @@ import asyncio
 
 #==================================================================================================================================================
 
+SUPERSCRIPT = {
+    "0": "0x2070",
+    "1": "0x00b9",
+    "2": "0x00b2",
+    "3": "0x00b3",
+    "4": "0x2074",
+    "5": "0x2075",
+    "6": "0x2076",
+    "7": "0x2077",
+    "8": "0x2078",
+    "9": "0x2079"
+}
+
+#==================================================================================================================================================
+
 class Google(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -144,54 +159,39 @@ class Google(commands.Cog):
                 pass
 
         #definition
-        tag = soup.find("div", class_="lr_container")
-        if tag:
+        tags = soup.find_all("div", class_="lr_dct_ent")
+        if tags:
             try:
-                relevant_data = tag.find_all(
-                    lambda t:
-                        (
-                            t.name=="div"
-                            and (
-                                t.get("data-dobid")=="dfn"
-                                or t.get("class") in (["lr_dct_sf_h"], ["xpdxpnd", "vk_gy"], ["vmod", "vk_gy"])
-                                or t.get("style")=="float:left"
-                            )
-                        )
-                        or
-                        (
-                            t.name=="span"
-                            and (
-                                t.get("data-dobid")=="hdw"
-                                or t.get("class")==["lr_dct_ph"]
-                            )
-                        )
-                )
-                word = ""
-                pronoun = ""
-                current_page = -1
                 defines = []
-                for t in relevant_data:
-                    if t.name == "span":
-                        if t.get("data-dobid") == "hdw":
-                            word = t.text
-                        else:
-                            pronoun = t.text
-                    else:
-                        if t.get("class") == ["lr_dct_sf_h"]:
-                            current_page += 1
-                            defines.append(f"**{word}**\n/{pronoun}\n")
-                        elif "vk_gy" in t.get("class", []):
-                            form = ""
-                            for child_t in t.find_all(True):
-                                if child_t.name == "b":
-                                    form = f"{form}*{child_t.find(text=True, recursive=False)}*"
+                for tag in tags:
+                    top_box = tag.find("div", class_="Jc6jBf")
+                    gsrt = top_box.find("div", class_="gsrt")
+                    name = gsrt.find("span").text
+                    pronounce = top_box.find("div", class_="lr_dct_ent_ph").text
+                    for relevant in tag.find("div", class_="vmod").find_all("div", class_="vmod", recursive=False):
+                        form_tag = relevant.find("div", class_="vk_gy")
+                        form = []
+                        for ft in form_tag.find_all("span", recursive=False):
+                            for child in ft.children:
+                                if child.name == "b":
+                                    text = f"*{child.text}*"
+                                elif child.name is None:
+                                    text = child
                                 else:
-                                    form = f"{form}{child_t.find(text=True, recursive=False)}"
-                            defines[current_page] = f"{defines[current_page]}\n{form}"
-                        elif t.get("style") == "float:left":
-                            defines[current_page] = f"{defines[current_page]}\n**{t.text}**"
-                        else:
-                            defines[current_page] = f"{defines[current_page]}\n- {t.text}"
+                                    text = child.text
+                                if text:
+                                    form.append(text)
+
+                        page = [f"**{name}**", pronounce, "\n", "".join(form)]
+                        definition_box = relevant.find("ol", class_="lr_dct_sf_sens")
+                        for each in definition_box.find_all("li", recursive=False):
+                            deeper = each.find("div", class_="lr_dct_sf_sen")
+                            number = deeper.find("div", style="float:left")
+                            list_of_definitions = "\n".join(f"- {t.text}" for t in deeper.find_all("div", attrs={"data-dobid": "dfn"}))
+                            page.append(f"**{number.text}**\n{list_of_definitions}")
+
+                        defines.append("\n".join(page))
+
                 see_also = "\n\n".join((f"[{utils.discord_escape(t[0])}]({utils.safe_url(t[1])})" for t in search_results[1:5]))
                 embeds = []
                 max_page = len(defines)
@@ -201,7 +201,8 @@ class Google(commands.Cog):
                     embeds.append(embed)
                 return embeds
             except:
-                pass
+                import traceback
+                traceback.print_exc()
 
         #weather
         tag = soup.find("div", class_="card-section", id="wob_wc")

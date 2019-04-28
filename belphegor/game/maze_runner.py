@@ -194,7 +194,7 @@ class MazeRunner:
         self.player = player
         self.weave = weave
         self.maze = maze
-        self.solution = None
+        self.rendering = None
 
     @classmethod
     async def new(cls, ctx, size, *, mode, weave, density, loop=None):
@@ -300,7 +300,10 @@ class MazeRunner:
 
             return image
 
-        return draw_weave() if self.weave else draw_non_weave()
+        if self.rendering is None:
+            image = draw_weave() if self.weave else draw_non_weave()
+            self.rendering = np.array(image)
+        return Image.fromarray(self.rendering)
 
     async def draw_maze(self, loop=None):
         def draw_it():
@@ -314,13 +317,8 @@ class MazeRunner:
         return await loop.run_in_executor(None, draw_it)
 
     async def draw_solution(self, loop=None):
-        if self.solution:
-            solution = self.solution
-        else:
-            solution = self.maze.solve()
-            self.solution = solution
-
         def draw_it():
+            solution = self.maze.solve()
             image = self._raw_draw()
             draw = ImageDraw.Draw(image)
             movable = self.maze.movable

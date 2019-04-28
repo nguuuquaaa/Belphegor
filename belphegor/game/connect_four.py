@@ -153,25 +153,26 @@ class ConnectFour:
             except discord.Forbidden:
                 pass
 
+            index = emojis[reaction.emoji]
+            if index is None:
+                await end_game()
+                embed.set_field_at(1, name="Status", value=f"{current_player.mention} abandoned the game.\n{next(player_generate).mention} won the game.", inline=False)
+                await message.edit(embed=embed)
+                return
+
             try:
-                index = emojis[reaction.emoji]
                 winner = game.drop(index)
             except error.GameError as e:
                 embed.set_field_at(1, name="Status", value=e.message, inline=False)
                 await message.edit(embed=embed)
                 continue
-            else:
-                if index is None:
-                    await end_game()
-                    embed.set_field_at(1, name="Status", value=f"{current_player.mention} abandoned the game.\n{next(player_generate).mention} won the game.", inline=False)
-                    await message.edit(embed=embed)
-
 
             if winner == 0:
                 if game.is_stalled():
                     await end_game()
                     embed.set_field_at(1, name="Status", value="Draw", inline=False)
                     await message.edit(embed=embed)
+                    return
                 else:
                     embed.description = self.draw_board()
                     embed.set_field_at(1, name="Status", value=f"{current_player.mention} dropped a disc on column {index+1}", inline=False)
