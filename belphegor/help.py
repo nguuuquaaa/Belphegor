@@ -43,8 +43,16 @@ class Help(commands.Cog):
             self.emojis[emoji_name] = discord.utils.find(lambda e: e.name==emoji_name, creampie_guild.emojis)
         for emoji_name in ("hu", "python"):
             self.emojis[emoji_name] = discord.utils.find(lambda e: e.name==emoji_name, test_guild.emojis)
+
+        self.command_run_count = bot.saved_stuff.pop("command_run_count", {})
+        self.recent_commands = bot.saved_stuff.pop("recent_commands", collections.deque(maxlen=20))
+
         bot.loop.create_task(self.get_webhook())
         self.setup_help()
+
+    def cog_unload(self):
+        self.bot.saved_stuff["command_run_count"] = self.command_run_count
+        self.bot.saved_stuff["recent_commands"] = self.recent_commands
 
     def setup_help(self):
         infodump = {
@@ -467,6 +475,37 @@ class Help(commands.Cog):
         location = os.path.relpath(rpath).replace('\\', '/')
         final_url = f"<{base_url}/tree/master/{location}#L{firstlineno}-L{firstlineno + len(lines) - 1}>"
         await ctx.send(final_url)
+
+    @commands.Cog.listener()
+    async def on_command_completion(self, ctx):
+        cmd = ctx.command.qualified_name
+        self.command_run_count[cmd] = self.command_run_count.get(cmd, 0) + 1
+        self.recent_commands.append(cmd)
+
+    @commands.command(hidden=True)
+    async def topcmd(self, ctx):
+        all_cmds = sorted(list(self.command_run_count.items()), key=lambda x: x[1], reverse=True)
+
+        embed = discord.Embed(title="Commands run")
+        total = (x[1] for x in all_cmds)
+        embed.add_field(name="Total", value=f"{sum(total)}", inline=False)
+
+        top = []
+        rest = []
+        for cmd in all_cmds:
+            if len(top) >= 3:
+                rest.append(cmd)
+            else:
+                top.append(cmd)
+
+        top_cmd_txt = "\n".join((f"{i+1}\u20e3 {x[0]} - {x[1]} times" for i, x in enumerate(top)))
+        the_rest = ", ".join((f"{x[0]} ({x[1]})" for x in rest))
+        the_rest_pages = utils.split_page(the_rest, 1000, check=lambda x: x==",")
+        embed.add_field(name="Top commands", value=top_cmd_txt, inline=False)
+        embed.add_field(name="Other", value=the_rest_pages[0], inline=False)
+        embed.add_field(name="Recent commands", value=", ".join(reversed(self.recent_commands)), inline=False)
+
+        await ctx.send(embed=embed)
 
 #==================================================================================================================================================
 

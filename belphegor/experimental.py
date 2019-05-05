@@ -59,11 +59,7 @@ class Statistics(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.user_data = bot.db.user_data
-        self.command_data = bot.db.command_data
         self.belphegor_config = bot.db.belphegor_config
-
-        self.command_run_count = bot.saved_stuff.pop("command_run_count", {})
-        self.recent_commands = bot.saved_stuff.pop("recent_commands", collections.deque(maxlen=20))
 
         now = utils.now_time()
         self.all_users = {}
@@ -83,9 +79,7 @@ class Statistics(commands.Cog):
 
     def cog_unload(self):
         self.bot.saved_stuff["all_users"] = self.all_users
-        self.bot.saved_stuff["command_run_count"] = self.command_run_count
         self.bot.saved_stuff["status_updates"] = self.all_requests
-        self.bot.saved_stuff["recent_commands"] = self.recent_commands
 
     def get_update_request(self, member_stats, member=None):
         if member:
@@ -530,38 +524,6 @@ class Statistics(commands.Cog):
         offset = self.better_offset(offset)
         await self.user_data.update_one({"user_id": ctx.author.id}, {"$set": {"timezone": offset}})
         await ctx.send(f"Default offset has been set to {offset:+d}")
-
-    @commands.Cog.listener()
-    async def on_command_completion(self, ctx):
-        cmd = ctx.command.qualified_name
-        self.command_run_count[cmd] = self.command_run_count.get(cmd, 0) + 1
-        self.recent_commands.append(cmd)
-        #await self.command_data.update_one({"name": cmd}, {"$inc": {"total_count": 1}}, upsert=True)
-
-    @commands.command(hidden=True)
-    async def topcmd(self, ctx):
-        all_cmds = sorted(list(self.command_run_count.items()), key=lambda x: x[1], reverse=True)
-
-        embed = discord.Embed(title="Commands run")
-        total = (x[1] for x in all_cmds)
-        embed.add_field(name="Total", value=f"{sum(total)}", inline=False)
-
-        top = []
-        rest = []
-        for cmd in all_cmds:
-            if len(top) >= 3:
-                rest.append(cmd)
-            else:
-                top.append(cmd)
-
-        top_cmd_txt = "\n".join((f"{i+1}\u20e3 {x[0]} - {x[1]} times" for i, x in enumerate(top)))
-        the_rest = ", ".join((f"{x[0]} ({x[1]})" for x in rest))
-        the_rest_pages = utils.split_page(the_rest, 1000, check=lambda x: x==",")
-        embed.add_field(name="Top commands", value=top_cmd_txt, inline=False)
-        embed.add_field(name="Other", value=the_rest_pages[0], inline=False)
-        embed.add_field(name="Recent commands", value=", ".join(reversed(self.recent_commands)), inline=False)
-
-        await ctx.send(embed=embed)
 
     @commands.command()
     @checks.in_certain_guild(DISCORDPY_GUILD_ID)
