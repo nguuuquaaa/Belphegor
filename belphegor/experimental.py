@@ -53,7 +53,7 @@ class MemberStats:
 
         if update:
             self.last_updated = end
-        return items, last_mark
+        return items
 
 #==================================================================================================================================================
 
@@ -82,7 +82,10 @@ class Statistics(commands.Cog):
     def cog_unload(self):
         self.bot.saved_stuff["all_users"] = self.all_users
         self.bot.saved_stuff["status_updates"] = self.all_requests
-        self.update_task.cancel()
+        try:
+            self.update_task.cancel()
+        except:
+            pass
 
     def get_update_request(self, member_stats, member=None):
         if member:
@@ -93,21 +96,50 @@ class Statistics(commands.Cog):
             if not m:
                 return
 
-        items, last_mark = member_stats.process_status(m.status.value, update=True)
+        items = member_stats.process_status(m.status.value, update=True)
         return pymongo.UpdateOne(
             {"user_id": m.id},
-            {"$setOnInsert": {"user_id": m.id, "timezone": 0}, "$push": {"status": {"$each": items}}, "$pull": {"status": {"mark": {"$lt": last_mark-720}}}},
+            {"$setOnInsert": {"user_id": m.id, "timezone": 0}, "$push": {"status": {"$each": items}}},
             upsert=True
         )
+
+    async def _update_regularly(self):
+        all_reqs = []
+
+        async def update():
+            await self.user_data.bulk_write(all_reqs)
+            all_reqs.clear()
+            end = utils.now_time()
+            end_hour = (end - BEGINNING).total_seconds() / 3600
+            last_mark = int(end_hour)
+            await self.user_data.update_many({}, {"$pull": {"status": {"mark": {"$lt": last_mark-720}}}})
+
+        try:
+            while True:
+                try:
+                    req = await asyncio.wait_for(self.all_requests.get(), 120)
+                except asyncio.TimeoutError:
+                    if all_reqs:
+                        await asyncio.shield(update())
+                else:
+                    all_reqs.append(req)
+                    if len(all_reqs) > 99:
+                        await asyncio.shield(update())
+        except asyncio.CancelledError:
+            if all_reqs:
+                await update()
+            await self.update_all()
+        except:
+            text = traceback.format_exc()
+            if len(text) > 1950:
+                text = f"{e.__class__.__name__}: {e}"
+            await self.bot.error_hook.execute(f"```\n{text}\n```")
 
     async def update_regularly(self):
         all_reqs = []
 
         async def update():
-            try:
-                await self.user_data.bulk_write(all_reqs)
-            except pymongo.errors.ServerSelectionTimeoutError:
-                raise checks.CustomError("Oof, mongo got crazy oh bois.")
+            await self.user_data.bulk_write(all_reqs)
             all_reqs.clear()
 
         try:

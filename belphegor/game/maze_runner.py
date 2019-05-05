@@ -303,7 +303,9 @@ class MazeRunner:
         if self.rendering is None:
             image = draw_weave() if self.weave else draw_non_weave()
             self.rendering = np.array(image)
-        return Image.fromarray(self.rendering)
+            return image
+        else:
+            return Image.fromarray(self.rendering)
 
     async def draw_maze(self, loop=None):
         def draw_it():
