@@ -51,14 +51,6 @@ def _less_than(number):
 def _equal(anything):
     return anything
 
-def _get_handle(sign):
-    if sign == ">":
-        return _greater_than
-    elif sign == "<":
-        return _less_than
-    else:
-        return _equal
-
 #==================================================================================================================================================
 
 class MultiDict(multidict.MultiDict):
@@ -95,8 +87,12 @@ EMPTY = MultiDict()
 
 _quotes = commands.view._quotes
 _all_quotes = set((*_quotes.keys(), *_quotes.values()))
-_equality = set(("=", ">", "<"))
-_delimiters = _all_quotes | _equality
+_equality = {
+    ">": _greater_than,
+    "<": _less_than,
+    "=": _equal
+}
+_delimiters = _all_quotes | _equality.keys()
 
 def _check_char(c):
     return c.isspace() or c in _delimiters
@@ -123,12 +119,13 @@ class KeyValue(commands.Converter):
         ret = MultiDict()
 
         async def resolve(key, value, handle):
+            key = key.lower()
             if self.escape:
                 value = value.encode("raw_unicode_escape").decode("unicode_escape")
             conv = self.conversion.get(key)
             if conv:
                 value = await ctx.command.do_conversion(ctx, conv, value, key)
-            ret.add(key.lower(), handle(value))
+            ret.add(key, handle(value))
 
         if self.multiline:
             for line in text.splitlines():
@@ -136,7 +133,7 @@ class KeyValue(commands.Converter):
                 if line:
                     for i, c in enumerate(line):
                         if c in _equality:
-                            handle = _get_handle(c)
+                            handle = _equality[c]
                             key = line[:i]
                             value = line[i+1:]
                             break
@@ -164,7 +161,7 @@ class KeyValue(commands.Converter):
                     else:
                         key = prev_word
                         prev_word = ""
-                        handle = _get_handle(word)
+                        handle = _equality[word]
                 elif word in _quotes:
                     if prev_word:
                         raise commands.BadArgument("Quote character must be placed at the start.")

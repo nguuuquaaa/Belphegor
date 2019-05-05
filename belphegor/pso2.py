@@ -783,7 +783,7 @@ class PSO2(commands.Cog):
                 text = f"{e.__class__.__name__}: {e}"
             await self.bot.error_hook.execute(f"```\n{text}\n```")
 
-            await asyncio.sleep(900)
+            await asyncio.sleep(600)
             self.eq_alert_forever = weakref.ref(_loop.create_task(self.eq_alert()))
 
     def get_emoji(self, dt_obj):
