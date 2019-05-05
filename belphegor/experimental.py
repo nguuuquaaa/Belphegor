@@ -9,6 +9,8 @@ from datetime import datetime, timedelta
 import pytz
 import collections
 import json
+import asyncio
+import traceback
 
 #==================================================================================================================================================
 
@@ -51,7 +53,7 @@ class MemberStats:
 
         if update:
             self.last_updated = end
-        return items
+        return items, last_mark
 
 #==================================================================================================================================================
 
@@ -74,12 +76,13 @@ class Statistics(commands.Cog):
             for key, value in all_users.items():
                 self.all_users[key] = MemberStats(value.id, last_updated=value.last_updated)
 
-        self.next_update_time = utils.now_time()
-        self.all_requests = bot.saved_stuff.pop("status_updates", [])
+        self.update_task = bot.create_task_and_count(self.update_regularly())
+        self.all_requests = bot.saved_stuff.pop("status_updates", asyncio.Queue())
 
     def cog_unload(self):
         self.bot.saved_stuff["all_users"] = self.all_users
         self.bot.saved_stuff["status_updates"] = self.all_requests
+        self.update_task.cancel()
 
     def get_update_request(self, member_stats, member=None):
         if member:
@@ -90,12 +93,43 @@ class Statistics(commands.Cog):
             if not m:
                 return
 
-        items = member_stats.process_status(m.status.value, update=True)
+        items, last_mark = member_stats.process_status(m.status.value, update=True)
         return pymongo.UpdateOne(
             {"user_id": m.id},
-            {"$push": {"status": {"$each": items}}, "$setOnInsert": {"user_id": m.id, "timezone": 0}},
+            {"$setOnInsert": {"user_id": m.id, "timezone": 0}, "$push": {"status": {"$each": items}}, "$pull": {"status": {"mark": {"$lt": last_mark-720}}}},
             upsert=True
         )
+
+    async def update_regularly(self):
+        all_reqs = []
+
+        async def update():
+            try:
+                await self.user_data.bulk_write(all_reqs)
+            except pymongo.errors.ServerSelectionTimeoutError:
+                raise checks.CustomError("Oof, mongo got crazy oh bois.")
+            all_reqs.clear()
+
+        try:
+            while True:
+                try:
+                    req = await asyncio.wait_for(self.all_requests.get(), 120)
+                except asyncio.TimeoutError:
+                    if all_reqs:
+                        await asyncio.shield(update())
+                else:
+                    all_reqs.append(req)
+                    if len(all_reqs) > 99:
+                        await asyncio.shield(update())
+        except asyncio.CancelledError:
+            if all_reqs:
+                await update()
+            await self.update_all()
+        except:
+            text = traceback.format_exc()
+            if len(text) > 1950:
+                text = f"{e.__class__.__name__}: {e}"
+            await self.bot.error_hook.execute(f"```\n{text}\n```")
 
     async def update_opt_out(self, member, add=True):
         if add:
@@ -110,20 +144,18 @@ class Statistics(commands.Cog):
 
     async def update_all(self):
         await self.check_opt_out()
-        all_reqs = self.all_requests.copy()
+        all_reqs = []
         for member_stats in self.all_users.values():
             if member_stats.id in self.opt_out:
                 continue
             req = self.get_update_request(member_stats)
             if req:
                 all_reqs.append(req)
-        for i in range(0, len(all_reqs), 100):
-            await self.user_data.bulk_write(all_reqs[i:i+100])
-
-        end = utils.now_time()
-        end_hour = (end - BEGINNING).total_seconds() / 3600
-        last_mark = int(end_hour)
-        await self.user_data.update_many({}, {"$pull": {"status": {"mark": {"$lt": last_mark-720}}}})
+                if len(all_reqs) > 99:
+                    await self.user_data.bulk_write(all_reqs)
+                    all_reqs.clear()
+        if all_reqs:
+            await self.user_data.bulk_write(all_reqs)
 
     async def update(self, member):
         await self.check_opt_out()
@@ -131,16 +163,8 @@ class Statistics(commands.Cog):
             return
         member_stats = self.all_users[member.id]
         req = self.get_update_request(member_stats, member)
-        now = utils.now_time()
-        if now >= self.next_update_time or len(self.all_requests) >= 100:
-            if self.all_requests:
-                all_reqs = self.all_requests.copy()
-                await self.user_data.bulk_write(all_reqs)
-                self.all_requests.clear()
-            self.next_update_time = now + timedelta(seconds=60)
-        else:
-            if req:
-                self.all_requests.append(req)
+        if req:
+            await self.all_requests.put(req)
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
