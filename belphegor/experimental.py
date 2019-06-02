@@ -78,6 +78,8 @@ class Statistics(commands.Cog):
 
         self.update_task = bot.create_task_and_count(self.update_regularly())
         self.all_requests = bot.saved_stuff.pop("status_updates", asyncio.Queue())
+        self.done_update_event = asyncio.Event()
+        self.done_update_event.clear()
 
     def cog_unload(self):
         self.bot.saved_stuff["all_users"] = self.all_users
@@ -128,7 +130,7 @@ class Statistics(commands.Cog):
         except asyncio.CancelledError:
             if all_reqs:
                 await update()
-            await self.update_all()
+            self.done_update_event.set()
         except:
             text = traceback.format_exc()
             if len(text) > 1950:
@@ -175,6 +177,11 @@ class Statistics(commands.Cog):
             self.opt_out = set(data["user_ids"])
 
     async def update_all(self):
+        try:
+            await asyncio.wait_for(self.done_update_event.wait(), 30)
+        except asyncio.TimeoutError:
+            return
+
         await self.check_opt_out()
         all_reqs = []
         for member_stats in self.all_users.values():
@@ -188,6 +195,8 @@ class Statistics(commands.Cog):
                     all_reqs.clear()
         if all_reqs:
             await self.user_data.bulk_write(all_reqs)
+
+        await msg.edit(content="Done.")
 
     async def update(self, member):
         await self.check_opt_out()

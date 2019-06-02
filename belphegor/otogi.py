@@ -58,7 +58,7 @@ class Daemon(data_type.BaseObject):
                 unlock = kwargs.get(f"unlock level{o}", "?")
                 daemon.abilities.append({
                     "name": f"{abi_name} (Lv. {unlock})",
-                    "effect": bare_strip_html(abi_effect)
+                    "effect": strip_ref(bare_strip_html(abi_effect))
                 })
             bond_name = kwargs.get(f"bond{o}")
             if bond_name:
@@ -236,9 +236,13 @@ def left_most(m):
     sp = m.group(1).rpartition("|")
     return sp[2]
 
+def only_title(m):
+    return m.group(1)
+
 ref_regex = re.compile(r"\[\[(.+?\]?)\]\]")
+ref2_regex = re.compile(r"\[http.+?\s(.+?)\]")
 def strip_ref(text):
-    return ref_regex.sub(left_most, text).strip()
+    return ref2_regex.sub(only_title, ref_regex.sub(left_most, text)).strip()
 
 def bare_strip_html(text):
     soup = BS(text, "lxml")
@@ -725,10 +729,8 @@ class Otogi(commands.Cog):
                     if isinstance(ret, tuple):
                         new_daemon, kwargs = ret
                         if isinstance(new_daemon, Daemon) and new_daemon.form == form:
-                            if kwargs.get("name", name) == name:
+                            if kwargs.get("name", base_name) == base_name:
                                 break
-                            else:
-                                continue
 
         new_daemon.id = daemon.id
         new_daemon.name = name

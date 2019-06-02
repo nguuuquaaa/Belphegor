@@ -103,10 +103,11 @@ ICON_DICT = {
 for ele in ("Fire", "Ice", "Lightning", "Wind", "Light", "Dark"):
     ICON_DICT[ele] = ele.lower()
 SPECIAL_DICT = {
-    "color:purple": "arena",
-    "color:red":    "photon",
-    "color:orange": "fuse",
-    "color:green":  "weaponoid"
+    "color:purple":     "arena",
+    "color:red":        "photon",
+    "color:orange":     "fuse",
+    "color:green":      "weaponoid",
+    "color:#5bc0de":    "ultimate"
 }
 CLASS_DICT = {
     "Hunter":   "hu",
@@ -115,6 +116,7 @@ CLASS_DICT = {
     "Gunner":   "gu",
     "Force":    "fo",
     "Techer":   "te",
+    "Techter":  "te",
     "Braver":   "br",
     "Bouncer":  "bo",
     "Summoner": "su",

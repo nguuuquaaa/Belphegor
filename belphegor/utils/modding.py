@@ -7,6 +7,18 @@ from yarl import URL
 
 #==================================================================================================================================================
 
+class SupressAttributeError(str):
+    @property
+    def name(self):
+        return self
+
+class BadValue(commands.CommandError):
+    def __init__(self, key, value):
+        self.key = key
+        self.value = value
+
+#==================================================================================================================================================
+
 class Equality:
     def __init__(self, number):
         self.number = number
@@ -29,10 +41,8 @@ class Comparison(commands.Converter):
         self.type = type
 
     async def convert(self, ctx, argument):
-        try:
-            return Equality(self.type(argument))
-        except ValueError:
-            raise commands.BadArgument("Input must be a number.")
+        value = await ctx.command.do_conversion(ctx, self.type, argument, "type_conv")
+        return Equality(value)
 
 #==================================================================================================================================================
 
@@ -40,13 +50,13 @@ def _greater_than(number):
     try:
         return number.set_positive_sign(True)
     except AttributeError:
-        raise commands.BadArgument("Input must be a number.")
+        raise commands.BadArgument("Input <{number}> cannot be compared.")
 
 def _less_than(number):
     try:
         return number.set_positive_sign(False)
     except AttributeError:
-        raise commands.BadArgument("Input must be a number.")
+        raise commands.BadArgument("Input <{number}> cannot be compared.")
 
 def _equal(anything):
     return anything
@@ -120,12 +130,17 @@ class KeyValue(commands.Converter):
 
         async def resolve(key, value, handle):
             key = key.lower()
+            orig_value = value
             if self.escape:
                 value = value.encode("raw_unicode_escape").decode("unicode_escape")
             conv = self.conversion.get(key)
             if conv:
-                value = await ctx.command.do_conversion(ctx, conv, value, key)
-            ret.add(key, handle(value))
+                try:
+                    value = await ctx.command._actual_conversion(ctx, conv, value, SupressAttributeError(key))
+                    value = handle(value)
+                except commands.BadArgument:
+                    raise BadValue(key, orig_value)
+            ret.add(key, value)
 
         if self.multiline:
             for line in text.splitlines():
