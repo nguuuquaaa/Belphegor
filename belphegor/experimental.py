@@ -196,8 +196,6 @@ class Statistics(commands.Cog):
         if all_reqs:
             await self.user_data.bulk_write(all_reqs)
 
-        await msg.edit(content="Done.")
-
     async def update(self, member):
         await self.check_opt_out()
         if member.id in self.opt_out:
