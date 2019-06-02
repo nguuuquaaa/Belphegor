@@ -69,20 +69,16 @@ class ErrorHandle(commands.Cog):
                 await ctx.send(f"Use this format you dumbo\n```\n{stuff[0].strip('`')}\n```", delete_after=30)
             else:
                 await ctx.send("Argument missing. You sure read command description?", delete_after=30)
-        elif isinstance(error, commands.ConversionError):
-            error = error.original
-            if isinstance(error, modding.BadValue):
-                await ctx.send(f"Conversion of value \"{error.value}\" failed for item {error.key}. Please double check your input.")
-            else:
-                pass
-
+        elif isinstance(error, modding.BadValue):
+            await ctx.send(f"Unknown value <{error.value}>. Please recheck your input.")
         elif isinstance(error, commands.BadArgument):
             await ctx.send("Argument conversion failed. You sure type in the right value?", delete_after=30)
         elif isinstance(error, ignored):
             return
 
-        prt_err = "".join(traceback.format_exception(type(error), error, None)).replace("`", "\u200b`")
-        await self.error_hook.execute(f"```\nUnexpected error:\n{prt_err}\n```")
+        else:
+            prt_err = "".join(traceback.format_exception(type(error), error, None)).replace("`", "\u200b`")
+            await self.error_hook.execute(f"```\nUnexpected error:\n{prt_err}\n```")
 
 #==================================================================================================================================================
 
