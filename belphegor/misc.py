@@ -297,7 +297,7 @@ class Misc(commands.Cog):
         except:
             return await ctx.send("Must be in ndM format.")
         if 120 >= max_side > 3 and 0 < number_of_dices <= 100:
-            rng = board_game.Dices(max_side, number_of_dices)
+            rng = game.Dices(max_side, number_of_dices)
             roll_result = rng.roll()
             counter = collections.Counter(roll_result)
             await ctx.send(

@@ -745,7 +745,6 @@ class MathParse(BaseParse):
             if sympy.Abs(number - nearest) < EPSILON:
                 return f"{int(nearest):{self.strfmt}}"
             else:
-                print(number)
                 return f"{number.evalf(PRECISION):.{AFTER_DOT}f}".rstrip("0").rstrip(".")
 
     def result(self):
@@ -772,24 +771,15 @@ class MathParse(BaseParse):
                         if var_name in kind:
                             raise ParseError(f"Name {var_name} is already taken.")
 
-                    for kind in (self.user_functions, self.user_variables):
-                        if var_name in kind:
-                            kind.pop(var_name)
-
                     the_rest = stuff[0][len(m.group(0)):].strip()
                     if not the_rest:
-
                         #variable definition
                         self.text = stuff[2]
                         if self.text.strip() == "counter":
-                            x = var_name
-                            self.user_variables[x] = NoValue(x)
-                            results.append(f"Set {x} as counter")
+                            self.user_variables[var_name] = NoValue(var_name)
+                            results.append(f"Set {var_name} as counter")
                             continue
-                        else:
-                            pass
                     elif the_rest[0] == "(" and the_rest[-1] == ")":
-
                         #function definition
                         raw_text = the_rest[1:-1].strip()
                         args = []
@@ -810,8 +800,9 @@ class MathParse(BaseParse):
 
                         func = MathFunction(stuff[2], args, variables=self.user_variables, functions=self.user_functions, base=self.base)
                         self.user_functions[var_name] = func
+                        self.user_variables.pop(var_name, None)
                         da = ", ".join(args)
-                        results.append(f"Defined {var_name}({da})")
+                        results.append(f"Defined function {var_name}({da})")
                         continue
                     else:
                         raise ParseError("Bad definition detected.")
@@ -863,9 +854,9 @@ class MathParse(BaseParse):
                             s = f"{rstr} - {istr.lstrip('-')}i"
 
             if stuff[1]:
-                x = var_name
-                self.user_variables[x] = result
-                results.append(f"{self.base_str}{x} = {s}")
+                self.user_variables[var_name] = result
+                self.user_functions.pop(var_name, None)
+                results.append(f"{self.base_str}{var_name} = {s}")
             else:
                 results.append(f"{self.base_str}{s}")
         return results
@@ -999,7 +990,7 @@ class Calculator(commands.Cog):
         except:
             return await ctx.send("Calculation error. Please double check your input.")
         else:
-            coefficients = {i: input.user_variables.get(i, 0) for i in ("a", "b", "c", "d")}
+            coefficients = {i: input.user_variables.get(i, 0) for i in ("a", "b", "c")}
             if coefficients["a"] == 0:
                 return await ctx.send("Coefficient `a` must be non-zero.")
         solution = MathParse(

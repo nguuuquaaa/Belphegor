@@ -22,7 +22,7 @@ class DBots(commands.Cog):
         payload = {"server_count": len(self.bot.guilds)}
         data = json.dumps(payload)
         await self.bot.session.post(self.base_url, headers=self.headers, data=data)
-        await self.dbl.post_server_count()
+        await self.dbl.post_guild_count()
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
