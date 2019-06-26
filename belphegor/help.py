@@ -73,6 +73,7 @@ class Help(commands.Cog):
                             "\U0001f4d4 Role/server stuff\n"
                             "\U0001f3f7 Tag and sticker\n"
                             "\u2699 Miscellaneous commands\n\n"
+                            "\U0001f4ac Click the reactions below to navigate help menu.\n"
                             "You can also use `>>help help` to get a rough idea of how to use this help and `>>help <full command name>` to get specific command usage."
                         ]
                     ]
@@ -89,13 +90,18 @@ class Help(commands.Cog):
             "PSO2": {
                 "emoji":    self.emojis["hu"],
                 "desc":
-                    "Data taken from [swiki](http://pso2es.swiki.jp/), [Arks-Visiphone](http://pso2.arks-visiphone.com/wiki/Main_Page) and DB Kakia.\n\n"
                     "Special thanks to ACF for letting me use his EQ API.\n"
                     "`>>set eq` - Set EQ alert channel\n"
                     "`>>unset eq` - Unset EQ alert channel",
                 "thumb":    "http://i.imgur.com/aNAG34t.jpg",
                 "footer":   None,
-                "fields":   {}
+                "fields":   {
+                    "Database": [
+                        [
+                            "Data taken from [Arks-Visiphone](http://pso2.arks-visiphone.com/wiki/Main_Page) and [DB Kakia](http://db.kakia.org/)."
+                        ]
+                    ]
+                }
             },
             "Games": {
                 "emoji":    "\U0001f3b2",

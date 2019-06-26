@@ -15,6 +15,7 @@ import math
 from io import BytesIO
 
 #==================================================================================================================================================
+
 SPECIAL = {
     "Commander Yashichi": ("Yashichi", "prefixed"),
     "Earth Defense Force: Helium": ("Helium Elf", "prefixed")

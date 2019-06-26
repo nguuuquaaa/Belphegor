@@ -105,7 +105,7 @@ class Statistics(commands.Cog):
             upsert=True
         )
 
-    async def _update_regularly(self):
+    async def update_regularly(self):
         all_reqs = []
 
         async def update():
@@ -125,40 +125,12 @@ class Statistics(commands.Cog):
                         await asyncio.shield(update())
                 else:
                     all_reqs.append(req)
-                    if len(all_reqs) > 99:
+                    if len(all_reqs) >= 200:
                         await asyncio.shield(update())
         except asyncio.CancelledError:
             if all_reqs:
                 await update()
             self.done_update_event.set()
-        except:
-            text = traceback.format_exc()
-            if len(text) > 1950:
-                text = f"{e.__class__.__name__}: {e}"
-            await self.bot.error_hook.execute(f"```\n{text}\n```")
-
-    async def update_regularly(self):
-        all_reqs = []
-
-        async def update():
-            await self.user_data.bulk_write(all_reqs)
-            all_reqs.clear()
-
-        try:
-            while True:
-                try:
-                    req = await asyncio.wait_for(self.all_requests.get(), 120)
-                except asyncio.TimeoutError:
-                    if all_reqs:
-                        await asyncio.shield(update())
-                else:
-                    all_reqs.append(req)
-                    if len(all_reqs) > 99:
-                        await asyncio.shield(update())
-        except asyncio.CancelledError:
-            if all_reqs:
-                await update()
-            await self.update_all()
         except:
             text = traceback.format_exc()
             if len(text) > 1950:
