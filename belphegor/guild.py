@@ -763,8 +763,8 @@ class Guild(commands.Cog):
                         embed.add_field(name="ID", value=before.id)
                         embed.add_field(name="Author", value=before.author.mention)
                         embed.add_field(name="Channel", value=before.channel.mention)
-                        embed.add_field(name="Before", value=f"{before.content[:1000]}..." if len(before.content)>1000 else before.content, inline=False)
-                        embed.add_field(name="After", value=f"{after.content[:1000]}..." if len(after.content)>1000 else after.content, inline=False)
+                        embed.add_field(name="Before", value=f"{before.content[:1000]}..." if len(before.content)>1000 else before.content or "None", inline=False)
+                        embed.add_field(name="After", value=f"{after.content[:1000]}..." if len(after.content)>1000 else after.content or "None", inline=False)
                         embed.set_footer(text=utils.format_time(utils.now_time()))
                         await log_channel.send(embed=embed)
 

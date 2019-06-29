@@ -81,16 +81,21 @@ class Help(commands.Cog):
             },
             "Otogi": {
                 "emoji":    self.emojis["mochi"],
-                "desc":
-                    "Data taken from [Otogi Wikia](http://otogi.wikia.com/) and [Otogi Effective Stats Spreadsheet](https://docs.google.com/spreadsheets/d/1oJnQ5TYL5d9LJ04HMmsuXBvJSAxqhYqcggDZKOctK2k/edit#gid=0)",
+                "desc":     "Mitama is getting more and more nasty in trolling F2P with new daemons.",
                 "thumb":    getattr(self.otogi_guild, "icon_url", None),
                 "footer":   None,
-                "fields":   {}
+                "fields":   {
+                    "Database": [
+                        [
+                            "Data taken from [Otogi Wikia](http://otogi.wikia.com/) and [Otogi Effective Stats Spreadsheet](https://docs.google.com/spreadsheets/d/1oJnQ5TYL5d9LJ04HMmsuXBvJSAxqhYqcggDZKOctK2k/edit#gid=0)"
+                        ]
+                    ]
+                }
             },
             "PSO2": {
                 "emoji":    self.emojis["hu"],
                 "desc":
-                    "Special thanks to ACF for letting me use his EQ API.\n"
+                    "Special thanks to ACF for letting me use his EQ Alert API.\n"
                     "`>>set eq` - Set EQ alert channel\n"
                     "`>>unset eq` - Unset EQ alert channel",
                 "thumb":    "http://i.imgur.com/aNAG34t.jpg",
@@ -135,7 +140,14 @@ class Help(commands.Cog):
                     "Cannot be used in DM, obviously.",
                 "thumb":    None,
                 "footer":   None,
-                "fields":   {}
+                "fields":   {
+                    "Server management": [
+                        [
+                            "The 4 following commands are used to config bot settings in current server.\n"
+                            "Server-manager only. More details via `>>help command_name`."
+                        ]
+                    ]
+                }
             },
             "Tag & sticker": {
                 "emoji":    "\U0001f3f7",

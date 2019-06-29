@@ -161,7 +161,7 @@ class KeyValue(commands.Converter):
         else:
             wi = format.split_iter(text, check=_check_char)
             key = ""
-            prev_word = ""
+            value = ""
             handle = _equal
 
             while True:
@@ -172,13 +172,13 @@ class KeyValue(commands.Converter):
 
                 if word in _equality:
                     if key:
-                        prev_word = prev_word + word
+                        value = value + word
                     else:
-                        key = prev_word
-                        prev_word = ""
+                        key = value
+                        value = ""
                         handle = _equality[word]
                 elif word in _quotes:
-                    if prev_word:
+                    if value:
                         raise commands.BadArgument("Quote character must be placed at the start.")
                     quote_close = _quotes[word]
                     quote_words = []
@@ -193,21 +193,21 @@ class KeyValue(commands.Converter):
                                 quote_words.append(w)
                                 escape = False
                             elif w == quote_close:
-                                prev_word = "".join(quote_words)
+                                value = "".join(quote_words)
                                 break
                             else:
                                 if w == "\\":
                                     escape = True
                                 quote_words.append(w)
                 elif not word.isspace():
-                    prev_word = prev_word + word
+                    value = value + word
                 else:
-                    await resolve(key, prev_word, handle)
+                    await resolve(key, value, handle)
                     key = ""
-                    prev_word = ""
+                    value = ""
                     handle = _equal
-            if key or prev_word:
-                await resolve(key, prev_word, handle)
+            if key or value:
+                await resolve(key, value, handle)
 
         return ret
 
@@ -233,12 +233,11 @@ class URLConverter(commands.Converter):
 
 def _transfer_modding(from_, to_):
     try:
-        ctgr = from_.category
+        to_.category = from_.category
     except AttributeError:
-        pass
+        return
     else:
         to_.brief = from_.brief
-        to_.category = from_.category
         to_.field = from_.field
         to_.paragraph = from_.paragraph
 
