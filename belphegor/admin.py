@@ -143,14 +143,15 @@ class Admin(commands.Cog):
         except:
             add_text = f"\n{traceback.format_exc()}"
         else:
-            add_text = ""
+            add_text = "\n"
         finally:
             value = stdout.getvalue()
             if value or add_text:
-                ret = f"```\n{value}{add_text}\n```"
-                if len(ret) > 2000:
-                    await ctx.send(file=discord.File(BytesIO(ret.encode("utf-8")), "result.txt"))
-                await ctx.send()
+                ret = value + add_text
+                if len(ret) > 1950:
+                    await ctx.send(file=discord.File.from_str(ret, "result.txt"))
+                else:
+                    await ctx.send(f"```\n{ret}```")
 
     @commands.command(hidden=True)
     @checks.owner_only()
