@@ -147,11 +147,11 @@ class Admin(commands.Cog):
         finally:
             value = stdout.getvalue()
             if value or add_text:
-                ret = value + add_text
+                ret = (value + add_text).strip()
                 if len(ret) > 1950:
                     await ctx.send(file=discord.File.from_str(ret, "result.txt"))
-                else:
-                    await ctx.send(f"```\n{ret}```")
+                elif len(ret) > 0:
+                    await ctx.send(f"```\n{ret}\n```")
 
     @commands.command(hidden=True)
     @checks.owner_only()

@@ -35,14 +35,17 @@ class Help(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.bot.remove_command("help")
-        test_guild = self.bot.get_guild(config.TEST_GUILD_ID)
-        self.otogi_guild = self.bot.get_guild(config.OTOGI_GUILD_ID)
-        creampie_guild = self.bot.get_guild(config.CREAMPIE_GUILD_ID)
+        test_guild = bot.get_guild(config.TEST_GUILD_ID)
+        self.otogi_guild = bot.get_guild(config.OTOGI_GUILD_ID)
+        creampie_guild = bot.get_guild(config.CREAMPIE_GUILD_ID)
+        dpy_guild = bot.get_guild(config.DISCORDPY_GUILD_ID)
         self.emojis = {}
         for emoji_name in ("mochi", "ranged"):
             self.emojis[emoji_name] = discord.utils.find(lambda e: e.name==emoji_name, creampie_guild.emojis)
-        for emoji_name in ("hu", "python"):
+        for emoji_name in ("hu",):
             self.emojis[emoji_name] = discord.utils.find(lambda e: e.name==emoji_name, test_guild.emojis)
+        for emoji_name in ("python", "dpy"):
+            self.emojis[emoji_name] = discord.utils.find(lambda e: e.name==emoji_name, dpy_guild.emojis)
 
         self.command_run_count = bot.saved_stuff.pop("command_run_count", {})
         self.recent_commands = bot.saved_stuff.pop("recent_commands", collections.deque(maxlen=20))
@@ -385,7 +388,7 @@ class Help(commands.Cog):
         embed.add_field(name="Owner", value=owner.mention if owner in getattr(ctx.guild, "members", ()) else str(owner))
         v = sys.version_info
         embed.add_field(name="Written in", value=f"{self.emojis['python']} {v.major}.{v.minor}.{v.micro}")
-        embed.add_field(name="Library", value=f"discord.py {discord.__version__}")
+        embed.add_field(name="Library", value=f"{self.emojis['dpy']} {discord.__version__}")
         embed.add_field(name="Created at", value=str(bot.user.created_at)[:10])
         process = bot.process
         with process.oneshot():
