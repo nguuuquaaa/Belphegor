@@ -154,6 +154,8 @@ UNIT_FORMAT = {
     "Dark Resist":      "dark_res"
 }
 
+CLASS_SORT = {v: i for i, v in enumerate(CLASS_DICT.values())}
+
 #==================================================================================================================================================
 
 class Chip(data_type.BaseObject):
@@ -546,6 +548,8 @@ class PSO2(commands.Cog):
                     break
                 else:
                     weapon["classes"].append(CLASS_DICT[cl])
+            else:
+                weapon["classes"].sort(key=lambda x: CLASS_SORT[x])
             category_weapons.append(weapon)
         return category_weapons
 
