@@ -546,7 +546,7 @@ class Otogi(commands.Cog):
         else:
             await ctx.send("No result found.")
 
-    @commands.group()
+    @cmd_daemon.group()
     async def update(self, ctx):
         '''
             `>>update`
