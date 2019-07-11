@@ -41,7 +41,7 @@ class Comparison(commands.Converter):
         self.type = type
 
     async def convert(self, ctx, argument):
-        value = await ctx.command.do_conversion(ctx, self.type, argument, "type_conv")
+        value = await ctx.command._actual_conversion(ctx, self.type, argument, SupressAttributeError("type_conv"))
         return Equality(value)
 
 #==================================================================================================================================================

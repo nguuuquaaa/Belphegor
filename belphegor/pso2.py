@@ -347,7 +347,6 @@ class PSO2(commands.Cog):
     async def _search_att(self, attrs):
         result = []
         query = {}
-        check_type = None
         projection = {"_id": False, "category": True, "en_name": True, "jp_name": True}
         special = None
         for attr in attrs:
@@ -741,43 +740,39 @@ class PSO2(commands.Cog):
                                 if time_left in (2700, 6300):
                                     simple_desc.append(text)
 
-                all_embed_info = {False: {}, True: {}}
                 all_desc = {False: full_desc, True: simple_desc}
                 if True:
                     async for gd in self.guild_data.find(
                         {"eq_channel_id": {"$exists": True}},
-                        projection={"_id": False, "eq_channel_id": True, "eq_alert_minimal": True, "eq_ship": True}
+                        projection={"_id": False, "eq_channel_id": True, "eq_alert_minimal": True, "eq_ship": True, "eq_role_id": True}
                     ):
                         channel = self.bot.get_channel(gd["eq_channel_id"])
-                        ship = gd.get("eq_ship", None)
+                        ships = gd.get("eq_ship", None)
                         if channel:
                             minimal = gd.get("eq_alert_minimal", False)
-                            embed_info = all_embed_info[minimal]
-                            if ship in embed_info:
-                                embed = embed_info[ship]
-                            else:
-                                desc = []
-                                for d in all_desc[minimal]:
-                                    if isinstance(d, str):
-                                        desc.append(d)
-                                    else:
-                                        if ship is None:
-                                            r = "\n".join((r[1] for r in sorted(list(random_eq_info.items()), key=lambda x: x[0])))
-                                        else:
-                                            r = random_eq_info.get(ship)
-                                        if r:
-                                            if d == 0:
-                                                desc.append(f"\u2694 **Now:**\n{r}")
-                                            else:
-                                                desc.append(f"\u23f0 **In {utils.seconds_to_text(d)}:**\n{r}")
-                                if desc:
-                                    embed = discord.Embed(title="EQ Alert", description="\n\n".join(desc), colour=discord.Colour.red())
-                                    embed.set_footer(text=utils.jp_time(now_time))
+                            desc = []
+                            for d in all_desc[minimal]:
+                                if isinstance(d, str):
+                                    desc.append(d)
                                 else:
-                                    embed = None
-                                embed_info[ship] = embed
-                            if embed:
-                                _loop.create_task(try_it(channel.send(embed=embed)))
+                                    if ships is None:
+                                        ships = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+                                    rdeq = "\n".join(r[1] for r in sorted(list(random_eq_info.items()), key=lambda x: x[0]) if r[0] in ships and r[1])
+                                    if rdeq:
+                                        if d == 0:
+                                            desc.append(f"\u2694 **Now:**\n{rdeq}")
+                                        else:
+                                            desc.append(f"\u23f0 **In {utils.seconds_to_text(d)}:**\n{rdeq}")
+                            if desc:
+                                embed = discord.Embed(title="EQ Alert", description="\n\n".join(desc), colour=discord.Colour.red())
+                                embed.set_footer(text=utils.jp_time(now_time))
+                                role_id = gd.get("eq_role_id")
+                                role = channel.guild.get_role(role_id)
+                                if role:
+                                    content = role.mention
+                                else:
+                                    content = None
+                                _loop.create_task(try_it(channel.send(content, embed=embed)))
         except asyncio.CancelledError:
             return
         except (ConnectionError, aiohttp.ClientConnectorError):
@@ -1146,7 +1141,7 @@ class PSO2(commands.Cog):
 
                 async for gd in self.guild_data.find(
                     {"eq_channel_id": {"$exists": True}},
-                    projection={"_id": False, "eq_channel_id": True}
+                    projection={"_id": False, "eq_channel_id": True, "eq_role_id": True}
                 ):
                     channel = self.bot.get_channel(gd["eq_channel_id"])
                     if channel:
@@ -1188,6 +1183,28 @@ class PSO2(commands.Cog):
         image.save(b, "png")
         b.seek(0)
         await ctx.send(file=discord.File(b, "pso2.png"))
+
+    @modding.help(brief="Take/remove EQ alert role, if applicable", category="PSO2", field="EQ", paragraph=0)
+    @commands.command()
+    @checks.guild_only()
+    async def alertme(self, ctx):
+        '''
+            `>>alertme`
+            Take EQ alert role, if applicable.
+            Use again to remove it.
+        '''
+        role_data = await self.guild_data.find_one({"guild_id": ctx.guild.id}, projection={"_id": False, "eq_role_id": True})
+        if role_data:
+            role = ctx.guild.get_role(role_data.get("eq_role_id"))
+            if role:
+                if role in ctx.author.roles:
+                    await ctx.author.remove_roles(role)
+                    await ctx.send(f"Role {role.name} removed.")
+                else:
+                    await ctx.author.add_roles(role)
+                    await ctx.confirm()
+                return
+        await ctx.send("This server doesn't have EQ role set up.")
 
 #==================================================================================================================================================
 
