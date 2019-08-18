@@ -61,7 +61,7 @@ class Admin(commands.Cog):
     @commands.command(hidden=True)
     @checks.owner_only()
     async def reimport(self, ctx, module_name):
-        module = sys.modules.get(f"belphegor.{module_name}")
+        module = importlib.import_module(f"belphegor.{module_name}")
         try:
             importlib.reload(module)
         except:

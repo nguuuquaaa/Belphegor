@@ -125,7 +125,7 @@ CLASS_DICT = {
 }
 TIME_LEFT = ("Now", "HalfHour", "OneLater", "OneHalfLater", "TwoLater", "TwoHalfLater", "ThreeLater", "ThreeHalfLater")
 
-no_html_regex = re.compile("\<\/?\w+?\>")
+no_html_regex = re.compile(r"\<\/?\w+?\>")
 def _match_this(match):
     if match.group(0) in ("<br>", "</br>"):
         return "\n"
@@ -165,7 +165,7 @@ class Chip(data_type.BaseObject):
         embed = discord.Embed(title=getattr(self, f"{la_form}_name"), url=self.url, colour=discord.Colour.blue())
         embed.set_thumbnail(url=self.pic_url)
         embed.add_field(name=self.category.capitalize(),
-                        value=f"**Rarity** {self.rarity}\*\n**Class bonus** {emojis[self.class_bonus[0]]}{emojis[self.class_bonus[1]]}\n**HP/CP** {self.hp}/{self.cp}")
+                        value=f"**Rarity** {self.rarity}\\*\n**Class bonus** {emojis[self.class_bonus[0]]}{emojis[self.class_bonus[1]]}\n**HP/CP** {self.hp}/{self.cp}")
         embed.add_field(name="Active" if self.active else "Passive",
                         value=f"**Cost** {self.cost}\n**Element** {emojis[self.element]}{self.element_value}\n**Multiplication** {form['frame']}")
         abi = form["ability"]

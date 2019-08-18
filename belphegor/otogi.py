@@ -18,7 +18,9 @@ from io import BytesIO
 
 SPECIAL = {
     "Commander Yashichi": ("Yashichi", "prefixed"),
-    "Earth Defense Force: Helium": ("Helium Elf", "prefixed")
+    "Earth Defense Force: Helium": ("Helium Elf", "prefixed"),
+    "Malefic: Thorn": ("Thorn", "prefixed"),
+    "Wild Star Thorn": ("Thorn", "prefixed")
 }
 
 #==================================================================================================================================================
@@ -383,7 +385,13 @@ class Otogi(commands.Cog):
     async def _search(self, ctx, name, *, prompt=None):
         return await ctx.search(
             name, self.daemon_collection,
-            cls=Daemon, colour=discord.Colour.orange(), atts=["id", "name", "alias", "form"], name_att="name", emoji_att="daemon_class", prompt=prompt, sort={"id": 1}
+            cls=Daemon, 
+            colour=discord.Colour.orange(), 
+            atts=["id", "name", "alias", "form"], 
+            name_att="name", 
+            emoji_att="daemon_class", 
+            prompt=prompt, 
+            sort={"id": 1}
         )
 
     @modding.help(brief="Check a daemon info", category="Otogi", field="Database", paragraph=0)
@@ -730,7 +738,7 @@ class Otogi(commands.Cog):
                     if isinstance(ret, tuple):
                         new_daemon, kwargs = ret
                         if isinstance(new_daemon, Daemon) and new_daemon.form == form:
-                            if kwargs.get("name", base_name) == base_name:
+                            if kwargs.get("name", name) == name and kwargs.get("version", form) == form:
                                 break
 
         new_daemon.id = daemon.id
@@ -828,13 +836,25 @@ class Otogi(commands.Cog):
     @update.command(hidden=True, name="one")
     @checks.owner_only()
     async def update_one(self, ctx, *, name):
-        cmd_create = self.bot.get_command("update create")
-        cmd_wikia = self.bot.get_command("update wikia")
+        cmd_create = self.bot.get_command("d update create")
+        cmd_wikia = self.bot.get_command("d update wikia")
         await ctx.invoke(cmd_create, data=name)
         d = await self.daemon_collection.find_one({"name": name}, projection={"id": True})
         data = modding.MultiDict()
         data[""] = str(d["id"])
         await ctx.invoke(cmd_wikia, data=data)
+
+    @update.command(hidden=True, name="many")
+    @checks.owner_only()
+    async def update_many(self, ctx, *names):
+        cmd_create = self.bot.get_command("d update create")
+        cmd_wikia = self.bot.get_command("d update wikia")
+        for name in names:
+            await ctx.invoke(cmd_create, data=name)
+            d = await self.daemon_collection.find_one({"name": name}, projection={"id": True})
+            data = modding.MultiDict()
+            data[""] = str(d["id"])
+            await ctx.invoke(cmd_wikia, data=data)
 
     async def get_player(self, id):
         async with self.lock:
