@@ -4,6 +4,7 @@ import collections
 import traceback
 import asyncio
 import inspect
+import functools
 
 #==================================================================================================================================================
 
@@ -130,6 +131,12 @@ class Paginator:
                 self.navigation.move_to_end("\u274c")
             except KeyError:
                 self.navigation["\u274c"] = lambda: None
+
+    def wrap_action(self, emoji):
+        def wrapper(func):
+            self.set_action(emoji, func)
+            return func
+        return wrapper
 
     def _prerender(self):
         if self.book_mode:

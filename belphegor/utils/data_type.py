@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from . import format, paginator
+from . import checks, format, paginator
 import asyncio
 import re
 import copy
@@ -92,19 +92,17 @@ class BelphegorContext(commands.Context):
             _loop.create_task(paginator.try_it(message.clear_reactions()))
         return result
 
-    async def search(self, name, pool, *, cls=BaseObject, colour=None, atts=["id"], name_att, emoji_att=None, prompt=None, sort={}):
+    async def search(self, name, pool, *, cls=BaseObject, colour=None, atts=[], index_att="id", name_att, emoji_att=None, prompt=None, sort={}):
         try:
-            atts.remove("id")
             item_id = int(name)
-        except:
+        except ValueError:
             pass
         else:
-            result = await pool.find_one({"id": item_id})
+            result = await pool.find_one({index_att: item_id})
             if result:
                 return cls(result)
             else:
-                await self.send(f"Can't find {name} in database.")
-                return None
+                raise checks.CustomError(f"Can't find {name} in database.")
         pipeline = [
             {
                 "$addFields": {
@@ -148,13 +146,11 @@ class BelphegorContext(commands.Context):
             try:
                 return cls(item_data)
             except:
-                await self.send(f"Can't find {name} in database.")
-                return None
+                raise checks.CustomError(f"Can't find {name} in database.")
         else:
             result = [cls(item_data) async for item_data in cursor]
             if not result:
-                await self.send(f"Can't find {name} in database.")
-                return None
+                raise checks.CustomError(f"Can't find {name} in database.")
             elif len(result) == 1 and not prompt:
                 return result[0]
             emojis = self.cog.emojis
@@ -271,19 +267,27 @@ class AutoCleanupDict:
         return self._pop_key(key, default)
 
     async def check_deadline(self):
+        active = self.active
+        container = self.container
+        deadline = self.deadline
+        _pop_key = self._pop_key
+        del self
         while True:
-            self.active.clear()
-            if self.container:
-                first_key, first_deadline = next(iter(self.deadline.items()))
+            active.clear()
+            if container:
+                first_key, first_deadline = next(iter(deadline.items()))
                 try:
-                    await asyncio.wait_for(self.active.wait(), (first_deadline-format.now_time()).total_seconds())
+                    await asyncio.wait_for(active.wait(), (first_deadline-format.now_time()).total_seconds())
                 except asyncio.TimeoutError:
-                    self._pop_key(first_key)
+                    _pop_key(first_key)
             else:
-                await self.active.wait()
+                await active.wait()
 
     def cleanup(self):
         self.working_task.cancel()
+
+    def __del__(self):
+        self.cleanup()
 
     def register_event_handler(self, event_name, coro_func):
         if not asyncio.iscoroutinefunction(coro_func):

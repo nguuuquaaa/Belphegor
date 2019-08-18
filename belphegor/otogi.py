@@ -385,12 +385,12 @@ class Otogi(commands.Cog):
     async def _search(self, ctx, name, *, prompt=None):
         return await ctx.search(
             name, self.daemon_collection,
-            cls=Daemon, 
-            colour=discord.Colour.orange(), 
-            atts=["id", "name", "alias", "form"], 
-            name_att="name", 
-            emoji_att="daemon_class", 
-            prompt=prompt, 
+            cls=Daemon,
+            colour=discord.Colour.orange(),
+            atts=["name", "alias", "form"],
+            name_att="name",
+            emoji_att="daemon_class",
+            prompt=prompt,
             sort={"id": 1}
         )
 
@@ -1484,7 +1484,6 @@ class Otogi(commands.Cog):
     async def leak_log(self, ctx):
         data = await self.belphegor_config.find_one({"category": "leak"}, projection={"_id": False, "access_log": True})
         log_data = data["access_log"].reverse()
-        embeds = []
         number_of_results = min(len(log_data), 100)
         paging = utils.Paginator(
             log_data[:number_of_results], 5, separator="\n\n",
