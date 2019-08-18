@@ -50,6 +50,8 @@ def split_iter(txt, *, check=str.isspace, keep_delimiters=True):
             yield "".join(word)
 
 def split_page(text, split_len, *, check=str.isspace, safe_mode=True, fix="...", strip=None):
+    if not text:
+        return [""]
     description_page = []
     cur_node = []
     cur_len = 0
