@@ -320,8 +320,11 @@ class PSO2(commands.Cog):
         '''
         chip = await ctx.search(
             name, self.chip_library,
-            cls=Chip, colour=discord.Colour.blue(),
-            atts=["en_name", "jp_name"], name_att="en_name", emoji_att="element"
+            cls=Chip, 
+            colour=discord.Colour.blue(),
+            atts=["en_name", "jp_name"],
+            name_att="en_name", 
+            emoji_att="element"
         )
         if not chip:
             return

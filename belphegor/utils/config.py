@@ -25,6 +25,7 @@ all_extensions = [
     "belphegor.guild",
     "belphegor.otogi",
     "belphegor.pso2",
+    "belphegor.gfl",
     "belphegor.misc",
     "belphegor.google",
     "belphegor.help",

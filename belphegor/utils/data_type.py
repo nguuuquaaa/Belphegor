@@ -92,17 +92,18 @@ class BelphegorContext(commands.Context):
             _loop.create_task(paginator.try_it(message.clear_reactions()))
         return result
 
-    async def search(self, name, pool, *, cls=BaseObject, colour=None, atts=[], index_att="id", name_att, emoji_att=None, prompt=None, sort={}):
-        try:
-            item_id = int(name)
-        except ValueError:
-            pass
-        else:
-            result = await pool.find_one({index_att: item_id})
-            if result:
-                return cls(result)
+    async def search(self, name, pool, *, cls=BaseObject, colour=None, atts=[], index_att=None, name_att, emoji_att=None, prompt=None, sort={}):
+        if index_att:
+            try:
+                item_id = int(name)
+            except ValueError:
+                pass
             else:
-                raise checks.CustomError(f"Can't find {name} in database.")
+                result = await pool.find_one({index_att: item_id})
+                if result:
+                    return cls(result)
+                else:
+                    raise checks.CustomError(f"Can't find {name} in database.")
         pipeline = [
             {
                 "$addFields": {

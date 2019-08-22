@@ -389,6 +389,7 @@ class Otogi(commands.Cog):
             colour=discord.Colour.orange(),
             atts=["name", "alias", "form"],
             name_att="name",
+            index_att="id",
             emoji_att="daemon_class",
             prompt=prompt,
             sort={"id": 1}

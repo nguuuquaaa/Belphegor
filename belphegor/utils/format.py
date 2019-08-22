@@ -84,7 +84,7 @@ def split_page(text, split_len, *, check=str.isspace, safe_mode=True, fix="...",
             cur_node = [word]
             cur_len = len(word)
     if cur_node:
-        description_page.append(f"{fix}{clean(''.join(cur_node))}")
+        description_page.append(fix+clean(''.join(cur_node)))
     else:
         description_page[-1] = description_page[-1][:-len_fix]
     description_page[0] = description_page[0][len_fix:]
