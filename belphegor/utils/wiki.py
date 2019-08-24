@@ -179,7 +179,7 @@ class WikitextParser:
                 if len(row) > 1:
                     row[1] = row[1].rpartition("|")[2].strip()
             else:
-                row[-1] += "\n" + raw
+                row[-1] = f"{row[-1]}\n{raw}".strip()
         if len(row) > 1:
             ret.append(row)
         
@@ -231,7 +231,7 @@ class WikitextParser:
                         return self.reference_parser(*args, **kwargs)
                 else:
                     value.append(next_char)
-                    
+        
     @log_this("next")
     def _parse_next(self, text_iter):
         next_char = next(text_iter)
@@ -332,6 +332,13 @@ class WikitextParser:
 
                 return {"/": value}
 
+            elif next_char == "!":
+                # this is actually a damn comment
+                while True:
+                    next_char = next(text_iter)
+                    if next_char == ">":
+                        raise NotABox("")
+
             else:
                 raise NotABox("<"+next_char)
 
@@ -375,7 +382,7 @@ class WikitextParser:
         self.logs = []
         self.indent = 0
         ret = []
-        text_iter = format.split_iter(text, check=lambda x: x.isspace() or x in ("{", "}", "[", "]", "<", ">", "=", "\"", "/", "|"))
+        text_iter = format.split_iter(text, check=lambda x: x.isspace() or x in ("{", "}", "[", "]", "<", ">", "=", "\"", "/", "|", "!"))
         while True:
             try:
                 next_word = self._parse_next(text_iter)

@@ -116,10 +116,26 @@ def timer_to_seconds(s):
 
 timer_regex = re.compile(r"(\d{0,2})\:?(\d{2})")
 
-def circle_iter(iterable):
+def circle_iter(iterable, with_index=False):
     while True:
-        for item in iterable:
-            yield item
+        if with_index:
+            for i, item in enumerate(iterable):
+                yield i, item
+        else:
+            for item in iterable:
+                yield item
+
+def get_either(container, *keys, default=None):
+    for key in keys:
+        try:
+            return container[key]
+        except (IndexError, KeyError):
+            pass
+    else:
+        return default
+
+def mod_keys(key):
+    return "mod3_" + key, "mod2_" + key, "mod1_" + key, key
 
 #==================================================================================================================================================
 
@@ -222,8 +238,8 @@ class Doll(data_type.BaseObject):
             embed.add_field(name="Classification", value=f"{emojis[self.classification]}{self.classification}")
             embed.add_field(name="Rarity", value=str(emojis["rank"])*utils.to_int(self.rarity, default=0) or "**EXTRA**")
             embed.add_field(
-                name="Production time", 
-                value=f"{self.craft_time//3600}:{self.craft_time%3600//60:0>2d}" if self.craft_time else "Non-craftable", 
+                name="Production time",
+                value=f"{self.craft_time//3600}:{self.craft_time%3600//60:0>2d}" if self.craft_time else "Non-craftable",
                 inline=False
             )
 
@@ -268,7 +284,7 @@ class Doll(data_type.BaseObject):
                 add = " (" + "/".join(filter(None, (icd, cd))) + ")"
             else:
                 add = ""
-                
+
             embed.add_field(
                 name="Skill",
                 value=
@@ -281,8 +297,6 @@ class Doll(data_type.BaseObject):
         return embeds
 
     def _other_info(self, cog):
-        emojis = cog.emojis
-
         embeds = []
         for trivia in utils.split_page(self.trivia, 1000, check=lambda s:s=="\n"):
             embed = discord.Embed(
@@ -299,41 +313,131 @@ class Doll(data_type.BaseObject):
 
         return embeds
 
+    def _mod_info(self, cog):
+        emojis = cog.emojis
+        embeds = []
+        mod = self.mod_data
+
+        for skill_index in range(2):
+            for skill_effect in utils.split_page(mod["skill"][skill_index]["effect"], 900, check=lambda s:s=="\n"):
+                embed = discord.Embed(
+                    title=f"#{self.index} {self.en_name or self.name}",
+                    color=discord.Color.green(),
+                    url=f"https://en.gfwiki.com/wiki/{quote(self.name)}"
+                )
+                embed.add_field(name="Classification", value=f"{emojis[self.classification]}{self.classification}")
+                embed.add_field(name="Rarity", value=str(emojis["rank"])*utils.to_int(self.rarity, default=0) or "**EXTRA**")
+                embed.add_field(
+                    name="Production time",
+                    value=f"{self.craft_time//3600}:{self.craft_time%3600//60:0>2d}" if self.craft_time else "Non-craftable",
+                    inline=False
+                )
+
+                embed.add_field(
+                    name="Stats",
+                    value=
+                        f"{emojis['hp']}**HP:** {mod['max_hp']} (x5)\n"
+                        f"{emojis['damage']}**DMG:** {mod['max_dmg']}\n"
+                        f"{emojis['accuracy']}**ACC:** {mod['max_acc']}\n"
+                        f"{emojis['rof']}**ROF:** {mod['max_rof']}\n"
+                        f"{emojis['evasion']}**EVA:** {mod['max_eva']}\n"
+                        f"{emojis['crit_rate']}**Crit rate:** {self.crit_rate}%"
+                        +
+                        (f"{emojis['armor']}**Armor:**  {mod['max_armor']}\n" if mod["max_armor"] > 0 else "")
+                        +
+                        (f"{emojis['clip_size']}**Clip size:** {mod['clip_size']}\n" if mod["clip_size"] > 0 else "")
+                )
+                embed.add_field(
+                    name="Equipment slots",
+                    value=
+                        "\n".join(f"**Lv{20+i*30}**:\n\u200b    {''.join(str(emojis[e]) for e in self.equipment_slots[i])}" for i in range(3))
+                )
+
+                tile = {
+                    k: emojis["green_square"] if v==1 else emojis["white_square"] if v==0 else emojis["black_square"]
+                    for k, v in mod["tile"]["shape"].items()
+                }
+
+                embed.add_field(
+                    name="Tile",
+                    value=
+                        f"\u200b {tile['7']}{tile['8']}{tile['9']}\u2001{mod['tile']['target']}\n"
+                        f"\u200b {tile['4']}{tile['5']}{tile['6']}\u2001{mod['tile']['effect'][0]}\n"
+                        f"\u200b {tile['1']}{tile['2']}{tile['3']}\u2001{mod['tile']['effect'][1]}",
+                    inline=False
+                )
+
+                skill = mod["skill"][skill_index]
+                icd = f"Initial CD: {skill['icd']}s" if skill["icd"] else None
+                cd = f"CD: {skill['cd']}s" if skill["cd"] else None
+                if cd or icd:
+                    add = " (" + "/".join(filter(None, (icd, cd))) + ")"
+                else:
+                    add = ""
+
+                embed.add_field(
+                    name=f"Skill {skill_index+1}",
+                    value=
+                        f"**{skill['name']}**{add}\n"
+                        f"{skill_effect}",
+                    inline=False
+                )
+                embeds.append(embed)
+
+        return embeds
+
     async def display_info(self, ctx):
         paging = utils.Paginator([])
         base_info = self._base_info(ctx.cog)
         other_info = self._other_info(ctx.cog)
-        skin_iter = circle_iter(self.skins)
-        saved = {}
-        saved["info"] = base_info
-        saved["iter"] = circle_iter(base_info)
-        saved["skin"] = next(skin_iter)
+        skin = self.skins
+
+        saved = {
+            "info": None,
+            "info_iter": None,
+            "skin": None,
+            "skin_iter": None,
+            "current_skin": None
+        }
 
         def add_image():
-            saved["embed"].set_footer(text=f"Skin: {saved['skin']['name']} ({saved['skin']['form']})")
-            saved["embed"].set_image(url=saved["skin"]["image_url"])
+            index, skin = saved["current_skin"]
+            saved["embed"].set_footer(text=f"Skin: {skin['name']} ({skin['form']}) - ({index+1}/{len(saved['skin'])})")
+            saved["embed"].set_image(url=skin["image_url"])
+
+        def change_info_to(info, skin):
+            if saved["info"] is not info:
+                saved["info"] = info
+                saved["info_iter"] = circle_iter(info)
+            if saved["skin"] is not skin:
+                saved["skin"] = skin
+                saved["skin_iter"] = circle_iter(skin, with_index=True)
+                saved["current_skin"] = next(saved["skin_iter"])
+            saved["embed"] = next(saved["info_iter"])
+            add_image()
 
         @paging.wrap_action("\U0001f1ee")
         def change_base_info():
-            if saved["info"] is not base_info:
-                saved["info"] = base_info
-                saved["iter"] = circle_iter(base_info)
-            saved["embed"] = next(saved["iter"])
-            add_image()
+            change_info_to(base_info, skin)
             return saved["embed"]
 
         @paging.wrap_action("\U0001f1f9")
         def change_other_info():
-            if saved["info"] is not other_info:
-                saved["info"] = other_info
-                saved["iter"] = circle_iter(other_info)
-            saved["embed"] = next(saved["iter"])
-            add_image()
+            change_info_to(other_info, skin)
             return saved["embed"]
+
+        if self.moddable:
+            mod_info = self._mod_info(ctx.cog)
+            mod_skin = self.mod_data["skins"]
+
+            @paging.wrap_action("\U0001f1f2")
+            def change_mod3_info():
+                change_info_to(mod_info, mod_skin)
+                return saved["embed"]
 
         @paging.wrap_action("\U0001f5bc")
         def change_image():
-            saved["skin"] = next(skin_iter)
+            saved["current_skin"] = next(saved["skin_iter"])
             add_image()
             return saved["embed"]
 
@@ -369,23 +473,23 @@ class GirlsFrontline(commands.Cog):
     async def gfwiki_bot_login(self):
         session = self.bot.session
         async with session.get(
-            GFWIKI_API, 
+            GFWIKI_API,
             params={
-                "action": "query", 
-                "meta": "tokens", 
-                "type": "login", 
+                "action": "query",
+                "meta": "tokens",
+                "type": "login",
                 "format": "json"
             }
         ) as resp:
             data = json.loads(await resp.read())
             bot_token = data["query"]["tokens"]["logintoken"]
-        
+
         async with session.post(
-            GFWIKI_API, 
+            GFWIKI_API,
             data={
-                "action": "login", 
+                "action": "login",
                 "format": "json",
-                "lgname": token.GFWIKI_BOT_USERNAME, 
+                "lgname": token.GFWIKI_BOT_USERNAME,
                 "lgpassword": token.GFWIKI_BOT_PASSWORD,
                 "lgtoken": bot_token
             }
@@ -394,10 +498,10 @@ class GirlsFrontline(commands.Cog):
 
     async def _search(self, ctx, name, *, prompt=None):
         return await ctx.search(
-            name, 
+            name,
             self.doll_list,
-            cls=Doll, 
-            colour=discord.Colour.green(), 
+            cls=Doll,
+            colour=discord.Colour.green(),
             atts=["name", "full_name", "en_name", "classification", "aliases"],
             name_att="qual_name",
             emoji_att="classification",
@@ -476,7 +580,7 @@ class GirlsFrontline(commands.Cog):
         txt = json.dumps({"passed": passed, "failed": failed}, indent=4)
         if len(txt) > 1900:
             await ctx.send(
-                f"Passed: {len(passed)}\nFailed: {len(failed)}", 
+                f"Passed: {len(passed)}\nFailed: {len(failed)}",
                 file=discord.File.from_str(txt)
             )
         else:
@@ -484,7 +588,6 @@ class GirlsFrontline(commands.Cog):
         return logs
 
     async def search_gfwiki(self, name):
-        # basic section
         params = {
             "action":       "parse",
             "prop":         "wikitext",
@@ -503,10 +606,11 @@ class GirlsFrontline(commands.Cog):
             if "classification" in r:
                 basic_info = r
                 break
-        
-        dtype = basic_info["classification"]
 
+        dtype = basic_info["classification"]
         doll = Doll({})
+
+        # basic section
         doll.name = raw["parse"]["title"]
         doll.full_name = basic_info["fullname"]
         doll.en_name = basic_info.get("releasedon", "").strip(" ,")
@@ -536,19 +640,47 @@ class GirlsFrontline(commands.Cog):
             if cur:
                 order[i] = cur
         doll.equipment_slots = get_equipment_slots(
-            dtype, 
-            order, 
-            add_ap=basic_info.get("use_Armor-Piercing_Ammo", False),
-            add_armor=basic_info.get("use_Ballistic_Plate", False)
+            dtype,
+            order,
+            add_ap=basic_info.get("use_armor-piercing_ammo", False),
+            add_armor=basic_info.get("use_ballistic_plate", False)
         )
+        print(basic_info.get("use_armor-piercing_pmmo", False))
 
         tile = {}
         tile["shape"] = {str(i): utils.to_int(basic_info.get(f"tile{i}"), default=-1) for i in range(1, 10)}
         tile["target"] = basic_info.get("aura1")
-        tile["effect"] = [basic_info.get("aura2", ""), basic_info.get("aura3", "")]
+        tile["effect"] = [
+            basic_info.get("aura2", ""),
+            basic_info.get("aura3", "")
+        ]
         doll.tile = tile
 
         doll.trivia = basic_info.get("trivia")
+
+        # mod 3 basic info section
+        mod = {}
+        if basic_info.get("moddable") or basic_info.get("mod1_max_hp"):
+            doll.moddable = True
+            mod["max_hp"] = int(get_either(basic_info, *mod_keys("max_hp"), default=0)) * 5
+            mod["max_dmg"] = int(get_either(basic_info, *mod_keys("max_dmg"), default=0))
+            mod["max_eva"] = int(get_either(basic_info, *mod_keys("max_eva"), default=0))
+            mod["max_acc"] = int(get_either(basic_info, *mod_keys("max_acc"), default=0))
+            mod["max_rof"] = int(get_either(basic_info, *mod_keys("max_rof"), default=0))
+            mod["max_armor"] = int(get_either(basic_info, *mod_keys("max_armor"), default=0))
+            mod["clip_size"] = int(get_either(basic_info, *mod_keys("clipsize"), default=0))
+
+            mod_tile = {}
+            mod_tile["shape"] = {str(i): utils.to_int(basic_info.get(f"mod1_tile{i}"), default=-1) for i in range(1, 10)}
+            mod_tile["shape"].update(tile["shape"])
+            mod_tile["target"] = basic_info.get("mod1_aura1") or basic_info.get("aura1")
+            mod_tile["effect"] = [
+                basic_info.get("mod1_aura2") or basic_info.get("aura2", ""),
+                basic_info.get("mod1_aura3") or basic_info.get("aura3", "")
+            ]
+            mod["tile"] = mod_tile
+        else:
+            doll.moddable = False
 
         # skill section
         params = {
@@ -562,6 +694,22 @@ class GirlsFrontline(commands.Cog):
         raw_skilldata = json.loads(bytes_)
         doll.skill = parser.parse(raw_skilldata["parse"]["wikitext"]["*"])[0]
 
+        # mod 3 skill
+        if doll.moddable:
+            skill = []
+            for path in ("/skilldata/mod1", "/skill2data"):
+                params = {
+                    "action":       "parse",
+                    "prop":         "wikitext",
+                    "page":         doll.name + path,
+                    "format":       "json",
+                    "redirects":    1
+                }
+                bytes_ = await self.bot.fetch(GFWIKI_API, params=params)
+                raw_skilldata = json.loads(bytes_)
+                skill.append(parser.parse(raw_skilldata["parse"]["wikitext"]["*"])[0])
+            mod["skill"] = skill
+
         # skin section
         file_list = {
             f"File:{doll.name}.png": (0, "default", "normal"),
@@ -572,9 +720,7 @@ class GirlsFrontline(commands.Cog):
             number += 1
             next_costume = f"costume{number}"
             costume_name = basic_info.get(next_costume)
-            if costume_name == "[Digimind Upgrade]":
-                continue
-            elif costume_name:
+            if costume_name:
                 file_list[f"File:{doll.name}_{next_costume}.png"] = (number, costume_name, "normal")
                 file_list[f"File:{doll.name}_{next_costume}_D.png"] = (number, costume_name, "damaged")
             else:
@@ -595,19 +741,26 @@ class GirlsFrontline(commands.Cog):
             file_list[n["to"]] = file_list[n["from"]]
 
         skins = []
+        mod_skins = []
         for file_info in file_data["query"]["pages"].values():
             if "imageinfo" in file_info:
                 url = file_info["imageinfo"][0]["url"]
                 info = file_list[file_info["title"]]
-                skins.append({
+                skin = {
                     "index": info[0],
                     "name": info[1],
                     "form": info[2],
                     "image_url": url
-                })
-        
+                }
+                if info[1] == "[Digimind Upgrade]":
+                    mod_skins.append(skin)
+                else:
+                    skins.append(skin)
+
         skins.sort(key=lambda x: (-x["index"], x["form"]), reverse=True)
         doll.skins = skins
+        mod["skins"] = mod_skins
+        doll.mod_data = mod
 
         return doll
 
@@ -633,7 +786,7 @@ class GirlsFrontline(commands.Cog):
             `>>doll filter <criteria>`
             Find all T-dolls with criteria.
             Criteria can contain multiple lines, each with format `attribute=value`, or `attribute>value`/`attribute<value` if applicable.
-            Available attributes: 
+            Available attributes:
             (TBA since it's long and I'm lazy, but it should be stuff like hp, fp, acc, eva, rof, artist...)
         '''
         query = []
@@ -665,7 +818,7 @@ class GirlsFrontline(commands.Cog):
             rarity.number = rarity.number.upper()
             query.append({"rarity": rarity.to_query()})
             projection["rarity"] = 1
-        
+
         for orig, keys in (
             ("full_name", ("name", "full_name")),
             ("origin", ("origin", "nationality")),
@@ -685,7 +838,7 @@ class GirlsFrontline(commands.Cog):
                     }
                 })
                 projection[orig] = 1
-        
+
         skill = data.get("skill", None)
         if skill:
             base = ".*?".join(map(re.escape, skill.split()))
@@ -740,7 +893,7 @@ class GirlsFrontline(commands.Cog):
                     embed_info.append(f"{key}: {value}")
             v = "\n".join(embed_info)
             result.append(f"`#{index}` **{name}**\n{v}")
-        
+
         if result:
             paging = utils.Paginator(
                 result, 5, separator="\n\n",
@@ -773,7 +926,7 @@ class GirlsFrontline(commands.Cog):
                 embed.set_image(url=d["skins"][0]["image_url"])
                 embed.set_footer(text=f"({i+1}/{len(data)})")
                 embeds.append(embed)
-           
+
             if embeds:
                 paging = utils.Paginator(embeds, render=False)
                 return await paging.navigate(ctx)
