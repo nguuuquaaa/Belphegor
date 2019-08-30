@@ -99,3 +99,17 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# test files
+*.json
+*.exe
+*.code-workspace
+dumb.py
+launcher here.bat
+/data
+/test
+/ext
+/belphegor/_*.py
+/belphegor/game/_*.py
+/belphegor/insult.py
+/belphegor/chart.py

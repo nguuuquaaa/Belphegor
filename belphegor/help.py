@@ -241,8 +241,11 @@ class Help(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_completion(self, ctx):
-        if ctx.command.qualified_name in ("reload", "unload"):
+        cmd = ctx.command.qualified_name
+        if cmd in ("reload", "unload"):
             self.setup_help()
+        self.command_run_count[cmd] = self.command_run_count.get(cmd, 0) + 1
+        self.recent_commands.append(cmd)
 
     @commands.command()
     async def help(self, ctx, *, command_name=None):
@@ -496,12 +499,6 @@ class Help(commands.Cog):
         location = os.path.relpath(rpath).replace('\\', '/')
         final_url = f"<{base_url}/tree/master/{location}#L{firstlineno}-L{firstlineno + len(lines) - 1}>"
         await ctx.send(final_url)
-
-    @commands.Cog.listener()
-    async def on_command_completion(self, ctx):
-        cmd = ctx.command.qualified_name
-        self.command_run_count[cmd] = self.command_run_count.get(cmd, 0) + 1
-        self.recent_commands.append(cmd)
 
     @commands.command(hidden=True)
     async def topcmd(self, ctx):

@@ -93,6 +93,13 @@ EQUIPMENT_ORDER = {
     "SG": ["doll", "magazine", "accessory"]
 }
 
+MOD_RARITY = {
+    "2": 4,
+    "3": 4,
+    "4": 5,
+    "5": 6
+}
+
 def get_equipment_slots(classification, order, *, add_ap=False, add_armor=False):
     eq = STANDARD_EQUIPMENTS[classification]
     ret = []
@@ -326,7 +333,7 @@ class Doll(data_type.BaseObject):
                     url=f"https://en.gfwiki.com/wiki/{quote(self.name)}"
                 )
                 embed.add_field(name="Classification", value=f"{emojis[self.classification]}{self.classification}")
-                embed.add_field(name="Rarity", value=str(emojis["rank"])*utils.to_int(self.rarity, default=0) or "**EXTRA**")
+                embed.add_field(name="Rarity", value=str(emojis["rank"])*MOD_RARITY[self.rarity])
                 embed.add_field(
                     name="Production time",
                     value=f"{self.craft_time//3600}:{self.craft_time%3600//60:0>2d}" if self.craft_time else "Non-craftable",
@@ -509,7 +516,6 @@ class GirlsFrontline(commands.Cog):
             sort={"index": 1}
         )
 
-    @modding.help()
     @commands.group(aliases=["td"], invoke_without_command=True)
     async def doll(self, ctx, *, name):
         '''
@@ -671,8 +677,8 @@ class GirlsFrontline(commands.Cog):
             mod["clip_size"] = int(get_either(basic_info, *mod_keys("clipsize"), default=0))
 
             mod_tile = {}
-            mod_tile["shape"] = {str(i): utils.to_int(basic_info.get(f"mod1_tile{i}"), default=-1) for i in range(1, 10)}
-            mod_tile["shape"].update(tile["shape"])
+
+            mod_tile["shape"] = {str(i): utils.to_int(get_either(basic_info, *mod_keys(f"tile{i}")), default=-1) for i in range(1, 10)}
             mod_tile["target"] = basic_info.get("mod1_aura1") or basic_info.get("aura1")
             mod_tile["effect"] = [
                 basic_info.get("mod1_aura2") or basic_info.get("aura2", ""),
@@ -865,12 +871,8 @@ class GirlsFrontline(commands.Cog):
             except ValueError:
                 pass
             else:
-                query.append({"tile": {
-                    "$and": [
-                        {tile[0]: 0},
-                        *({t: 1} for t in tile[1:])
-                    ]
-                }})
+                query.append({f"tile.shape.{tile[0]}": 0})
+                query.extend({f"tile.shape.{t}": 1} for t in tile[1:])
 
         result = []
         async for data in self.doll_list.aggregate([

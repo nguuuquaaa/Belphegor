@@ -16,7 +16,7 @@ class DBots(commands.Cog):
             "Authorization": token.DBOTS_TOKEN,
             "content-type": "application/json"
         }
-        self.dbl = dbl.Client(self.bot, token.DBL_TOKEN)
+        self.dbl = dbl.DBLClient(self.bot, token.DBL_TOKEN)
 
     async def update(self):
         payload = {"server_count": len(self.bot.guilds)}
