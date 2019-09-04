@@ -923,7 +923,11 @@ class GirlsFrontline(commands.Cog):
             data = [d async for d in self.doll_list.find({"craft_time": doll_timer})]
             for i, d in enumerate(data):
                 embed = discord.Embed(color=discord.Color.green())
-                embed.add_field(name="Name", value=d["name"])
+                embed = discord.Embed(
+                    title=f"#{d['index']} {d['en_name'] or d['name']}",
+                    color=discord.Color.green(),
+                    url=f"https://en.gfwiki.com/wiki/{quote(d['name'])}"
+                )
                 embed.add_field(name="Classification", value=f"{self.emojis[d['classification']]}{d['classification']}")
                 embed.add_field(name="Rarity", value=str(self.emojis["rank"])*utils.to_int(d["rarity"], default=0) or "**EXTRA**")
                 embed.add_field(name="Production time", value=f"{d['craft_time']//3600}:{d['craft_time']%3600//60:0>2d}")
