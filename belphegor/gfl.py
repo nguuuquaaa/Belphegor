@@ -144,6 +144,8 @@ def get_either(container, *keys, default=None):
 def mod_keys(key):
     return "mod3_" + key, "mod2_" + key, "mod1_" + key, key
 
+name_clean_regex = re.compile(r"[\.\-\s]")
+
 #==================================================================================================================================================
 
 parser = wiki.WikitextParser()
@@ -260,9 +262,9 @@ class Doll(data_type.BaseObject):
                     f"{emojis['evasion']}**EVA:** {self.max_eva}\n"
                     f"{emojis['crit_rate']}**Crit rate:** {self.crit_rate}%"
                     +
-                    (f"{emojis['armor']}**Armor:**  {self.max_armor}\n" if self.max_armor > 0 else "")
+                    (f"\n{emojis['armor']}**Armor:**  {self.max_armor}" if self.max_armor > 0 else "")
                     +
-                    (f"{emojis['clip_size']}**Clip size:** {self.clip_size}\n" if self.clip_size > 0 else "")
+                    (f"\n{emojis['clip_size']}**Clip size:** {self.clip_size}" if self.clip_size > 0 else "")
             )
             embed.add_field(
                 name="Equipment slots",
@@ -350,9 +352,9 @@ class Doll(data_type.BaseObject):
                         f"{emojis['evasion']}**EVA:** {mod['max_eva']}\n"
                         f"{emojis['crit_rate']}**Crit rate:** {self.crit_rate}%"
                         +
-                        (f"{emojis['armor']}**Armor:**  {mod['max_armor']}\n" if mod["max_armor"] > 0 else "")
+                        (f"\n{emojis['armor']}**Armor:**  {mod['max_armor']}" if mod["max_armor"] > 0 else "")
                         +
-                        (f"{emojis['clip_size']}**Clip size:** {mod['clip_size']}\n" if mod["clip_size"] > 0 else "")
+                        (f"\n{emojis['clip_size']}**Clip size:** {mod['clip_size']}" if mod["clip_size"] > 0 else "")
                 )
                 embed.add_field(
                     name="Equipment slots",
@@ -620,7 +622,7 @@ class GirlsFrontline(commands.Cog):
         doll.name = raw["parse"]["title"]
         doll.full_name = basic_info["fullname"]
         doll.en_name = basic_info.get("releasedon", "").strip(" ,")
-        doll.aliases = doll.name
+        doll.aliases = name_clean_regex.sub("", doll.name)
         doll.index = int(basic_info["index"][-3:]) if basic_info["rarity"] == "EXTRA" else int(basic_info["index"])
         doll.classification = dtype
         doll.rarity = basic_info["rarity"]
