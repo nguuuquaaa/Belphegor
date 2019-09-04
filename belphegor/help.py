@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from . import utils
-from .utils import config, modding
+from .utils import config, modding, checks
 import json
 import re
 import datetime
@@ -341,10 +341,21 @@ class Help(commands.Cog):
             `>>feedback <anything goes here>`
             Feedback.
             Bugs, inconvenience or suggestion, all welcomed.
+            Note: you may receive answers via dm
         '''
         embed = discord.Embed(title=ctx.author.id, description=content)
         await self.feedback_wh.execute(embed=embed, username=str(ctx.author), avatar_url=str(ctx.author.avatar_url_as(format="png")))
         await ctx.confirm()
+
+    @commands.command(hidden=True)
+    @checks.owner_only()
+    async def answer(self, ctx, user: discord.User, *, content):
+        try:
+            await user.send(embed=discord.Embed(description=content).set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url))
+        except discord.Forbidden:
+            await ctx.deny()
+        else:
+            await ctx.confirm()
 
     @modding.help(brief="Bot info", category=None, field="Other", paragraph=0)
     @commands.command(aliases=["info"])
