@@ -34,13 +34,14 @@ EVERYONE = Everyone()
 
 class Paginator:
     all_tasks = {}
+    jump = 10
+    min_for_jump = 5
 
-    def __init__(self, container, per_page=1, *, separator="\n", jump=10, book=False, page_display=True, render=True, first_page=None, **kwargs):
+    def __init__(self, container, per_page=1, *, separator="\n", book=False, page_display=True, render=True, first_page=None, **kwargs):
         self.container = container
         self.per_page = per_page
         self.separator = separator
         self.book_mode = book
-        self.jump = jump
         self.page_display = page_display
         self.first_page = first_page
 
@@ -113,11 +114,14 @@ class Paginator:
 
     def _setup_base_actions(self):
         self.navigation = collections.OrderedDict()
-        if (self.book_mode and max(self._page_amount) > 1) or (not self.book_mode and self._page_amount > 1):
-            self.navigation["\u23ee"] = self._jump_left
+        max_page_amount = max(self._page_amount) if self.book_mode else self._page_amount
+        if max_page_amount > 1:
+            if max_page_amount > self.min_for_jump:
+                self.navigation["\u23ee"] = self._jump_left
             self.navigation["\u25c0"] = self._go_left
             self.navigation["\u25b6"] = self._go_right
-            self.navigation["\u23ed"] = self._jump_right
+            if max_page_amount > self.min_for_jump:
+                self.navigation["\u23ed"] = self._jump_right
         if self.book_amount > 1:
             self.navigation["\U0001f53c"] = self._go_up
             self.navigation["\U0001f53d"] = self._go_down
