@@ -265,9 +265,9 @@ class Paginator:
         try:
             message = await ctx.send(embed=embed)
         except asyncio.CancelledError:
-            return self.all_tasks.pop(target.id)
+            return self.all_tasks.pop(target.id, None)
         if not self.navigation:
-            return self.all_tasks.pop(target.id)
+            return self.all_tasks.pop(target.id, None)
         rt = _loop.create_task(self.add_navigate_reactions(message))
 
         try:
@@ -279,7 +279,7 @@ class Paginator:
                         timeout=timeout
                     )
                 except asyncio.TimeoutError:
-                    return self.all_tasks.pop(target.id)
+                    return self.all_tasks.pop(target.id, None)
                 embed = self.navigation[reaction.emoji]()
                 if inspect.isawaitable(embed):
                     embed = await embed
@@ -287,7 +287,7 @@ class Paginator:
                     await message.edit(embed=embed)
                     handle_reaction(message, reaction, user)
                 else:
-                    return self.all_tasks.pop(target.id)
+                    return self.all_tasks.pop(target.id, None)
         except asyncio.CancelledError:
             rt.cancel()
         finally:

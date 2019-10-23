@@ -144,7 +144,10 @@ def get_either(container, *keys, default=None):
 def mod_keys(key):
     return "mod3_" + key, "mod2_" + key, "mod1_" + key, key
 
-name_clean_regex = re.compile(r"[\.\-\s]")
+name_clean_regex = re.compile(r"[\.\-\s\/]")
+
+def normalize(s):
+    return s.replace("\u2215", "/")
 
 #==================================================================================================================================================
 
@@ -186,6 +189,10 @@ def handle_cite_ab1(box, value):
 @parser.set_box_handler("equip name")
 def handle_equip_name(box, name, type, rarity):
     return name
+
+@parser.set_box_handler("spoiler")
+def handle_equip_name(box, value):
+    return f"||{value}||"
 
 @parser.set_reference_handler
 def handle_reference(box, *args, **kwargs):
@@ -620,9 +627,9 @@ class GirlsFrontline(commands.Cog):
 
         # basic section
         doll.name = raw["parse"]["title"]
-        doll.full_name = basic_info["fullname"]
-        doll.en_name = basic_info.get("releasedon", "").strip(" ,")
-        doll.aliases = name_clean_regex.sub("", doll.name)
+        doll.full_name = normalize(basic_info["fullname"])
+        doll.en_name = normalize(basic_info.get("releasedon", "").strip(" ,"))
+        doll.aliases = name_clean_regex.sub("", normalize(doll.name))
         doll.index = int(basic_info["index"][-3:]) if basic_info["rarity"] == "EXTRA" else int(basic_info["index"])
         doll.classification = dtype
         doll.rarity = basic_info["rarity"]

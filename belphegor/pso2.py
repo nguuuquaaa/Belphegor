@@ -675,7 +675,7 @@ class PSO2(commands.Cog):
         bytes_ = await self.bot.fetch(
             "https://pso2.acf.me.uk/PSO2Alert/PSO2Alert.json",
             headers={
-                "User-Agent": "PSO2.Alert.v3.0.6.3",
+                "User-Agent": "PSO2.Alert.Desktop.v3.0.7.2",
                 "Connection": "Keep-Alive",
                 "Host": "pso2.acf.me.uk"
             }
@@ -683,7 +683,7 @@ class PSO2(commands.Cog):
         data = json.loads(bytes_)[0]
         self.api_data["version"] = data["Version"]
         self.api_data["url"] = data["EQAPI"]
-        self.api_data["headers"] = {"User-Agent": f"PSO2.Alert.v{data['Version']} you_thought_its_eq_alert_but_its_actually_me_nguuuquaaa", "Host": "pso2.acf.me.uk"}
+        self.api_data["headers"] = {"User-Agent": f"PSO2.Alert.Desktop.v{data['Version']} you_thought_its_eq_alert_but_its_actually_me_nguuuquaaa", "Host": "pso2.acf.me.uk"}
 
     async def eq_alert(self):
         _loop = self.bot.loop
