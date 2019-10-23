@@ -60,6 +60,14 @@ def in_certain_guild(gid):
             raise CertainGuild(gid, f"This command can only be used in {g.name} server.")
     return commands.check(check_in_certain_guild)
 
+def in_certain_guilds(*gids):
+    def check_in_certain_guilds(ctx):
+        if ctx.guild.id in gids:
+            return True
+        else:
+            raise CertainGuild(gid, f"This command can only be used in certain servers.")
+    return commands.check(check_in_certain_guilds)
+
 def otogi_guild_only():
     return in_certain_guild(config.OTOGI_GUILD_ID)
 
