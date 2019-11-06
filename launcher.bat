@@ -1,3 +1,3 @@
 cd /d %~dp0
-CALL run.py
+CALL python3 run.py
 cmd.exe

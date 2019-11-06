@@ -19,50 +19,6 @@ class BadValue(commands.CommandError):
 
 #==================================================================================================================================================
 
-class Equality:
-    def __init__(self, number):
-        self.number = number
-        self.positive_sign = None
-
-    def set_positive_sign(self, positive_sign):
-        self.positive_sign = positive_sign
-        return self
-
-    def to_query(self):
-        if self.positive_sign is True:
-            return {"$gt": self.number}
-        elif self.positive_sign is False:
-            return {"$lt": self.number}
-        else:
-            return self.number
-
-class Comparison(commands.Converter):
-    def __init__(self, type):
-        self.type = type
-
-    async def convert(self, ctx, argument):
-        value = await ctx.command._actual_conversion(ctx, self.type, argument, SupressAttributeError("type_conv"))
-        return Equality(value)
-
-#==================================================================================================================================================
-
-def _greater_than(number):
-    try:
-        return number.set_positive_sign(True)
-    except AttributeError:
-        raise commands.BadArgument("Input <{number}> cannot be compared.")
-
-def _less_than(number):
-    try:
-        return number.set_positive_sign(False)
-    except AttributeError:
-        raise commands.BadArgument("Input <{number}> cannot be compared.")
-
-def _equal(anything):
-    return anything
-
-#==================================================================================================================================================
-
 class MultiDict(multidict.MultiDict):
     def geteither(self, *keys, default=None):
         for key in keys:
@@ -97,15 +53,66 @@ EMPTY = MultiDict()
 
 _quotes = commands.view._quotes
 _all_quotes = set((*_quotes.keys(), *_quotes.values()))
-_equality = {
+
+def _greater_than(number):
+    try:
+        return number.set_positive_sign(True)
+    except AttributeError:
+        raise commands.BadArgument("Input <{number}> cannot be compared.")
+
+def _less_than(number):
+    try:
+        return number.set_positive_sign(False)
+    except AttributeError:
+        raise commands.BadArgument("Input <{number}> cannot be compared.")
+
+def _equal(anything):
+    return anything
+
+_standard_comparison = {
     ">": _greater_than,
     "<": _less_than,
     "=": _equal
 }
-_delimiters = _all_quotes | _equality.keys()
+_equality = {
+    "=": _equal
+}
+_delimiters = _all_quotes | _standard_comparison.keys()
 
 def _check_char(c):
     return c.isspace() or c in _delimiters
+
+#==================================================================================================================================================
+
+class Equality:
+    def __init__(self, number):
+        self.number = number
+        self.positive_sign = None
+
+    def set_positive_sign(self, positive_sign):
+        self.positive_sign = positive_sign
+        return self
+
+    def to_query(self):
+        if self.positive_sign is True:
+            return {"$gt": self.number}
+        elif self.positive_sign is False:
+            return {"$lt": self.number}
+        else:
+            return self.number
+
+class Comparison(commands.Converter):
+    def __init__(self, type):
+        self.type = type
+
+    def get_comparison(self):
+        return _standard_comparison
+
+    async def convert(self, ctx, argument):
+        value = await ctx.command._actual_conversion(ctx, self.type, argument, SupressAttributeError("type_conv"))
+        return Equality(value)
+
+#==================================================================================================================================================
 
 class KeyValue(commands.Converter):
     def __init__(self, conversion={}, *, escape=False, clean=False, multiline=False):
@@ -114,19 +121,27 @@ class KeyValue(commands.Converter):
             self.clean = format.clean_codeblock
         else:
             self.clean = str.strip
-        c = {}
+        self.multiline = multiline
+
+        self.conversion = {}
+        self.comparisons = {}
         for key, value in conversion.items():
+            try:
+                c = value.get_comparison()
+            except AttributeError:
+                c = _equality
             if isinstance(key, tuple):
                 for k in key:
-                    c[k] = value
+                    self.conversion[k] = value
+                    self.comparisons[k] = c
             else:
-                c[key] = value
-        self.conversion = c
-        self.multiline = multiline
+                self.conversion[key] = value
+                self.comparisons[key] = c
 
     async def convert(self, ctx, argument):
         text = self.clean(argument)
         ret = MultiDict()
+        empty = {}
 
         async def resolve(key, value, handle):
             key = key.lower()
@@ -146,12 +161,16 @@ class KeyValue(commands.Converter):
             for line in text.splitlines():
                 line = line.strip()
                 if line:
+                    value = ""
                     for i, c in enumerate(line):
-                        if c in _equality:
-                            handle = _equality[c]
-                            key = line[:i]
+                        comparison = self.comparisons.get(value, _equality)
+                        if c in comparison:
+                            handle = comparison[c]
+                            key = value
                             value = line[i+1:]
                             break
+                        else:
+                            value = value + c
                     else:
                         handle = _equal
                         key = ""
@@ -170,13 +189,15 @@ class KeyValue(commands.Converter):
                 except StopIteration:
                     break
 
-                if word in _equality:
-                    if key:
-                        value = value + word
-                    else:
-                        key = value
-                        value = ""
-                        handle = _equality[word]
+                if key:
+                    comparison = empty
+                else:
+                    comparison = self.comparisons.get(value, _equality)
+
+                if word in comparison:
+                    key = value
+                    value = ""
+                    handle = comparison[word]
                 elif word in _quotes:
                     if value:
                         raise commands.BadArgument("Quote character must be placed at the start.")
