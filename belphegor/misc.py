@@ -932,7 +932,7 @@ class Misc(commands.Cog):
             If no member is specified, use your avatar.
             Threshold defines dark/light border. More threshold, more black pixels.
             Default threshold is 128. Max threshold is 255.
-            Default size is 64x30.
+            Default size is 56x32.
         '''
         target = data.geteither("", "member", "m", default=ctx.author)
         url = data.get("url", str(target.avatar_url_as(format="png")))
