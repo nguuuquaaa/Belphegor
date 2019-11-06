@@ -111,11 +111,9 @@ class Admin(commands.Cog):
     async def logout(self, ctx):
         cog = self.bot.get_cog("Statistics")
         if cog:
-            async def update_all():
-                msg = await ctx.send("Updating stats...")
-                await cog.update_all()
-                await msg.edit(content="Done.")
-            self.bot.create_task_and_count(update_all())
+            msg = await ctx.send("Updating stats...")
+            await cog.update_all()
+            await msg.edit(content="Done.")
         await self.bot.logout()
 
     @commands.command(name="eval", hidden=True)
