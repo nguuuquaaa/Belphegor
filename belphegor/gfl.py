@@ -804,6 +804,9 @@ class GirlsFrontline(commands.Cog):
             Available attributes:
             (TBA since it's long and I'm lazy, but it should be stuff like hp, fp, acc, eva, rof, artist...)
         '''
+        if not data:
+            raise checks.CustomError("Can't filter without any input you know.")
+
         query = []
         projection = {"_id": 0, "index": 1, "en_name": 1, "name": 1}
 

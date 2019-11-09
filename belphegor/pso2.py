@@ -489,6 +489,9 @@ class PSO2(commands.Cog):
             - classes(class)
             - ssa_slots(slots/slot)
         '''
+        if not data:
+            raise checks.CustomError("Can't filter without any input you know.")
+
         attrs = [(k, v) for k, v in data.items()]
         result = await self._search_att(attrs)
         if result:

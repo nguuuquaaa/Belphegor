@@ -517,7 +517,7 @@ class Misc(commands.Cog):
 
         rgb_value = rgb[0] * 256 * 256 + rgb[1] * 256 + rgb[2]
         f = discord.File(bytes_, filename="color.png")
-        e = discord.Embed(title=f"#{rgb_value:X}", colour=rgb_value)
+        e = discord.Embed(title=f"#{rgb_value:0>6X}", colour=rgb_value)
         e.set_thumbnail(url="attachment://color.png")
         e.add_field(name="RGB", value=", ".join((str(v) for v in rgb)))
 
