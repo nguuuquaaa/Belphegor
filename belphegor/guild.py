@@ -213,8 +213,11 @@ class Guild(commands.Cog):
             Name is case-insensitive.
         '''
         role = discord.utils.find(lambda r: name.lower()==r.name.lower(), ctx.guild.roles)
-        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$set": {"nsfw_role_id": role.id}, "$setOnInsert": {"guild_id": ctx.guild.id}}, upsert=True)
-        await ctx.confirm()
+        if role:
+            await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$set": {"nsfw_role_id": role.id}, "$setOnInsert": {"guild_id": ctx.guild.id}}, upsert=True)
+            await ctx.confirm()
+        else:
+            raise checks.CustomError(f"No role named {name} found.")
 
     @cmd_unset.command(name="nsfwrole")
     async def cmd_unset_nsfwrole(self, ctx):
@@ -234,11 +237,14 @@ class Guild(commands.Cog):
             Oh and evading muted role is useless as it will be added automatically when rejoin.
         '''
         role = discord.utils.find(lambda r: name.lower()==r.name.lower(), ctx.guild.roles)
-        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$set": {"mute_role_id": role.id}, "$setOnInsert": {"guild_id": ctx.guild.id}}, upsert=True)
-        await ctx.confirm()
+        if role:
+            await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$set": {"mute_role_id": role.id}, "$setOnInsert": {"guild_id": ctx.guild.id}}, upsert=True)
+            await ctx.confirm()
+        else:
+            raise checks.CustomError(f"No role named {name} found.")
 
     @cmd_unset.command(name="muterole")
-    async def cmd_unset_muterole(self, ctx, *, name):
+    async def cmd_unset_muterole(self, ctx):
         '''
             `>>unset muterole`
             Unset muted role.
