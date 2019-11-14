@@ -373,14 +373,14 @@ class Guild(commands.Cog):
             "Do you want to set a custom response?\n"
             "You can use `{name}` and `{mention}` for member name and mention respectively, `{role}` for role name and `{server}` for server name"
             ", `\{` and `\}` for literal { and } character.\n"
-            "Type `no` to skip."
+            "Type `skip` to skip."
         )
-        while True:
+        for _ in range(10):
             try:
                 message = await self.bot.wait_for("message", check=lambda m: m.author.id==ctx.author.id and m.channel.id==ctx.channel.id, timeout=600)
             except asyncio.TimeoutError:
                 return await ctx.send("You took too long, so I'll just sleep then.")
-            if message.content.lower() == "no":
+            if message.content.lower() == "skip":
                 response = None
             else:
                 response = message.content
@@ -388,9 +388,12 @@ class Guild(commands.Cog):
                     test_response = utils.str_format(response, name=message.author.name, mention=message.author.mention, role=role.name, server=message.guild.name)
                 except:
                     await ctx.send("Beep bop, format error. Please try again.")
+                    continue
                 else:
                     await ctx.send(f"Successful registration will be responsed with:\n{test_response}")
-                    break
+            break
+        else:
+            return await ctx.send("You don't have any intention to create a good response, right? Let's just stop here then.")
         if response:
             sentences = {
                 "initial":  "Do you want the response to be automatically delete after 30s?\nBtw registration phrase will be deleted immediately.",
