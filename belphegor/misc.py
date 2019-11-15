@@ -515,6 +515,9 @@ class Misc(commands.Cog):
         pic.save(bytes_, "png")
         bytes_.seek(0)
 
+        for c in rgb:
+            if c < 0 or c > 255:
+                return await ctx.send("Nah, RGB must be between 0 and 255.")
         rgb_value = rgb[0] * 256 * 256 + rgb[1] * 256 + rgb[2]
         f = discord.File(bytes_, filename="color.png")
         e = discord.Embed(title=f"#{rgb_value:0>6X}", colour=rgb_value)
