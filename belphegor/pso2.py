@@ -70,7 +70,11 @@ SSA_SLOTS = {
     "S Class Ability 1":    ["s1"],
     "S Class Ability 2":    ["s2"],
     "S Class Ability 3":    ["s3"],
-    "S Class Ability 4":    ["s4"]
+    "S Class Ability 4":    ["s4"],
+    "S Class Ability 5":    ["s5"],
+    "S Class Ability 6":    ["s6"],
+    "S Class Ability 7":    ["s7"],
+    "S Class Ability 8":    ["s8"]
 }
 DEF_EMOJIS = ("sdef", "rdef", "tdef")
 RESIST_EMOJIS = ("s_res", "r_res", "t_res")
@@ -191,16 +195,19 @@ class Weapon(data_type.BaseObject):
         ctgr = self.category
         embed = discord.Embed(title=f"{emojis[ctgr]}{self.en_name}", url=WEAPON_URLS[ctgr], colour=discord.Colour.blue())
         description = self.star_display(cog, self.rarity)
+
         if self.classes == "all_classes":
             usable_classes = "".join((str(emojis[cl]) for cl in CLASS_DICT.values()))
         else:
             usable_classes = "".join((str(emojis[cl]) for cl in self.classes))
         description = f"{description}\n{usable_classes}"
+
         if self.ssa_slots:
             slots = "".join((str(emojis[s]) for s in self.ssa_slots))
             embed.description = f"{description}\n**Slots:** {slots}"
         else:
             embed.description = description
+
         if self.pic_url:
             embed.set_thumbnail(url=self.pic_url)
         rq = self.requirement
@@ -241,7 +248,13 @@ class Unit(data_type.BaseObject):
             emoji = emojis.get(f"star_{most}", None)
             for i in range(self.rarity - most*3):
                 description = f"{description}{emoji}"
-        embed.description = description
+
+        if self.ssa_slots:
+            slots = "".join((str(emojis[s]) for s in self.ssa_slots))
+            embed.description = f"{description}\n**Slots:** {slots}"
+        else:
+            embed.description = description
+
         if self.pic_url:
             embed.set_thumbnail(url=self.pic_url)
         rq = self.requirement
@@ -251,6 +264,7 @@ class Unit(data_type.BaseObject):
         stats = self.stats
         stats_des = "\n".join((f"**{s.upper()}** + {stats[s]}" for s in ("hp", "pp") if stats.get(s)))
         embed.add_field(name="Stats", value=f"\n".join((stats_des, "\n".join((f"{emojis[s]}+ {stats[s]}" for s in ("satk", "ratk", "tatk", "dex") if stats.get(s))))).strip() or "None")
+
         resist = self.resist
         res_des = "\n".join((f"{emojis[e]}+ {resist[e]}%" for e in RESIST_EMOJIS if resist.get(e)))
         if res_des:
@@ -288,7 +302,7 @@ class PSO2(commands.Cog):
         for emoji_name in (
             "sdef", "rdef", "tdef", "dex", "rear", "arm", "leg", "sub", "s_res", "r_res", "t_res",
             "fire_res", "ice_res", "lightning_res", "wind_res", "light_res", "dark_res",
-            "s_class", "s1", "s2", "s3", "s4"
+            "s_class", "s1", "s2", "s3", "s4", "s6", "s7", "s8"
         ):
             self.emojis[emoji_name] = discord.utils.find(lambda e:e.name==emoji_name, test_guild_2.emojis)
         self.emojis["set_effect"] = self.emojis["rear"]
@@ -320,10 +334,10 @@ class PSO2(commands.Cog):
         '''
         chip = await ctx.search(
             name, self.chip_library,
-            cls=Chip, 
+            cls=Chip,
             colour=discord.Colour.blue(),
             atts=["en_name", "jp_name"],
-            name_att="en_name", 
+            name_att="en_name",
             emoji_att="element"
         )
         if not chip:
@@ -920,6 +934,12 @@ class PSO2(commands.Cog):
                 ele_res_tag = relevant[16].find_all("td")
                 for i, s in enumerate(ELEMENTAL_RESIST_EMOJIS):
                     unit["resist"][s] = utils.to_int(ele_res_tag[i].get_text().replace("%", "").strip(), default=0)
+
+                unit["ssa_slots"] = []
+                for child in relevant[17].find_all(True, recursive=False):
+                    if child.name == "img":
+                        a = child["alt"]
+                        unit["ssa_slots"].extend(SSA_SLOTS.get(a, ()))
                 category_units.append(unit)
             return category_units
         else:
