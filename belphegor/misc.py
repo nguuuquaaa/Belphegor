@@ -418,6 +418,12 @@ class Misc(commands.Cog):
                 max_result.append(items[emoji_to_int[key]-1])
         await ctx.send(f"Poll ended.\nHighest vote: {' and '.join(max_result)} with {max_number} votes.")
 
+    def add_random_stuff(self, text, weight):
+        yield "".join(random.choice(GLITCH_ALL) for i in range(weight))
+        for c in text:
+            yield c
+            yield "".join(random.choice(GLITCH_ALL) for i in range(weight))
+
     @modding.help(brief="Z̜͍̊ă̤̥ḷ̐́ģͮ͛ò̡͞ ͥ̉͞ť͔͢e̸̷̅x̠ͯͧt̰̱̾", category="Misc", field="Commands", paragraph=1)
     @commands.group(invoke_without_command=True)
     async def glitch(self, ctx, *, data: modding.KeyValue({("weight", "w"): int}, escape=True)):
@@ -433,7 +439,7 @@ class Misc(commands.Cog):
         if 0 < weight <= 50:
             if text:
                 if len(text) <= (2000 // (weight + 1)):
-                    await ctx.send("".join((c+"".join((random.choice(GLITCH_ALL) for i in range(weight))) for c in text)))
+                    await ctx.send("".join(self.add_random_stuff(text, weight)))
                 else:
                     await ctx.send("Text too long.")
             else:
