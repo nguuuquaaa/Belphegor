@@ -100,10 +100,11 @@ class AAImageProcessing:
 
         self.image.paste(figure, draw_border, mask)
 
-    def draw_arc(self, xy, start, end, *, fill):
+    def draw_arc(self, xy, start, end, *, fill, width=1):
         aa = self.aa
         aaxy = tuple(aa*i for i in xy)
-        self.draw.arc(aaxy, start, end, fill=fill)
+        aawidth = width * aa
+        self.draw.arc(aaxy, start, end, fill=fill, width=aawidth)
 
     def draw_rectangle(self, xy, *, fill, outline=None, outline_width=0):
         aa = self.aa
@@ -112,7 +113,6 @@ class AAImageProcessing:
             aawidth = aa * outline_width
             half_aawidth = aawidth / 2
             half_size = ((aaxy[2]-aaxy[0])/2, (aaxy[3]-aaxy[1])/2)
-            center = (aaxy[0]+half_size[0], aaxy[1] + half_size[1])
             outer_border = (int(aaxy[0]-half_aawidth), int(aaxy[1]-half_aawidth), int(aaxy[2]+half_aawidth), int(aaxy[3]+half_aawidth))
             inner_border = (int(aaxy[0]+half_aawidth), int(aaxy[1]+half_aawidth), int(aaxy[2]-half_aawidth), int(aaxy[3]-half_aawidth))
 
