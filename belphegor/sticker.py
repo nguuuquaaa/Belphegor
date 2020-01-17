@@ -203,9 +203,9 @@ class Sticker(commands.Cog):
         if new_prefix is None:
             guild_data = await self.guild_data.find_one({"guild_id": ctx.guild.id}, projection={"_id": False, "sticker_prefix": True})
             if guild_data:
-                p = "$"
-            else:
                 p = guild_data.get("sticker_prefix", "$")
+            else:
+                p = "$"
             await ctx.send(f"Prefix is {p}")
         elif ctx.channel.permissions_for(ctx.message.author).manage_guild:
             if new_prefix == "$":
