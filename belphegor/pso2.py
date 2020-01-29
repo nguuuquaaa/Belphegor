@@ -125,7 +125,8 @@ CLASS_DICT = {
     "Bouncer":  "bo",
     "Summoner": "su",
     "Hero":     "hr",
-    "Phantom":  "ph"
+    "Phantom":  "ph",
+    "Etoile":   "et"
 }
 TIME_LEFT = ("Now", "HalfHour", "OneLater", "OneHalfLater", "TwoLater", "TwoHalfLater", "ThreeLater", "ThreeHalfLater")
 
@@ -292,7 +293,7 @@ class PSO2(commands.Cog):
         self.emojis = {}
         for emoji_name in (
             "fire", "ice", "lightning", "wind", "light", "dark",
-            "hu", "fi", "ra", "gu", "fo", "te", "br", "bo", "su", "hr", "ph",
+            "hu", "fi", "ra", "gu", "fo", "te", "br", "bo", "su", "hr", "ph", "et",
             "satk", "ratk", "tatk", "ability", "potential",
             "pa", "saf", "star_0", "star_1", "star_2", "star_3", "star_4", "rappy"
         ):
