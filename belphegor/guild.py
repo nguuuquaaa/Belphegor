@@ -372,7 +372,7 @@ class Guild(commands.Cog):
         msg = await ctx.send(
             "Do you want to set a custom response?\n"
             "You can use `{name}` and `{mention}` for member name and mention respectively, `{role}` for role name and `{server}` for server name"
-            ", `\{` and `\}` for literal { and } character.\n"
+            ", `\\{` and `\\}` for literal { and } character.\n"
             "Type `skip` to skip."
         )
         for _ in range(10):
@@ -404,6 +404,8 @@ class Guild(commands.Cog):
             check = await ctx.yes_no_prompt(sentences, timeout=120)
             if check is None:
                 check = True
+        else:
+            check = False
         await self.guild_data.update_one(
             {"guild_id": ctx.guild.id},
             {
