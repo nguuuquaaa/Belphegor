@@ -303,7 +303,7 @@ class PSO2(commands.Cog):
         for emoji_name in (
             "sdef", "rdef", "tdef", "dex", "rear", "arm", "leg", "sub", "s_res", "r_res", "t_res",
             "fire_res", "ice_res", "lightning_res", "wind_res", "light_res", "dark_res",
-            "s_class", "s1", "s2", "s3", "s4", "s6", "s7", "s8"
+            "s_class", "s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8"
         ):
             self.emojis[emoji_name] = discord.utils.find(lambda e:e.name==emoji_name, test_guild_2.emojis)
         self.emojis["set_effect"] = self.emojis["rear"]
@@ -734,29 +734,15 @@ class PSO2(commands.Cog):
                 full_desc = []
                 simple_desc = []
 
-                ship_gen = (f"Ship{ship_number}" for ship_number in range(1, 11))
-                random_eq_info = {int(ship[4:]): f"`Ship {ship[4:]}:` {data[ship]}" for ship in ship_gen if data[ship]}
-                if random_eq_info:
-                    sched_time = start_time + timedelta(hours=1)
-                    time_left = int(round((sched_time - now_time).total_seconds(), -1))
-                    if time_left == 0:
-                        full_desc.append(time_left) #f"\u2694 **Now:**\n{random_eq}")
-                    elif time_left > 0:
-                        if time_left in (900, 2700, 6300, 9900):
-                            req_text = time_left #f"\u23f0 **In {utils.seconds_to_text(time_left)}:**\n{random_eq}"
-                            full_desc.append(req_text)
-                            if time_left in (2700, 6300):
-                                simple_desc.append(req_text)
-
                 for index, key in enumerate(TIME_LEFT):
                     if data[key]:
                         sched_time = start_time + timedelta(minutes=30*index)
                         time_left = int(round((sched_time - now_time).total_seconds(), -1))
                         if time_left == 0:
-                            full_desc.append(f"\u2694 **Now**\n`All ships:` {data[key]}")
+                            full_desc.append(f"\u2694 **Now**\n{data[key]}")
                         elif time_left > 0:
                             if time_left in (900, 2700, 6300, 9900):
-                                text = f"\u23f0 **In {utils.seconds_to_text(time_left)}:**\n`All ships:` {data[key]}"
+                                text = f"\u23f0 **In {utils.seconds_to_text(time_left)}:**\n{data[key]}"
                                 full_desc.append(text)
                                 if time_left in (2700, 6300):
                                     simple_desc.append(text)
@@ -765,25 +751,12 @@ class PSO2(commands.Cog):
                 if True:
                     async for gd in self.guild_data.find(
                         {"eq_channel_id": {"$exists": True}},
-                        projection={"_id": False, "eq_channel_id": True, "eq_alert_minimal": True, "eq_ship": True, "eq_role_id": True}
+                        projection={"_id": False, "eq_channel_id": True, "eq_alert_minimal": True, "eq_role_id": True}
                     ):
                         channel = self.bot.get_channel(gd["eq_channel_id"])
-                        ships = gd.get("eq_ship", None)
                         if channel:
                             minimal = gd.get("eq_alert_minimal", False)
-                            desc = []
-                            for d in all_desc[minimal]:
-                                if isinstance(d, str):
-                                    desc.append(d)
-                                else:
-                                    if ships is None:
-                                        ships = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-                                    rdeq = "\n".join(r[1] for r in sorted(list(random_eq_info.items()), key=lambda x: x[0]) if r[0] in ships and r[1])
-                                    if rdeq:
-                                        if d == 0:
-                                            desc.append(f"\u2694 **Now:**\n{rdeq}")
-                                        else:
-                                            desc.append(f"\u23f0 **In {utils.seconds_to_text(d)}:**\n{rdeq}")
+                            desc = all_desc[minimal]
                             if desc:
                                 embed = discord.Embed(title="EQ Alert", description="\n\n".join(desc), colour=discord.Colour.red())
                                 embed.set_footer(text=utils.jp_time(now_time))
@@ -832,8 +805,6 @@ class PSO2(commands.Cog):
         now_time = utils.now_time(utils.jp_timezone)
         jst = int(data["JST"])
         start_time = now_time.replace(minute=0, second=0) + timedelta(hours=jst-1-now_time.hour)
-        ship_gen = (f"Ship{ship_number}" for ship_number in range(1, 11))
-        random_eq = "\n".join((f"`Ship {ship[4:]}:` {data[ship]}" for ship in ship_gen if data[ship]))
         sched_eq = []
         for index, key in enumerate(TIME_LEFT):
             if data[key]:
@@ -846,16 +817,8 @@ class PSO2(commands.Cog):
 
         embed = discord.Embed(colour=discord.Colour.red())
         embed.set_footer(text=utils.jp_time(now_time))
-        if random_eq or sched_eq:
-            if random_eq:
-                sched_time = start_time + timedelta(hours=1)
-                wait_time = (int((sched_time-now_time).total_seconds())//60) * 60
-                if wait_time <= 0:
-                    embed.add_field(name="Random EQ", value=f"{self.get_emoji(sched_time)} **At {sched_time.strftime('%I:%M %p')}**\n{random_eq}", inline=False)
-                else:
-                    embed.add_field(name="Random EQ", value=f"{self.get_emoji(sched_time)} **In {utils.seconds_to_text(wait_time)}**\n{random_eq}", inline=False)
-            if sched_eq:
-                embed.add_field(name="Schedule EQ", value="\n\n".join(sched_eq), inline=False)
+        if sched_eq:
+            embed.add_field(name="Recent/Upcoming EQ", value="\n\n".join(sched_eq), inline=False)
         else:
             embed.description = "There's no EQ for the next 3 hours."
         await ctx.send(embed=embed)

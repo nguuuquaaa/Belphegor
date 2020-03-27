@@ -538,14 +538,6 @@ class Guild(commands.Cog):
             EQs will be noticed 2h45m, 1h45m, 45m, 15m prior, at present in non-minimal mode, and 1h45m, 45m prior in minimal mode.
         '''
         target = data.geteither("", "channel", default=ctx.channel)
-        ship = data.get("ship", None)
-        if ship:
-            temp = (utils.to_int(s.strip(), default=0) for s in ship.split(","))
-            all_ships = [s for s in temp if 0 < s <= 10]
-            if not all_ships:
-                return await ctx.send(f"Please input valid ships.")
-        else:
-            all_ships = None
         minimal = data.get("minimal", False)
         role = data.get("role", None)
         await self.guild_data.update_one(
@@ -554,7 +546,6 @@ class Guild(commands.Cog):
                 "$set": {
                     "eq_channel_id": target.id,
                     "eq_alert_minimal": minimal,
-                    "eq_ship": all_ships,
                     "eq_role_id": getattr(role, "id", None)
                 },
                 "$setOnInsert": {"guild_id": ctx.guild.id}
@@ -562,7 +553,7 @@ class Guild(commands.Cog):
             upsert=True
         )
         await ctx.send(
-            f"EQ alert for {'ship '+', '.join(map(str, all_ships)) if all_ships else 'all ships'} has been set up for channel {target.mention} "
+            f"EQ alert has been set up for channel {target.mention} "
             f"in {'' if minimal else 'non-'}minimal mode "
             f"with {'role '+role.name if role else 'no role'} mention."
         )
