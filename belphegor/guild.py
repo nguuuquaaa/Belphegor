@@ -360,9 +360,9 @@ class Guild(commands.Cog):
             "`2:` Newcomer will get a role on join, and it will be removed upon registration."
         )
         artype = await ctx.wait_for_choice(max=2)
-        artype -= 1
         if artype is None:
             return await ctx.send("Okay, no autorole, right.")
+        artype -= 1
         msg = await ctx.send("Input the registration phrase:")
         try:
             message = await self.bot.wait_for("message", check=lambda m: m.author.id==ctx.author.id and m.channel.id==ctx.channel.id, timeout=600)
@@ -530,30 +530,34 @@ class Guild(commands.Cog):
     @cmd_set.command(name="eq", aliases=["eqalert"])
     async def set_eq_channel(self, ctx, *, data: modding.KeyValue({("", "channel"): discord.TextChannel, "minimal": bool, "role": discord.Role})=modding.EMPTY):
         '''
-            `>>set eq <keyword: _|channel> <keyword: minimal> <keyword: ship> <keyword: role>`
+            `>>set eq <keyword: _|channel> <keyword: minimal> <keyword: server> <keyword: role>`
             Set channel as PSO2 EQ Alert channel. If no channel is provided, use the current channel that the command is invoked in.
             Minimal is either true or false, which indicates minimal mode. Default is false.
-            Ship can be a comma-separated list of ship numbers, or left untouched for all ships.
+            Server is either NA or JP. Default is JP.
             Role, if set up, will be mentioned every alert, and can be taken by members via `>alertme` command.
             EQs will be noticed 2h45m, 1h45m, 45m, 15m prior, at present in non-minimal mode, and 1h45m, 45m prior in minimal mode.
         '''
         target = data.geteither("", "channel", default=ctx.channel)
         minimal = data.get("minimal", False)
         role = data.get("role", None)
+        server = data.get("server", "jp").lower()
+        if server not in ("na", "jp"):
+            return await ctx.send("Server must be either NA or JP")
         await self.guild_data.update_one(
             {"guild_id": ctx.guild.id},
             {
                 "$set": {
                     "eq_channel_id": target.id,
                     "eq_alert_minimal": minimal,
-                    "eq_role_id": getattr(role, "id", None)
+                    "eq_role_id": getattr(role, "id", None),
+                    "eq_server": server
                 },
                 "$setOnInsert": {"guild_id": ctx.guild.id}
             },
             upsert=True
         )
         await ctx.send(
-            f"EQ alert has been set up for channel {target.mention} "
+            f"EQ alert for {server.upper()} has been set up for channel {target.mention} "
             f"in {'' if minimal else 'non-'}minimal mode "
             f"with {'role '+role.name if role else 'no role'} mention."
         )
@@ -566,7 +570,7 @@ class Guild(commands.Cog):
         '''
         result = await self.guild_data.update_one(
             {"guild_id": ctx.guild.id},
-            {"$unset": {"eq_channel_id": "", "eq_alert_minimal": "", "eq_ship": "", "eq_role": ""}}
+            {"$unset": {"eq_channel_id": "", "eq_alert_minimal": "", "eq_server": "", "eq_role": ""}}
         )
         if result.modified_count > 0:
             await ctx.confirm()

@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 import traceback
 from apiclient.discovery import build
 import weakref
+from pytz import timezone
 
 #==================================================================================================================================================
 
@@ -308,6 +309,7 @@ class PSO2(commands.Cog):
             self.emojis[emoji_name] = discord.utils.find(lambda e:e.name==emoji_name, test_guild_2.emojis)
         self.emojis["set_effect"] = self.emojis["rear"]
         self.last_eq_data = None
+        self.last_na_eq_data = None
         self.api_data = {}
         self.eq_alert_forever = weakref.ref(bot.loop.create_task(self.eq_alert()))
         self.daily_order_pattern = bot.db.daily_order_pattern
@@ -700,8 +702,9 @@ class PSO2(commands.Cog):
         )
         data = json.loads(bytes_)[0]
         self.api_data["version"] = data["Version"]
-        self.api_data["url"] = data["EQAPI"]
+        self.api_data["url"] = data["JPEQAPI"]
         self.api_data["headers"] = {"User-Agent": f"PSO2.Alert.Desktop.v{data['Version']} you_thought_its_eq_alert_but_its_actually_me_nguuuquaaa", "Host": "pso2.acf.me.uk"}
+        self.api_data["na_url"] = data["NAEQAPI"]
 
     async def eq_alert(self):
         _loop = self.bot.loop
@@ -725,40 +728,49 @@ class PSO2(commands.Cog):
                 now_time = utils.now_time()
                 if now_time.minute != next_time.minute:
                     await asyncio.sleep((next_time - now_time).total_seconds())
-                bytes_ = await self.bot.fetch(self.api_data["url"], headers=self.api_data["headers"])
-                data = json.loads(bytes_)[0]
-                self.last_eq_data = data
-                now_time = utils.now_time(utils.jp_timezone)
-                jst = int(data["JST"])
-                start_time = now_time.replace(minute=0, second=0) + timedelta(hours=jst-1-now_time.hour)
-                full_desc = []
-                simple_desc = []
 
-                for index, key in enumerate(TIME_LEFT):
-                    if data[key]:
-                        sched_time = start_time + timedelta(minutes=30*index)
-                        time_left = int(round((sched_time - now_time).total_seconds(), -1))
-                        if time_left == 0:
-                            full_desc.append(f"\u2694 **Now**\n{data[key]}")
-                        elif time_left > 0:
-                            if time_left in (900, 2700, 6300, 9900):
-                                text = f"\u23f0 **In {utils.seconds_to_text(time_left)}:**\n{data[key]}"
-                                full_desc.append(text)
-                                if time_left in (2700, 6300):
-                                    simple_desc.append(text)
+                all_desc = {}
+                for server, url, tz, api_tz, last in (
+                    ("jp",  self.api_data["url"],       utils.jp_timezone,  "JST",  "last_eq_data"),
+                    ("na",  self.api_data["na_url"],    utils.pdt_timezone, "PDT",  "last_na_eq_data")
+                ):
+                    bytes_ = await self.bot.fetch(url, headers=self.api_data["headers"])
+                    data = json.loads(bytes_)[0]
+                    setattr(self, last, data)
+                    now_time = utils.now_time(tz)
+                    local_time = int(data[api_tz])
+                    start_time = now_time.replace(minute=0, second=0) + timedelta(hours=local_time-1-now_time.hour)
+                    full_desc = []
+                    simple_desc = []
 
-                all_desc = {False: full_desc, True: simple_desc}
+                    for index, key in enumerate(TIME_LEFT):
+                        if data[key]:
+                            sched_time = start_time + timedelta(minutes=30*index)
+                            time_left = int(round((sched_time - now_time).total_seconds(), -1))
+                            if time_left == 0:
+                                full_desc.append(f"\u2694 **Now**\n{data[key]}")
+                            elif time_left > 0:
+                                if time_left in (900, 2700, 6300, 9900):
+                                    text = f"\u23f0 **In {utils.seconds_to_text(time_left)}:**\n{data[key]}"
+                                    full_desc.append(text)
+                                    if time_left in (2700, 6300):
+                                        simple_desc.append(text)
+
+                    all_desc[server, False] = full_desc
+                    all_desc[server, True] = simple_desc
+
                 if True:
                     async for gd in self.guild_data.find(
                         {"eq_channel_id": {"$exists": True}},
-                        projection={"_id": False, "eq_channel_id": True, "eq_alert_minimal": True, "eq_role_id": True}
+                        projection={"_id": False, "eq_channel_id": True, "eq_server": True, "eq_alert_minimal": True, "eq_role_id": True}
                     ):
                         channel = self.bot.get_channel(gd["eq_channel_id"])
                         if channel:
                             minimal = gd.get("eq_alert_minimal", False)
-                            desc = all_desc[minimal]
+                            server = gd["eq_server"]
+                            desc = all_desc[server, minimal]
                             if desc:
-                                embed = discord.Embed(title="EQ Alert", description="\n\n".join(desc), colour=discord.Colour.red())
+                                embed = discord.Embed(title=f"{server.upper()} EQ Alert", description="\n\n".join(desc), colour=discord.Colour.red())
                                 embed.set_footer(text=utils.jp_time(now_time))
                                 role_id = gd.get("eq_role_id")
                                 role = channel.guild.get_role(role_id)
@@ -793,17 +805,36 @@ class PSO2(commands.Cog):
 
     @modding.help(brief="Display EQ schedule for the next 3 hours", category="PSO2", field="EQ", paragraph=0)
     @commands.command(name="eq")
-    async def nexteq(self, ctx):
+    async def nexteq(self, ctx, server="jp"):
         '''
-            `>>eq`
+            `>>eq <optional: server>`
             Display eq schedule for the next 3 hours.
+            Server is either JP or NA. Default is JP.
         '''
-        if not self.last_eq_data:
-            bytes_ = await self.bot.fetch(self.api_data["url"], headers=self.api_data["headers"])
-            self.last_eq_data = json.loads(bytes_)[0]
-        data = self.last_eq_data
-        now_time = utils.now_time(utils.jp_timezone)
-        jst = int(data["JST"])
+        server = server.lower()
+        if server not in ("jp", "na"):
+            return await ctx.send("Server must be either JP or NA")
+        if server == "jp":
+            last = "last_eq_data"
+            url = self.api_data["url"]
+            tz = utils.jp_timezone
+            api_tz = "JST"
+            footer = utils.jp_time
+        else:
+            last = "last_na_eq_data"
+            url = self.api_data["na_url"]
+            tz = utils.pdt_timezone
+            api_tz = "PDT"
+            footer = utils.pdt_time
+
+        data = getattr(self, last)
+        if not data:
+            bytes_ = await self.bot.fetch(url, headers=self.api_data["headers"])
+            data = json.loads(bytes_)[0]
+            setattr(self, last, data)
+
+        now_time = utils.now_time(tz)
+        jst = int(data[api_tz])
         start_time = now_time.replace(minute=0, second=0) + timedelta(hours=jst-1-now_time.hour)
         sched_eq = []
         for index, key in enumerate(TIME_LEFT):
@@ -816,9 +847,9 @@ class PSO2(commands.Cog):
                     sched_eq.append(f"{self.get_emoji(sched_time)} **In {utils.seconds_to_text(wait_time)}**\n{data[key]}")
 
         embed = discord.Embed(colour=discord.Colour.red())
-        embed.set_footer(text=utils.jp_time(now_time))
+        embed.set_footer(text=footer(now_time))
         if sched_eq:
-            embed.add_field(name="Recent/Upcoming EQ", value="\n\n".join(sched_eq), inline=False)
+            embed.add_field(name=f"Recent/Upcoming {server.upper()} EQ", value="\n\n".join(sched_eq), inline=False)
         else:
             embed.description = "There's no EQ for the next 3 hours."
         await ctx.send(embed=embed)
