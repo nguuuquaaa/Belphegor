@@ -534,8 +534,10 @@ class Guild(commands.Cog):
             Set channel as PSO2 EQ Alert channel. If no channel is provided, use the current channel that the command is invoked in.
             Minimal is either true or false, which indicates minimal mode. Default is false.
             Server is either NA or JP. Default is JP.
-            Role, if set up, will be mentioned every alert, and can be taken by members via `>alertme` command.
+            Role, if set up, will be mentioned every alert, and can be taken by members via `>>alertme` command.
             EQs will be noticed 2h45m, 1h45m, 45m, 15m prior, at present in non-minimal mode, and 1h45m, 45m prior in minimal mode.
+
+            A server can have at most 2 EQ alert channels, one for each game server.
         '''
         target = data.geteither("", "channel", default=ctx.channel)
         minimal = data.get("minimal", False)
@@ -547,10 +549,11 @@ class Guild(commands.Cog):
             {"guild_id": ctx.guild.id},
             {
                 "$set": {
-                    "eq_channel_id": target.id,
-                    "eq_alert_minimal": minimal,
-                    "eq_role_id": getattr(role, "id", None),
-                    "eq_server": server
+                    f"eq.{server}": {
+                        "channel_id": target.id,
+                        "minimal": minimal,
+                        "role_id": getattr(role, "id", None)
+                    }
                 },
                 "$setOnInsert": {"guild_id": ctx.guild.id}
             },
@@ -568,14 +571,11 @@ class Guild(commands.Cog):
             `>>unset eq`
             Unset PSO2 EQ Alert.
         '''
-        result = await self.guild_data.update_one(
+        await self.guild_data.update_one(
             {"guild_id": ctx.guild.id},
-            {"$unset": {"eq_channel_id": "", "eq_alert_minimal": "", "eq_server": "", "eq_role": ""}}
+            {"$unset": {"eq_data": ""}}
         )
-        if result.modified_count > 0:
-            await ctx.confirm()
-        else:
-            await ctx.deny()
+        await ctx.confirm()
 
     @commands.Cog.listener()
     async def on_message(self, message):

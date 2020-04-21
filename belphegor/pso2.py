@@ -708,11 +708,6 @@ class PSO2(commands.Cog):
 
     async def eq_alert(self):
         _loop = self.bot.loop
-        async def try_it(coro):
-            try:
-                await coro
-            except:
-                pass
         try:
             await self.check_for_new_version()
             while True:
@@ -762,23 +757,26 @@ class PSO2(commands.Cog):
                 if True:
                     async for gd in self.guild_data.find(
                         {"eq_channel_id": {"$exists": True}},
-                        projection={"_id": False, "eq_channel_id": True, "eq_server": True, "eq_alert_minimal": True, "eq_role_id": True}
+                        projection={"_id": False, "eq_data": True}
                     ):
-                        channel = self.bot.get_channel(gd["eq_channel_id"])
-                        if channel:
-                            minimal = gd.get("eq_alert_minimal", False)
-                            server = gd["eq_server"]
-                            desc = all_desc[server, minimal]
-                            if desc:
-                                embed = discord.Embed(title=f"{server.upper()} EQ Alert", description="\n\n".join(desc), colour=discord.Colour.red())
-                                embed.set_footer(text=utils.jp_time(now_time))
-                                role_id = gd.get("eq_role_id")
-                                role = channel.guild.get_role(role_id)
-                                if role:
-                                    content = role.mention
-                                else:
-                                    content = None
-                                _loop.create_task(try_it(channel.send(content, embed=embed)))
+                        for server, eqd in gd["eq_data"].items():
+                            channel = self.bot.get_channel(eqd["channel_id"])
+                            if channel:
+                                minimal = eqd.get("minimal", False)
+                                desc = all_desc[server, minimal]
+                                if desc:
+                                    embed = discord.Embed(title=f"[{server.upper()}] EQ Alert", description="\n\n".join(desc), colour=discord.Colour.red())
+                                    embed.set_footer(text=utils.jp_time(now_time))
+                                    role_id = eqd.get("role_id")
+                                    role = channel.guild.get_role(role_id)
+                                    if role:
+                                        content = role.mention
+                                    else:
+                                        content = None
+                                    try:
+                                        await channel.send(content, embed=embed)
+                                    except discord.Forbidden:
+                                        pass
         except asyncio.CancelledError:
             return
         except (ConnectionError, aiohttp.ClientConnectorError):
@@ -849,9 +847,9 @@ class PSO2(commands.Cog):
         embed = discord.Embed(colour=discord.Colour.red())
         embed.set_footer(text=footer(now_time))
         if sched_eq:
-            embed.add_field(name=f"Recent/Upcoming {server.upper()} EQ", value="\n\n".join(sched_eq), inline=False)
+            embed.add_field(name=f"[{server.upper()}] Recent/Upcoming EQ", value="\n\n".join(sched_eq), inline=False)
         else:
-            embed.description = "There's no EQ for the next 3 hours."
+            embed.add_field(name=f"[{server.upper()}] Recent/Upcoming EQ", value="There's no scheduled EQ for the next 3 hours.", inline=False)
         await ctx.send(embed=embed)
 
     @modding.help(brief="Display unit info", category="PSO2", field="Database", paragraph=0)
