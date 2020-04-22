@@ -549,7 +549,7 @@ class Guild(commands.Cog):
             {"guild_id": ctx.guild.id},
             {
                 "$set": {
-                    f"eq.{server}": {
+                    f"eq_data.{server}": {
                         "channel_id": target.id,
                         "minimal": minimal,
                         "role_id": getattr(role, "id", None)
@@ -569,7 +569,7 @@ class Guild(commands.Cog):
     async def unset_eq_channel(self, ctx):
         '''
             `>>unset eq`
-            Unset PSO2 EQ Alert.
+            Remove all EQ alerts in current server.
         '''
         await self.guild_data.update_one(
             {"guild_id": ctx.guild.id},

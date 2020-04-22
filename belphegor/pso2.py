@@ -756,7 +756,7 @@ class PSO2(commands.Cog):
 
                 if True:
                     async for gd in self.guild_data.find(
-                        {"eq_channel_id": {"$exists": True}},
+                        {"eq_data": {"$exists": True}},
                         projection={"_id": False, "eq_data": True}
                     ):
                         for server, eqd in gd["eq_data"].items():
@@ -766,6 +766,7 @@ class PSO2(commands.Cog):
                                 desc = all_desc[server, minimal]
                                 if desc:
                                     embed = discord.Embed(title=f"[{server.upper()}] EQ Alert", description="\n\n".join(desc), colour=discord.Colour.red())
+                                    now_time = utils.now_time()
                                     embed.set_footer(text=utils.jp_time(now_time))
                                     role_id = eqd.get("role_id")
                                     role = channel.guild.get_role(role_id)
@@ -844,12 +845,12 @@ class PSO2(commands.Cog):
                 else:
                     sched_eq.append(f"{self.get_emoji(sched_time)} **In {utils.seconds_to_text(wait_time)}**\n{data[key]}")
 
-        embed = discord.Embed(colour=discord.Colour.red())
+        embed = discord.Embed(title=f"[{server.upper()}] Recent/Upcoming EQ", colour=discord.Colour.red())
         embed.set_footer(text=footer(now_time))
         if sched_eq:
-            embed.add_field(name=f"[{server.upper()}] Recent/Upcoming EQ", value="\n\n".join(sched_eq), inline=False)
+            embed.description = "\n\n".join(sched_eq)
         else:
-            embed.add_field(name=f"[{server.upper()}] Recent/Upcoming EQ", value="There's no scheduled EQ for the next 3 hours.", inline=False)
+            embed.description = "There's no scheduled EQ for the next 3 hours."
         await ctx.send(embed=embed)
 
     @modding.help(brief="Display unit info", category="PSO2", field="Database", paragraph=0)
