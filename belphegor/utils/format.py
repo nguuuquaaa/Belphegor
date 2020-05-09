@@ -150,9 +150,13 @@ def format_time(dt_obj):
     return dt_obj.strftime("%a, %Y-%m-%d at %I:%M:%S %p, UTC%z")
 
 jp_timezone = timezone("Asia/Tokyo")
+pdt_timezone = timezone("US/Pacific")
 
 def jp_time(dt_obj):
     return dt_obj.astimezone(jp_timezone).strftime("%a, %Y-%m-%d at %I:%M:%S %p, UTC%z (Tokyo/Japan)")
+
+def pdt_time(dt_obj):
+    return dt_obj.astimezone(pdt_timezone).strftime("%a, %Y-%m-%d at %I:%M:%S %p, UTC%z (PDT)")
 
 discord_regex = re.compile(r"[*_\[\]~`\\<>]")
 
