@@ -1207,24 +1207,30 @@ class PSO2(commands.Cog):
     @modding.help(brief="Take/remove EQ alert role, if applicable", category="PSO2", field="EQ", paragraph=0)
     @commands.command()
     @checks.guild_only()
-    async def alertme(self, ctx):
+    async def alertme(self, ctx, server="jp"):
         '''
-            `>>alertme`
+            `>>alertme <optional: server>`
             Take EQ alert role, if applicable.
+            If server is not specified, default to JP.
             Use again to remove it.
         '''
-        role_data = await self.guild_data.find_one({"guild_id": ctx.guild.id}, projection={"_id": False, "eq_role_id": True})
-        if role_data:
-            role = ctx.guild.get_role(role_data.get("eq_role_id"))
-            if role:
-                if role in ctx.author.roles:
-                    await ctx.author.remove_roles(role)
-                    await ctx.send(f"Role {role.name} removed.")
-                else:
-                    await ctx.author.add_roles(role)
-                    await ctx.confirm()
-                return
-        await ctx.send("This server doesn't have EQ role set up.")
+        server = server.lower()
+        if server not in ("jp", "na"):
+            return await ctx.send("Server must be either JP or NA.")
+        eq_data = await self.guild_data.find_one({"guild_id": ctx.guild.id}, projection={"_id": False, "eq_data": True})
+        if eq_data:
+            eqd = eq_data["eq_data"].get(server)
+            if eqd:
+                role = ctx.guild.get_role(eqd.get("role_id"))
+                if role:
+                    if role in ctx.author.roles:
+                        await ctx.author.remove_roles(role)
+                        await ctx.send(f"Role {role.name} removed.")
+                    else:
+                        await ctx.author.add_roles(role)
+                        await ctx.confirm()
+                    return
+        await ctx.send(f"This server doesn't have EQ role set up for {server.upper()}.")
 
 #==================================================================================================================================================
 
