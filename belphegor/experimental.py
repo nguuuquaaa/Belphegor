@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from . import utils
-from .utils import config, data_type, checks
+from .utils import config, data_type, checks, modding
 import PIL
 import io
 import pymongo
@@ -15,7 +15,6 @@ import traceback
 #==================================================================================================================================================
 
 BEGINNING = datetime(2018, 6, 19, 0, 0, 0, tzinfo=pytz.utc)
-DISCORDPY_GUILD_ID = 336642139381301249
 
 #==================================================================================================================================================
 
@@ -35,25 +34,28 @@ class MemberStats:
         start = self.last_updated
         end = utils.now_time()
 
-        start_hour = (start - BEGINNING).total_seconds() / 3600
-        end_hour = (end - BEGINNING).total_seconds() / 3600
-        if end_hour - start_hour > 720:
-            start_hour = end_hour - 720
+        if end > start:
+            start_hour = (start - BEGINNING).total_seconds() / 3600
+            end_hour = (end - BEGINNING).total_seconds() / 3600
+            if end_hour - start_hour > 720:
+                start_hour = end_hour - 720
 
-        first_mark = int(start_hour)
-        last_mark = int(end_hour)
-        marks = tuple(range(first_mark+1, last_mark+1))
-        left_marks = (start_hour, *marks)
-        right_marks = (*marks, end_hour)
+            first_mark = int(start_hour)
+            last_mark = int(end_hour)
+            marks = tuple(range(first_mark+1, last_mark+1))
+            left_marks = (start_hour, *marks)
+            right_marks = (*marks, end_hour)
 
-        items = []
-        for left, right in zip(left_marks, right_marks):
-            if right-left > 0:
-                items.append({"mark": int(left), "stt": stt, "dur": right-left})
+            items = []
+            for left, right in zip(left_marks, right_marks):
+                if right-left > 0:
+                    items.append({"mark": int(left), "stt": stt, "dur": right-left})
 
-        if update:
-            self.last_updated = end
-        return items
+            if update:
+                self.last_updated = end
+            return items
+        else:
+            return []
 
 #==================================================================================================================================================
 
@@ -63,21 +65,17 @@ class Statistics(commands.Cog):
         self.user_data = bot.db.user_data
         self.belphegor_config = bot.db.belphegor_config
 
-        now = utils.now_time()
         self.all_users = {}
-        self.opt_out = None
         try:
             all_users = bot.saved_stuff.pop("all_users")
         except KeyError:
-            dpy_guild = bot.get_guild(DISCORDPY_GUILD_ID)
-            for member in dpy_guild.members:
-                self.all_users[member.id] = MemberStats(member.id, last_updated=now)
+            bot.loop.create_task(self.fetch_users())
         else:
-            for key, value in all_users.items():
-                self.all_users[key] = MemberStats(value.id, last_updated=value.last_updated)
+           self.all_users.update(all_users)
 
-        self.update_task = bot.create_task_and_count(self.update_regularly())
         self.all_requests = bot.saved_stuff.pop("status_updates", asyncio.Queue())
+        self.update_task = bot.create_task_and_count(self.update_regularly())
+        self.clear_task = bot.create_task_and_count(self.clear_old_data())
         self.done_update_event = asyncio.Event()
         self.done_update_event.clear()
 
@@ -86,24 +84,55 @@ class Statistics(commands.Cog):
         self.bot.saved_stuff["status_updates"] = self.all_requests
         try:
             self.update_task.cancel()
+            self.clear_task.cancel()
         except:
             pass
 
-    def get_update_request(self, member_stats, member=None):
-        if member:
-            m = member
-        else:
-            g = self.bot.get_guild(DISCORDPY_GUILD_ID)
-            m = g.get_member(member_stats.id)
-            if not m:
-                return
+    async def fetch_users(self):
+        user_ids = []
+        async for doc in self.user_data.aggregate([
+            {
+                "$group": {
+                    "_id": None,
+                    "user_ids": {
+                        "$push": "$user_id"
+                    }
+                }
+            }
+        ]):
+            user_ids = doc["user_ids"]
+        now = utils.now_time()
+        for user_id in user_ids:
+            self.all_users[user_id] = MemberStats(user_id, last_updated=now)
 
-        items = member_stats.process_status(m.status.value, update=True)
-        return pymongo.UpdateOne(
-            {"user_id": m.id},
-            {"$setOnInsert": {"user_id": m.id, "timezone": 0}, "$push": {"status": {"$each": items}}},
-            upsert=True
-        )
+    async def clear_old_data(self):
+        try:
+            while True:
+                await asyncio.sleep(3600)
+                end = utils.now_time()
+                end_hour = (end - BEGINNING).total_seconds() / 3600
+                last_mark = int(end_hour)
+                await self.user_data.update_many({}, {"$pull": {"status": {"mark": {"$lt": last_mark-720}}}})
+        except asyncio.CancelledError:
+            pass
+
+    def get_first_member(self, user_id):
+        for g in self.bot.guilds:
+            m = g.get_member(user_id)
+            if m:
+                return m
+
+    def get_update_request(self, member_stats):
+        member = self.get_first_member(member_stats.id)
+        items = member_stats.process_status(member.status.value, update=True)
+        if items:
+            return pymongo.UpdateOne(
+                {"user_id": member.id},
+                {"$push": {"status": {"$each": items}}},
+                upsert=True
+            )
+        else:
+            return None
 
     async def update_regularly(self):
         all_reqs = []
@@ -111,10 +140,6 @@ class Statistics(commands.Cog):
         async def update():
             await self.user_data.bulk_write(all_reqs)
             all_reqs.clear()
-            end = utils.now_time()
-            end_hour = (end - BEGINNING).total_seconds() / 3600
-            last_mark = int(end_hour)
-            await self.user_data.update_many({}, {"$pull": {"status": {"mark": {"$lt": last_mark-720}}}})
 
         try:
             while True:
@@ -131,22 +156,11 @@ class Statistics(commands.Cog):
             if all_reqs:
                 await update()
             self.done_update_event.set()
-        except:
+        except Exception as e:
             text = traceback.format_exc()
             if len(text) > 1950:
                 text = f"{e.__class__.__name__}: {e}"
             await self.bot.error_hook.execute(f"```\n{text}\n```")
-
-    async def update_opt_out(self, member, add=True):
-        if add:
-            await self.belphegor_config.update_one({"category": "no_status_collect"}, {"$addToSet": {"user_ids": member.id}})
-        else:
-            await self.belphegor_config.update_one({"category": "no_status_collect"}, {"$pull": {"user_ids": member.id}})
-
-    async def check_opt_out(self):
-        if self.opt_out is None:
-            data = await self.belphegor_config.find_one({"category": "no_status_collect"})
-            self.opt_out = set(data["user_ids"])
 
     async def update_all(self):
         try:
@@ -154,11 +168,8 @@ class Statistics(commands.Cog):
         except asyncio.TimeoutError:
             return
 
-        await self.check_opt_out()
         all_reqs = []
         for member_stats in self.all_users.values():
-            if member_stats.id in self.opt_out:
-                continue
             req = self.get_update_request(member_stats)
             if req:
                 all_reqs.append(req)
@@ -169,41 +180,41 @@ class Statistics(commands.Cog):
             await self.user_data.bulk_write(all_reqs)
 
     async def update(self, member):
-        await self.check_opt_out()
-        if member.id in self.opt_out:
-            return
-        member_stats = self.all_users[member.id]
-        req = self.get_update_request(member_stats, member)
-        if req:
-            await self.all_requests.put(req)
+        member_stats = self.all_users.get(member.id)
+        if member_stats:
+            req = self.get_update_request(member_stats)
+            if req:
+                await self.all_requests.put(req)
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        if member.guild.id == DISCORDPY_GUILD_ID:
-            self.all_users[member.id] = MemberStats(member.id, last_updated=utils.now_time())
+        if member.bot and member.id not in self.all_users:
+            await self.update_opt_in(member, True)
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
-        if member.guild.id == DISCORDPY_GUILD_ID:
-            self.all_users.pop(member.id)
+        if member.id in self.all_users:
+            for g in self.bot.guilds:
+                m = g.get_member(member.id)
+                if m and m.guild != member.guild:
+                    break
+            else:
+                return
+            await self.update_opt_in(member, False)
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
-        if before.guild.id == DISCORDPY_GUILD_ID:
-            if before.status != after.status:
-                try:
-                    m = self.all_users[before.id]
-                except KeyError:
-                    m = MemberStats(id=before.id, last_updated=utils.now_time())
-                    self.all_users[before.id] = m
-                else:
-                    if before:
-                        await self.update(before)
+        if before.status != after.status:
+            if getattr(before, "id", None) in self.all_users:
+                await self.update(before)
 
-    def no_access_for_opt_out(self, member):
-        if member.id in self.opt_out:
-            raise checks.CustomError(f"Hey, {member.name} opted out of this, remember?")
+    def check_opt_in_user(self, member):
+        if member.id in self.all_users or member.bot:
+            return
+        else:
+            raise checks.CustomError(f"{member.name} hasn't toggled presence record on yet.")
 
+    @modding.help(brief="Guild members status summary", category="Experimental", field="Status", paragraph=0)
     @commands.command()
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     async def guildstatus(self, ctx):
@@ -211,7 +222,6 @@ class Statistics(commands.Cog):
            `>>guildstatus`
             Display pie chart showing current guild status.
         '''
-        self.no_access_for_opt_out(ctx.author)
         await ctx.trigger_typing()
         statuses = (
             {"name": "online", "count": 0, "color": discord.Colour.green().to_rgba()},
@@ -288,9 +298,9 @@ class Statistics(commands.Cog):
 
         return statuses
 
+    @modding.help(brief="User status summary ([example](https://i.imgur.com/QG7K34e.png))", category="Experimental", field="Status", paragraph=0)
     @commands.command()
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
-    @checks.in_certain_guild(DISCORDPY_GUILD_ID)
     async def piestatus(self, ctx, member: discord.Member=None):
         '''
            `>>piestatus <optional: member>`
@@ -298,7 +308,7 @@ class Statistics(commands.Cog):
             Default member is command invoker.
         '''
         target = member or ctx.author
-        self.no_access_for_opt_out(target)
+        self.check_opt_in_user(target)
         await ctx.trigger_typing()
         statuses = await self.fetch_total_status(target)
         bytes_ = await utils.pie_chart(statuses, title=f"{target.display_name}'s total status", unit="hours", outline=(0, 0, 0, 0), outline_width=10, loop=self.bot.loop)
@@ -352,9 +362,9 @@ class Statistics(commands.Cog):
 
         return statuses
 
+    @modding.help(brief="User status by past day", category="Experimental", field="Status", paragraph=0)
     @commands.command()
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
-    @checks.in_certain_guild(DISCORDPY_GUILD_ID)
     async def linestatus(self, ctx, member: discord.Member=None):
         '''
            `>>linestatus <optional: member>`
@@ -362,12 +372,16 @@ class Statistics(commands.Cog):
             Default member is command invoker. Default offset target's pre-set timezone, or 0 if not set.
         '''
         target = member or ctx.author
-        self.no_access_for_opt_out(target)
+        self.check_opt_in_user(target)
         await ctx.trigger_typing()
         statuses = await self.fetch_daily_status(target)
         title = f"{target.display_name}'s status by day"
-        bytes_ = await utils.line_chart(statuses, unit_y="hours", unit_x="past day", title=title, loop=self.bot.loop)
-        await ctx.send(file=discord.File(bytes_, filename="line_status.png"))
+        try:
+            bytes_ = await utils.line_chart(statuses, unit_y="hours", unit_x="past day", title=title, loop=self.bot.loop)
+        except ZeroDivisionError:
+            await ctx.send("I need at least 1 hour worth of data to perform this command.")
+        else:
+            await ctx.send(file=discord.File(bytes_, filename="line_status.png"))
 
     def better_offset(self, offset):
         return (offset + 11) % 24 - 11
@@ -436,9 +450,9 @@ class Statistics(commands.Cog):
 
         return offset, statuses
 
+    @modding.help(brief="User status by daily hour", category="Experimental", field="Status", paragraph=0)
     @commands.command()
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
-    @checks.in_certain_guild(DISCORDPY_GUILD_ID)
     async def areastatus(self, ctx, member: discord.Member=None, offset=None):
         '''
            `>>areastatus <optional: member> <optional: offset>`
@@ -446,7 +460,7 @@ class Statistics(commands.Cog):
             Default member is command invoker. Default offset target's pre-set timezone, or 0 if not set.
         '''
         target = member or ctx.author
-        self.no_access_for_opt_out(target)
+        self.check_opt_in_user(target)
         await ctx.trigger_typing()
         if offset is not None:
             try:
@@ -530,9 +544,9 @@ class Statistics(commands.Cog):
 
         return statuses
 
+    @modding.help(brief="User status by past week", category="Experimental", field="Status", paragraph=0)
     @commands.command()
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
-    @checks.in_certain_guild(DISCORDPY_GUILD_ID)
     async def barstatus(self, ctx, member: discord.Member=None):
         '''
            `>>barstatus <optional: member>`
@@ -540,43 +554,73 @@ class Statistics(commands.Cog):
             Default member is command invoker. Default offset target's pre-set timezone, or 0 if not set.
         '''
         target = member or ctx.author
-        self.no_access_for_opt_out(target)
+        self.check_opt_in_user(target)
         await ctx.trigger_typing()
         statuses = await self.fetch_weekly_status(target)
         title = f"{target.display_name}'s status by week"
-        bytes_ = await utils.bar_chart(statuses, unit_y="hours", unit_x="past week", title=title, loop=self.bot.loop)
-        await ctx.send(file=discord.File(bytes_, filename="bar_status.png"))
+        try:
+            bytes_ = await utils.bar_chart(statuses, unit_y="hours", unit_x="past week", title=title, loop=self.bot.loop)
+        except ZeroDivisionError:
+            await ctx.send("I need at least 1 hour worth of data to perform this command.")
+        else:
+            await ctx.send(file=discord.File(bytes_, filename="bar_status.png"))
 
+    @modding.help(brief="Set default timezone for chart commands", category="Experimental", field="Status", paragraph=1)
     @commands.command()
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
-    @checks.in_certain_guild(DISCORDPY_GUILD_ID)
     async def timezone(self, ctx, offset: int):
         '''
            `>>timezone <offset>`
-            Set default offset.
+            Set default offset for chart commands..
         '''
-        self.no_access_for_opt_out(ctx.author)
+        self.check_opt_in_user(ctx.author)
         offset = self.better_offset(offset)
         await self.user_data.update_one({"user_id": ctx.author.id}, {"$set": {"timezone": offset}})
         await ctx.send(f"Default offset has been set to {offset:+d}")
 
+    async def update_opt_in(self, member, add):
+        member_id = member.id
+        if add:
+            self.all_users[member_id] = MemberStats(member_id, last_updated=utils.now_time())
+            await self.user_data.update_one(
+                {"user_id": member_id},
+                {"$set": {"user_id": member_id, "timezone": 0, "status": []}},
+                upsert=True
+            )
+        else:
+            self.all_users.pop(member_id)
+            await self.user_data.delete_many({"user_id": member_id})
+
+    @modding.help(brief="Toggle presence record", category="Experimental", field="Status", paragraph=1)
     @commands.command()
-    @checks.in_certain_guild(DISCORDPY_GUILD_ID)
     async def togglestats(self, ctx):
         '''
            `>>togglestats`
-            Toggle status recording on/off for them chart commands.
+            Toggle presence recording on/off for them chart commands.
         '''
-        await self.check_opt_out()
         member = ctx.author
-        if member.id in self.opt_out:
-            self.opt_out.remove(member.id)
-            await self.update_opt_out(member, False)
-            await ctx.send("Your status will be recorded from now on.")
+        if member.id not in self.all_users:
+            sentences = {
+                "initial": "By using this command, you agree to let this bot record and publicize your presence data in detail.\n" \
+                    "Do you wish to proceed?",
+                "yes": "Your presence data will be recorded from now on.",
+                "no": "Cancelled.",
+                "timeout": "Cancelled."
+            }
+            result = await ctx.yes_no_prompt(sentences)
+            if result:
+                await self.update_opt_in(member, True)
         else:
-            self.opt_out.add(member.id)
-            await self.update_opt_out(member, True)
-            await ctx.send("Your status will not be recorded from now on.")
+            sentences = {
+                "initial": "Your presence data will be erased, and will not be recorded from now on.\n" \
+                    "Do you wish to proceed?",
+                "yes": "Done.",
+                "no": "Cancelled.",
+                "timeout": "Cancelled."
+            }
+            result = await ctx.yes_no_prompt(sentences, delete_mode=True)
+            if result:
+                await self.update_opt_in(member, False)
 
 #==================================================================================================================================================
 
