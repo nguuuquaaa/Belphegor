@@ -75,7 +75,8 @@ class Help(commands.Cog):
                             "\U0001f3b5 Music\n"
                             "\U0001f4d4 Role/server stuff\n"
                             "\U0001f3f7 Tag and sticker\n"
-                            "\u2699 Miscellaneous commands\n\n"
+                            "\u2699 Miscellaneous commands\n"
+                            "\u26a0 Experimental commands\n\n"
                             "\U0001f4ac Click the reactions below to navigate help menu.\n"
                             "You can also use `>>help help` to get a rough idea of how to use this help and `>>help <full command name>` to get specific command usage."
                         ]
@@ -169,6 +170,16 @@ class Help(commands.Cog):
             "Misc": {
                 "emoji":    "\u2699",
                 "desc":     None,
+                "thumb":    None,
+                "footer":   None,
+                "fields":   {}
+            },
+            "Experimental": {
+                "emoji":    "\u26a0",
+                "desc":     
+                    "These commands may or may not be rigged with bugs.\n"
+                    "Update: since verified bot and stuff, chart commands will need to be "
+                    "toggled on first before bot start recording presence data.",
                 "thumb":    None,
                 "footer":   None,
                 "fields":   {}
