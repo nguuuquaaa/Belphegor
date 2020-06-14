@@ -941,13 +941,12 @@ class Guild(commands.Cog):
                     rgb = (random.randrange(256), random.randrange(256), random.randrange(256))
                 colors.add(rgb)
                 check_roles.append({"name": role.name, "count": {"": len(role.members)}, "color": utils.adjust_alpha(rgb, 255)})
+            if not all_members:
+                return await ctx.send("There's no member with any selfrole.")
             check_roles.append({"name": "All with selfroles", "count": {"": len(all_members)}, "color": (255, 255, 255, 255)})
 
             bytes_ = await utils.bar_chart(check_roles, unit_y="members", unit_x="", loop=self.bot.loop)
-            if bytes_:
-                await ctx.send(file=discord.File(bytes_, filename="distribution.png"))
-            else:
-                await ctx.send("There's no one with selfrole.")
+            await ctx.send(file=discord.File(bytes_, filename="distribution.png"))
 
     @modding.help(brief="Give member mute role if applicable", category="Guild", field="Server management", paragraph=1)
     @commands.command()
