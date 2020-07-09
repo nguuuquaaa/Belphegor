@@ -65,25 +65,32 @@ class Statistics(commands.Cog):
         self.user_data = bot.db.user_data
         self.belphegor_config = bot.db.belphegor_config
 
+        self.fetch_ready = asyncio.Event()
+        self.done_update_event = asyncio.Event()
+        self.done_update_event.clear()
+
         self.all_users = {}
         try:
             all_users = bot.saved_stuff.pop("all_users")
         except KeyError:
+            self.fetch_ready.clear()
             bot.loop.create_task(self.fetch_users())
         else:
-           self.all_users.update(all_users)
+            self.fetch_ready.set()
+            self.all_users.update(all_users)
 
         self.all_requests = bot.saved_stuff.pop("status_updates", asyncio.Queue())
         self.update_task = bot.create_task_and_count(self.update_regularly())
         self.clear_task = bot.create_task_and_count(self.clear_old_data())
-        self.done_update_event = asyncio.Event()
-        self.done_update_event.clear()
 
     def cog_unload(self):
         self.bot.saved_stuff["all_users"] = self.all_users
         self.bot.saved_stuff["status_updates"] = self.all_requests
         try:
             self.update_task.cancel()
+        except:
+            pass
+        try:
             self.clear_task.cancel()
         except:
             pass
@@ -105,6 +112,13 @@ class Statistics(commands.Cog):
         for user_id in user_ids:
             self.all_users[user_id] = MemberStats(user_id, last_updated=now)
 
+        for g in self.bot.guilds:
+            for m in g.members:
+                if m.bot and m not in self.all_users:
+                    self.all_users[m.id] = MemberStats(m.id, last_updated=now)
+
+        self.fetch_ready.set()
+
     async def clear_old_data(self):
         try:
             while True:
@@ -122,13 +136,13 @@ class Statistics(commands.Cog):
             if m:
                 return m
 
-    def get_update_request(self, member_stats):
-        member = self.get_first_member(member_stats.id)
-        items = member_stats.process_status(member.status.value, update=True)
+    def get_update_request(self, member_stats, status):
+        member_id = member_stats.id
+        items = member_stats.process_status(status, update=True)
         if items:
             return pymongo.UpdateOne(
-                {"user_id": member.id},
-                {"$push": {"status": {"$each": items}}},
+                {"user_id": member_id},
+                {"$setOnInsert": {"user_id": member_id, "timezone": 0}, "$push": {"status": {"$each": items}}},
                 upsert=True
             )
         else:
@@ -169,8 +183,9 @@ class Statistics(commands.Cog):
             return
 
         all_reqs = []
-        for member_stats in self.all_users.values():
-            req = self.get_update_request(member_stats)
+        for user_id, member_stats in self.all_users.items():
+            member = self.get_first_member(user_id)
+            req = self.get_update_request(member_stats, member.status.value)
             if req:
                 all_reqs.append(req)
                 if len(all_reqs) > 99:
@@ -182,7 +197,7 @@ class Statistics(commands.Cog):
     async def update(self, member):
         member_stats = self.all_users.get(member.id)
         if member_stats:
-            req = self.get_update_request(member_stats)
+            req = self.get_update_request(member_stats, member.status.value)
             if req:
                 await self.all_requests.put(req)
 
@@ -199,8 +214,7 @@ class Statistics(commands.Cog):
                 if m and m.guild != member.guild:
                     break
             else:
-                return
-            await self.update_opt_in(member, False)
+                await self.update_opt_in(member, False)
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
@@ -208,14 +222,15 @@ class Statistics(commands.Cog):
             if getattr(before, "id", None) in self.all_users:
                 await self.update(before)
 
-    def check_opt_in_user(self, member):
+    async def check_opt_in_user(self, member):
+        await self.fetch_ready.wait()
         if member.id in self.all_users or member.bot:
             return
         else:
             raise checks.CustomError(f"{member.name} hasn't toggled presence record on yet.")
 
-    @modding.help(brief="Guild members status summary", category="Experimental", field="Status", paragraph=0)
-    @commands.command()
+    @modding.help(brief="Server members status summary", category="Experimental", field="Status", paragraph=0)
+    @commands.command(aliases=["serverstatus"])
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     async def guildstatus(self, ctx):
         '''
@@ -308,7 +323,7 @@ class Statistics(commands.Cog):
             Default member is command invoker.
         '''
         target = member or ctx.author
-        self.check_opt_in_user(target)
+        await self.check_opt_in_user(target)
         await ctx.trigger_typing()
         statuses = await self.fetch_total_status(target)
         bytes_ = await utils.pie_chart(statuses, title=f"{target.display_name}'s total status", unit="hours", outline=(0, 0, 0, 0), outline_width=10, loop=self.bot.loop)
@@ -372,7 +387,7 @@ class Statistics(commands.Cog):
             Default member is command invoker. Default offset target's pre-set timezone, or 0 if not set.
         '''
         target = member or ctx.author
-        self.check_opt_in_user(target)
+        await self.check_opt_in_user(target)
         await ctx.trigger_typing()
         statuses = await self.fetch_daily_status(target)
         title = f"{target.display_name}'s status by day"
@@ -460,7 +475,7 @@ class Statistics(commands.Cog):
             Default member is command invoker. Default offset target's pre-set timezone, or 0 if not set.
         '''
         target = member or ctx.author
-        self.check_opt_in_user(target)
+        await self.check_opt_in_user(target)
         await ctx.trigger_typing()
         if offset is not None:
             try:
@@ -554,7 +569,7 @@ class Statistics(commands.Cog):
             Default member is command invoker. Default offset target's pre-set timezone, or 0 if not set.
         '''
         target = member or ctx.author
-        self.check_opt_in_user(target)
+        await self.check_opt_in_user(target)
         await ctx.trigger_typing()
         statuses = await self.fetch_weekly_status(target)
         title = f"{target.display_name}'s status by week"
@@ -573,12 +588,13 @@ class Statistics(commands.Cog):
            `>>timezone <offset>`
             Set default offset for chart commands..
         '''
-        self.check_opt_in_user(ctx.author)
+        await self.check_opt_in_user(ctx.author)
         offset = self.better_offset(offset)
         await self.user_data.update_one({"user_id": ctx.author.id}, {"$set": {"timezone": offset}})
         await ctx.send(f"Default offset has been set to {offset:+d}")
 
     async def update_opt_in(self, member, add):
+        await self.fetch_ready.wait()
         member_id = member.id
         if add:
             self.all_users[member_id] = MemberStats(member_id, last_updated=utils.now_time())
@@ -588,10 +604,10 @@ class Statistics(commands.Cog):
                 upsert=True
             )
         else:
-            self.all_users.pop(member_id)
+            self.all_users.pop(member_id, None)
             await self.user_data.delete_many({"user_id": member_id})
 
-    @modding.help(brief="Toggle presence record", category="Experimental", field="Status", paragraph=1)
+    @modding.help(brief="Toggle presence record, required for user charts", category="Experimental", field="Status", paragraph=1)
     @commands.command()
     async def togglestats(self, ctx):
         '''
@@ -618,7 +634,7 @@ class Statistics(commands.Cog):
                 "no": "Cancelled.",
                 "timeout": "Cancelled."
             }
-            result = await ctx.yes_no_prompt(sentences, delete_mode=True)
+            result = await ctx.yes_no_prompt(sentences)
             if result:
                 await self.update_opt_in(member, False)
 
