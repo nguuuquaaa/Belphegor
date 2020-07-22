@@ -1218,7 +1218,16 @@ class Guild(commands.Cog):
         guild_data = self.bot.disabled_data.get(ctx.guild.id, {})
         guild_data["disabled_bot_guild"] = True
         self.bot.disabled_data[ctx.guild.id] = guild_data
-        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$set": {"disabled_bot_guild": True}, "$setOnInsert": {"guild_id": ctx.guild.id}}, upsert=True)
+        await self.guild_data.update_one(
+            {
+                "guild_id": ctx.guild.id
+            },
+            {
+                "$set": {"disabled_bot_guild": True},
+                "$setOnInsert": {"guild_id": ctx.guild.id}
+            }, 
+            upsert=True
+        )
         await ctx.send(f"Bot usage has been disabled in this server.")
 
     @cmd_enable.command(name="guild", aliases=["server"])
@@ -1231,7 +1240,14 @@ class Guild(commands.Cog):
         guild_data = self.bot.disabled_data.get(ctx.guild.id, {})
         guild_data["disabled_bot_guild"] = False
         self.bot.disabled_data[ctx.guild.id] = guild_data
-        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$set": {"disabled_bot_guild": False}})
+        await self.guild_data.update_one(
+            {
+                "guild_id": ctx.guild.id
+            },
+            {
+                "$set": {"disabled_bot_guild": False}
+            }
+        )
         await ctx.send(f"Bot usage has been enabled in this server.")
 
     #enable and disable bot usage for channel
@@ -1247,7 +1263,16 @@ class Guild(commands.Cog):
         disabled_channel.add(channel.id)
         guild_data["disabled_bot_channel"] = disabled_channel
         self.bot.disabled_data[ctx.guild.id] = guild_data
-        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$addToSet": {"disabled_bot_channel": channel.id}, "$setOnInsert": {"guild_id": ctx.guild.id}}, upsert=True)
+        await self.guild_data.update_one(
+            {
+                "guild_id": ctx.guild.id
+            }, 
+            {
+                "$addToSet": {"disabled_bot_channel": channel.id},
+                "$setOnInsert": {"guild_id": ctx.guild.id}
+            }, 
+            upsert=True
+        )
         await ctx.send(f"Bot usage has been disabled in {channel.mention}.")
 
     @cmd_enable.command(name="channel")
@@ -1262,7 +1287,14 @@ class Guild(commands.Cog):
         disabled_channel.discard(channel.id)
         guild_data["disabled_bot_channel"] = disabled_channel
         self.bot.disabled_data[ctx.guild.id] = guild_data
-        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$pull": {"disabled_bot_channel": channel.id}})
+        await self.guild_data.update_one(
+            {
+                "guild_id": ctx.guild.id
+            }, 
+            {
+                "$pull": {"disabled_bot_channel": channel.id}
+            }
+        )
         await ctx.send(f"Bot usage has been enabled in {channel.mention}.")
 
     #enable and disable bot usage for member
@@ -1278,7 +1310,16 @@ class Guild(commands.Cog):
         disabled_member.add(member.id)
         guild_data["disabled_bot_member"] = disabled_member
         self.bot.disabled_data[ctx.guild.id] = guild_data
-        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$addToSet": {"disabled_bot_member": channel.id}, "$setOnInsert": {"guild_id": ctx.guild.id}}, upsert=True)
+        await self.guild_data.update_one(
+            {
+                "guild_id": ctx.guild.id
+            },
+            {
+                "$addToSet": {"disabled_bot_member": member.id},
+                "$setOnInsert": {"guild_id": ctx.guild.id}
+            },
+            upsert=True
+        )
         await ctx.send(f"Bot usage has been disabled for {member} in this server.")
 
     @cmd_enable.command(name="member")
@@ -1293,7 +1334,14 @@ class Guild(commands.Cog):
         disabled_member.discard(member.id)
         guild_data["disabled_bot_member"] = disabled_member
         self.bot.disabled_data[ctx.guild.id] = guild_data
-        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$pull": {"disabled_bot_member": channel.id}})
+        await self.guild_data.update_one(
+            {
+                "guild_id": ctx.guild.id
+            }, 
+            {
+                "$pull": {"disabled_bot_member": channel.id}
+            }
+        )
         await ctx.send(f"Bot usage has been enabled for {member} in this server.")
 
     @cmd_disable.group(name="command", aliases=["cmd"])
@@ -1327,7 +1375,16 @@ class Guild(commands.Cog):
         disabled_guild.add(cmd)
         guild_data["disabled_command_guild"] = disabled_guild
         self.bot.disabled_data[ctx.guild.id] = guild_data
-        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$addToSet": {"disabled_command_guild": cmd}, "$setOnInsert": {"guild_id": ctx.guild.id}}, upsert=True)
+        await self.guild_data.update_one(
+            {
+                "guild_id": ctx.guild.id
+            }, 
+            {
+                "$addToSet": {"disabled_command_guild": cmd}, 
+                "$setOnInsert": {"guild_id": ctx.guild.id}
+            }, 
+            upsert=True
+        )
         await ctx.send(f"Command `{cmd}` has been disabled in this server.")
 
     @cmd_enable_command.command(name="guild", aliases=["server"])
@@ -1345,7 +1402,14 @@ class Guild(commands.Cog):
         disabled_guild.discard(cmd)
         guild_data["disabled_command_guild"] = disabled_guild
         self.bot.disabled_data[ctx.guild.id] = guild_data
-        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$pull": {"disabled_command_guild": cmd}})
+        await self.guild_data.update_one(
+            {
+                "guild_id": ctx.guild.id
+            }, 
+            {
+                "$pull": {"disabled_command_guild": cmd}
+            }
+        )
         await ctx.send(f"Command `{cmd}` has been enabled in this server.")
 
     #enable and disable command usage for channel
@@ -1364,8 +1428,13 @@ class Guild(commands.Cog):
         guild_data["disabled_command_channel"] = disabled_channel
         self.bot.disabled_data[ctx.guild.id] = guild_data
         await self.guild_data.update_one(
-            {"guild_id": ctx.guild.id},
-            {"$addToSet": {"disabled_command_channel": (cmd, channel.id)}, "$setOnInsert": {"guild_id": ctx.guild.id}},
+            {
+                "guild_id": ctx.guild.id
+            },
+            {
+                "$addToSet": {"disabled_command_channel": (cmd, channel.id)},
+                "$setOnInsert": {"guild_id": ctx.guild.id}
+            },
             upsert=True
         )
         await ctx.send(f"Command `{cmd}` has been disabled in {channel.mention}.")
@@ -1385,7 +1454,14 @@ class Guild(commands.Cog):
         disabled_channel.discard((cmd, channel.id))
         guild_data["disabled_command_channel"] = disabled_channel
         self.bot.disabled_data[ctx.guild.id] = guild_data
-        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$pull": {"disabled_command_channel": (cmd, channel.id)}})
+        await self.guild_data.update_one(
+            {
+                "guild_id": ctx.guild.id
+            }, 
+            {
+                "$pull": {"disabled_command_channel": (cmd, channel.id)}
+            }
+        )
         await ctx.send(f"Command `{cmd}` has been enabled in {channel.mention}.")
 
     #enable and disable command usage for member
@@ -1404,8 +1480,13 @@ class Guild(commands.Cog):
         guild_data["disabled_command_member"] = disabled_member
         self.bot.disabled_data[ctx.guild.id] = guild_data
         await self.guild_data.update_one(
-            {"guild_id": ctx.guild.id},
-            {"$addToSet": {"disabled_command_member": (cmd, member.id)}, "$setOnInsert": {"guild_id": ctx.guild.id}},
+            {
+                "guild_id": ctx.guild.id
+            },
+            {
+                "$addToSet": {"disabled_command_member": (cmd, member.id)},
+                "$setOnInsert": {"guild_id": ctx.guild.id}
+            },
             upsert=True
         )
         await ctx.send(f"Command `{cmd}` has been disabled for {member}'s use.")
@@ -1425,7 +1506,14 @@ class Guild(commands.Cog):
         disabled_member.discard((cmd, member.id))
         guild_data["disabled_command_member"] = disabled_member
         self.bot.disabled_data[ctx.guild.id] = guild_data
-        await self.guild_data.update_one({"guild_id": ctx.guild.id}, {"$pull": {"disabled_command_member": (cmd, member.id)}})
+        await self.guild_data.update_one(
+            {
+                "guild_id": ctx.guild.id
+            }, 
+            {
+                "$pull": {"disabled_command_member": (cmd, member.id)}
+            }
+        )
         await ctx.send(f"Command `{cmd}` has been enabled for {member}'s use.")
 
 #==================================================================================================================================================
