@@ -15,6 +15,8 @@ import traceback
 #==================================================================================================================================================
 
 BEGINNING = datetime(2018, 6, 19, 0, 0, 0, tzinfo=pytz.utc)
+BATCH_SIZE = 5000
+WAIT_TIME = 300
 
 #==================================================================================================================================================
 
@@ -112,11 +114,6 @@ class Statistics(commands.Cog):
         for user_id in user_ids:
             self.all_users[user_id] = MemberStats(user_id, last_updated=now)
 
-        for g in self.bot.guilds:
-            for m in g.members:
-                if m.bot and m not in self.all_users:
-                    self.all_users[m.id] = MemberStats(m.id, last_updated=now)
-
         self.fetch_ready.set()
 
     async def clear_old_data(self):
@@ -142,8 +139,7 @@ class Statistics(commands.Cog):
         if items:
             return pymongo.UpdateOne(
                 {"user_id": member_id},
-                {"$setOnInsert": {"user_id": member_id, "timezone": 0}, "$push": {"status": {"$each": items}}},
-                upsert=True
+                {"$push": {"status": {"$each": items}}}
             )
         else:
             return None
@@ -158,13 +154,13 @@ class Statistics(commands.Cog):
         try:
             while True:
                 try:
-                    req = await asyncio.wait_for(self.all_requests.get(), 120)
+                    req = await asyncio.wait_for(self.all_requests.get(), WAIT_TIME)
                 except asyncio.TimeoutError:
                     if all_reqs:
                         await asyncio.shield(update())
                 else:
                     all_reqs.append(req)
-                    if len(all_reqs) >= 200:
+                    if len(all_reqs) >= BATCH_SIZE:
                         await asyncio.shield(update())
         except asyncio.CancelledError:
             if all_reqs:
@@ -201,10 +197,10 @@ class Statistics(commands.Cog):
             if req:
                 await self.all_requests.put(req)
 
-    @commands.Cog.listener()
-    async def on_member_join(self, member):
-        if member.bot and member.id not in self.all_users:
-            await self.update_opt_in(member, True)
+    # @commands.Cog.listener()
+    # async def on_member_join(self, member):
+    #    if member.bot and member.id not in self.all_users:
+    #        await self.update_opt_in(member, True)
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
@@ -224,7 +220,7 @@ class Statistics(commands.Cog):
 
     async def check_opt_in_user(self, member):
         await self.fetch_ready.wait()
-        if member.id in self.all_users or member.bot:
+        if member.id in self.all_users:
             return
         else:
             raise checks.CustomError(f"{member.name} hasn't toggled presence record on yet.")
@@ -582,7 +578,7 @@ class Statistics(commands.Cog):
 
     @modding.help(brief="Set default timezone for chart commands", category="Experimental", field="Status", paragraph=1)
     @commands.command()
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     async def timezone(self, ctx, offset: int):
         '''
            `>>timezone <offset>`
@@ -607,14 +603,21 @@ class Statistics(commands.Cog):
             self.all_users.pop(member_id, None)
             await self.user_data.delete_many({"user_id": member_id})
 
-    @modding.help(brief="Toggle presence record, required for user charts", category="Experimental", field="Status", paragraph=1)
+    @modding.help(brief="Toggle presence tracking, required for user charts", category="Experimental", field="Status", paragraph=1)
     @commands.command()
-    async def togglestats(self, ctx):
+    @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
+    async def togglestats(self, ctx, member: discord.Member=None):
         '''
-           `>>togglestats`
-            Toggle presence recording on/off for them chart commands.
+           `>>togglestats <optional: member>`
+            Toggle presence tracking on/off for chart commands.
+            If member is a bot, then toggle tracking for that bot, else ignore.
+            Bot tracking cannot be turned off.
         '''
-        member = ctx.author
+        if member:
+            if not member.bot:
+                return await ctx.send("You can only toggle presence tracking for bots.")
+        else:
+            member = ctx.author
         if member.id not in self.all_users:
             sentences = {
                 "initial": "By using this command, you agree to let this bot record and publicize your presence data in detail.\n" \
@@ -627,16 +630,19 @@ class Statistics(commands.Cog):
             if result:
                 await self.update_opt_in(member, True)
         else:
-            sentences = {
-                "initial": "Your presence data will be erased, and will not be recorded from now on.\n" \
-                    "Do you wish to proceed?",
-                "yes": "Done.",
-                "no": "Cancelled.",
-                "timeout": "Cancelled."
-            }
-            result = await ctx.yes_no_prompt(sentences)
-            if result:
-                await self.update_opt_in(member, False)
+            if member.bot:
+                return await ctx.send("Bot tracking cannot be turned off.")
+            else:
+                sentences = {
+                    "initial": "Your presence data will be erased, and will not be recorded from now on.\n" \
+                        "Do you wish to proceed?",
+                    "yes": "Done.",
+                    "no": "Cancelled.",
+                    "timeout": "Cancelled."
+                }
+                result = await ctx.yes_no_prompt(sentences)
+                if result:
+                    await self.update_opt_in(member, False)
 
 #==================================================================================================================================================
 
