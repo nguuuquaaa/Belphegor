@@ -179,7 +179,8 @@ class Help(commands.Cog):
                 "desc":     
                     "These commands may or may not be rigged with bugs.\n"
                     "Update: since verified bot and stuff, chart commands will need to be "
-                    "toggled on first before bot start recording presence data.",
+                    "toggled on first before bot start recording presence data.\n"
+                    "Update 2: Sorry I lied, it's not \"may\" it's \"certainly\".",
                 "thumb":    None,
                 "footer":   None,
                 "fields":   {}
