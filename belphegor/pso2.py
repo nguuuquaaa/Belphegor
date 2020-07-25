@@ -789,8 +789,7 @@ class PSO2(commands.Cog):
                                     embed = discord.Embed(title=f"[{server.upper()}] EQ Alert", description="\n\n".join(desc), colour=discord.Colour.red())
                                     now_time = utils.now_time()
                                     embed.set_footer(text=utils.jp_time(now_time))
-                                    role_id = eqd.get("role_id")
-                                    role = channel.guild.get_role(role_id)
+                                    role = channel.guild.get_role(eqd.get("role_id"))
                                     if role:
                                         content = role.mention
                                     else:
@@ -808,7 +807,19 @@ class PSO2(commands.Cog):
             text = traceback.format_exc()
             if len(text) > 1950:
                 text = f"{e.__class__.__name__}: {e}"
-            await self.bot.error_hook.execute(f"```\n{text}\n```")
+
+            async def log_error():
+                for interval in (900, 1800, 3600, 0):
+                    try:
+                        await self.bot.error_hook.execute(f"```\n{text}\n```")
+                    except:
+                        await asyncio.sleep(interval)
+                    else:
+                        break
+                else:
+                    print("Discord gone crazy so can't log shit")
+
+            _loop.create_task(log_error())
 
             await asyncio.sleep(600)
             self.eq_alert_forever = weakref.ref(_loop.create_task(self.eq_alert()))
@@ -1154,12 +1165,21 @@ class PSO2(commands.Cog):
                 embed.set_footer(text=utils.jp_time(now_time))
 
                 async for gd in self.guild_data.find(
-                    {"eq_channel_id": {"$exists": True}},
-                    projection={"_id": False, "eq_channel_id": True, "eq_role_id": True}
+                    {"eq_data.jp": {"$exists": True}},
+                    projection={"_id": False, "eq_data": True}
                 ):
-                    channel = self.bot.get_channel(gd["eq_channel_id"])
+                    eqd = gd["eq_data"]["jp"]
+                    channel = self.bot.get_channel(eqd["channel_id"])
                     if channel:
-                        self.bot.loop.create_task(channel.send(embed=embed))
+                        role = channel.guild.get_role(eqd.get("role_id"))
+                        if role:
+                            content = role.mention
+                        else:
+                            content = None
+                        try:
+                            await channel.send(content, embed=embed)
+                        except discord.Forbidden:
+                            pass
                 self.incoming_events.call("pop", 0)
             else:
                 days_ahead = (2 - now_time.weekday()) % 7
