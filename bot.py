@@ -17,7 +17,7 @@ EMPTY_SET = frozenset()
 
 #==================================================================================================================================================
 
-class Belphegor(commands.Bot):
+class Belphegor(commands.AutoShardedBot):
     def __init__(self, **kwargs):
         super().__init__(None, **kwargs)
         self.default_prefix = kwargs.get("default_prefix", (">>",))
