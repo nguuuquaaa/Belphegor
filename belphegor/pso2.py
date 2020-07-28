@@ -315,9 +315,10 @@ class PSO2(commands.Cog):
         ):
             self.emojis[emoji_name] = discord.utils.find(lambda e:e.name==emoji_name, test_guild_2.emojis)
         self.emojis["set_effect"] = self.emojis["rear"]
-        self.last_eq_data = None
+        self.last_jp_eq_data = None
         self.last_na_eq_data = None
         self.api_data = {}
+        self.server_data = None
         self.eq_alert_forever = weakref.ref(bot.loop.create_task(self.eq_alert()))
         self.daily_order_pattern = bot.db.daily_order_pattern
         self.calendar = build("calendar", "v3", developerKey=token.GOOGLE_CLIENT_API_KEY)
@@ -721,6 +722,11 @@ class PSO2(commands.Cog):
         self.api_data["url"] = "https://acf.me.uk/Projects/PSO2-API/eq.json"
         self.api_data["na_url"] = "https://aida.moe/api/pso2na_events.php"
 
+        self.server_data = {
+            "jp": (self.api_data["url"],       utils.jp_timezone,   utils.jp_time,  "JST",  "last_jp_eq_data"),
+            "na": (self.api_data["na_url"],    utils.pdt_timezone,  utils.pdt_time, "PDT",  "last_na_eq_data")
+        }
+
     async def eq_alert(self):
         _loop = self.bot.loop
         try:
@@ -745,10 +751,8 @@ class PSO2(commands.Cog):
                     ("na", True) : [],
                     ("na", False) : []
                 }
-                for server, url, tz, api_tz, last in (
-                    ("jp",  self.api_data["url"],       utils.jp_timezone,  "JST",  "last_eq_data"),
-                    ("na",  self.api_data["na_url"],    utils.pdt_timezone, "PDT",  "last_na_eq_data")
-                ):
+
+                for server, (url, tz, time_format, api_tz, last) in self.server_data.items():
                     try:
                         bytes_ = await self.bot.fetch(url, headers=self.api_data["headers"])
                         data = json.loads(bytes_)[0]
@@ -788,7 +792,9 @@ class PSO2(commands.Cog):
                                 if desc:
                                     embed = discord.Embed(title=f"[{server.upper()}] EQ Alert", description="\n\n".join(desc), colour=discord.Colour.red())
                                     now_time = utils.now_time()
-                                    embed.set_footer(text=utils.jp_time(now_time))
+                                    sd = self.server_data[server]
+                                    time_format = sd[2]
+                                    embed.set_footer(text=time_format(now_time))
                                     role = channel.guild.get_role(eqd.get("role_id"))
                                     if role:
                                         content = role.mention
@@ -845,18 +851,8 @@ class PSO2(commands.Cog):
         server = server.lower()
         if server not in ("jp", "na"):
             return await ctx.send("Server must be either JP or NA")
-        if server == "jp":
-            last = "last_eq_data"
-            url = self.api_data["url"]
-            tz = utils.jp_timezone
-            api_tz = "JST"
-            footer = utils.jp_time
-        else:
-            last = "last_na_eq_data"
-            url = self.api_data["na_url"]
-            tz = utils.pdt_timezone
-            api_tz = "PDT"
-            footer = utils.pdt_time
+
+        url, tz, time_format, api_tz, last = self.server_data[server]
 
         data = getattr(self, last)
         if not data:
@@ -865,8 +861,8 @@ class PSO2(commands.Cog):
             setattr(self, last, data)
 
         now_time = utils.now_time(tz)
-        jst = int(data[api_tz])
-        start_time = now_time.replace(minute=0, second=0) + timedelta(hours=jst-1-now_time.hour)
+        local_time = int(data[api_tz])
+        start_time = now_time.replace(minute=0, second=0) + timedelta(hours=local_time-1-now_time.hour)
         sched_eq = []
         for index, key in enumerate(TIME_LEFT):
             if data[key]:
@@ -878,7 +874,7 @@ class PSO2(commands.Cog):
                     sched_eq.append(f"{self.get_emoji(sched_time)} **In {utils.seconds_to_text(wait_time)}**\n{data[key]}")
 
         embed = discord.Embed(title=f"[{server.upper()}] Recent/Upcoming EQ", colour=discord.Colour.red())
-        embed.set_footer(text=footer(now_time))
+        embed.set_footer(text=time_format(now_time))
         if sched_eq:
             embed.description = "\n\n".join(sched_eq)
         else:
