@@ -22,6 +22,16 @@ import inspect
 
 #==================================================================================================================================================
 
+DRAGON_SHOUT_GUILD_ID = 738232588279218338
+DRAGON_ALPHABET = [
+    "a", "aa", "ah", "b", "d", "e",
+    "ei", "ey", "f", "g", "h", "i",
+    "ii", "ir", "j", "k", "l", "m",
+    "n", "o", "oo", "p", "q", "r",
+    "s", "t", "u", "ur", "uu", "v",
+    "w", "x", "y", "z"
+]
+
 FANCY_CHARS = {chr(0x41+i): chr(0x1F1E6+i) for i in range(26)}
 FANCY_CHARS.update({str(i): f"{i}\u20e3" for i in range(10)})
 FANCY_CHARS["!"] = "\u2757"
@@ -141,6 +151,12 @@ class Misc(commands.Cog):
         self.setup_ascii_chars()
         self.auto_rep_disabled = set()
         bot.loop.create_task(self.fetch_auto_rep_settings())
+
+        self.dragon_chars = {}
+        dragon_guild = bot.get_guild(DRAGON_SHOUT_GUILD_ID)
+        for c in DRAGON_ALPHABET:
+            emoji = discord.utils.find(lambda e: e.name==f"dragon_{c}", dragon_guild.emojis)
+            self.dragon_chars[c] = emoji
 
     def quote(self, streak):
         if streak.endswith("ddd"):
@@ -269,7 +285,7 @@ class Misc(commands.Cog):
             except:
                 pass
 
-    @modding.help(brief="Get your or a user avatar", category="Misc", field="Commands", paragraph=1)
+    @modding.help(brief="Get your or a user avatar", category="Misc", field="Commands", paragraph=0)
     @commands.command(aliases=["av"])
     async def avatar(self, ctx, *, member: discord.Member=None):
         '''
@@ -307,7 +323,7 @@ class Misc(commands.Cog):
         else:
             await ctx.send("Max side must be between 4 and 120 and number of dices must be between 1 and 100.")
 
-    @modding.help(brief="\U0001f1eb \U0001f1e6 \U0001f1f3 \U0001f1e8 \U0001f1fe", category="Misc", field="Commands", paragraph=0)
+    @modding.help(brief="\U0001f1eb \U0001f1e6 \U0001f1f3 \U0001f1e8 \U0001f1fe", category="Misc", field="Commands", paragraph=1)
     @commands.command()
     async def fancy(self, ctx, *, textin):
         '''
@@ -1470,6 +1486,33 @@ class Misc(commands.Cog):
             await ctx.send(embed=embed)
         else:
             await ctx.send("Can't find anything.")
+
+    @modding.help(brief="<:dragon_t:738233371049721937><:dragon_h:738233370789806101><:dragon_uu:738233371196653648><:dragon_m:738233371083145216>", category="Misc", field="Commands", paragraph=1)
+    @commands.command()
+    async def thuum(self, ctx, *, sentence):
+        '''
+            `>> thuum <sentence>`
+            Send sentence written with The Elder Scrolls' dragon alphabet.
+        '''
+        sentence = sentence.replace("'", "").lower()
+        slen = len(sentence)
+        if slen > 50:
+            return await ctx.send("Sentence too long.")
+
+        i = 0
+        ret = []
+        while i < slen:
+            for clen in (2, 1):
+                next_char = sentence[i:i+clen]
+                if next_char in self.dragon_chars:
+                    ret.append(self.dragon_chars[next_char])
+                    i += clen
+                    break
+            else:
+                ret.append("      ")
+                i += 1
+                continue
+        await ctx.send("".join(map(str, ret)))
 
 #==================================================================================================================================================
 
