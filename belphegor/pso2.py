@@ -936,7 +936,7 @@ class PSO2(commands.Cog):
             unit["rarity"] = utils.to_int(relevant[2].find("img")["alt"])
             rq_img_tag = relevant[3].find("img")
             try:
-                unit["requirement"] = {"type": rq_img_tag["alt"].replace(" ", "").lower(), "value": int(rq_img_tag.next_sibling.strip())}
+                unit["requirement"] = {"type": rq_img_tag["alt"].replace(" ", "").replace("-", "").lower(), "value": int(rq_img_tag.next_sibling.strip())}
             except TypeError:
                 continue
             try:
