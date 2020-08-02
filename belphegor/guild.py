@@ -754,7 +754,7 @@ class Guild(commands.Cog):
                     embed.add_field(name="Author", value=message.author.mention)
                     embed.add_field(name="Channel", value=message.channel.mention)
                     if message.content:
-                        embed.add_field(name="Content", value=f"{message.content[:1000]}" if len(message.content)>1000 else message.content, inline=False)
+                        embed.add_field(name="Content", value=f"{message.content[:1000]}..." if len(message.content)>1000 else message.content, inline=False)
                     if message.attachments:
                         a = message.attachments[0]
                         try:
@@ -1339,7 +1339,7 @@ class Guild(commands.Cog):
                 "guild_id": ctx.guild.id
             }, 
             {
-                "$pull": {"disabled_bot_member": channel.id}
+                "$pull": {"disabled_bot_member": member.id}
             }
         )
         await ctx.send(f"Bot usage has been enabled for {member} in this server.")
