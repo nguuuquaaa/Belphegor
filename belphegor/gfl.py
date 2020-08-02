@@ -124,13 +124,17 @@ def timer_to_seconds(s):
 timer_regex = re.compile(r"(\d{0,2})\:?(\d{2})")
 
 def circle_iter(iterable, with_index=False):
-    while True:
+    if iterable:
         if with_index:
-            for i, item in enumerate(iterable):
-                yield i, item
+            while True:
+                for i, item in enumerate(iterable):
+                    yield i, item
         else:
-            for item in iterable:
-                yield item
+            while True:
+                for item in iterable:
+                    yield item
+    else:
+        raise ValueError("Cannot circle-iterate empty container.")
 
 def get_either(container, *keys, default=None):
     for key in keys:
@@ -170,7 +174,7 @@ def handle_alias(box, *, server, alias):
         return ""
 
 @parser.set_box_handler("doll name")
-def handle_doll_name(box, name, *args):
+def handle_doll_name(box, name, *args, **kwargs):
     return name
 
 @parser.set_box_handler("HG aura")
@@ -182,17 +186,28 @@ def handle_hg_aura(box, value):
 def handle_enemy_name(box, name, subtype="enemy"):
     return name
 
-@parser.set_box_handler("cite ab1")
-def handle_cite_ab1(box, value):
-    return ""
-
 @parser.set_box_handler("equip name")
 def handle_equip_name(box, name, type, rarity):
     return name
 
 @parser.set_box_handler("spoiler")
-def handle_equip_name(box, value):
+def handle_spoiler(box, value):
     return f"||{value}||"
+
+@parser.set_box_handler("cite")
+@parser.set_box_handler("cite ab1")
+@parser.set_box_handler("stub")
+@parser.set_box_handler("wip")
+def handle_misc(box, *args, **kwargs):
+    return ""
+
+@parser.set_box_handler("icon")
+def handle_icon(box, name):
+    return name
+
+@parser.set_box_handler(None)
+def default_handler(box, *args, **kwargs):
+    raise ValueError(f"Handler for {box} doesn't exist.")
 
 @parser.set_reference_handler
 def handle_reference(box, *args, **kwargs):
@@ -280,7 +295,7 @@ class Doll(data_type.BaseObject):
             )
 
             tile = {
-                k: emojis["green_square"] if v==1 else emojis["white_square"] if v==0 else emojis["black_square"]
+                k: emojis["blue_square"] if v==1 else emojis["white_square"] if v==0 else emojis["black_square"]
                 for k, v in self.tile["shape"].items()
             }
 
@@ -331,57 +346,61 @@ class Doll(data_type.BaseObject):
 
     def _mod_info(self, cog):
         emojis = cog.emojis
-        embeds = []
         mod = self.mod_data
 
+        embed = discord.Embed(
+            title=f"#{self.index} {self.en_name or self.name}",
+            color=discord.Color.green(),
+            url=f"https://en.gfwiki.com/wiki/{quote(self.name)}"
+        )
+        embed.add_field(name="Classification", value=f"{emojis[self.classification]}{self.classification}")
+        embed.add_field(name="Rarity", value=str(emojis["rank"])*MOD_RARITY[self.rarity])
+        embed.add_field(
+            name="Production time",
+            value=f"{self.craft_time//3600}:{self.craft_time%3600//60:0>2d}" if self.craft_time else "Non-craftable",
+            inline=False
+        )
+
+        embed.add_field(
+            name="Stats",
+            value=
+                f"{emojis['hp']}**HP:** {mod['max_hp']} (x5)\n"
+                f"{emojis['damage']}**DMG:** {mod['max_dmg']}\n"
+                f"{emojis['accuracy']}**ACC:** {mod['max_acc']}\n"
+                f"{emojis['rof']}**ROF:** {mod['max_rof']}\n"
+                f"{emojis['evasion']}**EVA:** {mod['max_eva']}\n"
+                f"{emojis['crit_rate']}**Crit rate:** {self.crit_rate}%"
+                +
+                (f"\n{emojis['armor']}**Armor:**  {mod['max_armor']}" if mod["max_armor"] > 0 else "")
+                +
+                (f"\n{emojis['clip_size']}**Clip size:** {mod['clip_size']}" if mod["clip_size"] > 0 else "")
+        )
+        embed.add_field(
+            name="Equipment slots",
+            value=
+                "\n".join(f"**Lv{20+i*30}**:\n\u200b    {''.join(str(emojis[e]) for e in self.equipment_slots[i])}" for i in range(3))
+        )
+
+        tile = {
+            k: emojis["blue_square"] if v==1 else emojis["white_square"] if v==0 else emojis["black_square"]
+            for k, v in mod["tile"]["shape"].items()
+        }
+
+        embed.add_field(
+            name="Tile",
+            value=
+                f"\u200b {tile['7']}{tile['8']}{tile['9']}\u2001{mod['tile']['target']}\n"
+                f"\u200b {tile['4']}{tile['5']}{tile['6']}\u2001{mod['tile']['effect'][0]}\n"
+                f"\u200b {tile['1']}{tile['2']}{tile['3']}\u2001{mod['tile']['effect'][1]}",
+            inline=False
+        )
+
+        embeds = []
         for skill_index in range(2):
-            for skill_effect in utils.split_page(mod["skill"][skill_index]["effect"], 900, check=lambda s:s=="\n"):
-                embed = discord.Embed(
-                    title=f"#{self.index} {self.en_name or self.name}",
-                    color=discord.Color.green(),
-                    url=f"https://en.gfwiki.com/wiki/{quote(self.name)}"
-                )
-                embed.add_field(name="Classification", value=f"{emojis[self.classification]}{self.classification}")
-                embed.add_field(name="Rarity", value=str(emojis["rank"])*MOD_RARITY[self.rarity])
-                embed.add_field(
-                    name="Production time",
-                    value=f"{self.craft_time//3600}:{self.craft_time%3600//60:0>2d}" if self.craft_time else "Non-craftable",
-                    inline=False
-                )
-
-                embed.add_field(
-                    name="Stats",
-                    value=
-                        f"{emojis['hp']}**HP:** {mod['max_hp']} (x5)\n"
-                        f"{emojis['damage']}**DMG:** {mod['max_dmg']}\n"
-                        f"{emojis['accuracy']}**ACC:** {mod['max_acc']}\n"
-                        f"{emojis['rof']}**ROF:** {mod['max_rof']}\n"
-                        f"{emojis['evasion']}**EVA:** {mod['max_eva']}\n"
-                        f"{emojis['crit_rate']}**Crit rate:** {self.crit_rate}%"
-                        +
-                        (f"\n{emojis['armor']}**Armor:**  {mod['max_armor']}" if mod["max_armor"] > 0 else "")
-                        +
-                        (f"\n{emojis['clip_size']}**Clip size:** {mod['clip_size']}" if mod["clip_size"] > 0 else "")
-                )
-                embed.add_field(
-                    name="Equipment slots",
-                    value=
-                        "\n".join(f"**Lv{20+i*30}**:\n\u200b    {''.join(str(emojis[e]) for e in self.equipment_slots[i])}" for i in range(3))
-                )
-
-                tile = {
-                    k: emojis["green_square"] if v==1 else emojis["white_square"] if v==0 else emojis["black_square"]
-                    for k, v in mod["tile"]["shape"].items()
-                }
-
-                embed.add_field(
-                    name="Tile",
-                    value=
-                        f"\u200b {tile['7']}{tile['8']}{tile['9']}\u2001{mod['tile']['target']}\n"
-                        f"\u200b {tile['4']}{tile['5']}{tile['6']}\u2001{mod['tile']['effect'][0]}\n"
-                        f"\u200b {tile['1']}{tile['2']}{tile['3']}\u2001{mod['tile']['effect'][1]}",
-                    inline=False
-                )
+            for i, skill_effect in enumerate(utils.split_page(mod["skill"][skill_index]["effect"], 1000, check=lambda s:s=="\n")):
+                while i > len(embeds) - 1:
+                    embeds.append(embed.copy())
+                cur = embeds[i]
 
                 skill = mod["skill"][skill_index]
                 icd = f"Initial CD: {skill['icd']}s" if skill["icd"] else None
@@ -391,14 +410,14 @@ class Doll(data_type.BaseObject):
                 else:
                     add = ""
 
-                embed.add_field(
+                cur.add_field(
                     name=f"Skill {skill_index+1}",
                     value=
                         f"**{skill['name']}**{add}\n"
                         f"{skill_effect}",
                     inline=False
                 )
-                embeds.append(embed)
+                embeds.append(cur)
 
         return embeds
 
@@ -413,13 +432,17 @@ class Doll(data_type.BaseObject):
             "info_iter": None,
             "skin": None,
             "skin_iter": None,
-            "current_skin": None
+            "current_skin": (None, None)
         }
 
         def add_image():
             index, skin = saved["current_skin"]
-            saved["embed"].set_footer(text=f"Skin: {skin['name']} ({skin['form']}) - ({index+1}/{len(saved['skin'])})")
-            saved["embed"].set_image(url=skin["image_url"])
+            if index is None:
+                saved["embed"].set_image(url=config.NO_IMG)
+                saved["embed"].set_footer(text=discord.Embed.Empty)
+            else:
+                saved["embed"].set_footer(text=f"Skin: {skin['name']} ({skin['form']}) - ({index+1}/{len(saved['skin'])})")
+                saved["embed"].set_image(url=skin["image_url"])
 
         def change_info_to(info, skin):
             if saved["info"] is not info:
@@ -428,7 +451,10 @@ class Doll(data_type.BaseObject):
             if saved["skin"] is not skin:
                 saved["skin"] = skin
                 saved["skin_iter"] = circle_iter(skin, with_index=True)
-                saved["current_skin"] = next(saved["skin_iter"])
+                try:
+                    saved["current_skin"] = next(saved["skin_iter"])
+                except ValueError:
+                    saved["current_skin"] = (None, None)
             saved["embed"] = next(saved["info_iter"])
             add_image()
 
@@ -467,16 +493,14 @@ class GirlsFrontline(commands.Cog):
         self.doll_list = bot.db.doll_list
 
         test_guild_2 = bot.get_guild(config.TEST_GUILD_2_ID)
-        self.emojis = {"white_square": "\u2b1c", "black_square": "\u2b1b"}
+        self.emojis = {"white_square": "\u2b1c", "black_square": "\u2b1b", "blue_square": "\U0001f7e6"}
         for emoji_name in (
-            "green_square",
             "hp", "damage", "accuracy", "rof", "evasion", "armor",
             "crit_rate", "crit_dmg", "armor_penetration", "clip_size", "mobility",
             "telescopic_sight", "red_dot_sight", "holographic_sight",
             "night_equipment", "silencer",
             "hp_ammo", "hv_ammo", "ap_ammo", "shotgun_ammo",
-            "armor_plate", "camo_cape", "ammo_box", "exoskeleton", "chip",
-            "ammo", "ration"
+            "armor_plate", "camo_cape", "ammo_box", "exoskeleton", "chip"
         ):
             self.emojis[emoji_name] = discord.utils.find(lambda e: e.name==emoji_name, test_guild_2.emojis)
 
@@ -536,12 +560,12 @@ class GirlsFrontline(commands.Cog):
         if d:
             await d.display_info(ctx)
 
-    @doll.group()
+    @doll.group(name="update")
     @checks.owner_only()
-    async def update(self, ctx):
+    async def doll_update(self, ctx):
         pass
 
-    @update.command(aliases=["all"])
+    @doll_update.command(aliases=["all"])
     async def everything(self, ctx):
         await ctx.trigger_typing()
         params = {
@@ -562,7 +586,7 @@ class GirlsFrontline(commands.Cog):
 
         await self.update_dolls_with_names(ctx, names)
 
-    @update.command()
+    @doll_update.command()
     async def many(self, ctx, *names):
         await ctx.trigger_typing()
         logs = await self.update_dolls_with_names(ctx, names)
@@ -660,7 +684,6 @@ class GirlsFrontline(commands.Cog):
             add_ap=basic_info.get("use_armor-piercing_ammo", False),
             add_armor=basic_info.get("use_ballistic_plate", False)
         )
-        print(basic_info.get("use_armor-piercing_pmmo", False))
 
         tile = {}
         tile["shape"] = {str(i): utils.to_int(basic_info.get(f"tile{i}"), default=-1) for i in range(1, 10)}
@@ -950,6 +973,74 @@ class GirlsFrontline(commands.Cog):
                 return await paging.navigate(ctx)
 
         await ctx.send("Invalid timer")
+
+    @commands.group(aliases=["e"], invoke_without_command=True)
+    @checks.owner_only()
+    async def equipment(self, ctx, *, name):
+        '''
+            `>>equipment <name>`
+            Display a T-doll info.
+            Name is case-insensitive.
+        '''
+        pass
+
+    @equipment.group(name="update")
+    @checks.owner_only()
+    async def equipment_update(self, ctx):
+        pass
+
+    @equipment_update.command()
+    @checks.owner_only()
+    async def speq(self, ctx):
+        await ctx.trigger_typing()
+        params = {
+            "action":       "query",
+            "list":         "categorymembers",
+            "cmtitle":      "Category:Exclusive Equipments",
+            "cmlimit":      5000,
+            "format":       "json",
+            "redirects":    1
+        }
+        bytes_ = await self.bot.fetch(GFWIKI_API, params=params)
+        data = json.loads(bytes_)
+        names = []
+        for cm in data["query"]["categorymembers"]:
+            names.append(cm["title"])
+
+        await self.update_equipments_with_names(ctx, names)
+
+    async def update_equipments_with_names(self, ctx, names):
+        await ctx.send(f"Total: {len(names)} equipments")
+        msg = await ctx.send(f"Fetching...\n{utils.progress_bar(0)}")
+        passed = []
+        failed = []
+        logs = {}
+        count = len(names)
+        for i, name in enumerate(names):
+            try:
+                doll = await self.search_gfwiki(name)
+            except:
+                logs[name] = traceback.format_exc()
+                failed.append(name)
+            else:
+                passed.append(doll.name)
+                await self.doll_list.update_one(
+                    {"index": doll.index, "rarity": doll.rarity},
+                    {"$set": doll.__dict__},
+                    upsert=True
+                )
+            if (i+1)%10 == 0:
+                await msg.edit(content=f"Fetching...\n{utils.progress_bar((i+1)/count)}")
+        await msg.edit(content=f"Done.\n{utils.progress_bar(1)}")
+        txt = json.dumps({"passed": passed, "failed": failed}, indent=4)
+        if len(txt) > 1900:
+            await ctx.send(
+                f"Passed: {len(passed)}\nFailed: {len(failed)}",
+                file=discord.File.from_str(txt)
+            )
+        else:
+            await ctx.send(f"Passed: {len(passed)}\nFailed: {len(failed)}\n```json\n{txt}\n```")
+        return logs
 
 #==================================================================================================================================================
 
