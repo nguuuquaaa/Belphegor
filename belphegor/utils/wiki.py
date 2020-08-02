@@ -267,10 +267,14 @@ class WikitextParser:
                 while True:
                     next_char = next(text_iter)
                     if next_char == ">":
-                        if key or value:
+                        if key:
                             tag[key] = value
+                        elif value:
+                            if "" in tag:
+                                tag[value] = ""
+                            else:
+                                tag[""] = value
                         break
-
                     elif next_char == "=":
                         if key:
                             value = value + next_char
@@ -315,9 +319,12 @@ class WikitextParser:
                         if key:
                             pass
                         else:
-                            tag[key] = value
-                            key = ""
-                            value = ""
+                            if not key and "" in tag:
+                                tag[value] = ""
+                            else:
+                                tag[key] = value
+                                key = ""
+                                value = ""
                 
                 return tag
             
