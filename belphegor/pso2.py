@@ -124,7 +124,8 @@ CLASS_DICT = {
     "Summoner": "su",
     "Hero":     "hr",
     "Phantom":  "ph",
-    "Etoile":   "et"
+    "Etoile":   "et",
+    "Luster":   "lu"
 }
 TIME_LEFT = ("Now", "HalfHour", "OneLater", "OneHalfLater", "TwoLater", "TwoHalfLater", "ThreeLater", "ThreeHalfLater")
 
@@ -301,7 +302,7 @@ class PSO2(commands.Cog):
         self.emojis = {}
         for emoji_name in (
             "fire", "ice", "lightning", "wind", "light", "dark",
-            "hu", "fi", "ra", "gu", "fo", "te", "br", "bo", "su", "hr", "ph", "et",
+            "hu", "fi", "ra", "gu", "fo", "te", "br", "bo", "su", "hr", "ph", "et", "lu",
             "satk", "ratk", "tatk", "ability", "potential",
             "pa", "saf", "star_0", "star_1", "star_2", "star_3", "star_4", "rappy"
         ):
@@ -547,8 +548,11 @@ class PSO2(commands.Cog):
                 weapon["pic_url"] = f"https://pso2.arks-visiphone.com{relevant[1].find('img')['src'].replace('64px-', '96px-')}"
             except:
                 weapon["pic_url"] = None
-            rq = utils.unifix(relevant[3].get_text()).partition(" ")
-            weapon["requirement"] = {"type": rq[2].replace("-", "").lower(), "value": rq[0]}
+            rq = relevant[3].find("li")
+            weapon["requirement"] = {
+                "type": rq.find("img")["alt"].lower().replace("-", ""),
+                "value": utils.to_int(rq.text.strip())
+            }
             weapon["atk"] = {
                 "base": {"satk": 0, "ratk": 0, "tatk": 0},
                 "max":  {"satk": 0, "ratk": 0, "tatk": 0}
@@ -756,6 +760,9 @@ class PSO2(commands.Cog):
                     try:
                         bytes_ = await self.bot.fetch(url, headers=self.api_data["headers"])
                         data = json.loads(bytes_)[0]
+                    except IndexError:
+                        setattr(self, last, None)
+                        continue
                     except (json.JSONDecodeError, checks.CustomError):
                         await self.bot.error_hook.execute(f"```Custom error:\n  Problem fetching EQ alert for {server.upper()}\n```")
                         continue
@@ -857,7 +864,11 @@ class PSO2(commands.Cog):
         data = getattr(self, last)
         if not data:
             bytes_ = await self.bot.fetch(url, headers=self.api_data["headers"])
-            data = json.loads(bytes_)[0]
+            try:
+                data = json.loads(bytes_)[0]
+            except IndexError:
+                setattr(self, last, None)
+                return await ctx.send("Oops, it seems EQ API doesn't return anything.\nPlease wait for a while.")
             setattr(self, last, data)
 
         now_time = utils.now_time(tz)
@@ -936,7 +947,10 @@ class PSO2(commands.Cog):
             unit["rarity"] = utils.to_int(relevant[2].find("img")["alt"])
             rq_img_tag = relevant[3].find("img")
             try:
-                unit["requirement"] = {"type": rq_img_tag["alt"].replace(" ", "").replace("-", "").lower(), "value": int(rq_img_tag.next_sibling.strip())}
+                unit["requirement"] = {
+                    "type": rq_img_tag["alt"].replace(" ", "").replace("-", "").lower(),
+                    "value": utils.to_int(rq_img_tag.next_sibling.strip())
+                }
             except TypeError:
                 continue
             try:
