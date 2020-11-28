@@ -129,14 +129,11 @@ CLASS_DICT = {
 }
 TIME_LEFT = ("Now", "HalfHour", "OneLater", "OneHalfLater", "TwoLater", "TwoHalfLater", "ThreeLater", "ThreeHalfLater")
 
-no_html_regex = re.compile(r"\<\/?\w+?\>")
-def _match_this(match):
-    if match.group(0) in ("<br>", "</br>"):
-        return "\n"
-    elif match.group(0) == "<li>":
-        return "\u2022 "
-    else:
-        return ""
+def clear_html(text, *, newline=" "):
+    soup = BS(text, "lxml")
+    for elem in soup.find_all("br"):
+        elem.replace_with(newline)
+    return soup.get_text()
 
 simple_time_regex = re.compile(r"([0-9]{1,2})[-/]([0-9]{1,2})[-/]?([0-9]{2,4})?")
 
@@ -576,7 +573,7 @@ class PSO2(commands.Cog):
                         weapon["ssa_slots"].extend(SSA_SLOTS.get(a, ()))
                 elif child.name == "span":
                     cur["name"] = utils.unifix(child.get_text())
-                    cur["description"] = utils.unifix(no_html_regex.sub(_match_this, html.unescape(child["data-simple-tooltip"])))
+                    cur["description"] = utils.unifix(clear_html(html.unescape(child["data-simple-tooltip"])))
                     color = child.find("span")
                     if color:
                         cur["special"] = SPECIAL_DICT[color["style"]]
@@ -616,16 +613,31 @@ class PSO2(commands.Cog):
         await self.weapon_list.insert_many(weapons)
         await msg.edit(content="Done.")
 
-    @modding.help(brief="Search for items", category="PSO2", field="Database", paragraph=1)
-    @commands.command(name="item", aliases=["i"])
+    @modding.help(brief="Search for JP items", category="PSO2", field="Database", paragraph=1)
+    @commands.group(name="item", aliases=["i"], invoke_without_command=True)
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     async def cmd_item(self, ctx, *, data: modding.KeyValue()):
         '''
             `>>item <name> <keyword: desc|description>`
-            Find PSO2 items.
+            Find JP PSO2 items.
             Name given is case-insensitive, and can be either EN or JP.
             Description is used to filter result.
         '''
+        await self.search_items("jp", ctx, data)
+
+    @modding.help(brief="Search for NA items", category="PSO2", field="Database", paragraph=1)
+    @cmd_item.command(name="na")
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+    async def cmd_item_na(self, ctx, *, data: modding.KeyValue()):
+        '''
+            `>>item na <name> <keyword: desc|description>`
+            Find NA PSO2 items.
+            Name given is case-insensitive.
+            Description is used to filter result.
+        '''
+        await self.search_items("na", ctx, data)
+
+    async def search_items(self, server, ctx, data):
         await ctx.trigger_typing()
         name = data.getall("", None)
         if not name:
@@ -633,7 +645,7 @@ class PSO2(commands.Cog):
         name = " ".join(name)
         desc = data.geteither("description", "desc")
         params = {"name": name}
-        bytes_ = await utils.fetch(self.bot.session, "http://db.kakia.org/item/search", params=params)
+        bytes_ = await utils.fetch(self.bot.session, f"http://{server}.db.telepipe.io/item/search", params=params)
         try:
             result = json.loads(bytes_)
         except json.JSONDecodeError:
@@ -641,19 +653,28 @@ class PSO2(commands.Cog):
         if not result:
             return await ctx.send("Can't find any item with that name.")
         if desc:
+            if server == "jp":
+                key = "EnDesc"
+            else:
+                key = "JpDesc"
             regex = re.compile(".*?".join((re.escape(w) for w in desc.split())), re.I)
             filtered = []
             for r in result:
-                if regex.search(r["EnDesc"]):
+                if regex.search(r[key]):
                     filtered.append(r)
         else:
             filtered = result
 
         nl = "\n"
+        if server == "jp":
+            page_desc = lambda i, x: f"**EN:** {x['EnName']}\n**JP:** {utils.unifix(x['JpName'])}\n{clear_html(x['EnDesc'].replace(nl, ' '))}"
+        else:
+            page_desc = lambda i, x: f"**Name:** {x['JpName']}\n{clear_html(x['JpDesc'].replace(nl, ' '))}"
+
         paging = utils.Paginator(
             filtered, 5, separator="\n\n",
             title=f"Search result: {len(filtered)} results",
-            description=lambda i, x: f"**EN:** {x['EnName']}\n**JP:** {utils.unifix(x['JpName'])}\n{x['EnDesc'].replace(nl, ' ')}",
+            description=page_desc,
             colour=discord.Colour.blue()
         )
         await paging.navigate(ctx, timeout=300)
@@ -663,24 +684,44 @@ class PSO2(commands.Cog):
         if isinstance(error, aiohttp.ClientConnectorError):
             await ctx.send("Oops it seems I can't reach the database server. Maybe try again later?")
 
-    @modding.help(brief="Check item price", category="PSO2", field="Database", paragraph=1)
-    @commands.command(name="price")
+    @modding.help(brief="Check JP item price", category="PSO2", field="Database", paragraph=1)
+    @commands.group(name="price", invoke_without_command=True)
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     async def cmd_price(self, ctx, *, name):
         '''
             `>>price <name>`
-            Check the price of an item.
+            Check the price of a JP item.
             Quite outdated, better just go ingame.
         '''
+        await self.search_price("jp", ctx, name)
+
+    @modding.help(brief="Check NA item price", category="PSO2", field="Database", paragraph=1)
+    @cmd_price.command(name="na", invoke_without_command=True)
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+    async def cmd_price_na(self, ctx, *, name):
+        '''
+            `>>price na <name>`
+            Check the price of a NA item.
+            Quite outdated, better just go ingame.
+        '''
+        await self.search_price("na", ctx, name)
+
+    async def search_price(self, server, ctx, name):
+        if server == "jp":
+            number_of_ships = 10
+        else:
+            number_of_ships = 4
+
         async with ctx.typing():
             params = {"name": name}
-            bytes_ = await utils.fetch(self.bot.session, "http://db.kakia.org/item/search", params=params)
+            bytes_ = await utils.fetch(self.bot.session, f"http://{server}.db.telepipe.io/item/search", params=params)
             result = json.loads(bytes_)
             if result:
                 item = result[0]
                 ship_field = []
                 price_field = []
                 last_updated_field = []
-                for ship in range(1, 11):
+                for ship in range(1, number_of_ships+1):
                     ship_data = utils.get_element(item["PriceInfo"], lambda i: i["Ship"]==ship)
                     ship_field.append(str(ship))
                     if ship_data:

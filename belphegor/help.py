@@ -107,7 +107,7 @@ class Help(commands.Cog):
                 "fields":   {
                     "Database": [
                         [
-                            "Data taken from [Arks-Visiphone](http://pso2.arks-visiphone.com/wiki/Main_Page) and [DB Kakia](http://db.kakia.org/)."
+                            "Data taken from [Arks-Visiphone](http://pso2.arks-visiphone.com/wiki/Main_Page) and [DB Kakia](http://jp.db.telepipe.io/)."
                         ]
                     ]
                 }
