@@ -11,7 +11,8 @@ from urllib.parse import quote
 
 #==================================================================================================================================================
 
-GFWIKI_API = "https://en.gfwiki.com/api.php"
+GFWIKI_BASE = "https://iopwiki.com"
+GFWIKI_API = f"{GFWIKI_BASE}/api.php"
 
 MOBILITY = {
     "AR":   10,
@@ -153,6 +154,27 @@ name_clean_regex = re.compile(r"[\.\-\s\/]")
 def normalize(s):
     return s.replace("\u2215", "/")
 
+shorten_regex = re.compile(r"(submachine\s?gun|assault\s?rifle|rifle|hand\s?gun|machine\sgun|shotgun)s?\s*(?:\(\w{2,3}\))?")
+def shorten_repl(m):
+    base = m.group(1)
+    if base.startswith("sub"):
+        return "SMG"
+    elif base.startswith("assault"):
+        return "AR"
+    elif base.startswith("hand"):
+        return "HG"
+    elif base.startswith("machine"):
+        return "MG"
+    elif base.startswith("rifle"):
+        return "RF"
+    elif base.startswith("shot"):
+        return "SG"
+    else:
+        return m.group(0)
+
+def shorten_types(text):
+    return shorten_regex.sub(shorten_repl, text)
+
 #==================================================================================================================================================
 
 parser = wiki.WikitextParser()
@@ -204,6 +226,10 @@ def handle_misc(box, *args, **kwargs):
 @parser.set_box_handler("icon")
 def handle_icon(box, name):
     return name
+
+@parser.set_box_handler("Cleanup")
+def handle_cleanup(box, *args, **kwargs):
+    return ""
 
 @parser.set_box_handler(None)
 def default_handler(box, *args, **kwargs):
@@ -260,13 +286,13 @@ class Doll(data_type.BaseObject):
     def _base_info(self, cog):
         emojis = cog.emojis
         embeds = []
-        for skill_effect in utils.split_page(self.skill["effect"], 900, check=lambda s:s=="\n"):
+        for skill_effect in utils.split_page(self.skill["effect"], 900, check=lambda s:s=="\n", fix=" \u27a1 "):
             embed = discord.Embed(
                 title=f"#{self.index} {self.en_name or self.name}",
                 color=discord.Color.green(),
-                url=f"https://en.gfwiki.com/wiki/{quote(self.name)}"
+                url=f"{GFWIKI_BASE}/wiki/{quote(self.name)}"
             )
-            embed.add_field(name="Classification", value=f"{emojis[self.classification]}{self.classification}")
+            embed.add_field(name="Classification", value=f"{emojis[self.classification]} **{self.classification}**")
             embed.add_field(name="Rarity", value=str(emojis["rank"])*utils.to_int(self.rarity, default=0) or "**EXTRA**")
             embed.add_field(
                 name="Production time",
@@ -302,7 +328,7 @@ class Doll(data_type.BaseObject):
             embed.add_field(
                 name="Tile",
                 value=
-                    f"\u200b {tile['7']}{tile['8']}{tile['9']}\u2001{self.tile['target']}\n"
+                    f"\u200b {tile['7']}{tile['8']}{tile['9']}\u2001{shorten_types(self.tile['target'])}\n"
                     f"\u200b {tile['4']}{tile['5']}{tile['6']}\u2001{self.tile['effect'][0]}\n"
                     f"\u200b {tile['1']}{tile['2']}{tile['3']}\u2001{self.tile['effect'][1]}",
                 inline=False
@@ -329,11 +355,11 @@ class Doll(data_type.BaseObject):
 
     def _other_info(self, cog):
         embeds = []
-        for trivia in utils.split_page(self.trivia, 1000, check=lambda s:s=="\n"):
+        for trivia in utils.split_page(self.trivia, 1000, check=lambda s:s=="\n", fix=" \u27a1 "):
             embed = discord.Embed(
                 title=f"#{self.index} {self.en_name or self.name}",
                 color=discord.Color.green(),
-                url=f"https://en.gfwiki.com/wiki/{quote(self.name)}"
+                url=f"{GFWIKI_BASE}/wiki/{quote(self.name)}"
             )
             embed.add_field(name="Full name", value=self.full_name)
             embed.add_field(name="Origin", value=self.origin)
@@ -351,9 +377,9 @@ class Doll(data_type.BaseObject):
         embed = discord.Embed(
             title=f"#{self.index} {self.en_name or self.name}",
             color=discord.Color.green(),
-            url=f"https://en.gfwiki.com/wiki/{quote(self.name)}"
+            url=f"{GFWIKI_BASE}/wiki/{quote(self.name)}"
         )
-        embed.add_field(name="Classification", value=f"{emojis[self.classification]}{self.classification}")
+        embed.add_field(name="Classification", value=f"{emojis[self.classification]} **{self.classification}**")
         embed.add_field(name="Rarity", value=str(emojis["rank"])*MOD_RARITY[self.rarity])
         embed.add_field(
             name="Production time",
@@ -389,7 +415,7 @@ class Doll(data_type.BaseObject):
         embed.add_field(
             name="Tile",
             value=
-                f"\u200b {tile['7']}{tile['8']}{tile['9']}\u2001{mod['tile']['target']}\n"
+                f"\u200b {tile['7']}{tile['8']}{tile['9']}\u2001{shorten_types(mod['tile']['target'])}\n"
                 f"\u200b {tile['4']}{tile['5']}{tile['6']}\u2001{mod['tile']['effect'][0]}\n"
                 f"\u200b {tile['1']}{tile['2']}{tile['3']}\u2001{mod['tile']['effect'][1]}",
             inline=False
@@ -397,7 +423,7 @@ class Doll(data_type.BaseObject):
 
         embeds = []
         for skill_index in range(2):
-            for i, skill_effect in enumerate(utils.split_page(mod["skill"][skill_index]["effect"], 1000, check=lambda s:s=="\n")):
+            for i, skill_effect in enumerate(utils.split_page(mod["skill"][skill_index]["effect"], 1000, check=lambda s:s=="\n", fix=" \u27a1 ")):
                 while i > len(embeds) - 1:
                     embeds.append(embed.copy())
                 cur = embeds[i]
@@ -458,12 +484,12 @@ class Doll(data_type.BaseObject):
             saved["embed"] = next(saved["info_iter"])
             add_image()
 
-        @paging.wrap_action("\U0001f1ee")
+        @paging.wrap_action(ctx.cog.emojis["damage"])
         def change_base_info():
             change_info_to(base_info, skin)
             return saved["embed"]
 
-        @paging.wrap_action("\U0001f1f9")
+        @paging.wrap_action("\U0001f5d2")
         def change_other_info():
             change_info_to(other_info, skin)
             return saved["embed"]
@@ -472,7 +498,7 @@ class Doll(data_type.BaseObject):
             mod_info = self._mod_info(ctx.cog)
             mod_skin = self.mod_data["skins"]
 
-            @paging.wrap_action("\U0001f1f2")
+            @paging.wrap_action("\u2699")
             def change_mod3_info():
                 change_info_to(mod_info, mod_skin)
                 return saved["embed"]
@@ -817,8 +843,7 @@ class GirlsFrontline(commands.Cog):
             ("crit_rate", "crit"): modding.Comparison(int),
             ("skill_cd", "skill.cd"): modding.Comparison(int),
             ("skill_icd", "skill.icd"): modding.Comparison(int)
-        },
-        multiline=True
+        }
     )=modding.EMPTY):
         '''
             `>>doll filter <criteria>`
@@ -959,7 +984,7 @@ class GirlsFrontline(commands.Cog):
                 embed = discord.Embed(
                     title=f"#{d['index']} {d['en_name'] or d['name']}",
                     color=discord.Color.green(),
-                    url=f"https://en.gfwiki.com/wiki/{quote(d['name'])}"
+                    url=f"{GFWIKI_BASE}/wiki/{quote(d['name'])}"
                 )
                 embed.add_field(name="Classification", value=f"{self.emojis[d['classification']]}{d['classification']}")
                 embed.add_field(name="Rarity", value=str(self.emojis["rank"])*utils.to_int(d["rarity"], default=0) or "**EXTRA**")

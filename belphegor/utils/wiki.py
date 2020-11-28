@@ -241,6 +241,8 @@ class WikitextParser:
             return self._parse_bracket(text_iter)
         elif next_char == "<":
             return self._parse_xml(text_iter)
+        elif next_char == "'":
+            return self._parse_raw(text_iter)
         else:
             return next_char
             
@@ -367,10 +369,6 @@ class WikitextParser:
         elif end:
             return open_tag
         else:
-            # special case
-            this = open_tag.get("")
-            if this == "STARS":
-                return ""
             value = []
             while True:
                 next_char = self._parse_next(text_iter)
@@ -385,11 +383,45 @@ class WikitextParser:
                 else:
                     value.append(next_char)
 
+    @log_this("2quotes")
+    def _parse_raw(self, text_iter):
+        next_char = next(text_iter)
+        if next_char != "'":
+            return "'" + next_char
+        else:
+            bold = None
+            args = []
+            kwargs = {}
+            value = []
+            key = None
+            while True:
+                next_char = next(text_iter)
+                if next_char == "'":
+                    if bold is None:
+                        bold = True
+                        continue
+                    next_char = next(text_iter)
+                    if next_char != "'":
+                        value.append("'"+next_char)
+                    else:
+                        if bold:
+                            next_char = next(text_iter)
+                            if next_char != "'":
+                                value.append("'"+next_char)
+                            else:
+                                return "".join(value).strip()
+                        else:
+                            return "".join(value).strip()
+                else:
+                    if bold is None:
+                        bold = False
+                    value.append(next_char)
+
     def parse(self, text, with_logs=False):
         self.logs = []
         self.indent = 0
         ret = []
-        text_iter = format.split_iter(text, check=lambda x: x.isspace() or x in ("{", "}", "[", "]", "<", ">", "=", "\"", "/", "|", "!"))
+        text_iter = format.split_iter(text, check=lambda x: x.isspace() or x in ("{", "}", "[", "]", "<", ">", "=", "\"", "/", "|", "!", "'"))
         while True:
             try:
                 next_word = self._parse_next(text_iter)
