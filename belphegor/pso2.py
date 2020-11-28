@@ -167,6 +167,8 @@ UNIT_RESIST = {
 
 CLASS_SORT = {v: i for i, v in enumerate(CLASS_DICT.values())}
 
+malformed_json = re.compile(r"\r?\n *")
+
 #==================================================================================================================================================
 
 class Chip(data_type.BaseObject):
@@ -534,7 +536,7 @@ class PSO2(commands.Cog):
     def weapon_parse(self, category, bytes_):
         category_weapons = []
         soup = BS(bytes_.decode("utf-8"), "lxml")
-        table = soup.find(lambda x: x.name=="table" and "sortable" in x.get("class", []))
+        table = soup.find(lambda x: x.name=="table" and "table-bordered" in x.get("class", []))
         for item in table.find_all(True, recursive=False):
             weapon = {"category": category}
             relevant = item.find_all(True, recursive=False)
@@ -722,7 +724,7 @@ class PSO2(commands.Cog):
         # )
         # data = json.loads(bytes_)[0]
         # self.api_data["version"] = data["Version"]
-        self.api_data["headers"] = {"User-Agent": token.EQ_ALERT_API_USER_AGENT, "Host": "pso2.acf.me.uk"}
+        self.api_data["headers"] = {"User-Agent": token.EQ_ALERT_API_USER_AGENT}
         self.api_data["url"] = "https://acf.me.uk/Projects/PSO2-API/eq.json"
         self.api_data["na_url"] = "https://aida.moe/api/pso2na_events.php"
 
@@ -757,9 +759,10 @@ class PSO2(commands.Cog):
                 }
 
                 for server, (url, tz, time_format, api_tz, last) in self.server_data.items():
+                    bytes_ = await self.bot.fetch(url, headers=self.api_data["headers"])
                     try:
-                        bytes_ = await self.bot.fetch(url, headers=self.api_data["headers"])
-                        data = json.loads(bytes_)[0]
+                        t = malformed_json.sub("", bytes_.decode("utf-8"))
+                        data = json.loads(t)[0]
                     except IndexError:
                         setattr(self, last, None)
                         continue
@@ -865,7 +868,8 @@ class PSO2(commands.Cog):
         if not data:
             bytes_ = await self.bot.fetch(url, headers=self.api_data["headers"])
             try:
-                data = json.loads(bytes_)[0]
+                t = malformed_json.sub("", bytes_.decode("utf-8"))
+                data = json.loads(t)[0]
             except IndexError:
                 setattr(self, last, None)
                 return await ctx.send("Oops, it seems EQ API doesn't return anything.\nPlease wait for a while.")
