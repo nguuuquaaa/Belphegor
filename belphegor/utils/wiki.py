@@ -18,7 +18,7 @@ class NotABox(ParsingError):
 class WikitextParser:
     def __init__(self):
         self.box_parsers = {}
-        self.html_parsers = {}
+        self.html_parser = self.html_do_nothing
         self.reference_parser = self.reference_do_nothing
         self.table_parsers = {}
 
@@ -36,8 +36,8 @@ class WikitextParser:
             return new_func
         return wrapper
 
-    def box_do_nothing(self, arg, *args, **kwargs):
-        return arg, args, kwargs
+    def box_do_nothing(self, box, *args, **kwargs):
+        return f"{{{{{box}|{'|'.join(args)}|{'|'.join(f'{k}={v}' for k, v in kwargs.items())}}}}}"
 
     def set_box_handler(self, box):
         def wrapper(func):
@@ -187,7 +187,7 @@ class WikitextParser:
         return self.table_parsers.get(class_, self.table_do_nothing)(class_, ret)
 
     def reference_do_nothing(self, *args, **kwargs):
-        return args, kwargs
+        return f"[[{'|'.join(args)}|{'|'.join(f'k=v' for k, v in kwargs.items())}]]"
 
     def set_reference_handler(self, func):
         self.reference_parser = func
@@ -249,14 +249,9 @@ class WikitextParser:
     def html_do_nothing(self, tag, text, **kwargs):
         return text
 
-    def set_html_handler(self, box):
-        def wrapper(func):
-            if box is None:
-                self.html_do_nothing = func
-            else:
-                self.html_parser = func
-            return func
-        return wrapper
+    def set_html_handler(self, func):
+        self.html_parser = func
+        return func
 
     @log_this("xml")
     def _parse_xml(self, text_iter):
