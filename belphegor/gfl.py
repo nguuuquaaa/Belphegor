@@ -515,7 +515,7 @@ class Doll(data_type.BaseObject):
             mod_info = self._mod_info(ctx)
             mod_skins = self.mod_data["skins"]
 
-            @paging.wrap_action("\u2699")
+            @paging.wrap_action(ctx.cog.emojis["mem_frag"])
             def change_mod3_info():
                 change_info_to(mod_info, mod_skins, "mod")
                 return saved["embed"]
@@ -598,16 +598,10 @@ class GirlsFrontline(commands.Cog):
         for emoji_name in (
             "hp", "damage", "accuracy", "rof", "evasion", "armor",
             "crit_rate", "crit_dmg", "armor_penetration", "clip_size", "mobility",
-            "telescopic_sight", "red_dot_sight", "holographic_sight",
-            "night_equipment", "silencer",
-            "hp_ammo", "hv_ammo", "ap_ammo", "shotgun_ammo",
-            "armor_plate", "camo_cape", "ammo_box", "exoskeleton", "chip"
+            "HG", "RF", "AR", "SMG", "MG", "SG", "rank",
+            "mem_frag"
         ):
             self.emojis[emoji_name] = discord.utils.find(lambda e: e.name==emoji_name, test_guild_2.emojis)
-
-        creampie_guild = self.bot.get_guild(config.CREAMPIE_GUILD_ID)
-        for emoji_name in ("HG", "RF", "AR", "SMG", "MG", "SG", "rank"):
-            self.emojis[emoji_name] = discord.utils.find(lambda e: e.name==emoji_name, creampie_guild.emojis)
 
         bot.loop.create_task(self.gfwiki_bot_login())
 
