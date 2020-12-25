@@ -14,6 +14,9 @@ from urllib.parse import quote
 GFWIKI_BASE = "https://iopwiki.com"
 GFWIKI_API = f"{GFWIKI_BASE}/api.php"
 
+GFLANALYSIS_BASE = "https://www.gflanalysis.com"
+GFLANALYSIS_API = f"{GFLANALYSIS_BASE}/w/api.php"
+
 MOBILITY = {
     "AR":   10,
     "SMG":  12,
@@ -239,13 +242,11 @@ def default_handler(box, *args, **kwargs):
 def handle_reference(box, *args, **kwargs):
     return box
 
-@parser.set_html_handler("ref")
-def handle_ref_tag(tag, text, **kwargs):
-    return ""
-
-@parser.set_html_handler("div")
-def handle_div_tag(tag, text, **kwargs):
-    if kwargs.get("class") == "spoiler":
+@parser.set_html_handler
+def handle_html(tag, text, **kwargs):
+    if tag == "ref":
+        return ""
+    elif kwargs.get("class") == "spoiler":
         return "||" + "".join(parser.parse(text)) + "||"
     else:
         return text
@@ -278,15 +279,33 @@ def handle_skill_table(class_, table):
 
 #==================================================================================================================================================
 
+gflanalysis_parser = wiki.WikitextParser()
+
+@gflanalysis_parser.set_html_handler
+def handle_html(tag, text, **kwargs):
+    if tag == "sup":
+        return ""
+    else:
+        return text
+
+@gflanalysis_parser.set_reference_handler
+def handle_reference(box, *args, **kwargs):
+    if box.startswith("Category:"):
+        return ""
+    else:
+        return box
+
+#==================================================================================================================================================
+
 class Doll(data_type.BaseObject):
     @property
     def qual_name(self):
         return self.en_name or self.name
 
-    def _base_info(self, cog):
-        emojis = cog.emojis
+    def _base_info(self, ctx):
+        emojis = ctx.cog.emojis
         embeds = []
-        for skill_effect in utils.split_page(self.skill["effect"], 900, check=lambda s:s=="\n", fix=" \u27a1 "):
+        for skill_effect in utils.split_page(self.skill["effect"], 900, check=lambda s: s=="\n", fix=" \u27a1 "):
             embed = discord.Embed(
                 title=f"#{self.index} {self.en_name or self.name}",
                 color=discord.Color.green(),
@@ -305,19 +324,18 @@ class Doll(data_type.BaseObject):
                 value=
                     f"{emojis['hp']}**HP:** {self.max_hp} (x5)\n"
                     f"{emojis['damage']}**DMG:** {self.max_dmg}\n"
-                    f"{emojis['accuracy']}**ACC:** {self.max_acc}\n"
+                    f"{emojis['accuracy']}**ACC:** {self.max_acc}"
+                    +
+                    (f"\n{emojis['armor']}**Armor:**  {self.max_armor}" if self.max_armor > 0 else "")
+            )
+            embed.add_field(
+                name="\u200b",
+                value=
                     f"{emojis['rof']}**ROF:** {self.max_rof}\n"
                     f"{emojis['evasion']}**EVA:** {self.max_eva}\n"
                     f"{emojis['crit_rate']}**Crit rate:** {self.crit_rate}%"
                     +
-                    (f"\n{emojis['armor']}**Armor:**  {self.max_armor}" if self.max_armor > 0 else "")
-                    +
                     (f"\n{emojis['clip_size']}**Clip size:** {self.clip_size}" if self.clip_size > 0 else "")
-            )
-            embed.add_field(
-                name="Equipment slots",
-                value=
-                    "\n".join(f"**Lv{20+i*30}**:\n\u200b    {''.join(str(emojis[e]) for e in self.equipment_slots[i])}" for i in range(3))
             )
 
             tile = {
@@ -353,9 +371,9 @@ class Doll(data_type.BaseObject):
 
         return embeds
 
-    def _other_info(self, cog):
+    def _other_info(self, ctx):
         embeds = []
-        for trivia in utils.split_page(self.trivia, 1000, check=lambda s:s=="\n", fix=" \u27a1 "):
+        for trivia in utils.split_page(self.trivia, 1000, check=lambda s: s=="\n", fix=" \u27a1 "):
             embed = discord.Embed(
                 title=f"#{self.index} {self.en_name or self.name}",
                 color=discord.Color.green(),
@@ -370,64 +388,62 @@ class Doll(data_type.BaseObject):
 
         return embeds
 
-    def _mod_info(self, cog):
-        emojis = cog.emojis
+    def _mod_info(self, ctx):
+        emojis = ctx.cog.emojis
         mod = self.mod_data
-
-        embed = discord.Embed(
-            title=f"#{self.index} {self.en_name or self.name}",
-            color=discord.Color.green(),
-            url=f"{GFWIKI_BASE}/wiki/{quote(self.name)}"
-        )
-        embed.add_field(name="Classification", value=f"{emojis[self.classification]} **{self.classification}**")
-        embed.add_field(name="Rarity", value=str(emojis["rank"])*MOD_RARITY[self.rarity])
-        embed.add_field(
-            name="Production time",
-            value=f"{self.craft_time//3600}:{self.craft_time%3600//60:0>2d}" if self.craft_time else "Non-craftable",
-            inline=False
-        )
-
-        embed.add_field(
-            name="Stats",
-            value=
-                f"{emojis['hp']}**HP:** {mod['max_hp']} (x5)\n"
-                f"{emojis['damage']}**DMG:** {mod['max_dmg']}\n"
-                f"{emojis['accuracy']}**ACC:** {mod['max_acc']}\n"
-                f"{emojis['rof']}**ROF:** {mod['max_rof']}\n"
-                f"{emojis['evasion']}**EVA:** {mod['max_eva']}\n"
-                f"{emojis['crit_rate']}**Crit rate:** {self.crit_rate}%"
-                +
-                (f"\n{emojis['armor']}**Armor:**  {mod['max_armor']}" if mod["max_armor"] > 0 else "")
-                +
-                (f"\n{emojis['clip_size']}**Clip size:** {mod['clip_size']}" if mod["clip_size"] > 0 else "")
-        )
-        embed.add_field(
-            name="Equipment slots",
-            value=
-                "\n".join(f"**Lv{20+i*30}**:\n\u200b    {''.join(str(emojis[e]) for e in self.equipment_slots[i])}" for i in range(3))
-        )
-
-        tile = {
-            k: emojis["blue_square"] if v==1 else emojis["white_square"] if v==0 else emojis["black_square"]
-            for k, v in mod["tile"]["shape"].items()
-        }
-
-        embed.add_field(
-            name="Tile",
-            value=
-                f"\u200b {tile['7']}{tile['8']}{tile['9']}\u2001{shorten_types(mod['tile']['target'])}\n"
-                f"\u200b {tile['4']}{tile['5']}{tile['6']}\u2001{mod['tile']['effect'][0]}\n"
-                f"\u200b {tile['1']}{tile['2']}{tile['3']}\u2001{mod['tile']['effect'][1]}",
-            inline=False
-        )
 
         embeds = []
         for skill_index in range(2):
             for i, skill_effect in enumerate(utils.split_page(mod["skill"][skill_index]["effect"], 1000, check=lambda s:s=="\n", fix=" \u27a1 ")):
                 while i > len(embeds) - 1:
-                    embeds.append(embed.copy())
-                cur = embeds[i]
+                    embed = discord.Embed(
+                        title=f"#{self.index} {self.en_name or self.name} Mod",
+                        color=discord.Color.green(),
+                        url=f"{GFWIKI_BASE}/wiki/{quote(self.name)}"
+                    )
+                    embed.add_field(name="Classification", value=f"{emojis[self.classification]} **{self.classification}**")
+                    embed.add_field(name="Rarity", value=str(emojis["rank"])*MOD_RARITY[self.rarity])
+                    embed.add_field(
+                        name="Production time",
+                        value=f"{self.craft_time//3600}:{self.craft_time%3600//60:0>2d}" if self.craft_time else "Non-craftable",
+                        inline=False
+                    )
 
+                    embed.add_field(
+                        name="Stats",
+                        value=
+                            f"{emojis['hp']}**HP:** {mod['max_hp']} (x5)\n"
+                            f"{emojis['damage']}**DMG:** {mod['max_dmg']}\n"
+                            f"{emojis['accuracy']}**ACC:** {mod['max_acc']}"
+                            +
+                            (f"\n{emojis['armor']}**Armor:**  {mod['max_armor']}" if mod["max_armor"] > 0 else "")
+                    )
+                    embed.add_field(
+                        name="\u200b",
+                        value=
+                            f"{emojis['rof']}**ROF:** {mod['max_rof']}\n"
+                            f"{emojis['evasion']}**EVA:** {mod['max_eva']}\n"
+                            f"{emojis['crit_rate']}**Crit rate:** {self.crit_rate}%"
+                            +
+                            (f"\n{emojis['clip_size']}**Clip size:** {mod['clip_size']}" if mod["clip_size"] > 0 else "")
+                    )
+
+                    tile = {
+                        k: emojis["blue_square"] if v==1 else emojis["white_square"] if v==0 else emojis["black_square"]
+                        for k, v in mod["tile"]["shape"].items()
+                    }
+
+                    embed.add_field(
+                        name="Tile",
+                        value=
+                            f"\u200b {tile['7']}{tile['8']}{tile['9']}\u2001{shorten_types(mod['tile']['target'])}\n"
+                            f"\u200b {tile['4']}{tile['5']}{tile['6']}\u2001{mod['tile']['effect'][0]}\n"
+                            f"\u200b {tile['1']}{tile['2']}{tile['3']}\u2001{mod['tile']['effect'][1]}",
+                        inline=False
+                    )
+                    embeds.append(embed)
+
+                cur = embeds[i]
                 skill = mod["skill"][skill_index]
                 icd = f"Initial CD: {skill['icd']}s" if skill["icd"] else None
                 cd = f"CD: {skill['cd']}s" if skill["cd"] else None
@@ -443,20 +459,20 @@ class Doll(data_type.BaseObject):
                         f"{skill_effect}",
                     inline=False
                 )
-                embeds.append(cur)
 
         return embeds
 
     async def display_info(self, ctx):
         paging = utils.Paginator([])
-        base_info = self._base_info(ctx.cog)
-        other_info = self._other_info(ctx.cog)
-        skin = self.skins
+        base_info = self._base_info(ctx)
+        other_info = self._other_info(ctx)
+        skins = self.skins
+        analysis = {}
 
         saved = {
             "info": None,
             "info_iter": None,
-            "skin": None,
+            "skins": None,
             "skin_iter": None,
             "current_skin": (None, None)
         }
@@ -467,41 +483,55 @@ class Doll(data_type.BaseObject):
                 saved["embed"].set_image(url=config.NO_IMG)
                 saved["embed"].set_footer(text=discord.Embed.Empty)
             else:
-                saved["embed"].set_footer(text=f"Skin: {skin['name']} ({skin['form']}) - ({index+1}/{len(saved['skin'])})")
+                saved["embed"].set_footer(text=f"Skin: {skin['name']} ({skin['form']}) - ({index+1}/{len(saved['skins'])})")
                 saved["embed"].set_image(url=skin["image_url"])
 
-        def change_info_to(info, skin):
+        def change_info_to(info, skins, state="original"):
             if saved["info"] is not info:
                 saved["info"] = info
                 saved["info_iter"] = circle_iter(info)
-            if saved["skin"] is not skin:
-                saved["skin"] = skin
-                saved["skin_iter"] = circle_iter(skin, with_index=True)
+            if saved["skins"] is not skins:
+                saved["skins"] = skins
+                saved["skin_iter"] = circle_iter(skins, with_index=True)
                 try:
                     saved["current_skin"] = next(saved["skin_iter"])
                 except ValueError:
                     saved["current_skin"] = (None, None)
             saved["embed"] = next(saved["info_iter"])
+            saved["state"] = state
             add_image()
 
         @paging.wrap_action(ctx.cog.emojis["damage"])
         def change_base_info():
-            change_info_to(base_info, skin)
+            change_info_to(base_info, skins)
             return saved["embed"]
 
         @paging.wrap_action("\U0001f5d2")
         def change_other_info():
-            change_info_to(other_info, skin)
+            change_info_to(other_info, skins)
             return saved["embed"]
 
         if self.moddable:
-            mod_info = self._mod_info(ctx.cog)
-            mod_skin = self.mod_data["skins"]
+            mod_info = self._mod_info(ctx)
+            mod_skins = self.mod_data["skins"]
 
             @paging.wrap_action("\u2699")
             def change_mod3_info():
-                change_info_to(mod_info, mod_skin)
+                change_info_to(mod_info, mod_skins, "mod")
                 return saved["embed"]
+
+        @paging.wrap_action("\U0001f50e")
+        async def change_analysis_info():
+            if not analysis:
+                analysis.update(await self.query_gflanalysis(ctx))
+            if "mod" in analysis:
+                state = saved["state"]
+            else:
+                state = "original"
+            analysis_info = analysis[state]
+            analysis_skins = mod_skins if state == "mod" else skins
+            change_info_to(analysis_info, analysis_skins, state)
+            return saved["embed"]
 
         @paging.wrap_action("\U0001f5bc")
         def change_image():
@@ -510,6 +540,51 @@ class Doll(data_type.BaseObject):
             return saved["embed"]
 
         await paging.navigate(ctx)
+
+    async def query_gflanalysis(self, ctx):
+        bytes_ = await ctx.bot.fetch(
+            GFLANALYSIS_API,
+            params={
+                "action":       "ask",
+                "query":        f"[[Name::~*{self.name}*]]|?Name|?Pros|?Cons|?Status|?Roles|?Analysis",
+                "format":       "json",
+                "redirects":    1
+            }
+        )
+        data = json.loads(bytes_)
+        ret = {}
+        results = data["query"]["results"]
+        if not results:
+            embed = discord.Embed(
+                title=f"GFLAnalysis: {self.name}",
+                color=discord.Color.green(),
+                description="No analysis thus far."
+            )
+            return {"original": [embed]}
+
+        for name, raw in data["query"]["results"].items():
+            pr = raw["printouts"]
+            
+            embeds = []
+            analysis = "".join(gflanalysis_parser.parse("\n".join(pr["Analysis"]).replace("&#8203;", "\n")))
+            for i, a in enumerate(utils.split_page(analysis, 900, check=lambda s: s=="\n", fix=" \u27a1 ")):
+                embed = discord.Embed(
+                    title=f"GFLAnalysis: {name}",
+                    color=discord.Color.green(),
+                    url=f"https:{raw['fullurl']}"
+                )
+                for key in ("Pros", "Cons", "Status", "Roles"):
+                    embed.add_field(name=key, value="".join(gflanalysis_parser.parse("\n".join(pr[key]).replace("&#8203;", "\n"))), inline=False)
+
+                embed.add_field(name="Analysis", value=a, inline=False)
+                embeds.append(embed)
+
+            if name.endswith("Mod"):
+                ret["mod"] = embeds
+            else:
+                ret["original"] = embeds
+
+        return ret
 
 #==================================================================================================================================================
 
