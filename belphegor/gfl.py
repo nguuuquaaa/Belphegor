@@ -11,6 +11,8 @@ from urllib.parse import quote
 
 #==================================================================================================================================================
 
+INF = float("inf")
+
 GFWIKI_BASE = "https://iopwiki.com"
 GFWIKI_API = f"{GFWIKI_BASE}/api.php"
 
@@ -178,12 +180,22 @@ def shorten_repl(m):
 def shorten_types(text):
     return shorten_regex.sub(shorten_repl, text)
 
+def to_float(any_obj, *, default=None):
+    try:
+        return float(any_obj)
+    except:
+        return default
+
 #==================================================================================================================================================
 
 parser = wiki.WikitextParser()
 
 @parser.set_box_handler("PlayableUnit")
 def handle_playable_unit(box, **kwargs):
+    return kwargs
+
+@parser.set_box_handler("Equipment")
+def handle_equipment(box, **kwargs):
     return kwargs
 
 @parser.set_box_handler("voice actor name")
@@ -463,11 +475,13 @@ class Doll(data_type.BaseObject):
         return embeds
 
     async def display_info(self, ctx):
+        emojis = ctx.cog.emojis
         paging = utils.Paginator([])
         base_info = self._base_info(ctx)
         other_info = self._other_info(ctx)
         skins = self.skins
         analysis = {}
+        speq_info = await self.query_speq(ctx)
 
         saved = {
             "info": None,
@@ -501,7 +515,7 @@ class Doll(data_type.BaseObject):
             saved["state"] = state
             add_image()
 
-        @paging.wrap_action(ctx.cog.emojis["damage"])
+        @paging.wrap_action(emojis["damage"])
         def change_base_info():
             change_info_to(base_info, skins)
             return saved["embed"]
@@ -515,10 +529,17 @@ class Doll(data_type.BaseObject):
             mod_info = self._mod_info(ctx)
             mod_skins = self.mod_data["skins"]
 
-            @paging.wrap_action(ctx.cog.emojis["mem_frag"])
+            @paging.wrap_action(emojis["mem_frag"])
             def change_mod3_info():
                 change_info_to(mod_info, mod_skins, "mod")
                 return saved["embed"]
+
+        if speq_info:
+            speq_iter = circle_iter(speq_info)
+
+            @paging.wrap_action(emojis["eq_cap"])
+            def change_speq_info():
+                return next(speq_iter)
 
         @paging.wrap_action("\U0001f50e")
         async def change_analysis_info():
@@ -586,12 +607,32 @@ class Doll(data_type.BaseObject):
 
         return ret
 
+    async def query_speq(self, ctx):
+        col = ctx.cog.special_equipments
+        embeds = []
+        async for doc in col.find({"compatible": self.name}):
+            embed = discord.Embed(
+                title=f"{doc['name']}",
+                color=discord.Color.green(),
+                url=f"{GFWIKI_BASE}/wiki/{quote(doc['name'])}",
+                description="\n".join(f"{s['name']} {s['value']:+}" for s in doc["stats"])
+            )
+            embed.set_thumbnail(url=doc["image_url"])
+            embeds.append(embed)
+
+        max_page = len(embeds)
+        for i, embed in enumerate(embeds):
+            embed.set_footer(text=f"({i+1}/{max_page})")
+    
+        return embeds
+
 #==================================================================================================================================================
 
 class GirlsFrontline(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.doll_list = bot.db.doll_list
+        self.special_equipments = bot.db.special_equipments
 
         test_guild_2 = bot.get_guild(config.TEST_GUILD_2_ID)
         self.emojis = {"white_square": "\u2b1c", "black_square": "\u2b1b", "blue_square": "\U0001f7e6"}
@@ -599,7 +640,7 @@ class GirlsFrontline(commands.Cog):
             "hp", "damage", "accuracy", "rof", "evasion", "armor",
             "crit_rate", "crit_dmg", "armor_penetration", "clip_size", "mobility",
             "HG", "RF", "AR", "SMG", "MG", "SG", "rank",
-            "mem_frag"
+            "mem_frag", "eq_cap"
         ):
             self.emojis[emoji_name] = discord.utils.find(lambda e: e.name==emoji_name, test_guild_2.emojis)
 
@@ -722,14 +763,16 @@ class GirlsFrontline(commands.Cog):
         return logs
 
     async def search_gfwiki(self, name):
-        params = {
-            "action":       "parse",
-            "prop":         "wikitext",
-            "page":         name,
-            "format":       "json",
-            "redirects":    1
-        }
-        bytes_ = await self.bot.fetch(GFWIKI_API, params=params)
+        bytes_ = await self.bot.fetch(
+            GFWIKI_API,
+            params={
+                "action":       "parse",
+                "prop":         "wikitext",
+                "page":         name,
+                "format":       "json",
+                "redirects":    1
+            }
+        )
         raw = json.loads(bytes_)
         if "error" in raw:
             raise checks.CustomError(f"Page {name} doesn't exist.")
@@ -816,14 +859,16 @@ class GirlsFrontline(commands.Cog):
             doll.moddable = False
 
         # skill section
-        params = {
-            "action":       "parse",
-            "prop":         "wikitext",
-            "page":         doll.name + "/skilldata",
-            "format":       "json",
-            "redirects":    1
-        }
-        bytes_ = await self.bot.fetch(GFWIKI_API, params=params)
+        bytes_ = await self.bot.fetch(
+            GFWIKI_API,
+            params={
+                "action":       "parse",
+                "prop":         "wikitext",
+                "page":         doll.name + "/skilldata",
+                "format":       "json",
+                "redirects":    1
+            }
+        )
         raw_skilldata = json.loads(bytes_)
         doll.skill = parser.parse(raw_skilldata["parse"]["wikitext"]["*"])[0]
 
@@ -831,14 +876,16 @@ class GirlsFrontline(commands.Cog):
         if doll.moddable:
             skill = []
             for path in ("/skilldata/mod1", "/skill2data"):
-                params = {
-                    "action":       "parse",
-                    "prop":         "wikitext",
-                    "page":         doll.name + path,
-                    "format":       "json",
-                    "redirects":    1
-                }
-                bytes_ = await self.bot.fetch(GFWIKI_API, params=params)
+                bytes_ = await self.bot.fetch(
+                    GFWIKI_API,
+                    params={
+                        "action":       "parse",
+                        "prop":         "wikitext",
+                        "page":         doll.name + path,
+                        "format":       "json",
+                        "redirects":    1
+                    }
+                )
                 raw_skilldata = json.loads(bytes_)
                 skill.append(parser.parse(raw_skilldata["parse"]["wikitext"]["*"])[0])
             mod["skill"] = skill
@@ -859,15 +906,17 @@ class GirlsFrontline(commands.Cog):
             else:
                 break
 
-        file_params = {
-            "action":       "query",
-            "prop":         "imageinfo",
-            "iiprop":       "url",
-            "titles":       "|".join(file_list.keys()),
-            "format":       "json",
-            "redirects":    1
-        }
-        file_bytes_ = await self.bot.fetch(GFWIKI_API, params=file_params)
+        file_bytes_ = await self.bot.fetch(
+            GFWIKI_API,
+            params={
+                "action":       "query",
+                "prop":         "imageinfo",
+                "iiprop":       "url",
+                "titles":       "|".join(file_list.keys()),
+                "format":       "json",
+                "redirects":    1
+            }
+        )
         file_data = json.loads(file_bytes_)
 
         for n in file_data["query"].get("normalized", []):
@@ -1070,22 +1119,22 @@ class GirlsFrontline(commands.Cog):
 
     @commands.group(aliases=["e"], invoke_without_command=True)
     @checks.owner_only()
-    async def equipment(self, ctx, *, name):
+    async def speq(self, ctx, *, name):
         '''
-            `>>equipment <name>`
-            Display a T-doll info.
+            `>>speq <name>`
+            Display a special equipment info.
             Name is case-insensitive.
         '''
         pass
 
-    @equipment.group(name="update")
+    @speq.group(name="update")
     @checks.owner_only()
-    async def equipment_update(self, ctx):
+    async def speq_update(self, ctx):
         pass
 
-    @equipment_update.command()
+    @speq_update.command(name="everything", aliases=["all"])
     @checks.owner_only()
-    async def speq(self, ctx):
+    async def update_all_speq(self, ctx):
         await ctx.trigger_typing()
         params = {
             "action":       "query",
@@ -1103,6 +1152,13 @@ class GirlsFrontline(commands.Cog):
 
         await self.update_equipments_with_names(ctx, names)
 
+    @speq_update.command(name="many")
+    async def update_many_speq(self, ctx, *names):
+        await ctx.trigger_typing()
+        logs = await self.update_equipments_with_names(ctx, names)
+        if logs:
+            await ctx.send(file=discord.File.from_str(json.dumps(logs, indent=4, ensure_ascii=False)))
+
     async def update_equipments_with_names(self, ctx, names):
         await ctx.send(f"Total: {len(names)} equipments")
         msg = await ctx.send(f"Fetching...\n{utils.progress_bar(0)}")
@@ -1112,15 +1168,15 @@ class GirlsFrontline(commands.Cog):
         count = len(names)
         for i, name in enumerate(names):
             try:
-                doll = await self.search_gfwiki(name)
+                speq = await self.search_gfwiki_for_speq(name)
             except:
                 logs[name] = traceback.format_exc()
                 failed.append(name)
             else:
-                passed.append(doll.name)
-                await self.doll_list.update_one(
-                    {"index": doll.index, "rarity": doll.rarity},
-                    {"$set": doll.__dict__},
+                passed.append(speq["name"])
+                await self.special_equipments.update_one(
+                    {"name": speq["name"]},
+                    {"$set": speq},
                     upsert=True
                 )
             if (i+1)%10 == 0:
@@ -1135,6 +1191,74 @@ class GirlsFrontline(commands.Cog):
         else:
             await ctx.send(f"Passed: {len(passed)}\nFailed: {len(failed)}\n```json\n{txt}\n```")
         return logs
+
+    async def search_gfwiki_for_speq(self, name):
+        bytes_ = await self.bot.fetch(
+            GFWIKI_API,
+            params={
+                "action":       "parse",
+                "prop":         "wikitext",
+                "page":         name,
+                "format":       "json",
+                "redirects":    1
+            }
+        )
+        raw = json.loads(bytes_)
+        if "error" in raw:
+            raise checks.CustomError(f"Page {name} doesn't exist.")
+
+        raw_basic_info = raw["parse"]["wikitext"]["*"]
+        ret = parser.parse(raw_basic_info)
+        for r in ret:
+            if "class" in r:
+                basic_info = r
+                break
+
+        speq = {}
+        speq["name"] = name
+        speq["class"] = basic_info["class"]
+        speq["slot"] = basic_info["slot"]
+        speq["rarity"] = utils.to_int(basic_info["rarity"])
+        speq["compatible"] = basic_info["compatibleto"]
+        stats = []
+        for i in range(1, 5):
+            stat_name = basic_info.get(f"stat{i}")
+            if stat_name:
+                base_stat = max(
+                    to_float(basic_info.get(f"stat{i}max"), default=-INF),
+                    to_float(basic_info.get(f"stat{i}min"), default=-INF)
+                )
+                growth = float(basic_info.get(f"stat{i}growth") or 1)
+                cur = {
+                    "name": stat_name,
+                    "value": int(base_stat * growth)
+                }
+                stats.append(cur)
+            else:
+                break
+        speq["stats"] = stats
+        
+        file_name = basic_info.get("icon") or f"Generic {basic_info['compatibleto']} {basic_info['class']}"
+        file_bytes_ = await self.bot.fetch(
+            GFWIKI_API,
+            params={
+                "action":       "query",
+                "prop":         "imageinfo",
+                "iiprop":       "url",
+                "titles":       f"File:{file_name}.png",
+                "format":       "json",
+                "redirects":    1
+            }
+        )
+        file_data = json.loads(file_bytes_)
+        image_url = None
+        for i, image_info in file_data["query"]["pages"].items():
+            if i != "-1":
+                for url_info in image_info["imageinfo"]:
+                    image_url = url_info["url"]
+        speq["image_url"] = image_url
+
+        return speq
 
 #==================================================================================================================================================
 
