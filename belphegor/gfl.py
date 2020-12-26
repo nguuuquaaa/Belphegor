@@ -191,15 +191,14 @@ def to_float(any_obj, *, default=None):
 parser = wiki.WikitextParser()
 
 @parser.set_box_handler("PlayableUnit")
-def handle_playable_unit(box, **kwargs):
-    return kwargs
-
 @parser.set_box_handler("Equipment")
-def handle_equipment(box, **kwargs):
+@parser.set_box_handler("Fairy")
+def handle_base_box(box, **kwargs):
     return kwargs
 
 @parser.set_box_handler("voice actor name")
 @parser.set_box_handler("artist name")
+@parser.set_box_handler("icon")
 def handle_creator(box, name):
     return name
 
@@ -211,21 +210,16 @@ def handle_alias(box, *, server, alias):
         return ""
 
 @parser.set_box_handler("doll name")
-def handle_doll_name(box, name, *args, **kwargs):
+@parser.set_box_handler("equip name")
+@parser.set_box_handler("enemy name")
+@parser.set_box_handler("fairy name")
+def handle_name(box, name, *args, **kwargs):
     return name
 
 @parser.set_box_handler("HG aura")
 @parser.set_box_handler("HG_aura")
 def handle_hg_aura(box, value):
     return value + "%"
-
-@parser.set_box_handler("enemy name")
-def handle_enemy_name(box, name, subtype="enemy"):
-    return name
-
-@parser.set_box_handler("equip name")
-def handle_equip_name(box, name, type, rarity):
-    return name
 
 @parser.set_box_handler("spoiler")
 def handle_spoiler(box, value):
@@ -237,10 +231,6 @@ def handle_spoiler(box, value):
 @parser.set_box_handler("wip")
 def handle_misc(box, *args, **kwargs):
     return ""
-
-@parser.set_box_handler("icon")
-def handle_icon(box, name):
-    return name
 
 @parser.set_box_handler("Cleanup")
 def handle_cleanup(box, *args, **kwargs):
@@ -294,14 +284,14 @@ def handle_skill_table(class_, table):
 gflanalysis_parser = wiki.WikitextParser()
 
 @gflanalysis_parser.set_html_handler
-def handle_html(tag, text, **kwargs):
+def handle_gfla_html(tag, text, **kwargs):
     if tag == "sup":
         return ""
     else:
         return text
 
 @gflanalysis_parser.set_reference_handler
-def handle_reference(box, *args, **kwargs):
+def handle_gfla_reference(box, *args, **kwargs):
     if box.startswith("Category:"):
         return ""
     else:
@@ -633,6 +623,7 @@ class GirlsFrontline(commands.Cog):
         self.bot = bot
         self.doll_list = bot.db.doll_list
         self.special_equipments = bot.db.special_equipments
+        self.fairy_list = bot.db.fairy_list
 
         test_guild_2 = bot.get_guild(config.TEST_GUILD_2_ID)
         self.emojis = {"white_square": "\u2b1c", "black_square": "\u2b1b", "blue_square": "\U0001f7e6"}
@@ -640,7 +631,7 @@ class GirlsFrontline(commands.Cog):
             "hp", "damage", "accuracy", "rof", "evasion", "armor",
             "crit_rate", "crit_dmg", "armor_penetration", "clip_size", "mobility",
             "HG", "RF", "AR", "SMG", "MG", "SG", "rank",
-            "mem_frag", "eq_cap"
+            "mem_frag", "eq_cap", "battle_fairy", "strategy_fairy"
         ):
             self.emojis[emoji_name] = discord.utils.find(lambda e: e.name==emoji_name, test_guild_2.emojis)
 
@@ -1153,6 +1144,7 @@ class GirlsFrontline(commands.Cog):
         await self.update_equipments_with_names(ctx, names)
 
     @speq_update.command(name="many")
+    @checks.owner_only()
     async def update_many_speq(self, ctx, *names):
         await ctx.trigger_typing()
         logs = await self.update_equipments_with_names(ctx, names)
@@ -1256,9 +1248,224 @@ class GirlsFrontline(commands.Cog):
             if i != "-1":
                 for url_info in image_info["imageinfo"]:
                     image_url = url_info["url"]
+                    break
         speq["image_url"] = image_url
 
         return speq
+
+    @commands.group(aliases=["f"], invoke_without_command=True)
+    async def fairy(self, ctx, *, name):
+        '''
+            `>>fairy <name>`
+            Display a fairy info.
+            Name is case-insensitive.
+        '''
+        fairy = await ctx.search(
+            name,
+            self.fairy_list,
+            colour=discord.Colour.blue(),
+            atts=["name", "en_name"],
+            name_att="en_name",
+            emoji_att="classification",
+            sort={"index": 1}
+        )
+        if fairy:
+            if fairy.image_urls:
+                emojis = self.emojis
+                embeds = []
+                image_count = len(fairy.image_urls)
+                classification = fairy.classification
+                for i, image_url in enumerate(fairy.image_urls):
+                    embed = discord.Embed(
+                        title=fairy.en_name,
+                        color=discord.Color.blue() if classification[0]=="s" else discord.Color.dark_orange(),
+                        url=f"{GFWIKI_BASE}/wiki/{quote(fairy.name)}"
+                    )
+
+                    embed.add_field(
+                        name="Classification",
+                        value=f"{emojis[fairy.classification]} {fairy.classification.replace('_', ' ').capitalize()}",
+                        inline=False
+                    )
+                    
+                    stat_info = []
+                    st = fairy.stats
+                    for key, emoji_name, title in (
+                        ("dmg", "damage", "DMG"),
+                        ("critdmg", "crit_dmg", "Crit DMG"),
+                        ("acc", "accuracy", "ACC"),
+                        ("eva", "evasion", "EVA"),
+                        ("armor", "armor", "Armor")
+                    ):
+                        stat = st[key]
+                        if stat:
+                            stat_info.append(f"{emojis[emoji_name]}**{title}** {stat}")
+
+                    embed.add_field(
+                        name="Stats",
+                        value="\n".join(stat_info),
+                        inline=False
+                    )
+
+                    sk = fairy.skill
+                    embed.add_field(
+                        name="Skill",
+                        value=f"**{sk['name']}** (Cost: {sk['cost']} Fairy Command(s))\n"
+                            f"{sk['effect']}",
+                        inline=False
+                    )
+
+                    embed.set_footer(text=f"({i+1}/{image_count})")
+                    embed.set_image(url=image_url)
+
+                    embeds.append(embed)
+
+                paging = utils.Paginator([])
+                embed_iter = circle_iter(embeds)
+
+                @paging.wrap_action("\U0001f5bc")
+                def change_image():
+                    return next(embed_iter)
+
+                await paging.navigate(ctx)
+            else:
+                return await ctx.send("This fairy info is currently incompleted and thus cannot be displayed.")
+
+    @fairy.group(name="update")
+    @checks.owner_only()
+    async def fairy_update(self, ctx):
+        pass
+
+    @fairy_update.command(name="everything", aliases=["all"])
+    @checks.owner_only()
+    async def update_all_fairies(self, ctx):
+        await ctx.trigger_typing()
+        names = []
+        for category in ("Battle Fairies", "Strategy Fairies"):
+            params = {
+                "action":       "query",
+                "list":         "categorymembers",
+                "cmtitle":      f"Category:{category}",
+                "cmlimit":      5000,
+                "format":       "json",
+                "redirects":    1
+            }
+            bytes_ = await self.bot.fetch(GFWIKI_API, params=params)
+            data = json.loads(bytes_)
+            for cm in data["query"]["categorymembers"]:
+                names.append(cm["title"])
+
+        await self.update_fairies_with_names(ctx, names)
+
+    @fairy_update.command(name="many")
+    @checks.owner_only()
+    async def update_many_fairies(self, ctx, *names):
+        await ctx.trigger_typing()
+        logs = await self.update_fairies_with_names(ctx, names)
+        if logs:
+            await ctx.send(file=discord.File.from_str(json.dumps(logs, indent=4, ensure_ascii=False)))
+
+    async def update_fairies_with_names(self, ctx, names):
+        await ctx.send(f"Total: {len(names)} fairies")
+        msg = await ctx.send(f"Fetching...\n{utils.progress_bar(0)}")
+        passed = []
+        failed = []
+        logs = {}
+        count = len(names)
+        for i, name in enumerate(names):
+            try:
+                fairy = await self.search_gfwiki_for_fairy(name)
+            except:
+                logs[name] = traceback.format_exc()
+                failed.append(name)
+            else:
+                passed.append(fairy["name"])
+                await self.fairy_list.update_one(
+                    {"name": fairy["name"]},
+                    {"$set": fairy},
+                    upsert=True
+                )
+            if (i+1)%10 == 0:
+                await msg.edit(content=f"Fetching...\n{utils.progress_bar((i+1)/count)}")
+        await msg.edit(content=f"Done.\n{utils.progress_bar(1)}")
+        txt = json.dumps({"passed": passed, "failed": failed}, indent=4)
+        if len(txt) > 1900:
+            await ctx.send(
+                f"Passed: {len(passed)}\nFailed: {len(failed)}",
+                file=discord.File.from_str(txt)
+            )
+        else:
+            await ctx.send(f"Passed: {len(passed)}\nFailed: {len(failed)}\n```json\n{txt}\n```")
+        return logs
+
+    
+    async def search_gfwiki_for_fairy(self, name):
+        bytes_ = await self.bot.fetch(
+            GFWIKI_API,
+            params={
+                "action":       "parse",
+                "prop":         "wikitext",
+                "page":         name,
+                "format":       "json",
+                "redirects":    1
+            }
+        )
+        raw = json.loads(bytes_)
+        if "error" in raw:
+            raise checks.CustomError(f"Page {name} doesn't exist.")
+
+        raw_basic_info = raw["parse"]["wikitext"]["*"]
+        ret = parser.parse(raw_basic_info)
+        for r in ret:
+            if "class" in r:
+                basic_info = r
+                break
+
+        fairy = {}
+        fairy["index"] = int(basic_info["index"])
+        fairy["name"] = name
+        fairy["en_name"] = basic_info.get("releasedon", "").strip(" ,") or name
+        fairy["classification"] = basic_info["class"].lower() + "_fairy"
+        fairy["craft_time"] = timer_to_seconds(basic_info.get("craft", ""))
+
+        stats = {}
+        for key in ("dmg", "critdmg", "acc", "eva", "armor"):
+            stats[key] = basic_info.get(f"max_{key}")
+        fairy["stats"] = stats
+        
+        fairy["skill"] = {
+            "name": basic_info["skillname"],
+            "effect": basic_info["skilldesc"],
+            "cost": basic_info["skillcost"]
+        }
+
+        file_names = [
+            f"File:{name}.png",
+            f"File:{name} 2.png",
+            f"File:{name} 3.png"
+        ]
+        image_urls = []
+        file_bytes_ = await self.bot.fetch(
+            GFWIKI_API,
+            params={
+                "action":       "query",
+                "prop":         "imageinfo",
+                "iiprop":       "url",
+                "titles":       "|".join(file_names),
+                "format":       "json",
+                "redirects":    1
+            }
+        )
+        file_data = json.loads(file_bytes_)
+        image_urls = []
+        for i, image_info in file_data["query"]["pages"].items():
+            if i != "-1":
+                for url_info in image_info["imageinfo"]:
+                    image_urls.append(url_info["url"])
+                    break
+        fairy["image_urls"] = image_urls
+
+        return fairy
 
 #==================================================================================================================================================
 
