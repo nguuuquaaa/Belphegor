@@ -8,6 +8,7 @@ import re
 import json
 import traceback
 from urllib.parse import quote
+import hashlib
 
 #==================================================================================================================================================
 
@@ -106,6 +107,43 @@ MOD_RARITY = {
     "5": 6
 }
 
+STATS_NORMALIZE = {
+    "clipsize":                 "clip_size",
+    "nightpenaltyreduction":    "peq",
+    "criticaldamage":           "crit_dmg",
+    "criticalhitdamage":        "crit_dmg",
+    "armorpiercing":            "armor_penetration",
+    "armorpenetration":         "armor_penetration",
+    "armourpenetration":        "armor_penetration", 
+    "armourpiercing":           "armor_penetration",
+    "evasion":                  "evasion",
+    "criticalhitrate":          "crit_rate",
+    "criticalhitchance":        "crit_rate",
+    "targets":                  "shotgun_ammo",
+    "rateoffire":               "rof",
+    "accuracy":                 "accuracy",
+    "armor":                    "armor",
+    "armour":                   "armor",
+    "movementspeed":            "mobility",
+    "damage":                   "damage",
+    "boostabilityeffectiveness":"boost_skill_effect"
+}
+
+STAT_DISPLAY = {
+    "damage":               ("DMG", ""),
+    "rof":                  ("ROF", ""),
+    "accuracy":             ("ACC", ""),
+    "evasion":              ("EVA", ""),
+    "crit_rate":            ("CRIT RATE", "%"),
+    "crit_dmg":             ("CRIT DMG", "%"),
+    "armor":                ("ARMOR", ""),
+    "clip_size":            ("ROUNDS", ""),
+    "armor_penetration":    ("AP", ""),
+    "mobility":             ("MOBILITY", ""),
+    "peq":                  ("NIGHT VISION", "%"),
+    "shotgun_ammo":         ("TARGETS", "")
+}
+
 def get_equipment_slots(classification, order, *, add_ap=False, add_armor=False):
     eq = STANDARD_EQUIPMENTS[classification]
     ret = []
@@ -159,9 +197,9 @@ name_clean_regex = re.compile(r"[\.\-\s\/]")
 def normalize(s):
     return s.replace("\u2215", "/")
 
-shorten_regex = re.compile(r"(submachine\s?gun|assault\s?rifle|rifle|hand\s?gun|machine\sgun|shotgun)s?\s*(?:\(\w{2,3}\))?")
+shorten_regex = re.compile(r"(submachine\s?gun|assault\s?rifle|rifle|hand\s?gun|machine\sgun|shotgun)s?\s*(?:\(\w{2,3}\))?", re.I)
 def shorten_repl(m):
-    base = m.group(1)
+    base = m.group(1).lower()
     if base.startswith("sub"):
         return "SMG"
     elif base.startswith("assault"):
@@ -185,6 +223,11 @@ def to_float(any_obj, *, default=None):
         return float(any_obj)
     except:
         return default
+
+def generate_image_url(filename, *, base=GFWIKI_BASE):
+    filename = filename.replace(" ", "_")
+    name_hash = hashlib.md5(filename.encode("utf-8")).hexdigest()
+    return f"{base}/images/{name_hash[0]}/{name_hash[:2]}/{filename}"
 
 #==================================================================================================================================================
 
@@ -229,11 +272,8 @@ def handle_spoiler(box, value):
 @parser.set_box_handler("cite ab1")
 @parser.set_box_handler("stub")
 @parser.set_box_handler("wip")
-def handle_misc(box, *args, **kwargs):
-    return ""
-
 @parser.set_box_handler("Cleanup")
-def handle_cleanup(box, *args, **kwargs):
+def handle_misc(box, *args, **kwargs):
     return ""
 
 @parser.set_box_handler(None)
@@ -242,7 +282,10 @@ def default_handler(box, *args, **kwargs):
 
 @parser.set_reference_handler
 def handle_reference(box, *args, **kwargs):
-    return box
+    if box.startswith(":Category:"):
+        return box[10:]
+    else:
+        return box
 
 @parser.set_html_handler
 def handle_html(tag, text, **kwargs):
@@ -328,16 +371,16 @@ class Doll(data_type.BaseObject):
                     f"{emojis['damage']}**DMG:** {self.max_dmg}\n"
                     f"{emojis['accuracy']}**ACC:** {self.max_acc}"
                     +
-                    (f"\n{emojis['armor']}**Armor:**  {self.max_armor}" if self.max_armor > 0 else "")
+                    (f"\n{emojis['armor']}**ARMOR:**  {self.max_armor}" if self.max_armor > 0 else "")
             )
             embed.add_field(
                 name="\u200b",
                 value=
                     f"{emojis['rof']}**ROF:** {self.max_rof}\n"
                     f"{emojis['evasion']}**EVA:** {self.max_eva}\n"
-                    f"{emojis['crit_rate']}**Crit rate:** {self.crit_rate}%"
+                    f"{emojis['crit_rate']}**CRIT RATE:** {self.crit_rate}%"
                     +
-                    (f"\n{emojis['clip_size']}**Clip size:** {self.clip_size}" if self.clip_size > 0 else "")
+                    (f"\n{emojis['clip_size']}**ROUNDS:** {self.clip_size}" if self.clip_size > 0 else "")
             )
 
             tile = {
@@ -418,16 +461,16 @@ class Doll(data_type.BaseObject):
                             f"{emojis['damage']}**DMG:** {mod['max_dmg']}\n"
                             f"{emojis['accuracy']}**ACC:** {mod['max_acc']}"
                             +
-                            (f"\n{emojis['armor']}**Armor:**  {mod['max_armor']}" if mod["max_armor"] > 0 else "")
+                            (f"\n{emojis['armor']}**ARMOR:**  {mod['max_armor']}" if mod["max_armor"] > 0 else "")
                     )
                     embed.add_field(
                         name="\u200b",
                         value=
                             f"{emojis['rof']}**ROF:** {mod['max_rof']}\n"
                             f"{emojis['evasion']}**EVA:** {mod['max_eva']}\n"
-                            f"{emojis['crit_rate']}**Crit rate:** {self.crit_rate}%"
+                            f"{emojis['crit_rate']}**CRIT RATE:** {self.crit_rate}%"
                             +
-                            (f"\n{emojis['clip_size']}**Clip size:** {mod['clip_size']}" if mod["clip_size"] > 0 else "")
+                            (f"\n{emojis['clip_size']}**ROUNDS:** {mod['clip_size']}" if mod["clip_size"] > 0 else "")
                     )
 
                     tile = {
@@ -524,12 +567,17 @@ class Doll(data_type.BaseObject):
                 change_info_to(mod_info, mod_skins, "mod")
                 return saved["embed"]
 
-        if speq_info:
-            speq_iter = circle_iter(speq_info)
+        if speq_info["equipments"]:
+            speq_iter = circle_iter(speq_info["equipments"])
 
-            @paging.wrap_action(emojis["eq_cap"])
+            @paging.wrap_action(emojis["exoskeleton"])
             def change_speq_info():
                 return next(speq_iter)
+
+            digest_iter = circle_iter(speq_info["digest"])
+            @paging.wrap_action("\U0001f52c")
+            def change_digest_info():
+                return next(digest_iter)
 
         @paging.wrap_action("\U0001f50e")
         async def change_analysis_info():
@@ -599,22 +647,73 @@ class Doll(data_type.BaseObject):
 
     async def query_speq(self, ctx):
         col = ctx.cog.special_equipments
+        emojis = ctx.cog.emojis
+
+        stat_bases = {"": self.__dict__}
+        if self.moddable:
+            stat_bases[" Mod"] = self.mod_data
+        digest_tabs = []
+        for suffix, base in stat_bases.items():
+            embed = discord.Embed(
+                title=f"{self.en_name}{suffix}",
+                color=discord.Color.green(),
+                url=f"{GFWIKI_BASE}/wiki/{quote(self.name)}"
+            )
+            embed.add_field(
+                name="Stats",
+                value=
+                    f"{emojis['hp']}**HP:** {base['max_hp']} (x5)\n"
+                    f"{emojis['damage']}**DMG:** {base['max_dmg']}\n"
+                    f"{emojis['accuracy']}**ACC:** {base['max_acc']}"
+                    +
+                    (f"\n{emojis['armor']}**ARMOR:**  {base['max_armor']}" if base["max_armor"] > 0 else "")
+            )
+            embed.add_field(
+                name="\u200b",
+                value=
+                    f"{emojis['rof']}**ROF:** {base['max_rof']}\n"
+                    f"{emojis['evasion']}**EVA:** {base['max_eva']}\n"
+                    f"{emojis['crit_rate']}**CRIT RATE:** {self.crit_rate}%"
+                    +
+                    (f"\n{emojis['clip_size']}**ROUNDS:** {base['clip_size']}" if base["clip_size"] > 0 else "")
+            )
+            digest_tabs.append(embed)
+
         embeds = []
         async for doc in col.find({"compatible": self.name}):
+            stat_info = []
+            for stat in doc["stats"]:
+                name = stat["name"]
+                if name == "boost_skill_effect":
+                    stat_info.append("**BOOST SKILL EFFECT**")
+                else:
+                    display = STAT_DISPLAY[name]
+                    stat_info.append(f"{emojis[name]}**{display[0]}** {stat['value']:+}{display[1]}")
+            stat_desc = "\n".join(stat_info)
             embed = discord.Embed(
-                title=f"{doc['name']}",
+                title=doc["name"],
                 color=discord.Color.green(),
                 url=f"{GFWIKI_BASE}/wiki/{quote(doc['name'])}",
-                description="\n".join(f"{s['name']} {s['value']:+}" for s in doc["stats"])
+                description=stat_desc
             )
             embed.set_thumbnail(url=doc["image_url"])
             embeds.append(embed)
+
+            for digest in digest_tabs:
+                digest.add_field(
+                    name=doc["name"],
+                    value=stat_desc,
+                    inline=False
+                )
 
         max_page = len(embeds)
         for i, embed in enumerate(embeds):
             embed.set_footer(text=f"({i+1}/{max_page})")
     
-        return embeds
+        return {
+            "equipments": embeds,
+            "digest": digest_tabs
+        }
 
 #==================================================================================================================================================
 
@@ -631,7 +730,7 @@ class GirlsFrontline(commands.Cog):
             "hp", "damage", "accuracy", "rof", "evasion", "armor",
             "crit_rate", "crit_dmg", "armor_penetration", "clip_size", "mobility",
             "HG", "RF", "AR", "SMG", "MG", "SG", "rank",
-            "mem_frag", "eq_cap", "battle_fairy", "strategy_fairy"
+            "mem_frag", "exoskeleton", "battle_fairy", "strategy_fairy", "shotgun_ammo", "peq"
         ):
             self.emojis[emoji_name] = discord.utils.find(lambda e: e.name==emoji_name, test_guild_2.emojis)
 
@@ -799,9 +898,9 @@ class GirlsFrontline(commands.Cog):
         doll.max_armor = utils.to_int(basic_info.get("max_armor"), default=0)
         doll.clip_size = utils.to_int(basic_info.get("clipsize"), default=0)
 
+        doll.crit_rate = utils.to_int(basic_info.get("crit", "").rstrip("%"), default=CRIT_RATE[dtype])
         doll.mobility = int(basic_info.get("mov", MOBILITY[dtype]))
         doll.craft_time = timer_to_seconds(basic_info.get("craft", ""))
-        doll.crit_rate = utils.to_int(basic_info.get("crit", "").rstrip("%"), default=CRIT_RATE[dtype])
         order = EQUIPMENT_ORDER[dtype].copy()
         for i in range(3):
             cur = basic_info.get(f"slot{i+1}")
@@ -883,52 +982,31 @@ class GirlsFrontline(commands.Cog):
 
         # skin section
         file_list = {
-            f"File:{doll.name}.png": (0, "default", "normal"),
-            f"File:{doll.name} D.png": (0, "default", "damaged")
+            f"{doll.name}.png": (0, "default", "normal"),
+            f"{doll.name} D.png": (0, "default", "damaged")
         }
-        number = 0
-        while True:
-            number += 1
-            next_costume = f"costume{number}"
+        for index in range(1, 9):
+            next_costume = f"costume{index}"
             costume_name = basic_info.get(next_costume)
             if costume_name:
-                file_list[f"File:{doll.name}_{next_costume}.png"] = (number, costume_name, "normal")
-                file_list[f"File:{doll.name}_{next_costume}_D.png"] = (number, costume_name, "damaged")
+                file_list[f"{doll.name} {next_costume}.png"] = (index, costume_name, "normal")
+                file_list[f"{doll.name} {next_costume} D.png"] = (index, costume_name, "damaged")
             else:
                 break
 
-        file_bytes_ = await self.bot.fetch(
-            GFWIKI_API,
-            params={
-                "action":       "query",
-                "prop":         "imageinfo",
-                "iiprop":       "url",
-                "titles":       "|".join(file_list.keys()),
-                "format":       "json",
-                "redirects":    1
-            }
-        )
-        file_data = json.loads(file_bytes_)
-
-        for n in file_data["query"].get("normalized", []):
-            file_list[n["to"]] = file_list[n["from"]]
-
         skins = []
         mod_skins = []
-        for file_info in file_data["query"]["pages"].values():
-            if "imageinfo" in file_info:
-                url = file_info["imageinfo"][0]["url"]
-                info = file_list[file_info["title"]]
-                skin = {
-                    "index": info[0],
-                    "name": info[1],
-                    "form": info[2],
-                    "image_url": url
-                }
-                if info[1] == "[Digimind Upgrade]":
-                    mod_skins.append(skin)
-                else:
-                    skins.append(skin)
+        for filename, (index, costume_name, form) in file_list.items():
+            skin = {
+                "index": index,
+                "name": costume_name,
+                "form": form,
+                "image_url": generate_image_url(filename)
+            }
+            if costume_name == "[Digimind Upgrade]":
+                mod_skins.append(skin)
+            else:
+                skins.append(skin)
 
         skins.sort(key=lambda x: (-x["index"], x["form"]), reverse=True)
         doll.skins = skins
@@ -1216,13 +1294,15 @@ class GirlsFrontline(commands.Cog):
         for i in range(1, 5):
             stat_name = basic_info.get(f"stat{i}")
             if stat_name:
+                stat_name = stat_name.replace("(%)", "").replace(" ", "").lower()
+                normalized_name = STATS_NORMALIZE[stat_name]
                 base_stat = max(
                     to_float(basic_info.get(f"stat{i}max"), default=-INF),
                     to_float(basic_info.get(f"stat{i}min"), default=-INF)
                 )
                 growth = float(basic_info.get(f"stat{i}growth") or 1)
                 cur = {
-                    "name": stat_name,
+                    "name": normalized_name,
                     "value": int(base_stat * growth)
                 }
                 stats.append(cur)
@@ -1230,26 +1310,9 @@ class GirlsFrontline(commands.Cog):
                 break
         speq["stats"] = stats
         
-        file_name = basic_info.get("icon") or f"Generic {basic_info['compatibleto']} {basic_info['class']}"
-        file_bytes_ = await self.bot.fetch(
-            GFWIKI_API,
-            params={
-                "action":       "query",
-                "prop":         "imageinfo",
-                "iiprop":       "url",
-                "titles":       f"File:{file_name}.png",
-                "format":       "json",
-                "redirects":    1
-            }
-        )
-        file_data = json.loads(file_bytes_)
-        image_url = None
-        for i, image_info in file_data["query"]["pages"].items():
-            if i != "-1":
-                for url_info in image_info["imageinfo"]:
-                    image_url = url_info["url"]
-                    break
-        speq["image_url"] = image_url
+        filename = basic_info.get("icon") or f"Generic {basic_info['compatibleto']} {basic_info['class']}"
+        filename = filename + ".png"
+        speq["image_url"] = generate_image_url(filename)
 
         return speq
 
@@ -1284,7 +1347,7 @@ class GirlsFrontline(commands.Cog):
 
                     embed.add_field(
                         name="Classification",
-                        value=f"{emojis[fairy.classification]} {fairy.classification.replace('_', ' ').capitalize()}",
+                        value=f"{emojis[fairy.classification]} {fairy.classification.replace('_', ' ').title()}",
                         inline=False
                     )
                     
@@ -1299,7 +1362,7 @@ class GirlsFrontline(commands.Cog):
                     ):
                         stat = st[key]
                         if stat:
-                            stat_info.append(f"{emojis[emoji_name]}**{title}** {stat}")
+                            stat_info.append(f"{emojis[emoji_name]}**{title}** +{stat}")
 
                     embed.add_field(
                         name="Stats",
@@ -1439,31 +1502,11 @@ class GirlsFrontline(commands.Cog):
             "cost": basic_info["skillcost"]
         }
 
-        file_names = [
-            f"File:{name}.png",
-            f"File:{name} 2.png",
-            f"File:{name} 3.png"
+        fairy["image_urls"] = [
+            generate_image_url(f"{name}.png"),
+            generate_image_url(f"{name} 2.png"),
+            generate_image_url(f"{name} 3.png")
         ]
-        image_urls = []
-        file_bytes_ = await self.bot.fetch(
-            GFWIKI_API,
-            params={
-                "action":       "query",
-                "prop":         "imageinfo",
-                "iiprop":       "url",
-                "titles":       "|".join(file_names),
-                "format":       "json",
-                "redirects":    1
-            }
-        )
-        file_data = json.loads(file_bytes_)
-        image_urls = []
-        for i, image_info in file_data["query"]["pages"].items():
-            if i != "-1":
-                for url_info in image_info["imageinfo"]:
-                    image_urls.append(url_info["url"])
-                    break
-        fairy["image_urls"] = image_urls
 
         return fairy
 
