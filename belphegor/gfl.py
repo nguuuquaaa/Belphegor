@@ -775,6 +775,7 @@ class GirlsFrontline(commands.Cog):
             sort={"index": 1}
         )
 
+    @modding.help(brief="Display t-doll info", category="GFL", field="Database", paragraph=0)
     @commands.group(aliases=["td"], invoke_without_command=True)
     async def doll(self, ctx, *, name):
         '''
@@ -1015,6 +1016,7 @@ class GirlsFrontline(commands.Cog):
 
         return doll
 
+    @modding.help(brief="Search for t-dolls using given conditions", category="GFL", field="Database", paragraph=0)
     @doll.command()
     async def filter(self, ctx, *, data: modding.KeyValue(
         {
@@ -1154,6 +1156,7 @@ class GirlsFrontline(commands.Cog):
         else:
             await ctx.send("No result found.")
 
+    @modding.help(brief="Display t-dolls with given craft timer", category="GFL", field="Database", paragraph=0)
     @commands.command(aliases=["t"])
     async def timer(self, ctx, time):
         '''
@@ -1316,6 +1319,7 @@ class GirlsFrontline(commands.Cog):
 
         return speq
 
+    @modding.help(brief="Display fairy info", category="GFL", field="Database", paragraph=0)
     @commands.group(aliases=["f"], invoke_without_command=True)
     async def fairy(self, ctx, *, name):
         '''

@@ -36,6 +36,7 @@ class Help(commands.Cog):
         self.bot = bot
         self.bot.remove_command("help")
         test_guild = bot.get_guild(config.TEST_GUILD_ID)
+        test_guild_3 = bot.get_guild(config.TEST_GUILD_3_ID)
         self.otogi_guild = bot.get_guild(config.OTOGI_GUILD_ID)
         creampie_guild = bot.get_guild(config.CREAMPIE_GUILD_ID)
         dpy_guild = bot.get_guild(config.DISCORDPY_GUILD_ID)
@@ -44,6 +45,8 @@ class Help(commands.Cog):
             self.emojis[emoji_name] = discord.utils.find(lambda e: e.name==emoji_name, creampie_guild.emojis)
         for emoji_name in ("hu",):
             self.emojis[emoji_name] = discord.utils.find(lambda e: e.name==emoji_name, test_guild.emojis)
+        for emoji_name in ("core",):
+            self.emojis[emoji_name] = discord.utils.find(lambda e: e.name==emoji_name, test_guild_3.emojis)
         for emoji_name in ("python", "dpy"):
             self.emojis[emoji_name] = discord.utils.find(lambda e: e.name==emoji_name, dpy_guild.emojis)
 
@@ -70,6 +73,7 @@ class Help(commands.Cog):
                             "`>>help` - Show this message\n"
                             f"{self.emojis['mochi']} Otogi: Spirit Agents stuff\n"
                             f"{self.emojis['hu']} PSO2 stuff\n"
+                            f"{self.emojis['core']} GFL stuff\n"
                             "\U0001f3b2 Play games\n"
                             "\U0001f5bc Image search/random\n"
                             "\U0001f3b5 Music\n"
@@ -91,7 +95,8 @@ class Help(commands.Cog):
                 "fields":   {
                     "Database": [
                         [
-                            "Data taken from [Otogi Wikia](http://otogi.wikia.com/) and [Otogi Effective Stats Spreadsheet](https://docs.google.com/spreadsheets/d/1oJnQ5TYL5d9LJ04HMmsuXBvJSAxqhYqcggDZKOctK2k/edit#gid=0)"
+                            "Data taken from [Otogi Wikia](http://otogi.wikia.com/) "
+                            "and [Otogi Effective Stats Spreadsheet](https://docs.google.com/spreadsheets/d/1oJnQ5TYL5d9LJ04HMmsuXBvJSAxqhYqcggDZKOctK2k/edit#gid=0)"
                         ]
                     ]
                 }
@@ -107,7 +112,22 @@ class Help(commands.Cog):
                 "fields":   {
                     "Database": [
                         [
-                            "Data taken from [Arks-Visiphone](http://pso2.arks-visiphone.com/wiki/Main_Page) and [DB Kakia](http://jp.db.telepipe.io/)."
+                            "Data taken from [Arks-Visiphone](http://pso2.arks-visiphone.com/wiki/Main_Page) "
+                            "and [DB Kakia](http://jp.db.telepipe.io/)."
+                        ]
+                    ]
+                }
+            },
+            "GFL": {
+                "emoji":    self.emojis["core"],
+                "desc":     "Horni skins viewer, Discord edition.",
+                "thumb":    "https://i.imgur.com/eU2NVkt.png",
+                "footer":   None,
+                "fields":   {
+                    "Database": [
+                        [
+                            "Data taken from [IOPWiki](https://iopwiki.com/wiki/Girls'_Frontline_Wiki) "
+                            "and [GFLAnalysis](https://www.gflanalysis.com/wiki/Main_Page)."
                         ]
                     ]
                 }
