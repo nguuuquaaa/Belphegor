@@ -5,6 +5,7 @@ from .utils import modding, config, checks
 from bs4 import BeautifulSoup as BS
 import aiohttp
 import asyncio
+from yarl import URL
 
 #==================================================================================================================================================
 
@@ -281,7 +282,13 @@ class Google(commands.Cog):
 
         await ctx.trigger_typing()
         async with self.google_lock:
-            bytes_ = await utils.fetch(self.google_session, "https://www.google.com/search", headers=self.google_headers, params=params, timeout=10)
+            bytes_ = await utils.fetch(
+                self.google_session,
+                "https://www.google.com/search",
+                headers=self.google_headers,
+                params=params,
+                timeout=10
+            )
             result = self._parse_google(bytes_.decode("utf-8"))
             if isinstance(result, discord.Embed):
                 await ctx.send(embed=result)
@@ -318,13 +325,35 @@ class Google(commands.Cog):
         }
         if not ctx.channel.is_nsfw():
             params["safe"] = "active"
-        bytes_ = await self.bot.fetch("http://translate.google.com/m", headers=self.google_headers, params=params, timeout=10)
+        bytes_ = await utils.fetch(
+            self.google_session,
+            "http://translate.google.com/m",
+            headers=self.google_headers,
+            params=params,
+            timeout=10
+        )
 
         data = BS(bytes_.decode("utf-8"), "lxml")
-        tag = data.find("div", class_="t0")
-        embed = discord.Embed(colour=discord.Colour.dark_orange())
-        embed.add_field(name="Detect", value=query)
-        embed.add_field(name="English", value=tag.get_text())
+        tag = data.find("div", class_="result-container")
+        result = tag.get_text()
+        if len(result) > 1000:
+            result = f"{result[:1000]}..."
+        embed = discord.Embed(
+            title="Result",
+            colour=discord.Colour.dark_orange(),
+            url=str(URL.build(
+                scheme="https",
+                host="translate.google.com",
+                query={
+                    "sl": "auto",
+                    "tl": "en",
+                    "op": "translate",
+                    "text": query
+                }
+            ))
+        )
+        embed.add_field(name="Detect", value=query, inline=False)
+        embed.add_field(name="English", value=result, inline=False)
         await ctx.send(embed=embed)
 
     @gtrans.error
