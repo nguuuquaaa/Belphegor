@@ -22,6 +22,39 @@ SUPERSCRIPT = {
     "9": "0x2079"
 }
 
+ALL_LANGUAGES = {
+    "af": "Afrikaans", "sq": "Albanian", "am": "Amharic", "ar": "Arabic", 
+    "hy": "Armenian", "az": "Azerbaijani", "eu": "Basque", "be": "Belarusian", 
+    "bn": "Bengali", "bs": "Bosnian", "bg": "Bulgarian", "ca": "Catalan", 
+    "ceb": "Cebuano", "ny": "Chichewa", "zh-CN": "Chinese (Simplified)", 
+    "co": "Corsican", "hr": "Croatian", "cs": "Czech", "da": "Danish", 
+    "nl": "Dutch", "en": "English", "eo": "Esperanto", "et": "Estonian", 
+    "tl": "Filipino", "fi": "Finnish", "fr": "French", "fy": "Frisian", 
+    "gl": "Galician", "ka": "Georgian", "de": "German", "el": "Greek", 
+    "gu": "Gujarati", "ht": "Haitian Creole", "ha": "Hausa", "haw": "Hawaiian", 
+    "iw": "Hebrew", "hi": "Hindi", "hmn": "Hmong", "hu": "Hungarian", 
+    "is": "Icelandic", "ig": "Igbo", "id": "Indonesian", "ga": "Irish",
+    "it": "Italian", "ja": "Japanese", "jw": "Javanese", "kn": "Kannada", 
+    "kk": "Kazakh", "km": "Khmer", "rw": "Kinyarwanda", "ko": "Korean", 
+    "ku": "Kurdish (Kurmanji)", "ky": "Kyrgyz", "lo": "Lao", "la": "Latin", 
+    "lv": "Latvian", "lt": "Lithuanian", "lb": "Luxembourgish", "mk": "Macedonian", 
+    "mg": "Malagasy", "ms": "Malay", "ml": "Malayalam", "mt": "Maltese", 
+    "mi": "Maori", "mr": "Marathi", "mn": "Mongolian", "my": "Myanmar (Burmese)", 
+    "ne": "Nepali", "no": "Norwegian", "or": "Odia (Oriya)", "ps": "Pashto", 
+    "fa": "Persian", "pl": "Polish", "pt": "Portuguese", "pa": "Punjabi", 
+    "ro": "Romanian", "ru": "Russian", "sm": "Samoan", "gd": "Scots Gaelic", 
+    "sr": "Serbian", "st": "Sesotho", "sn": "Shona", "sd": "Sindhi", 
+    "si": "Sinhala", "sk": "Slovak", "sl": "Slovenian", "so": "Somali", 
+    "es": "Spanish", "su": "Sundanese", "sw": "Swahili", "sv": "Swedish", 
+    "tg": "Tajik", "ta": "Tamil", "tt": "Tatar", "te": "Telugu", 
+    "th": "Thai", "tr": "Turkish", "tk": "Turkmen", "uk": "Ukrainian", 
+    "ur": "Urdu", "ug": "Uyghur", "uz": "Uzbek", "vi": "Vietnamese", 
+    "cy": "Welsh", "xh": "Xhosa", "yi": "Yiddish", "yo": "Yoruba", 
+    "zu": "Zulu", "zh-TW": "Chinese (Traditional)"
+}
+
+SORTED_LANGUAGES = sorted(ALL_LANGUAGES.items(), key=lambda x: x[1])
+
 #==================================================================================================================================================
 
 class Google(commands.Cog):
@@ -61,8 +94,8 @@ class Google(commands.Cog):
         #video
         tag = soup.find("div", class_="FGpTBd")
         if tag:
-            other = "\n\n".join([f"<{t[1]}>" for t in search_results[:4]])
-            return f"**Search result:**\n{tag.find('a')['href']}\n\n**See also:**\n{other}"
+            other = "\n".join([f"\u2022 <{t[1]}>" for t in search_results[:4]])
+            return f"**Search result:**\n\u2022 {tag.find('a')['href']}\n**See also:**\n{other}"
 
         g_container = soup.find(lambda x: x.name=="div" and "obcontainer" in x.get("class", []))
         if g_container:
@@ -73,7 +106,7 @@ class Google(commands.Cog):
                 embed.add_field(name=results[1].find("option", selected=1).text, value=results[1].find("input")["value"])
                 embed.add_field(name=results[3].find("option", selected=1).text, value=results[3].find("input")["value"])
                 if search_results:
-                    embed.add_field(name="See also:", value="\n\n".join((f"[{utils.discord_escape(t[0])}]({utils.safe_url(t[1])})" for t in search_results[:4])), inline=False)
+                    embed.add_field(name="See also:", value="\n".join((f"\u2022 [{utils.discord_escape(t[0])}]({utils.safe_url(t[1])})" for t in search_results[:4])), inline=False)
                 return embed
             except:
                 pass
@@ -97,7 +130,7 @@ class Google(commands.Cog):
                         colour=discord.Colour.dark_orange()
                     )
                     if search_results:
-                        embed.add_field(name="See also:", value="\n\n".join((f"[{utils.discord_escape(t[0])}]({utils.safe_url(t[1])})" for t in search_results[:4])), inline=False)
+                        embed.add_field(name="See also:", value="\n".join((f"\u2022 [{utils.discord_escape(t[0])}]({utils.safe_url(t[1])})" for t in search_results[:4])), inline=False)
                     return embed
                 except:
                     pass
@@ -113,7 +146,7 @@ class Google(commands.Cog):
                     embed.add_field(name=input_type.find("option", selected=1).text, value=input_value["value"])
                     embed.add_field(name=output_type.find("option", selected=1).text, value=output_value["value"])
                     if search_results:
-                        embed.add_field(name="See also:", value="\n\n".join((f"[{utils.discord_escape(t[0])}]({utils.safe_url(t[1])})" for t in search_results[:4])), inline=False)
+                        embed.add_field(name="See also:", value="\n".join((f"\u2022 [{utils.discord_escape(t[0])}]({utils.safe_url(t[1])})" for t in search_results[:4])), inline=False)
                     return embed
                 except:
                     pass
@@ -125,7 +158,7 @@ class Google(commands.Cog):
                 try:
                     embed = discord.Embed(title="Search result:", description=f"**Calculator**\n{inp.text}\n\n {out.text}", colour=discord.Colour.dark_orange())
                     if search_results:
-                        embed.add_field(name="See also:", value="\n\n".join((f"[{utils.discord_escape(t[0])}]({utils.safe_url(t[1])})" for t in search_results[:4])), inline=False)
+                        embed.add_field(name="See also:", value="\n".join((f"\u2022 [{utils.discord_escape(t[0])}]({utils.safe_url(t[1])})" for t in search_results[:4])), inline=False)
                     return embed
                 except:
                     pass
@@ -154,7 +187,7 @@ class Google(commands.Cog):
                         embed.set_thumbnail(url=img_url)
                 except:
                     pass
-                embed.add_field(name="See also:", value="\n\n".join((f"[{utils.discord_escape(t[0])}]({utils.safe_url(t[1])})" for t in search_results[:4])), inline=True)
+                embed.add_field(name="See also:", value="\n".join((f"\u2022 [{utils.discord_escape(t[0])}]({utils.safe_url(t[1])})" for t in search_results[:4])), inline=True)
                 return embed
             except:
                 pass
@@ -225,7 +258,7 @@ class Google(commands.Cog):
                 embed.add_field(name="Precipitation", value=tag.find('span', id='wob_pp').text)
                 embed.add_field(name="Humidity", value=tag.find('span', id='wob_hm').text)
                 embed.add_field(name="Wind", value=tag.find('span', id='wob_ws').text)
-                embed.add_field(name="See also:", value="\n\n".join((f"[{utils.discord_escape(t[0])}]({utils.safe_url(t[1])})" for t in search_results[1:5])), inline=False)
+                embed.add_field(name="See also:", value="\n".join((f"\u2022 [{utils.discord_escape(t[0])}]({utils.safe_url(t[1])})" for t in search_results[1:5])), inline=False)
                 return embed
             except:
                 pass
@@ -235,7 +268,7 @@ class Google(commands.Cog):
         if tag:
             try:
                 embed = discord.Embed(title="Search result:", description=f"{tag.text}\n[{search_results[0].h3.text}]({search_results[0]['href']})", colour=discord.Colour.dark_orange())
-                embed.add_field(name="See also:", value="\n\n".join((f"[{utils.discord_escape(t[0])}]({utils.safe_url(t[1])})" for t in search_results[1:5])), inline=False)
+                embed.add_field(name="See also:", value="\n".join((f"\u2022 [{utils.discord_escape(t[0])}]({utils.safe_url(t[1])})" for t in search_results[1:5])), inline=False)
                 return embed
             except:
                 pass
@@ -254,7 +287,7 @@ class Google(commands.Cog):
                 embed = discord.Embed(title="Search result:", description=f"[Google Translate]({link['href']})", colour=discord.Colour.dark_orange())
                 embed.add_field(name=inp_lang.text, value=inp.text)
                 embed.add_field(name=out_lang.text, value=out.text)
-                embed.add_field(name="See also:", value="\n\n".join((f"[{utils.discord_escape(t[0])}]({utils.safe_url(t[1])})" for t in search_results[0:4])), inline=False)
+                embed.add_field(name="See also:", value="\n".join((f"\u2022 [{utils.discord_escape(t[0])}]({utils.safe_url(t[1])})" for t in search_results[0:4])), inline=False)
                 return embed
             except:
                 pass
@@ -263,8 +296,8 @@ class Google(commands.Cog):
         if not search_results:
             return None
 
-        other = "\n\n".join((f"<{r[1]}>" for r in search_results[1:5]))
-        return f"**Search result:**\n{search_results[0][1]}\n**See also:**\n{other}"
+        other = "\n".join((f"\u2022 <{r[1]}>" for r in search_results[1:5]))
+        return f"**Search result:**\n\u2022 {search_results[0][1]}\n**See also:**\n{other}"
 
     @modding.help(brief="Google search", category="Misc", field="Commands", paragraph=2)
     @commands.command(aliases=["g"])
@@ -273,7 +306,6 @@ class Google(commands.Cog):
         '''
             `>>google <query>`
             Google search.
-            There's a 10-second cooldown per user.
         '''
         params = {
             "hl": "en",
@@ -298,7 +330,7 @@ class Google(commands.Cog):
                 paging = utils.Paginator(result, render=False)
                 await paging.navigate(ctx)
             else:
-                await ctx.send("No result found.\nEither query yields nothing or Google blocked me (REEEEEEEEEEEEEEEEEEEEEEEE)")
+                await ctx.send("No result found.\n... Either that or Google blocked me (in that case REEEEEEEEEEEEEEEEEEEEEEEEEE)")
 
     @google.error
     async def google_error(self, ctx, error):
@@ -306,22 +338,30 @@ class Google(commands.Cog):
             await ctx.send("Whoa slow down your Google search! You can only search once every 10 seconds.")
 
     @modding.help(brief="Google, but translate", category="Misc", field="Commands", paragraph=2)
-    @commands.command(aliases=["translate", "trans"])
+    @commands.group(aliases=["translate", "trans"], invoke_without_command=True)
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
-    async def gtrans(self, ctx, *, query):
+    async def gtrans(self, ctx, *, query: modding.KeyValue({"from": str, "to": str})):
         '''
-            `>>gtrans <text>`
-            Google translate.
-            Input is automatically detected, output is English.
-            There's a 10-second cooldown per user.
+            `>>gtrans <text> <keyword: from> <keyword: to>`
+            Google translate text.
+            Default keyword from (input language code) is auto (detect language).
+            Default keyword to (output language code) is en (English).
+            You can use `>>gtrans langs` for a list of supported languages.
         '''
         await ctx.trigger_typing()
+        tl_from = query.getone("from", "auto")
+        tl_to = query.getone("to", "en")
+        text = query.getalltext("")
+        if (tl_from == "auto" or tl_from in ALL_LANGUAGES) and tl_to in ALL_LANGUAGES:
+            pass
+        else:
+            return await ctx.send("Unrecognized language.")
         params = {
-            "tl": "en",
+            "tl": tl_to,
             "hl": "en",
-            "sl": "auto",
+            "sl": tl_from,
             "ie": "UTF-8",
-            "q": query
+            "q": text
         }
         if not ctx.channel.is_nsfw():
             params["safe"] = "active"
@@ -345,16 +385,31 @@ class Google(commands.Cog):
                 scheme="https",
                 host="translate.google.com",
                 query={
-                    "sl": "auto",
-                    "tl": "en",
+                    "sl": tl_from,
+                    "tl": tl_to,
                     "op": "translate",
-                    "text": query
+                    "text": text
                 }
             ))
         )
-        embed.add_field(name="Detect", value=query, inline=False)
-        embed.add_field(name="English", value=result, inline=False)
+        embed.add_field(name=ALL_LANGUAGES.get(tl_from, "Detect language"), value=text, inline=False)
+        embed.add_field(name=ALL_LANGUAGES[tl_to], value=result, inline=False)
         await ctx.send(embed=embed)
+
+    @modding.help(brief="Supported languages", category="Misc", field="Commands", paragraph=2)
+    @gtrans.group(name="languages", aliases=["langs"])
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+    async def gtrans_langauges(self, ctx):
+        '''
+            `>>gtrans languages`
+            Show supported languages for using with from/to keywords in gtrans command.
+        '''
+        paging = utils.Paginator(
+            SORTED_LANGUAGES, 10,
+            title="All languages",
+            description=lambda i, x: f"`{x[0]}` - {x[1]}"
+        )
+        await paging.navigate(ctx)
 
     @gtrans.error
     async def gtrans_error(self, ctx, error):
