@@ -79,7 +79,7 @@ ASCII = "@%#*+=-:. "
 RANGE = 256 / len(ASCII)
 CHAR_SIZE = (8, 16)
 
-DOT_PATTERN = (1, 4, 2, 5, 3, 6, 7, 8)
+DOT_PATTERN = np.array([[1, 8], [2, 16], [4, 32], [64, 128]])
 BOX_PATTERN = {
     (0, 0): " ",
     (0, 1): "\u2584",
@@ -101,8 +101,9 @@ def lstrip_generator(generator):
 
 def generate_blank_char():
     while True:
-        yield "\u2002"
-        yield "\u2003"
+        yield "\u2800"
+        yield "\u2800"
+        yield "\u2001"
 
 blank_chars = generate_blank_char()
 MOON_PATTERN = {
@@ -975,11 +976,9 @@ class Misc(commands.Cog):
             return await ctx.send("Cannot identify image.")
 
         def per_cut(cut):
-            cut = cut.flatten()
-            pos = [str(p) for i, p in enumerate(DOT_PATTERN) if cut[i] == 1]
-            if pos:
-                pos.sort()
-                return unicodedata.lookup(f"BRAILLE PATTERN DOTS-{''.join(pos)}")
+            offset = np.sum(cut * DOT_PATTERN)
+            if offset > 0:
+                return chr(0x2800 + offset)
             else:
                 return next(blank_chars)
 
