@@ -605,7 +605,7 @@ class Doll(data_type.BaseObject):
             GFLANALYSIS_API,
             params={
                 "action":       "ask",
-                "query":        f"[[Name::~*{self.name}*]]|?Name|?Pros|?Cons|?Status|?Roles|?Analysis",
+                "query":        f"[[Name::~*{self.en_name}*]]|?Name|?Pros|?Cons|?Status|?Roles|?Analysis",
                 "format":       "json",
                 "redirects":    1
             }
@@ -615,16 +615,23 @@ class Doll(data_type.BaseObject):
         results = data["query"]["results"]
         if not results:
             embed = discord.Embed(
-                title=f"GFLAnalysis: {self.name}",
+                title=f"GFLAnalysis: {self.en_name}",
                 color=discord.Color.green(),
                 description="No analysis thus far."
             )
             return {"original": [embed]}
 
         for name, raw in data["query"]["results"].items():
-            pr = raw["printouts"]
-            
             embeds = []
+
+            if name == self.en_name:
+                ret["original"] = embeds
+            elif name == f"{self.en_name}Mod":
+                ret["mod"] = embeds
+            else:
+                continue
+
+            pr = raw["printouts"]
             analysis = "".join(gflanalysis_parser.parse("\n".join(pr["Analysis"]).replace("&#8203;", "\n")))
             for i, a in enumerate(utils.split_page(analysis, 900, check=lambda s: s=="\n", fix=" \u27a1 ")):
                 embed = discord.Embed(
@@ -637,11 +644,6 @@ class Doll(data_type.BaseObject):
 
                 embed.add_field(name="Analysis", value=a, inline=False)
                 embeds.append(embed)
-
-            if name.endswith("Mod"):
-                ret["mod"] = embeds
-            else:
-                ret["original"] = embeds
 
         return ret
 
@@ -788,7 +790,7 @@ class GirlsFrontline(commands.Cog):
             await d.display_info(ctx)
 
     @doll.group(name="update")
-    @checks.owner_only()
+    @checks.in_certain_guild(607747682458402817)
     async def doll_update(self, ctx):
         pass
 
@@ -1190,7 +1192,7 @@ class GirlsFrontline(commands.Cog):
         await ctx.send("Invalid timer")
 
     @commands.group(aliases=["e"], invoke_without_command=True)
-    @checks.owner_only()
+    @checks.in_certain_guild(607747682458402817)
     async def speq(self, ctx, *, name):
         '''
             `>>speq <name>`
@@ -1200,12 +1202,11 @@ class GirlsFrontline(commands.Cog):
         pass
 
     @speq.group(name="update")
-    @checks.owner_only()
+    @checks.in_certain_guild(607747682458402817)
     async def speq_update(self, ctx):
         pass
 
     @speq_update.command(name="everything", aliases=["all"])
-    @checks.owner_only()
     async def update_all_speq(self, ctx):
         await ctx.trigger_typing()
         params = {
@@ -1225,7 +1226,6 @@ class GirlsFrontline(commands.Cog):
         await self.update_equipments_with_names(ctx, names)
 
     @speq_update.command(name="many")
-    @checks.owner_only()
     async def update_many_speq(self, ctx, *names):
         await ctx.trigger_typing()
         logs = await self.update_equipments_with_names(ctx, names)
@@ -1399,12 +1399,11 @@ class GirlsFrontline(commands.Cog):
                 return await ctx.send("This fairy info is currently incompleted and thus cannot be displayed.")
 
     @fairy.group(name="update")
-    @checks.owner_only()
+    @checks.in_certain_guild(607747682458402817)
     async def fairy_update(self, ctx):
         pass
 
     @fairy_update.command(name="everything", aliases=["all"])
-    @checks.owner_only()
     async def update_all_fairies(self, ctx):
         await ctx.trigger_typing()
         names = []
@@ -1425,7 +1424,6 @@ class GirlsFrontline(commands.Cog):
         await self.update_fairies_with_names(ctx, names)
 
     @fairy_update.command(name="many")
-    @checks.owner_only()
     async def update_many_fairies(self, ctx, *names):
         await ctx.trigger_typing()
         logs = await self.update_fairies_with_names(ctx, names)
