@@ -611,16 +611,8 @@ class Doll(data_type.BaseObject):
             }
         )
         data = json.loads(bytes_)
-        ret = {}
-        results = data["query"]["results"]
-        if not results:
-            embed = discord.Embed(
-                title=f"GFLAnalysis: {self.en_name}",
-                color=discord.Color.green(),
-                description="No analysis thus far."
-            )
-            return {"original": [embed]}
 
+        ret = {}
         for name, raw in data["query"]["results"].items():
             embeds = []
 
@@ -633,7 +625,7 @@ class Doll(data_type.BaseObject):
 
             pr = raw["printouts"]
             analysis = "".join(gflanalysis_parser.parse("\n".join(pr["Analysis"]).replace("&#8203;", "\n")))
-            for i, a in enumerate(utils.split_page(analysis, 900, check=lambda s: s=="\n", fix=" \u27a1 ")):
+            for a in utils.split_page(analysis, 900, check=lambda s: s=="\n", fix=" \u27a1 "):
                 embed = discord.Embed(
                     title=f"GFLAnalysis: {name}",
                     color=discord.Color.green(),
@@ -645,7 +637,15 @@ class Doll(data_type.BaseObject):
                 embed.add_field(name="Analysis", value=a, inline=False)
                 embeds.append(embed)
 
-        return ret
+        if ret:
+            return ret
+        else:
+            embed = discord.Embed(
+                title=f"GFLAnalysis: {self.en_name}",
+                color=discord.Color.green(),
+                description="No analysis thus far."
+            )
+            return {"original": [embed]}
 
     async def query_speq(self, ctx):
         col = ctx.cog.special_equipments
