@@ -241,7 +241,7 @@ class Admin(commands.Cog):
     @checks.owner_only()
     async def force(self, ctx, *, cmd):
         msg = copy.copy(ctx.message)
-        msg.content = f"{ctx.me.mention} {cmd}"
+        msg.content = f"{ctx.prefix}{cmd}"
         new_ctx = await self.bot.get_context(msg, cls=data_type.BelphegorContext)
         await new_ctx.reinvoke()
 
@@ -249,7 +249,7 @@ class Admin(commands.Cog):
     @checks.owner_only()
     async def runas(self, ctx, member: discord.Member, *, cmd):
         msg = copy.copy(ctx.message)
-        msg.content = f"{ctx.me.mention} {cmd}"
+        msg.content = f"{ctx.prefix}{cmd}"
         msg.author = member
         await self.bot.process_commands(msg)
 
