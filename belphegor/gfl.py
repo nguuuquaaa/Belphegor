@@ -612,30 +612,32 @@ class Doll(data_type.BaseObject):
         )
         data = json.loads(bytes_)
 
+        results = data["query"]["results"]
         ret = {}
-        for name, raw in data["query"]["results"].items():
-            embeds = []
+        if results:
+            for name, raw in results.items():
+                embeds = []
 
-            if name == self.en_name:
-                ret["original"] = embeds
-            elif name == f"{self.en_name}Mod":
-                ret["mod"] = embeds
-            else:
-                continue
+                if name == self.en_name:
+                    ret["original"] = embeds
+                elif name == f"{self.en_name}Mod":
+                    ret["mod"] = embeds
+                else:
+                    continue
 
-            pr = raw["printouts"]
-            analysis = "".join(gflanalysis_parser.parse("\n".join(pr["Analysis"]).replace("&#8203;", "\n")))
-            for a in utils.split_page(analysis, 900, check=lambda s: s=="\n", fix=" \u27a1 "):
-                embed = discord.Embed(
-                    title=f"GFLAnalysis: {name}",
-                    color=discord.Color.green(),
-                    url=f"https:{raw['fullurl']}"
-                )
-                for key in ("Pros", "Cons", "Status", "Roles"):
-                    embed.add_field(name=key, value="".join(gflanalysis_parser.parse("\n".join(pr[key]).replace("&#8203;", "\n"))), inline=False)
+                pr = raw["printouts"]
+                analysis = "".join(gflanalysis_parser.parse("\n".join(pr["Analysis"]).replace("&#8203;", "\n")))
+                for a in utils.split_page(analysis, 900, check=lambda s: s=="\n", fix=" \u27a1 "):
+                    embed = discord.Embed(
+                        title=f"GFLAnalysis: {name}",
+                        color=discord.Color.green(),
+                        url=f"https:{raw['fullurl']}"
+                    )
+                    for key in ("Pros", "Cons", "Status", "Roles"):
+                        embed.add_field(name=key, value="".join(gflanalysis_parser.parse("\n".join(pr[key]).replace("&#8203;", "\n"))), inline=False)
 
-                embed.add_field(name="Analysis", value=a, inline=False)
-                embeds.append(embed)
+                    embed.add_field(name="Analysis", value=a, inline=False)
+                    embeds.append(embed)
 
         if ret:
             return ret
