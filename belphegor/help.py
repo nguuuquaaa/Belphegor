@@ -66,7 +66,7 @@ class Help(commands.Cog):
                 "emoji":    "\u21a9",
                 "desc":     "[Support server but not really active](https://discord.gg/qnavjMy)",
                 "thumb":    str(self.bot.user.avatar_url),
-                "footer":   "Universal prefix: bot mention \u2022 Default prefix: >>",
+                "footer":   "Universal prefix: bot mention \u2022 Default prefix: >> and bel",
                 "fields":   {
                     "Categories" : [
                         [

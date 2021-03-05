@@ -20,7 +20,7 @@ EMPTY_SET = frozenset()
 class Belphegor(commands.AutoShardedBot):
     def __init__(self, **kwargs):
         super().__init__(None, **kwargs)
-        self.default_prefix = kwargs.get("default_prefix", (">>",))
+        self.default_prefix = kwargs.get("default_prefix", (">>", "bel "))
         self.guild_prefixes = {}
         self.session = aiohttp.ClientSession(loop=self.loop)
         self.process = psutil.Process(os.getpid())
