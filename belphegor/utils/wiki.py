@@ -1,5 +1,14 @@
 from . import format
 import functools
+import hashlib
+import collections
+
+#==================================================================================================================================================
+
+def generate_image_path(filename):
+    filename = filename.replace(" ", "_")
+    name_hash = hashlib.md5(filename.encode("utf-8")).hexdigest()
+    return f"images/{name_hash[0]}/{name_hash[:2]}/{filename}"
 
 #==================================================================================================================================================
 
@@ -11,6 +20,9 @@ class ParsingError(Exception):
         return self.message
 
 class NotABox(ParsingError):
+    pass
+
+class HTMLTag(collections.UserDict):
     pass
 
 #==================================================================================================================================================
@@ -48,6 +60,30 @@ class WikitextParser:
             return func
         return wrapper
 
+    def _join_values(self, value):
+        ret = []
+        cur = []
+        joinable = True
+        for v in value:
+            if isinstance(v, str):
+                cur.append(v)
+            else:
+                joinable = False
+                if cur:
+                    ret.append("".join(cur))
+                    cur.clear()
+                ret.append(v)
+        if cur:
+            ret.append("".join(cur))
+        if joinable:
+            return "".join(ret).strip()
+        else:
+            if isinstance(ret[0], str):
+                ret[0] = ret[0].lstrip()
+            if isinstance(ret[-1], str):
+                ret[-1] = ret[-1].rstrip()
+            return [r for r in ret if r]
+
     @log_this("curly")
     def _parse_curly(self, text_iter):
         next_char = next(text_iter)
@@ -65,7 +101,7 @@ class WikitextParser:
                 next_char = self._parse_next(text_iter)
                 if next_char == "=":
                     if key is None:
-                        key = "".join(value).strip().lower()
+                        key = self._join_values(value).lower()
                         value.clear()
                     else:
                         value.append(next_char)
@@ -74,9 +110,9 @@ class WikitextParser:
                         value.append(next_char)
                     else:
                         if key is None:
-                            args.append("".join(value).strip())
+                            args.append(self._join_values(value))
                         else:
-                            kwargs[key] = "".join(value).strip()
+                            kwargs[key] = self._join_values(value)
                         value.clear()
                         key = None
                 elif next_char == "}":
@@ -86,9 +122,9 @@ class WikitextParser:
                     else:
                         if value:
                             if key is None:
-                                args.append("".join(value).strip())
+                                args.append(self._join_values(value))
                             else:
-                                kwargs[key] = "".join(value).strip()
+                                kwargs[key] = self._join_values(value)
                         box = args[0]
                         return self.box_parsers.get(box.lower(), self.box_do_nothing)(*args, **kwargs)
                 else:
@@ -187,7 +223,7 @@ class WikitextParser:
         return self.table_parsers.get(class_, self.table_do_nothing)(class_, ret)
 
     def reference_do_nothing(self, *args, **kwargs):
-        return f"[[{'|'.join(args)}|{'|'.join(f'k=v' for k, v in kwargs.items())}]]"
+        return f"[[" + "|".join((*(str(a) for a in args), *(f"{k}={v}" for k, v in kwargs.items()))) + "]]"
 
     def set_reference_handler(self, func):
         self.reference_parser = func
@@ -207,15 +243,15 @@ class WikitextParser:
                 next_char = self._parse_next(text_iter)
                 if next_char == "=":
                     if key is None:
-                        key = "".join(value).strip().lower()
+                        key = self._join_values(value).lower()
                         value.clear()
                     else:
                         value.append(next_char)
                 elif next_char == "|":
                     if key is None:
-                        args.append("".join(value).strip())
+                        args.append(self._join_values(value))
                     else:
-                        kwargs[key] = "".join(value).strip()
+                        kwargs[key] = self._join_values(value)
                     value.clear()
                     key = None
                 elif next_char == "]":
@@ -225,9 +261,9 @@ class WikitextParser:
                     else:
                         if key or value:
                             if key is None:
-                                args.append("".join(value).strip())
+                                args.append(self._join_values(value))
                             else:
-                                kwargs[key] = "".join(value).strip()
+                                kwargs[key] = self._join_values(value)
                         return self.reference_parser(*args, **kwargs)
                 else:
                     value.append(next_char)
@@ -259,7 +295,7 @@ class WikitextParser:
             next_char = next(text_iter)
             if next_char.isalpha():
                 key = ""
-                tag = {}
+                tag = HTMLTag()
                 value = next_char
                 while True:
                     next_char = next(text_iter)
@@ -334,7 +370,7 @@ class WikitextParser:
                     else:
                         value = value + next_char
 
-                return {"/": value}
+                return HTMLTag({"/": value})
 
             elif next_char == "!":
                 # this is actually a damn comment
@@ -368,11 +404,11 @@ class WikitextParser:
             while True:
                 next_char = self._parse_next(text_iter)
                 self.logs.append(f"{self.indent*' '}text: {next_char}")
-                if isinstance(next_char, dict):
+                if isinstance(next_char, HTMLTag):
                     end = next_char["/"]
                     if end == open_tag[""]:
                         open_tag.pop("")
-                        return self.html_parser(end, "".join(value), **open_tag)
+                        return self.html_parser(end, self._join_values(value), **open_tag)
                     else:
                         raise ParsingError("Fucked HTML tags.")
                 else:
@@ -422,8 +458,8 @@ class WikitextParser:
                 next_word = self._parse_next(text_iter)
             except StopIteration:
                 if with_logs:
-                    return ret, self.logs
+                    return self._join_values(ret), self.logs
                 else:
-                    return ret
+                    return self._join_values(ret)
             else:
                 ret.append(next_word)
