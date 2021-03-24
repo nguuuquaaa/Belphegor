@@ -44,6 +44,19 @@ def _insert_spaces(attrs):
         yield " "
         yield f"${a}"
 
+def circle_iter(iterable, with_index=False):
+    if iterable:
+        if with_index:
+            while True:
+                for i, item in enumerate(iterable):
+                    yield i, item
+        else:
+            while True:
+                for item in iterable:
+                    yield item
+    else:
+        raise ValueError("Cannot circle-iterate empty container.")
+
 #==================================================================================================================================================
 
 class BaseObject:
