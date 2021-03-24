@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from . import checks, format, paginator
+from . import checks, format as belfmt, paginator
 import asyncio
 import re
 import copy
@@ -8,6 +8,7 @@ import collections
 from datetime import datetime, timedelta
 import pytz
 import itertools
+import time
 
 #==================================================================================================================================================
 
@@ -54,6 +55,20 @@ class BaseObject:
 #==================================================================================================================================================
 
 class BelphegorContext(commands.Context):
+    async def send_text_or_file(self, content, *, extension=None, **kwargs):
+        if len(content) > 1950:
+            if extension is None:
+                filename = "file.txt"
+            else:
+                filename = f"file.{extension}"
+            kwargs["file"] = discord.File.from_str(content, filename)
+            await self.send(**kwargs)
+        else:
+            if extension is None:
+                await self.send(content, **kwargs)
+            else:
+                await self.send(f"```{extension}\n{content}\n```", **kwargs)
+
     async def confirm(self):
         await self.message.add_reaction("\u2705")
 
@@ -185,6 +200,18 @@ class BelphegorContext(commands.Context):
         else:
             return None
 
+    async def progress_bar(self, job, messages={}, *, interval=5):
+        initial = messages.get("initial", "")
+        done = messages.get("done", "")
+        msg = await self.send(f"{initial}{belfmt.progress_bar(0)}")
+        prev = time.monotonic()
+        async for progress in job:
+            cur = time.monotonic()
+            if cur - prev >= interval:
+                await msg.edit(content=f"{initial}{belfmt.progress_bar(progress)}")
+                prev = cur
+        await msg.edit(content=f"{done}{belfmt.progress_bar(1)}")
+
 #==================================================================================================================================================
 
 class Observer:
@@ -243,7 +270,7 @@ class AutoCleanupDict:
         self.working_task = self.loop.create_task(self.check_deadline())
 
     def update_deadline(self, key):
-        self.deadline[key] = format.now_time() + timedelta(seconds=self.limit)
+        self.deadline[key] = belfmt.now_time() + timedelta(seconds=self.limit)
         self.deadline.move_to_end(key)
         self.active.set()
 
@@ -278,7 +305,7 @@ class AutoCleanupDict:
             if container:
                 first_key, first_deadline = next(iter(deadline.items()))
                 try:
-                    await asyncio.wait_for(active.wait(), (first_deadline-format.now_time()).total_seconds())
+                    await asyncio.wait_for(active.wait(), (first_deadline - belfmt.now_time()).total_seconds())
                 except asyncio.TimeoutError:
                     _pop_key(first_key)
             else:
