@@ -167,19 +167,6 @@ def timer_to_seconds(s):
 
 timer_regex = re.compile(r"(\d{0,2})\:?(\d{2})")
 
-def circle_iter(iterable, with_index=False):
-    if iterable:
-        if with_index:
-            while True:
-                for i, item in enumerate(iterable):
-                    yield i, item
-        else:
-            while True:
-                for item in iterable:
-                    yield item
-    else:
-        raise ValueError("Cannot circle-iterate empty container.")
-
 def get_either(container, *keys, default=None):
     for key in keys:
         try:
@@ -225,9 +212,7 @@ def to_float(any_obj, *, default=None):
         return default
 
 def generate_image_url(filename, *, base=GFWIKI_BASE):
-    filename = filename.replace(" ", "_")
-    name_hash = hashlib.md5(filename.encode("utf-8")).hexdigest()
-    return f"{base}/images/{name_hash[0]}/{name_hash[:2]}/{filename}"
+    return f"{base}/{wiki.generate_image_path(filename)}"
 
 #==================================================================================================================================================
 
@@ -536,10 +521,10 @@ class Doll(data_type.BaseObject):
         def change_info_to(info, skins, state="original"):
             if saved["info"] is not info:
                 saved["info"] = info
-                saved["info_iter"] = circle_iter(info)
+                saved["info_iter"] = data_type.circle_iter(info)
             if saved["skins"] is not skins:
                 saved["skins"] = skins
-                saved["skin_iter"] = circle_iter(skins, with_index=True)
+                saved["skin_iter"] = data_type.circle_iter(skins, with_index=True)
                 try:
                     saved["current_skin"] = next(saved["skin_iter"])
                 except ValueError:
@@ -568,13 +553,13 @@ class Doll(data_type.BaseObject):
                 return saved["embed"]
 
         if speq_info["equipments"]:
-            speq_iter = circle_iter(speq_info["equipments"])
+            speq_iter = data_type.circle_iter(speq_info["equipments"])
 
             @paging.wrap_action(emojis["exoskeleton"])
             def change_speq_info():
                 return next(speq_iter)
 
-            digest_iter = circle_iter(speq_info["digest"])
+            digest_iter = data_type.circle_iter(speq_info["digest"])
             @paging.wrap_action("\U0001f52c")
             def change_digest_info():
                 return next(digest_iter)
@@ -1390,7 +1375,7 @@ class GirlsFrontline(commands.Cog):
                     embeds.append(embed)
 
                 paging = utils.Paginator([])
-                embed_iter = circle_iter(embeds)
+                embed_iter = data_type.circle_iter(embeds)
 
                 @paging.wrap_action("\U0001f5bc")
                 def change_image():
