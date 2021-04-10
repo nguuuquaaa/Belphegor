@@ -28,11 +28,9 @@ def to_rgba(self, alpha=255):
 
 #==================================================================================================================================================
 
-@classmethod
 def from_bytes(cls, bytes_, filename, *, spoiler=False):
     return cls(BytesIO(bytes_), filename, spoiler=spoiler)
 
-@classmethod
 def from_str(cls, str_, filename="file.txt", *, spoiler=False, encoding="utf-8"):
     return cls(BytesIO(str_.encode(encoding)), filename, spoiler=spoiler)
 
@@ -41,8 +39,8 @@ def from_str(cls, str_, filename="file.txt", *, spoiler=False, encoding="utf-8")
 def setup(bot):
     bot.add_cog(CustomEvent(bot))
     discord.Colour.to_rgba = to_rgba
-    discord.File.from_bytes = from_bytes
-    discord.File.from_str = from_str
+    discord.File.from_bytes = classmethod(from_bytes)
+    discord.File.from_str = classmethod(from_str)
 
 def teardown(bot):
     del discord.Colour.to_rgba
