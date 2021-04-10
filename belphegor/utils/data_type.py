@@ -9,6 +9,8 @@ from datetime import datetime, timedelta
 import pytz
 import itertools
 import time
+import json
+import io
 
 #==================================================================================================================================================
 
@@ -68,19 +70,13 @@ class BaseObject:
 #==================================================================================================================================================
 
 class BelphegorContext(commands.Context):
-    async def send_text_or_file(self, content, *, extension=None, **kwargs):
-        if len(content) > 1950:
-            if extension is None:
-                filename = "file.txt"
-            else:
-                filename = f"file.{extension}"
-            kwargs["file"] = discord.File.from_str(content, filename)
-            await self.send(**kwargs)
-        else:
-            if extension is None:
-                await self.send(content, **kwargs)
-            else:
-                await self.send(f"```{extension}\n{content}\n```", **kwargs)
+    async def send_json(self, obj, *, filename="file.json", **kwargs):
+        text = json.dumps(obj, indent=4, ensure_ascii=False)
+        bytesio = io.BytesIO(text.encode("utf-8"))
+        await self.send(
+            file=discord.File(bytesio, filename),
+            **kwargs
+        )
 
     async def confirm(self):
         await self.message.add_reaction("\u2705")
