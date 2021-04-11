@@ -15,6 +15,11 @@ class CertainGuild(CheckFailure):
         self.guild_id = guild_id
         super().__init__(*args)
 
+class CertainGuilds(CheckFailure):
+    def __init__(self, guild_ids, *args):
+        self.guild_ids = guild_ids
+        super().__init__(*args)
+
 class MissingPerms(CheckFailure):
     def __init__(self, perms, *args):
         self.perms = perms
@@ -62,10 +67,10 @@ def in_certain_guild(gid):
 
 def in_certain_guilds(*gids):
     def check_in_certain_guilds(ctx):
-        if ctx.guild.id in gids:
+        if ctx.guild and ctx.guild.id in gids:
             return True
         else:
-            raise CertainGuild(gid, f"This command can only be used in certain servers.")
+            raise CertainGuilds(gids, f"This command can only be used in certain servers.")
     return commands.check(check_in_certain_guilds)
 
 def otogi_guild_only():
