@@ -116,7 +116,7 @@ class BelphegorContext(commands.Context):
             _loop.create_task(paginator.try_it(message.clear_reactions()))
         return result
 
-    async def search(self, name, pool, *, cls=BaseObject, colour=None, atts=[], index_att=None, name_att, emoji_att=None, prompt=None, sort={}):
+    async def search(self, name, pool, *, cls=BaseObject, colour=None, atts=[], aliases_att=None, index_att=None, name_att, emoji_att=None, prompt=None, sort={}):
         if index_att:
             try:
                 item_id = int(name)
@@ -128,6 +128,30 @@ class BelphegorContext(commands.Context):
                     return cls(result)
                 else:
                     raise checks.CustomError(f"Can't find {name} in database.")
+
+        match_query = {
+            "$and": [
+                {
+                    "all_att_concat": {
+                        "$regex": re.escape(n),
+                        "$options": "i"
+                    }
+                } for n in name.split()
+            ]
+        }
+        if aliases_att:
+            match_query = {
+                "$or": [
+                    match_query,
+                    {
+                        aliases_att: {
+                            "$regex": ".*?".join(map(re.escape, name.split())),
+                            "$options": "i"
+                        }
+                    }
+                ]
+            }
+        
         pipeline = [
             {
                 "$addFields": {
@@ -137,16 +161,7 @@ class BelphegorContext(commands.Context):
                 }
             },
             {
-                "$match": {
-                    "$and": [
-                        {
-                            "all_att_concat": {
-                                "$regex": re.escape(n),
-                                "$options": "i"
-                            }
-                        } for n in name.split()
-                    ]
-                }
+                "$match": match_query
             }
         ]
         if sort:
