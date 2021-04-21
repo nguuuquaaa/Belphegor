@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 import asyncio
 from . import utils
-from .utils import config, token, data_type, checks, modding
+from .utils import config, token, checks, modding, context
 from apiclient.discovery import build
 from discord.opus import Encoder as OpusEncoder
 import queue
@@ -337,7 +337,7 @@ class MusicPlayer:
                 if self.auto_info:
                     new_msg = copy.copy(self.auto_info)
                     new_msg.author = self.current_song.requestor or new_msg.author
-                    new_ctx = await self.bot.get_context(new_msg, cls=data_type.BelphegorContext)
+                    new_ctx = await self.bot.get_context(new_msg, cls=context.BelphegorContext)
                     await new_ctx.invoke(cmd)
                 await play_next_song.wait()
                 if self.repeat is None:

@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from . import checks, format
+from . import checks, string_utils
 import multidict
 import functools
 from yarl import URL
@@ -118,7 +118,7 @@ class KeyValue(commands.Converter):
     def __init__(self, conversion={}, *, escape=False, clean=False, multiline=False):
         self.escape = escape
         if clean:
-            self.clean = format.clean_codeblock
+            self.clean = string_utils.clean_codeblock
         else:
             self.clean = str.strip
         self.multiline = multiline
@@ -178,7 +178,7 @@ class KeyValue(commands.Converter):
                     key, value = key.strip(), value.strip()
                     await resolve(key, value, handle)
         else:
-            wi = format.split_iter(text, check=_check_char)
+            wi = string_utils.split_iter(text, check=_check_char)
             key = ""
             value = ""
             handle = _equal

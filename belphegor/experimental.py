@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from . import utils
-from .utils import config, data_type, checks, modding
+from .utils import config, checks, modding
 import PIL
 import io
 import pymongo
@@ -15,7 +15,7 @@ import traceback
 #==================================================================================================================================================
 
 BEGINNING = datetime(2018, 6, 19, 0, 0, 0, tzinfo=pytz.utc)
-BATCH_SIZE = 5000
+BATCH_SIZE = 1000
 WAIT_TIME = 300
 
 #==================================================================================================================================================
@@ -184,11 +184,10 @@ class Statistics(commands.Cog):
             req = self.get_update_request(member_stats, member.status.value)
             if req:
                 all_reqs.append(req)
-                if len(all_reqs) > 99:
-                    await self.user_data.bulk_write(all_reqs)
-                    all_reqs.clear()
-        if all_reqs:
-            await self.user_data.bulk_write(all_reqs)
+
+        for index in range(0, len(all_reqs), BATCH_SIZE):
+            batch = all_reqs[index:index+BATCH_SIZE]
+            await self.user_data.bulk_write(batch)
 
     async def update(self, member):
         member_stats = self.all_users.get(member.id)

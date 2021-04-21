@@ -1,3 +1,4 @@
+import discord
 from discord.ext import commands
 from belphegor import utils
 from belphegor.utils import config, token, modding
@@ -20,7 +21,7 @@ else:
 
 if __name__ == "__main__":
     while True:
-        belphybot = bot.Belphegor(owner_id=config.OWNER_ID)
+        belphybot = bot.Belphegor(owner_id=config.OWNER_ID, intents=discord.Intents.all())
         belphybot.run(token.TOKEN)
         if not belphybot.restart_flag:
             break

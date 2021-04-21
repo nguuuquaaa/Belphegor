@@ -48,7 +48,11 @@ class Help(commands.Cog):
         for emoji_name in ("core",):
             self.emojis[emoji_name] = discord.utils.find(lambda e: e.name==emoji_name, test_guild_3.emojis)
         for emoji_name in ("python", "dpy"):
-            self.emojis[emoji_name] = discord.utils.find(lambda e: e.name==emoji_name, dpy_guild.emojis)
+            if dpy_guild:
+                self.emojis[emoji_name] = discord.utils.find(lambda e: e.name==emoji_name, dpy_guild.emojis)
+            else:
+                self.emojis["python"] = "\U0001f40d"
+                self.emojis["dpy"] = "\U0001f967"
 
         self.command_run_count = bot.saved_stuff.pop("command_run_count", {})
         self.recent_commands = bot.saved_stuff.pop("recent_commands", collections.deque(maxlen=20))
@@ -478,30 +482,34 @@ class Help(commands.Cog):
             Bot invite link.
         '''
         perms = discord.Permissions()
-        perms.manage_guild = True
-        perms.manage_roles = True
-        perms.manage_channels = True
-        perms.kick_members = True
-        perms.ban_members = True
-        perms.read_messages = True
-        perms.send_messages = True
-        perms.manage_messages = True
-        perms.embed_links = True
-        perms.attach_files = True
-        perms.read_message_history = True
-        perms.add_reactions = True
-        perms.connect = True
-        perms.speak = True
-        perms.use_voice_activation = True
-        perms.external_emojis = True
+        perms.update(
+            manage_guild=True,
+            manage_roles=True,
+            manage_channels=True,
+            kick_members=True,
+            ban_members=True,
+            read_messages=True,
+            send_messages=True,
+            manage_messages=True,
+            embed_links=True,
+            attach_files=True,
+            read_message_history=True,
+            add_reactions=True,
+            connect=True,
+            speak=True,
+            use_voice_activation=True,
+            external_emojis=True
+        )
 
         minimal = discord.Permissions()
-        minimal.read_messages = True
-        minimal.send_messages = True
-        minimal.embed_links = True
-        minimal.attach_files = True
-        minimal.add_reactions = True
-        minimal.external_emojis = True
+        minimal.update(
+            read_messages=True,
+            send_messages=True,
+            embed_links=True,
+            attach_files=True,
+            add_reactions=True,
+            external_emojis=True
+        )
 
         await ctx.send(
             f"Full perms: <{discord.utils.oauth_url(ctx.me.id, perms)}>\n"

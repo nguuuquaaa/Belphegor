@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from . import utils
-from .utils import modding, config, checks
+from .utils import modding, request, checks
 from bs4 import BeautifulSoup as BS
 import aiohttp
 import asyncio
@@ -67,7 +67,7 @@ class Google(commands.Cog):
             "Accept-Language": "en-US,en;q=0.5",
             "Accept-Encoding": "gzip, deflate, sdch",
             "Connection": "keep-alive",
-            "User-Agent": config.USER_AGENT
+            "User-Agent": request.USER_AGENT
         }
 
     def cog_unload(self):

@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from . import utils
-from .utils import checks, config, modding
+from .utils import checks, request, modding
 import aiohttp
 import json
 import xmltodict
@@ -338,7 +338,7 @@ class RandomImage(commands.Cog):
         payload.add_field("frame", "1")
         payload.add_field("hide", "0")
         payload.add_field("database", "999")
-        async with self.bot.session.post("https://saucenao.com/search.php", headers={"User-Agent": config.USER_AGENT}, data=payload) as response:
+        async with self.bot.session.post("https://saucenao.com/search.php", headers={"User-Agent": request.USER_AGENT}, data=payload) as response:
             bytes_ = await response.read()
         data = BS(bytes_.decode("utf-8"), "lxml")
         result = []

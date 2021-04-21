@@ -1,4 +1,4 @@
-from . import format
+from . import string_utils
 import functools
 import hashlib
 import collections
@@ -452,7 +452,7 @@ class WikitextParser:
         self.logs = []
         self.indent = 0
         ret = []
-        text_iter = format.split_iter(text, check=lambda x: x.isspace() or x in ("{", "}", "[", "]", "<", ">", "=", "\"", "/", "|", "!", "'"))
+        text_iter = string_utils.split_iter(text, check=lambda x: x.isspace() or x in ("{", "}", "[", "]", "<", ">", "=", "\"", "/", "|", "!", "'"))
         while True:
             try:
                 next_word = self._parse_next(text_iter)

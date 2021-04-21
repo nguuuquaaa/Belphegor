@@ -4,23 +4,23 @@ import asyncio
 
 #==================================================================================================================================================
 
-class CheckFailure(commands.CheckFailure):
+class CustomCheckFailure(commands.CheckFailure):
     pass
 
-class NSFW(CheckFailure):
+class NSFW(CustomCheckFailure):
     pass
 
-class CertainGuild(CheckFailure):
+class CertainGuild(CustomCheckFailure):
     def __init__(self, guild_id, *args):
         self.guild_id = guild_id
         super().__init__(*args)
 
-class CertainGuilds(CheckFailure):
+class CertainGuilds(CustomCheckFailure):
     def __init__(self, guild_ids, *args):
         self.guild_ids = guild_ids
         super().__init__(*args)
 
-class MissingPerms(CheckFailure):
+class MissingPerms(CustomCheckFailure):
     def __init__(self, perms, *args):
         self.perms = perms
         super().__init__(*args)
@@ -58,16 +58,16 @@ def guild_only():
 
 def in_certain_guild(gid):
     def check_in_certain_guild(ctx):
-        if ctx.guild and ctx.guild.id == gid:
+        if getattr(ctx.guild, "id", None) == gid:
             return True
         else:
             g = ctx.bot.get_guild(gid)
-            raise CertainGuild(gid, f"This command can only be used in {g.name} server.")
+            raise CertainGuild(gid, f"This command can only be used in {g.name if g else 'certain'} server.")
     return commands.check(check_in_certain_guild)
 
 def in_certain_guilds(*gids):
     def check_in_certain_guilds(ctx):
-        if ctx.guild and ctx.guild.id in gids:
+        if getattr(ctx.guild, "id", None) in gids:
             return True
         else:
             raise CertainGuilds(gids, f"This command can only be used in certain servers.")

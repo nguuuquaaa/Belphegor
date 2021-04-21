@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from . import utils
-from .utils import checks, data_type
+from .utils import checks, context
 from io import StringIO, BytesIO
 import traceback
 from contextlib import redirect_stdout
@@ -242,7 +242,7 @@ class Admin(commands.Cog):
     async def force(self, ctx, *, cmd):
         msg = copy.copy(ctx.message)
         msg.content = f"{ctx.prefix}{cmd}"
-        new_ctx = await self.bot.get_context(msg, cls=data_type.BelphegorContext)
+        new_ctx = await self.bot.get_context(msg, cls=context.BelphegorContext)
         await new_ctx.reinvoke()
 
     @commands.command(hidden=True, aliases=["impersonate"])

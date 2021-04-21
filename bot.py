@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from belphegor import utils
-from belphegor.utils import checks, config, data_type
+from belphegor.utils import checks, config, context
 import asyncio
 import aiohttp
 import psutil
@@ -49,7 +49,7 @@ class Belphegor(commands.AutoShardedBot):
         return prefixes
 
     async def process_commands(self, message):
-        ctx = await self.get_context(message, cls=data_type.BelphegorContext)
+        ctx = await self.get_context(message, cls=context.BelphegorContext)
         await self.invoke(ctx)
 
     async def on_message(self, message):

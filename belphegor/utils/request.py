@@ -8,9 +8,12 @@ import functools
 
 #==================================================================================================================================================
 
-_lock = asyncio.Lock()
 MAX_FILE_SIZE = 1024 * 1024 * 20
 TIMEOUT = 20
+CHUNK_SIZE = 512 * 1024
+USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36"
+
+_lock = asyncio.Lock()
 
 #==================================================================================================================================================
 
@@ -27,12 +30,12 @@ def _error_handle(func):
 
 @_error_handle
 async def fetch(session, url, *, max_file_size=MAX_FILE_SIZE, timeout=TIMEOUT, **options):
-    headers = options.pop("headers", {"User-Agent": config.USER_AGENT})
+    headers = options.pop("headers", {"User-Agent": USER_AGENT})
     async with session.get(url, headers=headers, timeout=timeout, **options) as response:
         stream = response.content
         data = []
         current_size = 0
-        async for chunk in stream.iter_chunked(config.CHUNK_SIZE):
+        async for chunk in stream.iter_chunked(CHUNK_SIZE):
             current_size += len(chunk)
             if current_size > max_file_size:
                 break
@@ -46,11 +49,11 @@ async def fetch(session, url, *, max_file_size=MAX_FILE_SIZE, timeout=TIMEOUT, *
 @_error_handle
 async def download(session, url, path, *, timeout=TIMEOUT, **options):
     async with _lock:
-        headers = options.pop("headers", {"User-Agent": config.USER_AGENT})
+        headers = options.pop("headers", {"User-Agent": USER_AGENT})
         async with session.get(url, headers=headers, timeout=timeout, **options) as response:
             with open(path, "wb") as f:
                 stream = response.content
-                async for chunk in stream.iter_chunked(config.CHUNK_SIZE):
+                async for chunk in stream.iter_chunked(CHUNK_SIZE):
                     f.write(chunk)
                 else:
                     return True
