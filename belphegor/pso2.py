@@ -82,9 +82,9 @@ RESIST_EMOJIS = ("s_res", "r_res", "t_res")
 ELEMENTAL_RESIST_EMOJIS = ("fire_res", "ice_res", "lightning_res", "wind_res", "light_res", "dark_res")
 
 UNIT_URLS = {
-    "rear":     "https://pso2.arks-visiphone.com/wiki/Unit_List:_Rear",
-    "arm":      "https://pso2.arks-visiphone.com/wiki/Unit_List:_Arm",
-    "leg":      "https://pso2.arks-visiphone.com/wiki/Unit_List:_Leg",
+    "rear":     "https://pso2.arks-visiphone.com/wiki/Rear_Units",
+    "arm":      "https://pso2.arks-visiphone.com/wiki/Arm_Units",
+    "leg":      "https://pso2.arks-visiphone.com/wiki/Leg_Units",
     "sub":      "https://pso2.arks-visiphone.com/wiki/Unit_List:_Sub"
 }
 
