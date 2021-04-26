@@ -366,7 +366,10 @@ class PSO2(commands.Cog):
         weapon = await ctx.search(
             name, self.weapon_list,
             cls=Weapon, colour=discord.Colour.blue(),
-            atts=["en_name", "jp_name", "category"], name_att="en_name", emoji_att="category", sort={"category": WEAPON_SORT}
+            atts=["en_name", "jp_name", "category"],
+            name_att="en_name",
+            emoji_att="category",
+            sort={"category": WEAPON_SORT}
         )
         if not weapon:
             return
@@ -538,8 +541,9 @@ class PSO2(commands.Cog):
             weapon = {"category": category}
             relevant = item.find_all(True, recursive=False)
             try:
-                weapon["en_name"] = utils.unifix(relevant[2].find("a").get_text())
-                weapon["jp_name"] = utils.unifix(relevant[2].find("p").get_text())
+                names = relevant[2].get_text(separator="\n").strip().splitlines()
+                weapon["en_name"] = utils.unifix(names[0])
+                weapon["jp_name"] = names[1]
             except:
                 continue
             weapon["rarity"] = utils.to_int(relevant[0].find("img")["alt"])
