@@ -987,7 +987,7 @@ class PSO2(commands.Cog):
 
             names = relevant[1].get_text(separator="\n").strip().splitlines()
             unit["en_name"] = utils.unifix(names[0])
-            unit["jp_name"] = utils.unifix(names[1])
+            unit["jp_name"] = names[1].strip()
 
             unit["rarity"] = utils.to_int(relevant[2].find("img")["alt"])
             rq_img_tag = relevant[3].find("img")
