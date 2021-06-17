@@ -544,7 +544,14 @@ class Guild(commands.Cog):
         role = data.get("role", None)
         server = data.get("server", "jp").lower()
         if server not in ("na", "jp"):
-            return await ctx.send("Server must be either NA or JP")
+            return await ctx.send("Server must be either NA or JP.")
+
+        perms = target.permissions_for(ctx.me)
+        if not perms.embed_links:
+            return await ctx.send("Missing permissions: Embed Links.")
+        if not perms.send_messages:
+            return await ctx.send("Missing permissions: Send Messages.")
+
         await self.guild_data.update_one(
             {"guild_id": ctx.guild.id},
             {
