@@ -759,19 +759,18 @@ class PSO2(commands.Cog):
         await ctx.send(utils.jp_time(utils.now_time()))
 
     async def check_for_new_version(self):
-        # bytes_ = await self.bot.fetch(
-        #     "https://pso2.acf.me.uk/PSO2Alert/PSO2Alert.json",
-        #     headers={
-        #         "User-Agent": "PSO2.Alert.Desktop.v3.0.7.2",
-        #         "Connection": "Keep-Alive",
-        #         "Host": "pso2.acf.me.uk"
-        #     }
-        # )
-        # data = json.loads(bytes_)[0]
-        # self.api_data["version"] = data["Version"]
+        bytes_ = await self.bot.fetch(
+            "https://pso2.acf.me.uk/PSO2Alert/PSO2Alert.json",
+            headers={
+                "User-Agent": token.EQ_ALERT_API_USER_AGENT,
+                "Host": "pso2.acf.me.uk"
+            }
+        )
+        data = json.loads(bytes_)[0]
+
         self.api_data["headers"] = {"User-Agent": token.EQ_ALERT_API_USER_AGENT}
-        self.api_data["url"] = "https://acf.me.uk/Projects/PSO2-API/eq.json"
-        self.api_data["na_url"] = "https://aida.moe/api/pso2na_events.php"
+        self.api_data["url"] = data["JPEQAPI"]
+        self.api_data["na_url"] = data["NAEQAPI"]
 
         self.server_data = {
             "jp": (self.api_data["url"],       utils.jp_timezone,   utils.jp_time,  "JST",  "last_jp_eq_data"),
