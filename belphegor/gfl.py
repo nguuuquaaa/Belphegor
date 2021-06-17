@@ -337,7 +337,7 @@ class Doll(data_type.BaseObject):
         embeds = []
         for skill_effect in utils.split_page(self.skill["effect"], 900, check=lambda s: s=="\n", fix=" \u27a1 "):
             embed = discord.Embed(
-                title=f"#{self.index} {self.en_name or self.name}",
+                title=f"#{self.index} {self.qual_name}",
                 color=discord.Color.green(),
                 url=f"{GFWIKI_BASE}/wiki/{quote(self.name)}"
             )
@@ -405,13 +405,13 @@ class Doll(data_type.BaseObject):
         embeds = []
         for trivia in utils.split_page(self.trivia, 1000, check=lambda s: s=="\n", fix=" \u27a1 "):
             embed = discord.Embed(
-                title=f"#{self.index} {self.en_name or self.name}",
+                title=f"#{self.index} {self.qual_name}",
                 color=discord.Color.green(),
                 url=f"{GFWIKI_BASE}/wiki/{quote(self.name)}"
             )
-            embed.add_field(name="Full name", value=self.full_name)
+            embed.add_field(name="Full name", value=self.full_name or "?")
             embed.add_field(name="Origin", value=self.origin)
-            embed.add_field(name="Illustrator", value=self.artist)
+            embed.add_field(name="Illustrator", value=self.artist or "None")
             embed.add_field(name="Voice Actor", value=self.voice_actor or "None")
             embed.add_field(name="Trivia", value=trivia or "None", inline=False)
             embeds.append(embed)
