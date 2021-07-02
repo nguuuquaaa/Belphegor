@@ -310,7 +310,7 @@ class RandomImage(commands.Cog):
 
     @modding.help(brief="Get sauce", category="Image", field="Commands", paragraph=2)
     @commands.command()
-    async def saucenao(self, ctx, url=None):
+    async def saucenao(self, ctx, url: modding.URLConverter()=None):
         '''
             `>>saucenao <optional: either uploaded image or url>`
             Find the sauce of the image.
@@ -328,13 +328,12 @@ class RandomImage(commands.Cog):
             if message.attachments:
                 url = message.attachments[0].url
             else:
-                url = message.content
-        if not url.startswith(("http://", "https://")):
-            return await ctx.send("Invalid url.")
+                url = await modding.URLConverter().convert(ctx, message.content)
+
         await ctx.trigger_typing()
         payload = aiohttp.FormData()
         payload.add_field("file", b"", filename="", content_type="application/octet-stream")
-        payload.add_field("url", url)
+        payload.add_field("url", str(url))
         payload.add_field("frame", "1")
         payload.add_field("hide", "0")
         payload.add_field("database", "999")
