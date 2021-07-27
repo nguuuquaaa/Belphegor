@@ -42,9 +42,7 @@ class Sticker(commands.Cog):
             query["banned_guilds"] = {"$not": {"$eq": gid}}
         st = await self.sticker_list.find_one_and_update(query, {"$inc": {"uses": 1}}, projection={"_id": False, "url": True})
         if st:
-            embed = discord.Embed()
-            embed.set_image(url=st["url"])
-            await message.channel.send(embed=embed)
+            await message.channel.send(st["url"])
 
     @commands.Cog.listener()
     async def on_command_completion(self, ctx):
