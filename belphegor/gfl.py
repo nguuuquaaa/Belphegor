@@ -619,7 +619,7 @@ class Doll(data_type.BaseObject):
                         url=f"https:{raw['fullurl']}"
                     )
                     for key in ("Pros", "Cons", "Status", "Roles"):
-                        embed.add_field(name=key, value="".join(gflanalysis_parser.parse("\n".join(pr[key]).replace("&#8203;", "\n"))), inline=False)
+                        embed.add_field(name=key, value="".join(gflanalysis_parser.parse("\n".join(pr[key]).replace("&#8203;", "\n"))) or "N/A", inline=False)
 
                     embed.add_field(name="Analysis", value=a, inline=False)
                     embeds.append(embed)

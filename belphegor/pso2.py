@@ -43,24 +43,24 @@ CATEGORY_DICT = {
     "sub":          "Sub Unit"
 }
 WEAPON_URLS = {
-    "sword":        "https://pso2.arks-visiphone.com/wiki/Simple_Swords_List",
-    "wl":           "https://pso2.arks-visiphone.com/wiki/Simple_Wired_Lances_List",
-    "partisan":     "https://pso2.arks-visiphone.com/wiki/Simple_Partizans_List",
-    "td":           "https://pso2.arks-visiphone.com/wiki/Simple_Twin_Daggers_List",
-    "ds":           "https://pso2.arks-visiphone.com/wiki/Simple_Double_Sabers_List",
-    "knuckle":      "https://pso2.arks-visiphone.com/wiki/Simple_Knuckles_List",
-    "katana":       "https://pso2.arks-visiphone.com/wiki/Simple_Katanas_List",
-    "db":           "https://pso2.arks-visiphone.com/wiki/Simple_Dual_Blades_List",
-    "gs":           "https://pso2.arks-visiphone.com/wiki/Simple_Gunslashes_List",
-    "rifle":        "https://pso2.arks-visiphone.com/wiki/Simple_Assault_Rifles_List",
-    "launcher":     "https://pso2.arks-visiphone.com/wiki/Simple_Launchers_List",
-    "tmg":          "https://pso2.arks-visiphone.com/wiki/Simple_Twin_Machine_Guns_List",
-    "bow":          "https://pso2.arks-visiphone.com/wiki/Simple_Bullet_Bows_List",
-    "rod":          "https://pso2.arks-visiphone.com/wiki/Simple_Rods_List",
-    "talis":        "https://pso2.arks-visiphone.com/wiki/Simple_Talises_List",
-    "wand":         "https://pso2.arks-visiphone.com/wiki/Simple_Wands_List",
-    "jb":           "https://pso2.arks-visiphone.com/wiki/Simple_Jet_Boots_List",
-    "takt":         "https://pso2.arks-visiphone.com/wiki/Simple_Takts_List"
+    "sword":        "https://pso2.arks-visiphone.com/wiki/Swords_(PSO2)",
+    "wl":           "https://pso2.arks-visiphone.com/wiki/Wired_Lances_(PSO2)",
+    "partisan":     "https://pso2.arks-visiphone.com/wiki/Partizans_(PSO2)",
+    "td":           "https://pso2.arks-visiphone.com/wiki/Twin_Daggers_(PSO2)",
+    "ds":           "https://pso2.arks-visiphone.com/wiki/Double_Sabers_(PSO2)",
+    "knuckle":      "https://pso2.arks-visiphone.com/wiki/Knuckles_(PSO2)",
+    "katana":       "https://pso2.arks-visiphone.com/wiki/Katanas_(PSO2)",
+    "db":           "https://pso2.arks-visiphone.com/wiki/Dual_Blades_(PSO2)",
+    "gs":           "https://pso2.arks-visiphone.com/wiki/Gunslashes_(PSO2)",
+    "rifle":        "https://pso2.arks-visiphone.com/wiki/Assault_Rifles_(PSO2)",
+    "launcher":     "https://pso2.arks-visiphone.com/wiki/Launchers_(PSO2)",
+    "tmg":          "https://pso2.arks-visiphone.com/wiki/Twin_Machine_Guns_(PSO2)",
+    "bow":          "https://pso2.arks-visiphone.com/wiki/Bullet_Bows_(PSO2)",
+    "rod":          "https://pso2.arks-visiphone.com/wiki/Rods_(PSO2)",
+    "talis":        "https://pso2.arks-visiphone.com/wiki/Talises_(PSO2)",
+    "wand":         "https://pso2.arks-visiphone.com/wiki/Wands_(PSO2)",
+    "jb":           "https://pso2.arks-visiphone.com/wiki/Jet_Boots_(PSO2)",
+    "takt":         "https://pso2.arks-visiphone.com/wiki/Takts_(PSO2)"
 }
 WEAPON_SORT = tuple(WEAPON_URLS.keys())
 SSA_SLOTS = {
@@ -537,7 +537,7 @@ class PSO2(commands.Cog):
         category_weapons = []
         soup = BS(bytes_.decode("utf-8"), "lxml")
         table = soup.find(lambda x: x.name=="table" and "table-bordered" in x.get("class", []))
-        for item in table.find_all(True, recursive=False):
+        for item in table.find("tbody").find_all(True, recursive=False):
             weapon = {"category": category}
             relevant = item.find_all(True, recursive=False)
             try:
@@ -577,7 +577,7 @@ class PSO2(commands.Cog):
                         weapon["ssa_slots"].extend(SSA_SLOTS.get(a, ()))
                 elif child.name == "span":
                     cur["name"] = utils.unifix(child.get_text())
-                    cur["description"] = utils.unifix(clear_html(html.unescape(child["data-simple-tooltip"])))
+                    cur["description"] = utils.unifix(clear_html(html.unescape(child["data-simple-tooltip"]), newline="\n"))
                     color = child.find("span")
                     if color:
                         cur["special"] = SPECIAL_DICT[color["style"]]
@@ -783,10 +783,10 @@ class PSO2(commands.Cog):
             await self.check_for_new_version()
             while True:
                 now_time = utils.now_time()
-                if now_time.minute < 45:
+                if now_time.minute < 50:
                     delta = timedelta()
-                    next_minute = 15 * (now_time.minute // 15 + 1)
-                elif now_time.minute >= 45:
+                    next_minute = 50
+                elif now_time.minute >= 50:
                     delta = timedelta(hours=1)
                     next_minute = 0
                 next_time = now_time.replace(minute=next_minute, second=0) + delta
@@ -827,10 +827,10 @@ class PSO2(commands.Cog):
                             if time_left == 0:
                                 full_desc.append(f"\u2694 **Now**\n{data[key]}")
                             elif time_left > 0:
-                                if time_left in (900, 2700, 6300, 9900):
+                                if time_left in (600, 2700, 6300, 9900):
                                     text = f"\u23f0 **In {utils.seconds_to_text(time_left)}:**\n{data[key]}"
                                     full_desc.append(text)
-                                    if time_left in (2700, 6300):
+                                    if time_left in (600, 6300):
                                         simple_desc.append(text)
 
                 if True:
