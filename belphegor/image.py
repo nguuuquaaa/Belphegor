@@ -9,6 +9,7 @@ import random
 from bs4 import BeautifulSoup as BS
 import traceback
 import asyncio
+from yarl import URL
 
 #==================================================================================================================================================
 
@@ -326,7 +327,7 @@ class RandomImage(commands.Cog):
             else:
                 message = ctx.message
             if message.attachments:
-                url = message.attachments[0].url
+                url = URL(message.attachments[0].url)
             else:
                 url = await modding.URLConverter().convert(ctx, message.content)
 
