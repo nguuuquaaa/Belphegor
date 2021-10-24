@@ -376,30 +376,35 @@ class Google(commands.Cog):
         data = BS(bytes_.decode("utf-8"), "lxml")
         tag = data.find("div", class_="result-container")
         result = tag.get_text()
-        if len(result) > 1000:
-            result = f"{result[:1000]}..."
-        embed = discord.Embed(
-            title="Result",
+
+        url = str(URL.build(
+            scheme="https",
+            host="translate.google.com",
+            query={
+                "sl": tl_from,
+                "tl": tl_to,
+                "op": "translate",
+                "text": text
+            }
+        ))
+        if len(url) > 2048:
+            url = None
+
+        print(result)
+
+        paging = utils.Paginator(
+            utils.split_page(result, 2000),
+            title=f"{ALL_LANGUAGES.get(tl_from, 'Detect language')} -> {ALL_LANGUAGES[tl_to]}",
             colour=discord.Colour.dark_orange(),
-            url=str(URL.build(
-                scheme="https",
-                host="translate.google.com",
-                query={
-                    "sl": tl_from,
-                    "tl": tl_to,
-                    "op": "translate",
-                    "text": text
-                }
-            ))
+            description=lambda i, x: x,
+            url=url
         )
-        embed.add_field(name=ALL_LANGUAGES.get(tl_from, "Detect language"), value=text, inline=False)
-        embed.add_field(name=ALL_LANGUAGES[tl_to], value=result, inline=False)
-        await ctx.send(embed=embed)
+        await paging.navigate(ctx)
 
     @modding.help(brief="Supported languages", category="Misc", field="Commands", paragraph=2)
     @gtrans.group(name="languages", aliases=["langs"])
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
-    async def gtrans_langauges(self, ctx):
+    async def gtrans_languages(self, ctx):
         '''
             `>>gtrans languages`
             Show supported languages for using with from/to keywords in gtrans command.
