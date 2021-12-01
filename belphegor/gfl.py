@@ -253,6 +253,10 @@ def handle_hg_aura(box, value):
 def handle_spoiler(box, value):
     return f"||{value}||"
 
+@parser.set_box_handler("NeedSource")
+def handle_spoiler(box, value):
+    return value
+
 @parser.set_box_handler("cite")
 @parser.set_box_handler("cite ab1")
 @parser.set_box_handler("stub")

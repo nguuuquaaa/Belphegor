@@ -206,14 +206,19 @@ class WikitextParser:
         row = [""]
         for raw in table[1:]:
             if raw.startswith("!"):
-                row[0] = raw[1:].rpartition("|")[2].strip()
+                l, _, r = raw[1:].partition("|")
+                t = r or l
+                row[0] = t.strip()
             elif raw.startswith("|-"):
                 ret.append(row)
                 row = [""]
             elif raw.startswith("|"):
-                row.extend(c.strip() for c in raw[1:].split("||"))
-                if len(row) > 1:
-                    row[1] = row[1].rpartition("|")[2].strip()
+                ext = []
+                for c in raw[1:].split("||"):
+                    l, _, r = c.partition("|")
+                    t = r or l
+                    ext.append(t.strip())
+                row.extend(ext)
             else:
                 row[-1] = f"{row[-1]}\n{raw}".strip()
         if len(row) > 1:
@@ -394,6 +399,10 @@ class WikitextParser:
         elif malformed:
             return ""
 
+        start = open_tag.get("")
+        if start == "br":
+            return "\n"
+
         end = open_tag.get("/")
         if end == "br":
             return "\n"
@@ -448,11 +457,15 @@ class WikitextParser:
                         bold = False
                     value.append(next_char)
 
+    @staticmethod
+    def split_text(text):
+        return string_utils.split_iter(text, check=lambda x: x.isspace() or x in ("{", "}", "[", "]", "<", ">", "=", "\"", "/", "|", "!", "'"))
+
     def parse(self, text, with_logs=False):
         self.logs = []
         self.indent = 0
         ret = []
-        text_iter = string_utils.split_iter(text, check=lambda x: x.isspace() or x in ("{", "}", "[", "]", "<", ">", "=", "\"", "/", "|", "!", "'"))
+        text_iter = self.split_text(text)
         while True:
             try:
                 next_word = self._parse_next(text_iter)
