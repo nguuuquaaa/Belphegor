@@ -97,7 +97,9 @@ class Admin(commands.Cog):
     @checks.owner_only()
     async def status(self, ctx, *, stuff):
         data = stuff.partition(" ")
-        await self.bot.change_presence(activity=discord.Activity(type=getattr(discord.ActivityType, data[0]), name=data[2]))
+        activity = discord.Activity(type=getattr(discord.ActivityType, data[0]), name=data[2])
+        self.bot.default_activity = activity
+        await self.bot.change_presence(activity=activity)
         await ctx.confirm()
 
     @commands.command(hidden=True)
