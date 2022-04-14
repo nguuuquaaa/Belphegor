@@ -3,7 +3,7 @@ from discord.ext import commands
 from . import utils
 from .utils import checks, modding
 import re
-from fuzzywuzzy import process
+from rapidfuzz import process
 
 #==================================================================================================================================================
 

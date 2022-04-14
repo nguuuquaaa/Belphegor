@@ -7,8 +7,7 @@ pillow
 psutil
 xmltodict
 youtube-dl
-fuzzywuzzy
-python-Levenshtein
+rapidfuzz
 motor
 pytz
 numpy
