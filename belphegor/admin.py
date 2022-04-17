@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from . import utils
-from .utils import checks, context
+from .utils import checks, context, modding
 from io import StringIO, BytesIO
 import traceback
 from contextlib import redirect_stdout
@@ -95,9 +95,27 @@ class Admin(commands.Cog):
 
     @commands.command(hidden=True)
     @checks.owner_only()
-    async def status(self, ctx, *, stuff):
-        data = stuff.partition(" ")
-        activity = discord.Activity(type=getattr(discord.ActivityType, data[0]), name=data[2])
+    async def status(self, ctx, *, stuff: modding.KeyValue(
+        {
+            "playing": str,
+            "streaming": str,
+            "listening": str,
+            "watching": str,
+            "custom": str,
+            "competing": str,
+            "url": modding.URLConverter
+        }
+    )):
+        for activity_type in ("playing", "streaming", "listening", "watching", "custom", "competing"):
+            if (activity_name := stuff.getone(activity_type, None)) is not None:
+               break
+        else:
+            return await ctx.send("Bad input")
+        activity = discord.Activity(
+            type=getattr(discord.ActivityType, activity_type),
+            name=activity_name,
+            url=str(stuff.getone("url", None))
+        )
         self.bot.default_activity = activity
         await self.bot.change_presence(activity=activity)
         await ctx.confirm()

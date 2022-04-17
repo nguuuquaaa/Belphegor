@@ -35,6 +35,7 @@ class Belphegor(commands.AutoShardedBot):
         self.initial_extensions = kwargs.get("initial_extensions", config.all_extensions)
         self.restart_flag = False
         self.saved_stuff = {}
+        self.default_activity = discord.Game(name="with Chronos-senpai")
 
     async def get_prefix(self, message):
         prefixes = [f"<@{self.user.id}> ", f"<@!{self.user.id}> "]
@@ -73,7 +74,7 @@ class Belphegor(commands.AutoShardedBot):
         print(self.user.id)
         print("------")
         await asyncio.sleep(5)
-        await self.change_presence(activity=discord.Game(name="with Chronos-senpai"))
+        await self.change_presence(activity=self.default_activity)
 
     def create_task_and_count(self, coro):
         self.counter += 1
