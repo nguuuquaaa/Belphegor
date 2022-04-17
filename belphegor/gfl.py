@@ -114,9 +114,10 @@ STATS_NORMALIZE = {
     "criticalhitdamage":        "crit_dmg",
     "armorpiercing":            "armor_penetration",
     "armorpenetration":         "armor_penetration",
-    "armourpenetration":        "armor_penetration", 
+    "armourpenetration":        "armor_penetration",
     "armourpiercing":           "armor_penetration",
     "evasion":                  "evasion",
+    "criticalrate":             "crit_rate",
     "criticalhitrate":          "crit_rate",
     "criticalhitchance":        "crit_rate",
     "targets":                  "shotgun_ammo",
@@ -126,7 +127,9 @@ STATS_NORMALIZE = {
     "armour":                   "armor",
     "movementspeed":            "mobility",
     "damage":                   "damage",
-    "boostabilityeffectiveness":"boost_skill_effect"
+    "boostabilityeffectiveness":"boost_skill_effect",
+    "haseqpassive":             "boost_skill_effect",
+    "echelonaccuracy":          "echelon_accuracy"
 }
 
 STAT_DISPLAY = {
@@ -141,7 +144,8 @@ STAT_DISPLAY = {
     "armor_penetration":    ("AP", ""),
     "mobility":             ("MOBILITY", ""),
     "peq":                  ("NIGHT VISION", "%"),
-    "shotgun_ammo":         ("TARGETS", "")
+    "shotgun_ammo":         ("TARGETS", ""),
+    "echelon_accuracy":     ("ECHELON ACC", "%")
 }
 
 def get_equipment_slots(classification, order, *, add_ap=False, add_armor=False):
@@ -702,7 +706,7 @@ class Doll(data_type.BaseObject):
         max_page = len(embeds)
         for i, embed in enumerate(embeds):
             embed.set_footer(text=f"({i+1}/{max_page})")
-    
+
         return {
             "equipments": embeds,
             "digest": digest_tabs
@@ -726,6 +730,7 @@ class GirlsFrontline(commands.Cog):
             "mem_frag", "exoskeleton", "battle_fairy", "strategy_fairy", "shotgun_ammo", "peq"
         ):
             self.emojis[emoji_name] = discord.utils.find(lambda e: e.name==emoji_name, test_guild_2.emojis)
+        self.emojis["echelon_accuracy"] = self.emojis["accuracy"]
 
         bot.loop.create_task(self.gfwiki_bot_login())
 
@@ -1303,7 +1308,7 @@ class GirlsFrontline(commands.Cog):
             else:
                 break
         speq["stats"] = stats
-        
+
         filename = basic_info.get("icon") or f"Generic {basic_info['compatibleto']} {basic_info['class']}"
         filename = filename + ".png"
         speq["image_url"] = generate_image_url(filename)
@@ -1345,7 +1350,7 @@ class GirlsFrontline(commands.Cog):
                         value=f"{emojis[fairy.classification]} {fairy.classification.replace('_', ' ').title()}",
                         inline=False
                     )
-                    
+
                     stat_info = []
                     st = fairy.stats
                     for key, emoji_name, title in (
@@ -1454,7 +1459,7 @@ class GirlsFrontline(commands.Cog):
             await ctx.send(f"Passed: {len(passed)}\nFailed: {len(failed)}\n```json\n{txt}\n```")
         return logs
 
-    
+
     async def search_gfwiki_for_fairy(self, name):
         bytes_ = await self.bot.fetch(
             GFWIKI_API,
@@ -1488,7 +1493,7 @@ class GirlsFrontline(commands.Cog):
         for key in ("dmg", "critdmg", "acc", "eva", "armor"):
             stats[key] = basic_info.get(f"max_{key}")
         fairy["stats"] = stats
-        
+
         fairy["skill"] = {
             "name": basic_info["skillname"],
             "effect": basic_info["skilldesc"],

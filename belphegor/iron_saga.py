@@ -278,12 +278,13 @@ class IronSaga(commands.Cog):
         }
         bytes_ = await self.bot.fetch(ISWIKI_API, params=params)
         raw = json.loads(bytes_)
-        parser = wiki.WikitextParser()
         data = parser.parse(raw["parse"]["wikitext"]["*"])
         names = []
         for row in data[0]:
             if len(row) > 1:
-                names.append(row[1].rpartition("<br>")[2].strip("[]"))
+                value = row[1].rpartition("<br>")[2].strip()
+                ret = parser.parse(value)
+                names.append(ret)
 
         await self.update_pilots_with_names(ctx, names)
 
@@ -350,7 +351,7 @@ class IronSaga(commands.Cog):
         page_id = raw["parse"]["pageid"]
         raw_basic_info = raw["parse"]["wikitext"]["*"]
         ret = parser.parse(raw_basic_info)
-        skins = []
+        skins = {}
         for item in ret:
             if isinstance(item, dict):
                 if "pilot_info" in item:
@@ -360,20 +361,21 @@ class IronSaga(commands.Cog):
                         tabber = elem["tabber"]
                     except KeyError:
                         filename = elem["file"]
-                        skins.append({"name": "Default", "url": f"{ISWIKI_BASE}/{wiki.generate_image_path(filename)}"})
+                        skins.setdefault(filename, {"name": "Default", "url": f"{ISWIKI_BASE}/{wiki.generate_image_path(filename)}"})
                     else:
                         for tab in tabber:
                             if isinstance(tab, str) and tab.endswith("="):
                                 name = tab.rstrip("=").lstrip("|-")
                             elif isinstance(tab, dict):
                                 filename = tab["file"]
-                                skins.append({"name": name, "url": f"{ISWIKI_BASE}/{wiki.generate_image_path(filename)}"})
-                    
+                                skins.setdefault(filename, {"name": name, "url": f"{ISWIKI_BASE}/{wiki.generate_image_path(filename)}"})
 
                 elif "skin_gallery" in item:
                     for s in item["skin_gallery"]:
                         filename, _, name = s.partition("|")
-                        skins.append({"name": name, "url": f"{ISWIKI_BASE}/{wiki.generate_image_path(filename)}"})
+                        if filename.startswith("File:"):
+                            filename = filename[5:]
+                        skins.setdefault(filename, {"name": name, "url": f"{ISWIKI_BASE}/{wiki.generate_image_path(filename)}"})
 
         pilot = Pilot({})
         pilot.index = page_id
@@ -421,7 +423,7 @@ class IronSaga(commands.Cog):
             "Control": bool(basic_info.get("copilotcontrol")),
             "Special": bool(basic_info.get("copilotspecial"))
         }
-        pilot.skins = skins
+        pilot.skins = list(skins.values())
 
         return pilot
 
@@ -430,7 +432,7 @@ class IronSaga(commands.Cog):
     async def update_alias(self, ctx, *, data=modding.KeyValue()):
         try:
             name = data.getone("")
-            alias = data.getone("alias")
+            aliases = data.getall("alias")
         except KeyError:
             return await ctx.send("Need name and alias.")
 
@@ -445,8 +447,8 @@ class IronSaga(commands.Cog):
             prompt=True
         )
         if p:
-            await self.pilot_index.update_one({"index": p.index}, {"$addToSet": {"aliases": alias}})
-            await ctx.send(f"Added {alias} to {p.en_name}'s list of aliases.")
+            await self.pilot_index.update_one({"index": p.index}, {"$addToSet": {"aliases": {"$each": aliases}}})
+            await ctx.send(f"Added {', '.join(aliases)} to {p.en_name}'s list of aliases.")
 
     @commands.group(invoke_without_command=True)
     async def part(self, ctx, *, name):
