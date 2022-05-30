@@ -134,7 +134,7 @@ class Admin(commands.Cog):
             msg = await ctx.send("Updating stats...")
             await cog.update_all()
             await msg.edit(content="Done.")
-        await self.bot.logout()
+        await self.bot.close()
 
     @commands.command(name="eval", hidden=True)
     @checks.owner_only()
