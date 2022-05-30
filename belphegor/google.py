@@ -23,33 +23,33 @@ SUPERSCRIPT = {
 }
 
 ALL_LANGUAGES = {
-    "af": "Afrikaans", "sq": "Albanian", "am": "Amharic", "ar": "Arabic", 
-    "hy": "Armenian", "az": "Azerbaijani", "eu": "Basque", "be": "Belarusian", 
-    "bn": "Bengali", "bs": "Bosnian", "bg": "Bulgarian", "ca": "Catalan", 
-    "ceb": "Cebuano", "ny": "Chichewa", "zh-CN": "Chinese (Simplified)", 
-    "co": "Corsican", "hr": "Croatian", "cs": "Czech", "da": "Danish", 
-    "nl": "Dutch", "en": "English", "eo": "Esperanto", "et": "Estonian", 
-    "tl": "Filipino", "fi": "Finnish", "fr": "French", "fy": "Frisian", 
-    "gl": "Galician", "ka": "Georgian", "de": "German", "el": "Greek", 
-    "gu": "Gujarati", "ht": "Haitian Creole", "ha": "Hausa", "haw": "Hawaiian", 
-    "iw": "Hebrew", "hi": "Hindi", "hmn": "Hmong", "hu": "Hungarian", 
+    "af": "Afrikaans", "sq": "Albanian", "am": "Amharic", "ar": "Arabic",
+    "hy": "Armenian", "az": "Azerbaijani", "eu": "Basque", "be": "Belarusian",
+    "bn": "Bengali", "bs": "Bosnian", "bg": "Bulgarian", "ca": "Catalan",
+    "ceb": "Cebuano", "ny": "Chichewa", "zh-CN": "Chinese (Simplified)",
+    "co": "Corsican", "hr": "Croatian", "cs": "Czech", "da": "Danish",
+    "nl": "Dutch", "en": "English", "eo": "Esperanto", "et": "Estonian",
+    "tl": "Filipino", "fi": "Finnish", "fr": "French", "fy": "Frisian",
+    "gl": "Galician", "ka": "Georgian", "de": "German", "el": "Greek",
+    "gu": "Gujarati", "ht": "Haitian Creole", "ha": "Hausa", "haw": "Hawaiian",
+    "iw": "Hebrew", "hi": "Hindi", "hmn": "Hmong", "hu": "Hungarian",
     "is": "Icelandic", "ig": "Igbo", "id": "Indonesian", "ga": "Irish",
-    "it": "Italian", "ja": "Japanese", "jw": "Javanese", "kn": "Kannada", 
-    "kk": "Kazakh", "km": "Khmer", "rw": "Kinyarwanda", "ko": "Korean", 
-    "ku": "Kurdish (Kurmanji)", "ky": "Kyrgyz", "lo": "Lao", "la": "Latin", 
-    "lv": "Latvian", "lt": "Lithuanian", "lb": "Luxembourgish", "mk": "Macedonian", 
-    "mg": "Malagasy", "ms": "Malay", "ml": "Malayalam", "mt": "Maltese", 
-    "mi": "Maori", "mr": "Marathi", "mn": "Mongolian", "my": "Myanmar (Burmese)", 
-    "ne": "Nepali", "no": "Norwegian", "or": "Odia (Oriya)", "ps": "Pashto", 
-    "fa": "Persian", "pl": "Polish", "pt": "Portuguese", "pa": "Punjabi", 
-    "ro": "Romanian", "ru": "Russian", "sm": "Samoan", "gd": "Scots Gaelic", 
-    "sr": "Serbian", "st": "Sesotho", "sn": "Shona", "sd": "Sindhi", 
-    "si": "Sinhala", "sk": "Slovak", "sl": "Slovenian", "so": "Somali", 
-    "es": "Spanish", "su": "Sundanese", "sw": "Swahili", "sv": "Swedish", 
-    "tg": "Tajik", "ta": "Tamil", "tt": "Tatar", "te": "Telugu", 
-    "th": "Thai", "tr": "Turkish", "tk": "Turkmen", "uk": "Ukrainian", 
-    "ur": "Urdu", "ug": "Uyghur", "uz": "Uzbek", "vi": "Vietnamese", 
-    "cy": "Welsh", "xh": "Xhosa", "yi": "Yiddish", "yo": "Yoruba", 
+    "it": "Italian", "ja": "Japanese", "jw": "Javanese", "kn": "Kannada",
+    "kk": "Kazakh", "km": "Khmer", "rw": "Kinyarwanda", "ko": "Korean",
+    "ku": "Kurdish (Kurmanji)", "ky": "Kyrgyz", "lo": "Lao", "la": "Latin",
+    "lv": "Latvian", "lt": "Lithuanian", "lb": "Luxembourgish", "mk": "Macedonian",
+    "mg": "Malagasy", "ms": "Malay", "ml": "Malayalam", "mt": "Maltese",
+    "mi": "Maori", "mr": "Marathi", "mn": "Mongolian", "my": "Myanmar (Burmese)",
+    "ne": "Nepali", "no": "Norwegian", "or": "Odia (Oriya)", "ps": "Pashto",
+    "fa": "Persian", "pl": "Polish", "pt": "Portuguese", "pa": "Punjabi",
+    "ro": "Romanian", "ru": "Russian", "sm": "Samoan", "gd": "Scots Gaelic",
+    "sr": "Serbian", "st": "Sesotho", "sn": "Shona", "sd": "Sindhi",
+    "si": "Sinhala", "sk": "Slovak", "sl": "Slovenian", "so": "Somali",
+    "es": "Spanish", "su": "Sundanese", "sw": "Swahili", "sv": "Swedish",
+    "tg": "Tajik", "ta": "Tamil", "tt": "Tatar", "te": "Telugu",
+    "th": "Thai", "tr": "Turkish", "tk": "Turkmen", "uk": "Ukrainian",
+    "ur": "Urdu", "ug": "Uyghur", "uz": "Uzbek", "vi": "Vietnamese",
+    "cy": "Welsh", "xh": "Xhosa", "yi": "Yiddish", "yo": "Yoruba",
     "zu": "Zulu", "zh-TW": "Chinese (Traditional)"
 }
 
@@ -77,9 +77,11 @@ class Google(commands.Cog):
         soup = BS(html, "lxml")
         for script in soup("script"):
             script.decompose()
+        with open("_google.html", "w", encoding="utf-8") as f:
+            f.write(soup.prettify())
 
         search_results = []
-        all_tags = soup.find_all(lambda x: x.name=="div" and x.get("class")==["g"] and len(x.attrs)==1)
+        all_tags = soup.find_all(lambda x: x.name=="div" and "g" in x.get("class", []))
         for tag in all_tags:
             a = tag.find("a")
             h3 = a.find("h3")
@@ -307,17 +309,35 @@ class Google(commands.Cog):
             `>>google <query>`
             Google search.
         '''
-        params = {
-            "hl": "en",
-            "q": query
-        }
-
         await ctx.trigger_typing()
         async with self.google_lock:
+            params = {
+                "hl": "en",
+                "as_q": query,
+                "as_oq": "",
+                "as_eq": "",
+                "as_nlo": "",
+                "as_nhi": "",
+                "lr": "",
+                "cr": "",
+                "as_qdr": "all",
+                "as_sitesearch": "",
+                "as_occt": "any",
+                "as_filetype": "",
+                "tbs": ""
+            }
+            if ctx.channel.is_nsfw():
+                params["safe"] = "images"
+            else:
+                params["safe"] = "active"
+
             bytes_ = await utils.fetch(
                 self.google_session,
                 "https://www.google.com/search",
-                headers=self.google_headers,
+                headers={
+                    **self.google_headers,
+                    "referer": "https://www.google.com/advanced_search?hl=en"
+                },
                 params=params,
                 timeout=10
             )
@@ -330,7 +350,7 @@ class Google(commands.Cog):
                 paging = utils.Paginator(result, render=False)
                 await paging.navigate(ctx)
             else:
-                await ctx.send("No result found.\n... Either that or Google blocked me (in that case REEEEEEEEEEEEEEEEEEEEEEEEEE)")
+                await ctx.send("No result found.\n...\n...\n...Either that or Google blocked me (in that case REEEEEEEEEEEEEEEEEEEEEEEEEE)")
 
     @google.error
     async def google_error(self, ctx, error):
