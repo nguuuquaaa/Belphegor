@@ -100,7 +100,7 @@ class BelphegorContext(commands.Context):
                     }
                 ]
             }
-        
+
         pipeline = [
             {
                 "$addFields": {
@@ -165,7 +165,7 @@ class BelphegorContext(commands.Context):
         except asyncio.TimeoutError:
             return None
         try:
-            result = int(msg.content)
+            result = int(msg.content.replace(f"<@{self.bot.user.id}>", "").replace(f"<@!{self.bot.user.id}>", "").strip())
         except:
             return None
         if 0 < result <= max:
